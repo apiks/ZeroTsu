@@ -217,3 +217,7 @@ func ChannelLockHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 func chMention(ch *discordgo.Channel) string {
 	return fmt.Sprintf("<#%s>", ch.ID)
 }
+
+func chMentionID(channelID string) string {
+	return fmt.Sprintf("<#%s>", channelID)
+}

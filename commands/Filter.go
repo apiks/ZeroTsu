@@ -168,7 +168,6 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			var (
 				removals      string
 				badWordExists bool
-				cha           *discordgo.Channel
 			)
 
 			//Reads all the filters from filters.json
@@ -206,11 +205,8 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				z, _ := t.Zone()
 				now := t.Format("2006-01-02 15:04:05") + " " + z
 
-				//Saves channel ID the message is in in cha
-				cha.ID = m.ChannelID
-
 				//Sends embed mod message
-				FilterEmbed(s, m, removals, now, cha)
+				FilterEmbed(s, m, removals, now, m.ChannelID)
 
 				//Assigns success print string for user
 				success := "Your message `" + messageLowercase + "` was removed for using: _" + removals + "_ \n" +
@@ -273,7 +269,7 @@ func FilterReacts(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	}
 }
 
-func FilterEmbed(s *discordgo.Session, m *discordgo.MessageCreate, removals string, now string, cha *discordgo.Channel) {
+func FilterEmbed(s *discordgo.Session, m *discordgo.MessageCreate, removals, now, channelID string) {
 
 	//Initializing needed variables for the embed
 	var (
@@ -301,7 +297,7 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.MessageCreate, removals stri
 	embedFieldFilter.Value = "**__" + removals + "__**"
 	embedFieldMessage.Value = "`" + m.Content + "`"
 	embedFieldDate.Value = now
-	embedFieldChannel.Value = chMention(cha)
+	embedFieldChannel.Value = chMentionID(channelID)
 
 	//Sets field inline
 	embedFieldFilter.Inline = true
