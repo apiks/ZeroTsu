@@ -206,7 +206,10 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				now := t.Format("2006-01-02 15:04:05") + " " + z
 
 				//Sends embed mod message
-				FilterEmbed(s, m, removals, now, m.ChannelID)
+				err := FilterEmbed(s, m, removals, now, m.ChannelID)
+				if err != nil {
+					l.Println(err)
+				}
 
 				//Assigns success print string for user
 				success := "Your message `" + messageLowercase + "` was removed for using: _" + removals + "_ \n" +
@@ -215,15 +218,13 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				//Creates a DM connection and assigns it to dm
 				dm, err := s.UserChannelCreate(m.Author.ID)
 				if err != nil {
-
-					fmt.Println("Error: ", err)
+					l.Println("Error: ", err)
 				}
 
 				//Sends a message to that DM connection
 				_, err = s.ChannelMessageSend(dm.ID, success)
 				if err != nil {
-
-					fmt.Println("Error: ", err)
+					l.Println("Error: ", err)
 				}
 			}
 		}
@@ -269,7 +270,7 @@ func FilterReacts(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	}
 }
 
-func FilterEmbed(s *discordgo.Session, m *discordgo.MessageCreate, removals, now, channelID string) {
+func FilterEmbed(s *discordgo.Session, m *discordgo.MessageCreate, removals, now, channelID string) error {
 
 	//Initializing needed variables for the embed
 	var (
@@ -320,8 +321,5 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.MessageCreate, removals, now
 
 	//Send embed in bot-log channel
 	_, err := s.ChannelMessageSendEmbed(config.BotLogID, &embedMess)
-	if err != nil {
-
-		fmt.Println("Error: ", err)
-	}
+	return err
 }
