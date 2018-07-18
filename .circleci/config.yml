@@ -6,7 +6,6 @@ jobs:
     working_directory: /go/src/github.com/r-anime/ZeroTsu
     steps:
       - checkout
-      - run: go get -u github.com/r-anime/ZeroTsu
       - run: go get -v -t -d ./...
       - run: go test -v ./...
       - store_test_results:
