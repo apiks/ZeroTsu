@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>/r/anime Discord Verification</title>
+  <link rel="stylesheet" href="/verification/web/index.css">
+  <meta charset="UTF-8">
+  <meta name="author" content="Apiks">
+</head>
+
+<body background="/verification/web/background.png">
+
+	<div class="usernameFlex">
+
+		<p class="top">{{ .UsernameDiscrim }}</p>
+		<p class="top">Reddit Verified:
+
+			{{ if .RedditVerifiedStatus }}
+			<img src="/verification/web/check.png" style="height: 1.5vw"/>
+
+			{{ else }}
+			<img src="/verification/web/ex.png" style="height: 1.5vw"/>
+
+			{{ end }}
+
+		</p>
+
+		<p class="top">Discord Verified:
+
+			{{ if .DiscordVerifiedStatus }}
+			<img src="/verification/web/check.png" style="height: 1.5vw"/>
+
+			{{ else }}
+			<img src="/verification/web/ex.png" style="height: 1.5vw"/>
+
+			{{ end }}
+
+		</p>
+
+	</div>
+
+	{{ if .Error }}
+
+		<div class="meter red">
+ 			<span style="width: 100%"></span>
+		</div>
+
+	{{ else if and .DiscordVerifiedStatus .RedditVerifiedStatus }}
+
+		<div class="meter">
+ 			<span style="width: 100%"></span>
+		</div>
+
+	{{ else if or .DiscordVerifiedStatus .RedditVerifiedStatus }}
+
+		<div class="meter">
+ 			<span style="width: 50%"></span>
+		</div>
+
+	{{ else }}
+
+		<div class="meter">
+ 			<span style="width: 0%"></span>
+		</div>
+
+
+	{{ end }}
+
+	<div class="verifyFlex">
+		{{ if .Error }}
+
+		<div class="success">
+			<p style="font-size: 2vw; padding: 1vw">{{ .Error }}</p>
+			<img src="/verification/web/error.png" alt="senseiSad" class="image" />
+		</div>
+
+		{{ else if and .DiscordVerifiedStatus .RedditVerifiedStatus}}
+
+			<div class="success">
+				<p style="font-size: 2vw; padding: 1vw">You are verified and ready to use the /r/anime Discord!<p/>
+				<img src="/verification/web/youmuClap.gif" alt="youmuClap" class="image"/>
+			</div>
+
+		{{ else }}
+
+			<a href="https://www.reddit.com/api/v1/authorize?api_key&client_id=6qhzdUSgF6185A&redirect_uri=http://localhost:3000/&response_type=code&scope=identity&state=overlordconfirmsstring"><img src="/verification/web/ainzButton.gif" alt="ainzSign"/><a/>
+
+			<a href="https://discordapp.com/api/oauth2/authorize?response_type=code&client_id=431328912090464266&scope=identify&state=overlordconfirmsdiscord&redirect_uri=http://localhost:3000/"><img src="/verification/web/akkoButton.png" alt="akkoSign" height="350em"/></a>
+
+		{{ end }}
+
+		</div>
+
+	<div class="bottomLeft">
+		{{ if and .DiscordVerifiedStatus .RedditVerifiedStatus }}
+
+			<p style="font-size: 1vw">Animation from エヴァンドラゴン＠妖夢love on pixiv</p>
+
+		{{ end }}
+	</div>
+
+</body>
+
+</html>

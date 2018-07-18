@@ -1,0 +1,1 @@
+Set your "ZeroTsuToken" environment variable to the bot token
