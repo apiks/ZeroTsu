@@ -25,3 +25,6 @@ bin/*
 
 # Data storage
 database/*
+
+# ZeroTsu ELF
+ZeroTsu
