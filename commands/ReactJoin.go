@@ -2,16 +2,17 @@ package commands
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/r-anime/ZeroTsu/misc"
 	"regexp"
 	"strings"
-
 	"encoding/json"
-	"github.com/r-anime/ZeroTsu/config"
 	"io/ioutil"
 	"strconv"
 	"sync"
+
+	"github.com/bwmarrin/discordgo"
+
+	"github.com/r-anime/ZeroTsu/misc"
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 var (

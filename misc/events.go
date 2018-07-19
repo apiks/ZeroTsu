@@ -2,12 +2,14 @@ package misc
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/mmcdole/gofeed"
-	"github.com/r-anime/ZeroTsu/config"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/mmcdole/gofeed"
+
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 //Sets bot playing status and checks whether it's time to unban users

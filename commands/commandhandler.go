@@ -5,11 +5,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/r-anime/ZeroTsu/misc"
-
-	"github.com/r-anime/ZeroTsu/config"
-
 	"github.com/bwmarrin/discordgo"
+
+	"github.com/r-anime/ZeroTsu/misc"
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 var (

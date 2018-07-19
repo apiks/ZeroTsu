@@ -20,6 +20,7 @@ func main() {
 
 	bot.Start()
 
+	// Web Server
 	//http.HandleFunc("/", verification.IndexHandler)
 	//http.Handle("/verification/", http.StripPrefix("/verification/", http.FileServer(http.Dir("verification"))))
 	//err = http.ListenAndServe(":3000", nil)

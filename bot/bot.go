@@ -70,8 +70,8 @@ func Start() {
 	//React Filter
 	goBot.AddHandler(commands.FilterReacts)
 
-	//Say Command
-	goBot.AddHandler(commands.SayHandler)
+	//Say Command (Converted)
+	//goBot.AddHandler(commands.SayHandler)
 
 	//Deletes non-whitelisted attachments
 	goBot.AddHandler(commands.MessageAttachmentsHandler)

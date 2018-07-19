@@ -3,17 +3,18 @@ package misc
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"io/ioutil"
 	"strings"
 	"sync"
 	"unicode"
-
-	"github.com/r-anime/ZeroTsu/config"
 	"net/http"
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
+
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 // File for misc. functions, commands and variables.

@@ -2,15 +2,16 @@ package commands
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"strings"
-
 	"encoding/json"
-	"github.com/r-anime/ZeroTsu/config"
-	"github.com/r-anime/ZeroTsu/misc"
 	"io/ioutil"
 	"strconv"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
+
+	"github.com/r-anime/ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/misc"
 )
 
 var VoteInfoMap = make(map[string]*VoteInfo)

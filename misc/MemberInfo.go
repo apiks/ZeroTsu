@@ -7,13 +7,15 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/r-anime/ZeroTsu/config"
 	"io"
 	"io/ioutil"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
+
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 var (

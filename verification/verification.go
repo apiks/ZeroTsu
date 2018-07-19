@@ -6,9 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/r-anime/ZeroTsu/config"
-	"github.com/r-anime/ZeroTsu/misc"
 	"golang.org/x/oauth2"
 	"html/template"
 	"io"
@@ -17,6 +14,11 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
+
+	"github.com/r-anime/ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/misc"
 )
 
 var (
@@ -50,6 +52,7 @@ type User struct {
 	AltCheck              bool      `json:"altcheck"`
 }
 
+// Makes a random string. By Kagumi
 func randString(n int) (string, error) {
 	data := make([]byte, n)
 	if _, err := io.ReadFull(rand.Reader, data); err != nil {

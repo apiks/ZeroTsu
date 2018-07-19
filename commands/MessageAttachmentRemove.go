@@ -18,9 +18,12 @@ var (
 
 // MessageAttachmentsHandler checks messages with uploads if they're uploading a whitelisted file type. If not it removes them
 func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+
+	// Checks if the message author is the bot, if it is it stops
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
+	// Checks if there are any attachments to the message to start with
 	if len(m.Attachments) == 0 {
 		return
 	}
@@ -93,7 +96,6 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 			fmt.Println("Error: ", err)
 		}
 	}
-
 }
 
 // Checks if it's an allowed file type and returns true if it is, else false
