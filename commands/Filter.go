@@ -24,7 +24,7 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 	}
-	if ch.GuildID == config.ServerID {
+	if ch.GuildID != config.ServerID {
 
 		return
 	}
