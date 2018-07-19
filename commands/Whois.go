@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"math"
 
-	"ZeroTsu/config"
-	"ZeroTsu/misc"
+	"github.com/r-anime/ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/misc"
 )
 
 //Sends user information as embed message
