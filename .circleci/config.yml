@@ -11,14 +11,13 @@ jobs:
       - store_test_results:
           path: /tmp/test-results
   deploy:
-    working_directory: /go/src/github.com/r-anime/ZeroTsu
     machine:
       enabled: true
     steps:
       - run:
           name: Deploy to Server as Service (SSH)
           command: |
-            ssh $SSH_USER@$SSH_IP "service zerotsu stop; /snap/bin/go get -u github.com/r-anime/ZeroTsu; /snap/bin/go build -o ZeroTsu; service zerotsu start"
+            ssh $SSH_USER@$SSH_IP "service zerotsu stop; cd /go/src/github.com/r-anime/ZeroTsu; /snap/bin/go get -u github.com/r-anime/ZeroTsu; /snap/bin/go build -o ZeroTsu; service zerotsu start"
 workflows:
   version: 2
   build-and-deploy:
