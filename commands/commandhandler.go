@@ -7,8 +7,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/misc"
 	"github.com/r-anime/ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/misc"
 )
 
 var (
@@ -50,6 +50,7 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	cmdTrigger := strings.Split(m.Content, " ")[0][len(config.BotPrefix):]
+	cmdTrigger = strings.ToLower(cmdTrigger)
 	cmd, ok := commandMap[cmdTrigger]
 	if !ok {
 		cmd, ok = commandMap[aliasMap[cmdTrigger]]
