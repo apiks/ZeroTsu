@@ -26,206 +26,208 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	if ch.GuildID == config.ServerID {
 
-		//Pulls info on message author
-		mem, err := s.State.Member(config.ServerID, m.Author.ID)
+		return
+	}
+
+	//Pulls info on message author
+	mem, err := s.State.Member(config.ServerID, m.Author.ID)
+	if err != nil {
+		mem, err = s.GuildMember(config.ServerID, m.Author.ID)
 		if err != nil {
-			mem, err = s.GuildMember(config.ServerID, m.Author.ID)
+			fmt.Println(err.Error())
+			return
+		}
+	}
+
+	//Puts the command to lowercase
+	messageLowercase := strings.ToLower(m.Content)
+
+	//Checks if user has permissions and whether the BotPrefix was used
+	if strings.HasPrefix(messageLowercase, config.BotPrefix) {
+		if misc.HasPermissions(mem) {
+			if strings.HasPrefix(messageLowercase, config.BotPrefix+"addfilter ") && (messageLowercase != (config.BotPrefix + "addfilter")) {
+
+				if m.Author.ID == config.BotID {
+					return
+				}
+
+				//Assigns the word to be filtered to the "word" variable
+				word := strings.Replace(messageLowercase, config.BotPrefix+"addfilter ", "", -1)
+
+				//Calls the function to write the new filter word to filters.json
+				misc.FiltersWrite(word)
+
+				if misc.FilterExists == false {
+
+					//Prints success
+					success := "`" + word + "` has been added to the filter list."
+					_, err = s.ChannelMessageSend(m.ChannelID, success)
+					if err != nil {
+
+						fmt.Println("Error: ", err)
+					}
+				} else {
+
+					//Prints failure
+					failure := "`" + word + "` is already on the filter list."
+					_, err = s.ChannelMessageSend(m.ChannelID, failure)
+					if err != nil {
+
+						fmt.Println("Error: ", err)
+					}
+				}
+
+			} else if messageLowercase == config.BotPrefix+"filters" {
+				if m.Author.ID == config.BotID {
+					return
+				}
+
+				//Reads all the filters from filters.json
+				misc.FiltersRead()
+
+				//Creates a string variable to store the filters in for showing later
+				var filters string
+
+				//Iterates through all the filters if they exist and adds them to the filters string
+				if len(misc.ReadFilters) != 0 {
+					for i := 0; i < len(misc.ReadFilters); i++ {
+
+						if filters == "" {
+
+							filters = "`" + misc.ReadFilters[i].Filter + "`"
+						} else {
+
+							filters = filters + "\n `" + misc.ReadFilters[i].Filter + "`"
+						}
+					}
+				}
+
+				//If there are no filtered words give error, else print the filtered words.
+				if len(misc.ReadFilters) == 0 {
+
+					failure := "Error. There are no filters."
+					_, err = s.ChannelMessageSend(m.ChannelID, failure)
+					if err != nil {
+
+						fmt.Println("Error: ", err)
+					}
+				} else {
+
+					_, err = s.ChannelMessageSend(m.ChannelID, filters)
+					if err != nil {
+
+						fmt.Println("Error: ", err)
+					}
+				}
+
+			} else if strings.HasPrefix(messageLowercase, config.BotPrefix+"removefilter ") && (messageLowercase != (config.BotPrefix + "removefilter")) {
+
+				if m.Author.ID == config.BotID {
+					return
+				}
+
+				//Reads all the filters from filters.json
+				misc.FiltersRead()
+
+				//Assigns the word to be filtered to the "word" variable
+				word := strings.Replace(messageLowercase, config.BotPrefix+"removefilter ", "", -1)
+
+				//Checks if there's any filters, else prints success.
+				if len(misc.ReadFilters) == 0 {
+
+					failure := "Error. There are no filters."
+
+					_, err = s.ChannelMessageSend(m.ChannelID, failure)
+					if err != nil {
+
+						fmt.Println("Error: ", err)
+
+					}
+				} else {
+
+					//Calls the function to remove the word from filters.json
+					misc.FiltersRemove(word)
+
+					//Prints success
+					success := "`" + word + "` has been removed from the filter list."
+					_, err = s.ChannelMessageSend(m.ChannelID, success)
+					if err != nil {
+
+						fmt.Println("Error: ", err)
+					}
+				}
+			}
+		}
+	}
+
+	//Checks if user is mod or bot before checking the message
+	if misc.HasPermissions(mem) == false {
+		if m.Author.ID == config.BotID {
+			return
+		}
+
+		//Initializes a string in which if a word is removed it'll be stored for printing
+		//Also initializes a bool which'll be used to measure against in printing
+		var (
+			removals      string
+			badWordExists bool
+		)
+
+		//Reads all the filters from filters.json
+		misc.FiltersRead()
+
+		//Iterates through all the filters to see if the message contained a filtered word
+		for i := 0; i < len(misc.ReadFilters); i++ {
+
+			re := regexp.MustCompile(misc.ReadFilters[i].Filter)
+			badWordCheck := re.FindAllString(messageLowercase, -1)
+
+			if badWordCheck != nil {
+
+				//Bool value for outside of loop to print the removals
+				badWordExists = true
+
+				//Deletes the message that was sent if it has a filtered word.
+				s.ChannelMessageDelete(m.ChannelID, m.ID)
+
+				//Stores the removals for printing
+				if len(removals) == 0 {
+
+					removals = badWordCheck[0]
+				} else {
+
+					removals = removals + ", " + badWordCheck[0]
+				}
+			}
+		}
+
+		if badWordExists == true {
+
+			//Stores time of removal
+			t := time.Now()
+			z, _ := t.Zone()
+			now := t.Format("2006-01-02 15:04:05") + " " + z
+
+			//Sends embed mod message
+			err := FilterEmbed(s, m, removals, now, m.ChannelID)
 			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-		}
-
-		//Puts the command to lowercase
-		messageLowercase := strings.ToLower(m.Content)
-
-		//Checks if user has permissions and whether the BotPrefix was used
-		if strings.HasPrefix(messageLowercase, config.BotPrefix) {
-			if misc.HasPermissions(mem) {
-				if strings.HasPrefix(messageLowercase, config.BotPrefix+"addfilter ") && (messageLowercase != (config.BotPrefix + "addfilter")) {
-
-					if m.Author.ID == config.BotID {
-						return
-					}
-
-					//Assigns the word to be filtered to the "word" variable
-					word := strings.Replace(messageLowercase, config.BotPrefix+"addfilter ", "", -1)
-
-					//Calls the function to write the new filter word to filters.json
-					misc.FiltersWrite(word)
-
-					if misc.FilterExists == false {
-
-						//Prints success
-						success := "`" + word + "` has been added to the filter list."
-						_, err = s.ChannelMessageSend(m.ChannelID, success)
-						if err != nil {
-
-							fmt.Println("Error: ", err)
-						}
-					} else {
-
-						//Prints failure
-						failure := "`" + word + "` is already on the filter list."
-						_, err = s.ChannelMessageSend(m.ChannelID, failure)
-						if err != nil {
-
-							fmt.Println("Error: ", err)
-						}
-					}
-
-				} else if messageLowercase == config.BotPrefix+"filters" {
-					if m.Author.ID == config.BotID {
-						return
-					}
-
-					//Reads all the filters from filters.json
-					misc.FiltersRead()
-
-					//Creates a string variable to store the filters in for showing later
-					var filters string
-
-					//Iterates through all the filters if they exist and adds them to the filters string
-					if len(misc.ReadFilters) != 0 {
-						for i := 0; i < len(misc.ReadFilters); i++ {
-
-							if filters == "" {
-
-								filters = "`" + misc.ReadFilters[i].Filter + "`"
-							} else {
-
-								filters = filters + "\n `" + misc.ReadFilters[i].Filter + "`"
-							}
-						}
-					}
-
-					//If there are no filtered words give error, else print the filtered words.
-					if len(misc.ReadFilters) == 0 {
-
-						failure := "Error. There are no filters."
-						_, err = s.ChannelMessageSend(m.ChannelID, failure)
-						if err != nil {
-
-							fmt.Println("Error: ", err)
-						}
-					} else {
-
-						_, err = s.ChannelMessageSend(m.ChannelID, filters)
-						if err != nil {
-
-							fmt.Println("Error: ", err)
-						}
-					}
-
-				} else if strings.HasPrefix(messageLowercase, config.BotPrefix+"removefilter ") && (messageLowercase != (config.BotPrefix + "removefilter")) {
-
-					if m.Author.ID == config.BotID {
-						return
-					}
-
-					//Reads all the filters from filters.json
-					misc.FiltersRead()
-
-					//Assigns the word to be filtered to the "word" variable
-					word := strings.Replace(messageLowercase, config.BotPrefix+"removefilter ", "", -1)
-
-					//Checks if there's any filters, else prints success.
-					if len(misc.ReadFilters) == 0 {
-
-						failure := "Error. There are no filters."
-
-						_, err = s.ChannelMessageSend(m.ChannelID, failure)
-						if err != nil {
-
-							fmt.Println("Error: ", err)
-
-						}
-					} else {
-
-						//Calls the function to remove the word from filters.json
-						misc.FiltersRemove(word)
-
-						//Prints success
-						success := "`" + word + "` has been removed from the filter list."
-						_, err = s.ChannelMessageSend(m.ChannelID, success)
-						if err != nil {
-
-							fmt.Println("Error: ", err)
-						}
-					}
-				}
-			}
-		}
-
-		//Checks if user is mod or bot before checking the message
-		if misc.HasPermissions(mem) == false {
-			if m.Author.ID == config.BotID {
-				return
+				l.Println(err)
 			}
 
-			//Initializes a string in which if a word is removed it'll be stored for printing
-			//Also initializes a bool which'll be used to measure against in printing
-			var (
-				removals      string
-				badWordExists bool
-			)
+			//Assigns success print string for user
+			success := "Your message `" + messageLowercase + "` was removed for using: _" + removals + "_ \n" +
+				"Using such words makes me disappointed in you, darling."
 
-			//Reads all the filters from filters.json
-			misc.FiltersRead()
-
-			//Iterates through all the filters to see if the message contained a filtered word
-			for i := 0; i < len(misc.ReadFilters); i++ {
-
-				re := regexp.MustCompile(misc.ReadFilters[i].Filter)
-				badWordCheck := re.FindAllString(messageLowercase, -1)
-
-				if badWordCheck != nil {
-
-					//Bool value for outside of loop to print the removals
-					badWordExists = true
-
-					//Deletes the message that was sent if it has a filtered word.
-					s.ChannelMessageDelete(m.ChannelID, m.ID)
-
-					//Stores the removals for printing
-					if len(removals) == 0 {
-
-						removals = badWordCheck[0]
-					} else {
-
-						removals = removals + ", " + badWordCheck[0]
-					}
-				}
+			//Creates a DM connection and assigns it to dm
+			dm, err := s.UserChannelCreate(m.Author.ID)
+			if err != nil {
+				l.Println("Error: ", err)
 			}
 
-			if badWordExists == true {
-
-				//Stores time of removal
-				t := time.Now()
-				z, _ := t.Zone()
-				now := t.Format("2006-01-02 15:04:05") + " " + z
-
-				//Sends embed mod message
-				err := FilterEmbed(s, m, removals, now, m.ChannelID)
-				if err != nil {
-					l.Println(err)
-				}
-
-				//Assigns success print string for user
-				success := "Your message `" + messageLowercase + "` was removed for using: _" + removals + "_ \n" +
-					"Using such words makes me disappointed in you, darling."
-
-				//Creates a DM connection and assigns it to dm
-				dm, err := s.UserChannelCreate(m.Author.ID)
-				if err != nil {
-					l.Println("Error: ", err)
-				}
-
-				//Sends a message to that DM connection
-				_, err = s.ChannelMessageSend(dm.ID, success)
-				if err != nil {
-					l.Println("Error: ", err)
-				}
+			//Sends a message to that DM connection
+			_, err = s.ChannelMessageSend(dm.ID, success)
+			if err != nil {
+				l.Println("Error: ", err)
 			}
 		}
 	}

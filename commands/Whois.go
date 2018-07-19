@@ -1,13 +1,13 @@
 package commands
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/bwmarrin/discordgo"
+	"strings"
+	"fmt"
+	"math"
 
-	"github.com/r-anime/ZeroTsu/config"
-	"github.com/r-anime/ZeroTsu/misc"
+	"ZeroTsu/config"
+	"ZeroTsu/misc"
 )
 
 //Sends user information as embed message
@@ -44,6 +44,14 @@ func WhoisHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				if m.Author.ID == config.BotID {
 					return
 				}
+
+				// Saves program from panic and continues running normally without executing the command if it happens
+				defer func() {
+					if r := recover(); r != nil {
+
+						fmt.Println(r)
+					}
+				}()
 
 				//Pulls the user from strings after "whois "
 				user := strings.Replace(messageLowercase, config.BotPrefix+"whois ", "", 1)
@@ -102,12 +110,14 @@ func WhoisHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 						if userMem != nil {
 
-							//Initializes user if he doesn't exist and is in server
-							fmt.Print("User: " + user.Username + " not found in memberInfo. Initializing user.")
+							//Initializes user if he doesn't exist and is in server and stops command
+							fmt.Print("User: " + userMem.User.Username + " not found in memberInfo. Initializing user.")
 							_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Initializing user.")
 
 							misc.InitializeUser(userMem)
+							misc.MemberInfoWrite(misc.MemberInfoMap)
 
+							return
 							//If user is not in the server it cannot initialize
 						} else {
 
@@ -215,30 +225,108 @@ func WhoisHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 					misc.MapMutex.Unlock()
 
-					//Prints the user information in simple text
-					_, err := s.ChannelMessageSend(m.ChannelID, "User: "+mem.Mention()+"\n\n *Past Usernames:* "+pastUsernames)
-					if err != nil {
+					var splitUsernames []string
+					var splitNicknames []string
 
-						_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot whois user. Please check the first print function in the code.")
+					// Splits past usernames if they're over 1800 characters to avoid message limit
+					if len(pastUsernames) > 1800 {
+
+						splitUsernames = SplitLongMessage(pastUsernames)
 					}
 
-					//for len(pastNicknames > 1900) {
-					//
-					//	//Future me, split the string in half here. I dunno how, I drunk
-					//
-					//}
+					// Splits past nicknames if they're over 1800 characters to avoid message limit
+					if len(pastNicknames) > 1800 {
 
-					//Prints the rest of the user information in simple tetx
-					_, err = s.ChannelMessageSend(m.ChannelID, "*Past Nicknames:* "+pastNicknames+
-						"\n\n *Join Date:* "+user.JoinDate+"\n *Reddit Account:* "+user.RedditUsername)
-					if err != nil {
-
-						_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot whois user. Please check the second print function in the code."+err.Error())
+						splitNicknames = SplitLongMessage(pastNicknames)
 					}
 
-					fmt.Println(len(pastNicknames))
+					// Iterates through all split usernames and sends message and sends message to chat for whois command
+					if splitUsernames != nil {
+						for i := 0; i < len(splitUsernames); i++ {
+
+							if i == 0 {
+								// Prints the user information in simple text
+								_, err := s.ChannelMessageSend(m.ChannelID, "User: "+mem.Mention()+"\n\n *Past Usernames:* "+splitUsernames[0])
+								if err != nil {
+
+									_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot whois user. Please check the first print function in the code.")
+								}
+							} else {
+
+								// Prints the user information in simple text
+								_, err := s.ChannelMessageSend(m.ChannelID, "\n" + splitUsernames[i])
+								if err != nil {
+
+									_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot whois user. Please check the first print function in the code.")
+								}
+							}
+						}
+					} else {
+						// Prints the user information in simple text
+						_, err := s.ChannelMessageSend(m.ChannelID, "User: "+mem.Mention()+"\n\n *Past Usernames:* "+pastUsernames)
+						if err != nil {
+
+							_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot whois user. Please check the first print function in the code.")
+						}
+					}
+
+					// Iterates through all split nicknames and sends message to chat for whois command
+					if splitNicknames != nil {
+						for i := 0; i < len(splitNicknames); i++ {
+
+							if i == 0 {
+
+								// Prints the user information in simple text
+								_, err = s.ChannelMessageSend(m.ChannelID, "\n\n*Past Nicknames:* " + splitNicknames[0])
+								if err != nil {
+
+									_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot whois user. Please check the second print function in the code."+err.Error())
+								}
+							} else {
+
+								// Prints the user information in simple text
+								_, err = s.ChannelMessageSend(m.ChannelID, "\n" + splitNicknames[i])
+								if err != nil {
+
+									_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot whois user. Please check the second print function in the code."+err.Error())
+								}
+							}
+						}
+					} else {
+
+						// Prints the user information in simple text
+						_, err = s.ChannelMessageSend(m.ChannelID, "*Past Nicknames:* " + pastNicknames+
+							"\n\n *Join Date:* "+ user.JoinDate + "\n *Reddit Account:* " + user.RedditUsername)
+						if err != nil {
+
+							_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot whois user. Please check the second print function in the code."+err.Error())
+						}
+					}
 				}
 			}
 		}
 	}
+}
+
+// SplitLongMessage takes a message and splits it if it's longer than 1850. By Kagumi
+func SplitLongMessage(message string) (split []string) {
+	const maxLength = 1800
+	if len(message) > maxLength {
+		partitions := len(message) / maxLength
+		if math.Mod(float64(len(message)), maxLength) > 0 {
+			partitions++
+		}
+		split = make([]string, partitions)
+		for i := 0; i < partitions; i++ {
+			if i == partitions-1 {
+				split[i] = message[i*maxLength:]
+				break
+			}
+			split[i] = message[i*maxLength : (i+1)*maxLength]
+		}
+	} else {
+		split = make([]string, 1)
+		split[0] = message
+	}
+	return
 }
