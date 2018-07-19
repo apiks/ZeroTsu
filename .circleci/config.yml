@@ -11,6 +11,7 @@ jobs:
       - store_test_results:
           path: /tmp/test-results
   deploy:
+    working_directory: /go/src/github.com/r-anime/ZeroTsu
     machine:
       enabled: true
     steps:
