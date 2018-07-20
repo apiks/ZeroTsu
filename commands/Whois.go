@@ -1,10 +1,11 @@
 package commands
 
 import (
-	"github.com/bwmarrin/discordgo"
 	"strings"
 	"fmt"
 	"math"
+
+	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
@@ -225,81 +226,65 @@ func WhoisHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 					misc.MapMutex.Unlock()
 
-					var splitUsernames []string
-					var splitNicknames []string
+					// Sets whois message
+					message := "**User:** " + mem.Mention() + "\n\n**Past Usernames:** " + pastUsernames +
+						"\n\n**Past Nicknames:** " + pastNicknames + "\n\n**Warnings:** " + warnings +
+						"\n\n**Kicks:** " + kicks + "\n\n**Bans:** " + bans +
+						"\n\n**Join Date:** " + user.JoinDate + "\n\n**Verification Date:** " +
+						user.VerifiedDate + "\n\n**Reddit Account:** " +
+						"<https://reddit.com/u/" + user.RedditUsername + ">"
 
-					// Splits past usernames if they're over 1800 characters to avoid message limit
-					if len(pastUsernames) > 1800 {
+					// Alt check
+					alts := CheckAltAccountWhois(mem.ID)
 
-						splitUsernames = SplitLongMessage(pastUsernames)
-					}
+					// If there's more than one account with that reddit username print a message
+					if len(alts) > 1 {
 
-					// Splits past nicknames if they're over 1800 characters to avoid message limit
-					if len(pastNicknames) > 1800 {
+						// Forms the success string
+						success := "\n\n**Alts:** \n\n"
+						for i := 0; i < len(alts); i++ {
 
-						splitNicknames = SplitLongMessage(pastNicknames)
-					}
-
-					// Iterates through all split usernames and sends message and sends message to chat for whois command
-					if splitUsernames != nil {
-						for i := 0; i < len(splitUsernames); i++ {
-
-							if i == 0 {
-								// Prints the user information in simple text
-								_, err := s.ChannelMessageSend(m.ChannelID, "User: "+mem.Mention()+"\n\n *Past Usernames:* "+splitUsernames[0])
-								if err != nil {
-
-									_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot whois user. Please check the first print function in the code.")
-								}
-							} else {
-
-								// Prints the user information in simple text
-								_, err := s.ChannelMessageSend(m.ChannelID, "\n" + splitUsernames[i])
-								if err != nil {
-
-									_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot whois user. Please check the first print function in the code.")
-								}
-							}
+							success = success + "<@" + alts[i] + "> \n"
 						}
-					} else {
-						// Prints the user information in simple text
-						_, err := s.ChannelMessageSend(m.ChannelID, "User: "+mem.Mention()+"\n\n *Past Usernames:* "+pastUsernames)
-						if err != nil {
 
-							_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot whois user. Please check the first print function in the code.")
-						}
+						// Adds the alts to the whois message
+						message = message + success
+
+						// Resets alts variable
+						alts = nil
 					}
 
-					// Iterates through all split nicknames and sends message to chat for whois command
-					if splitNicknames != nil {
-						for i := 0; i < len(splitNicknames); i++ {
+					var splitMessage []string
 
-							if i == 0 {
+					// Splits the message if it's over 1950 characters
+					if len(message) > 195 {
 
-								// Prints the user information in simple text
-								_, err = s.ChannelMessageSend(m.ChannelID, "\n\n*Past Nicknames:* " + splitNicknames[0])
-								if err != nil {
+						splitMessage = SplitLongMessage(message)
+					}
 
-									_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot whois user. Please check the second print function in the code."+err.Error())
-								}
-							} else {
+					if splitMessage != nil {
+						for i := 0; i < len(splitMessage); i++ {
 
-								// Prints the user information in simple text
-								_, err = s.ChannelMessageSend(m.ChannelID, "\n" + splitNicknames[i])
-								if err != nil {
+							_, err := s.ChannelMessageSend(m.ChannelID, splitMessage[i])
+							if err != nil {
 
-									_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot whois user. Please check the second print function in the code."+err.Error())
+								_, err := s.ChannelMessageSend(m.ChannelID, "Error: cannot send whois message.")
+								if  err != nil {
+
+									fmt.Println(err)
 								}
 							}
 						}
 					} else {
 
-						// Prints the user information in simple text
-						_, err = s.ChannelMessageSend(m.ChannelID, "*Past Nicknames:* " + pastNicknames+
-							"\n\n *Join Date:* "+ user.JoinDate + "\n *Reddit Account:* " + user.RedditUsername)
+						_, err := s.ChannelMessageSend(m.ChannelID, message)
 						if err != nil {
 
-							_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot whois user. Please check the second print function in the code."+err.Error())
+							_, err := s.ChannelMessageSend(m.ChannelID, "Error: cannot send whois message.")
+							if err != nil {
+
+								fmt.Println(err)
+							}
 						}
 					}
 				}
@@ -308,9 +293,9 @@ func WhoisHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
-// SplitLongMessage takes a message and splits it if it's longer than 1850. By Kagumi
+// SplitLongMessage takes a message and splits it if it's longer than 1950. By Kagumi
 func SplitLongMessage(message string) (split []string) {
-	const maxLength = 1800
+	const maxLength = 1950
 	if len(message) > maxLength {
 		partitions := len(message) / maxLength
 		if math.Mod(float64(len(message)), maxLength) > 0 {
@@ -329,4 +314,32 @@ func SplitLongMessage(message string) (split []string) {
 		split[0] = message
 	}
 	return
+}
+
+// Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Whois version
+func CheckAltAccountWhois(id string) []string {
+
+	// Initializes alts string slice to hold IDs of alts of that reddit username
+	var alts []string
+
+	// Reads memberInfo
+	misc.MemberInfoRead()
+
+	// Iterates through all users in memberInfo.json
+	for userOne := range misc.MemberInfoMap {
+
+		// Checks if the current user has the same reddit username as id string user
+		if misc.MemberInfoMap[userOne].RedditUsername == misc.MemberInfoMap[id].RedditUsername {
+
+			alts = append(alts, misc.MemberInfoMap[userOne].ID)
+		}
+	}
+
+	if len(alts) > 1 {
+
+		return alts
+	} else {
+
+		return nil
+	}
 }

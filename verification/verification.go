@@ -12,7 +12,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -52,7 +51,6 @@ type User struct {
 	AltCheck              bool      `json:"altcheck"`
 }
 
-// Makes a random string. By Kagumi
 func randString(n int) (string, error) {
 	data := make([]byte, n)
 	if _, err := io.ReadFull(rand.Reader, data); err != nil {
@@ -460,23 +458,23 @@ func Verify(cookieValue *http.Cookie, r *http.Request) {
 	// Confirms that the map is not empty
 	if misc.MemberInfoMap != nil {
 
-		// Assigns the proper string link for reddit username
-		redditLink := "https://reddit.com/u/" + UserCookieMap[cookieValue.Value].RedditName
-
 		// Checks if cookie has expired while doing this
 		if cookieValue != nil {
+
+			//Stores time of verification
+			t := time.Now()
+			z, _ := t.Zone()
+			join := t.Format("2006-01-02 15:04:05") + " " + z
 
 			// Assigns needed values to temp
 			var temp misc.UserInfo
 			misc.MapMutex.Lock()
 			temp = *misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]
-			temp.RedditUsername = redditLink
+			temp.RedditUsername = UserCookieMap[cookieValue.Value].RedditName
+			temp.VerifiedDate = join
 			misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID] = &temp
 			misc.MapMutex.Unlock()
 
-		} else {
-
-			fmt.Println("Cookie has expired.")
 		}
 
 		// Writes the username to memberInfo.json
@@ -571,44 +569,31 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 }
 
-// Function that iterates through memberInfo.json and checks for any alt accounts for that ID
+// Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Verification version
 func CheckAltAccount(s *discordgo.Session, id string) {
-
-	// Reads memberInfo
-	misc.MemberInfoRead()
 
 	// Initializes alts string slice to hold IDs of alts of that reddit username
 	var alts []string
 
+	// Reads memberInfo
+	misc.MemberInfoRead()
+
 	// Iterates through all users in memberInfo.json
 	for userOne := range misc.MemberInfoMap {
 
-		// Adds the current account
-		alts = append(alts, misc.MemberInfoMap[userOne].ID)
-
 		// Checks if the current user has the same reddit username as userCookieMap user
-		if misc.MemberInfoMap[userOne].RedditUsername == misc.MemberInfoMap[id].RedditUsername && misc.MemberInfoMap[userOne].ID != misc.MemberInfoMap[id].ID {
+		if misc.MemberInfoMap[userOne].RedditUsername == misc.MemberInfoMap[id].RedditUsername {
 
-			var altIsIn bool
-
-			for i := 1; i < len(alts); i++ {
-				if strings.Contains(alts[i], misc.MemberInfoMap[userOne].ID) {
-					altIsIn = true
-				}
-			}
-			if altIsIn == false {
-
-				alts = append(alts, misc.MemberInfoMap[userOne].ID)
-			}
+			alts = append(alts, misc.MemberInfoMap[userOne].ID)
 		}
 	}
 
 	// If there's more than one account with that reddit username print a message
-	if len(alts) > 2 {
+	if len(alts) > 1 {
 
 		// Forms the success string
-		success := "**Alternate Account Verified** \n\n"
-		for i := 1; i < len(alts); i++ {
+		success := "**Alternate Account Verified:** \n\n"
+		for i := 0; i < len(alts); i++ {
 
 			success = success + "<@" + alts[i] + "> \n"
 		}

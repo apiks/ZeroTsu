@@ -198,7 +198,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 		//Assigns success print string for user
 		success := "You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
-			"Please verify your reddit account at http://localhost:3000//?reqvalue=" + ciphertext
+			"Please verify your reddit account at http://localhost:3000/?reqvalue=" + ciphertext
 
 		//Creates a DM connection and assigns it to dm
 		dm, err := s.UserChannelCreate(user.User.ID)
@@ -242,7 +242,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 		//Assigns success print string for user
 		success := "You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
-			"Please verify your reddit account at http://localhost:3000//?reqvalue=" + ciphertext
+			"Please verify your reddit account at http://localhost:3000/?reqvalue=" + ciphertext
 
 		//Creates a DM connection and assigns it to dm
 		dm, err := s.UserChannelCreate(user.User.ID)
@@ -275,7 +275,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 		//Assigns success print string for user
 		success := "You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
-			"Please verify your reddit account at http://localhost:3000//?reqvalue=" + ciphertext
+			"Please verify your reddit account at http://localhost:3000/?reqvalue=" + ciphertext
 
 		//Creates a DM connection and assigns it to dm
 		dm, err := s.UserChannelCreate(user.User.ID)
@@ -443,7 +443,7 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	}
 }
 
-// encrypt string to base64 crypto using AES
+// Encrypt string to base64 crypto using AES
 func Encrypt(key []byte, text string) string {
 	// key := []byte(keyText)
 	plaintext := []byte(text)
@@ -468,7 +468,7 @@ func Encrypt(key []byte, text string) string {
 	return base64.URLEncoding.EncodeToString(ciphertext)
 }
 
-// decrypt from base64 to decrypted string
+// Decrypt from base64 to decrypted string
 func Decrypt(key []byte, cryptoText string) string {
 	ciphertext, _ := base64.URLEncoding.DecodeString(cryptoText)
 
