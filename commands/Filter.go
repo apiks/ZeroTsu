@@ -188,9 +188,6 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 	//Creates a string variable to store the filters in for showing later
 	var filters string
 
-	// Reads filters to solve memory-type visual glitches
-	misc.FiltersRead()
-
 	//Iterates through all the filters if they exist and adds them to the filters string
 	if len(misc.ReadFilters) != 0 {
 		for i := 0; i < len(misc.ReadFilters); i++ {
