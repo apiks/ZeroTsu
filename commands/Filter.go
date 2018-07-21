@@ -216,12 +216,24 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 			//Calls the function to remove the word from filters.json
 			misc.FiltersRemove(word)
 
-			//Prints success
-			success := "`" + word + "` has been removed from the filter list."
-			_, err := s.ChannelMessageSend(m.ChannelID, success)
-			if err != nil {
+			if misc.FilterExists == true {
 
-				fmt.Println("Error:", err)
+				//Prints success
+				success := "`" + word + "` has been removed from the filter list."
+				_, err := s.ChannelMessageSend(m.ChannelID, success)
+				if err != nil {
+
+					fmt.Println("Error:", err)
+				}
+			} else {
+
+				//Prints failure if the emote doesn't exist in the filter list
+				failure := "Error: `" + word + "` does not exist in the filter list."
+				_, err := s.ChannelMessageSend(m.ChannelID, failure)
+				if err != nil {
+
+					fmt.Println("Error:", err)
+				}
 			}
 		}
 	}

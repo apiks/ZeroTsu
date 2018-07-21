@@ -214,16 +214,16 @@ func FiltersRemove(word string) {
 	//Creates a struct in which we'll keep the word
 	wordStruct := FilterStruct{word}
 
-	filterExists := false
+	FilterExists = false
 
 	//Deletes the filtered word if it finds it exists
 	if len(ReadFilters) != 0 {
 		for i := 0; i < len(ReadFilters); i++ {
 			if ReadFilters[i].Filter == wordStruct.Filter {
 
-				filterExists = true
+				FilterExists = true
 
-				if filterExists == true {
+				if FilterExists == true {
 
 					ReadFilters = append(ReadFilters[:i], ReadFilters[i+1:]...)
 				}
