@@ -28,7 +28,10 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		return
 	}
-
+	// Checks if it's the bot that sent the message
+	if m.Author.ID == s.State.User.ID {
+		return
+	}
 	//Pulls info on message author
 	mem, err := s.State.Member(config.ServerID, m.Author.ID)
 	if err != nil {
@@ -42,129 +45,8 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	//Puts the command to lowercase
 	messageLowercase := strings.ToLower(m.Content)
 
-	//Checks if user has permissions and whether the BotPrefix was used
-	if strings.HasPrefix(messageLowercase, config.BotPrefix) {
-		if misc.HasPermissions(mem) {
-			if strings.HasPrefix(messageLowercase, config.BotPrefix+"addfilter ") && (messageLowercase != (config.BotPrefix + "addfilter")) {
-
-				if m.Author.ID == config.BotID {
-					return
-				}
-
-				//Assigns the word to be filtered to the "word" variable
-				word := strings.Replace(messageLowercase, config.BotPrefix+"addfilter ", "", -1)
-
-				//Calls the function to write the new filter word to filters.json
-				misc.FiltersWrite(word)
-
-				if misc.FilterExists == false {
-
-					//Prints success
-					success := "`" + word + "` has been added to the filter list."
-					_, err = s.ChannelMessageSend(m.ChannelID, success)
-					if err != nil {
-
-						fmt.Println("Error: ", err)
-					}
-				} else {
-
-					//Prints failure
-					failure := "`" + word + "` is already on the filter list."
-					_, err = s.ChannelMessageSend(m.ChannelID, failure)
-					if err != nil {
-
-						fmt.Println("Error: ", err)
-					}
-				}
-
-			} else if messageLowercase == config.BotPrefix+"filters" {
-				if m.Author.ID == config.BotID {
-					return
-				}
-
-				//Reads all the filters from filters.json
-				misc.FiltersRead()
-
-				//Creates a string variable to store the filters in for showing later
-				var filters string
-
-				//Iterates through all the filters if they exist and adds them to the filters string
-				if len(misc.ReadFilters) != 0 {
-					for i := 0; i < len(misc.ReadFilters); i++ {
-
-						if filters == "" {
-
-							filters = "`" + misc.ReadFilters[i].Filter + "`"
-						} else {
-
-							filters = filters + "\n `" + misc.ReadFilters[i].Filter + "`"
-						}
-					}
-				}
-
-				//If there are no filtered words give error, else print the filtered words.
-				if len(misc.ReadFilters) == 0 {
-
-					failure := "Error. There are no filters."
-					_, err = s.ChannelMessageSend(m.ChannelID, failure)
-					if err != nil {
-
-						fmt.Println("Error: ", err)
-					}
-				} else {
-
-					_, err = s.ChannelMessageSend(m.ChannelID, filters)
-					if err != nil {
-
-						fmt.Println("Error: ", err)
-					}
-				}
-
-			} else if strings.HasPrefix(messageLowercase, config.BotPrefix+"removefilter ") && (messageLowercase != (config.BotPrefix + "removefilter")) {
-
-				if m.Author.ID == config.BotID {
-					return
-				}
-
-				//Reads all the filters from filters.json
-				misc.FiltersRead()
-
-				//Assigns the word to be filtered to the "word" variable
-				word := strings.Replace(messageLowercase, config.BotPrefix+"removefilter ", "", -1)
-
-				//Checks if there's any filters, else prints success.
-				if len(misc.ReadFilters) == 0 {
-
-					failure := "Error. There are no filters."
-
-					_, err = s.ChannelMessageSend(m.ChannelID, failure)
-					if err != nil {
-
-						fmt.Println("Error: ", err)
-
-					}
-				} else {
-
-					//Calls the function to remove the word from filters.json
-					misc.FiltersRemove(word)
-
-					//Prints success
-					success := "`" + word + "` has been removed from the filter list."
-					_, err = s.ChannelMessageSend(m.ChannelID, success)
-					if err != nil {
-
-						fmt.Println("Error: ", err)
-					}
-				}
-			}
-		}
-	}
-
 	//Checks if user is mod or bot before checking the message
 	if misc.HasPermissions(mem) == false {
-		if m.Author.ID == config.BotID {
-			return
-		}
 
 		//Initializes a string in which if a word is removed it'll be stored for printing
 		//Also initializes a bool which'll be used to measure against in printing
@@ -172,9 +54,6 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			removals      string
 			badWordExists bool
 		)
-
-		//Reads all the filters from filters.json
-		misc.FiltersRead()
 
 		//Iterates through all the filters to see if the message contained a filtered word
 		for i := 0; i < len(misc.ReadFilters); i++ {
@@ -228,6 +107,121 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			_, err = s.ChannelMessageSend(dm.ID, success)
 			if err != nil {
 				l.Println("Error: ", err)
+			}
+		}
+	}
+}
+
+// Adds a filter to storage
+func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	// Makes sure it's not just the start of the command
+	if m.Content != config.BotPrefix+"addfilter" && m.Content != config.BotPrefix + "adfilter"{
+
+		//Puts the command to lowercase
+		messageLowercase := strings.ToLower(m.Content)
+
+		//Assigns the word to be filtered to the "word" variable
+		word := strings.Replace(messageLowercase, config.BotPrefix+"addfilter ", "", -1)
+
+		//Calls the function to write the new filter word to filters.json
+		misc.FiltersWrite(word)
+
+		if misc.FilterExists == false {
+
+			//Prints success
+			success := "`" + word + "` has been added to the filter list."
+			_, err := s.ChannelMessageSend(m.ChannelID, success)
+			if err != nil {
+
+				fmt.Println("Error: ", err)
+			}
+		} else {
+
+			//Prints failure
+			failure := "`" + word + "` is already on the filter list."
+			_, err := s.ChannelMessageSend(m.ChannelID, failure)
+			if err != nil {
+
+				fmt.Println("Error: ", err)
+			}
+		}
+	}
+}
+
+// Print Filters from memory in chat
+func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	//Creates a string variable to store the filters in for showing later
+	var filters string
+
+	//Iterates through all the filters if they exist and adds them to the filters string
+	if len(misc.ReadFilters) != 0 {
+		for i := 0; i < len(misc.ReadFilters); i++ {
+
+			if filters == "" {
+
+				filters = "`" + misc.ReadFilters[i].Filter + "`"
+			} else {
+
+				filters = filters + "\n `" + misc.ReadFilters[i].Filter + "`"
+			}
+		}
+	}
+
+	//If there are no filtered words give error, else print the filtered words.
+	if len(misc.ReadFilters) == 0 {
+
+		failure := "Error: There are no filters."
+		_, err := s.ChannelMessageSend(m.ChannelID, failure)
+		if err != nil {
+
+			fmt.Println("Error:", err)
+		}
+	} else {
+
+		_, err := s.ChannelMessageSend(m.ChannelID, filters)
+		if err != nil {
+
+			fmt.Println("Error:", err)
+		}
+	}
+}
+
+// Removes a filter from storage and memory
+func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	// Makes sure it's not just the start of the command
+	if m.Content != config.BotPrefix+"removefilter" && m.Content != config.BotPrefix+"removfilter" {
+
+		//Puts the command to lowercase
+		messageLowercase := strings.ToLower(m.Content)
+
+		//Assigns the word to be filtered to the "word" variable
+		word := strings.Replace(messageLowercase, config.BotPrefix+"removefilter ", "", -1)
+
+		//Checks if there's any filters, else prints success.
+		if len(misc.ReadFilters) == 0 {
+
+			failure := "Error. There are no filters."
+
+			_, err := s.ChannelMessageSend(m.ChannelID, failure)
+			if err != nil {
+
+				fmt.Println("Error:", err)
+
+			}
+		} else {
+
+			//Calls the function to remove the word from filters.json
+			misc.FiltersRemove(word)
+
+			//Prints success
+			success := "`" + word + "` has been removed from the filter list."
+			_, err := s.ChannelMessageSend(m.ChannelID, success)
+			if err != nil {
+
+				fmt.Println("Error:", err)
 			}
 		}
 	}
@@ -324,4 +318,29 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.MessageCreate, removals, now
 	//Send embed in bot-log channel
 	_, err := s.ChannelMessageSendEmbed(config.BotLogID, &embedMess)
 	return err
+}
+
+// Adds filter commands to the commandHandler
+func init() {
+	add(&command{
+		execute:  viewFiltersCommand,
+		trigger:  "filters",
+		aliases:  []string{"filter"},
+		desc:     "Prints all current filters.",
+		elevated: true,
+	})
+	add(&command{
+		execute:  addFilterCommand,
+		trigger:  "addfilter",
+		aliases:  []string{"adfilter"},
+		desc:     "Adds a string to the filters list.",
+		elevated: true,
+	})
+	add(&command{
+		execute:  removeFilterCommand,
+		trigger:  "removefilter",
+		aliases:  []string{"removfilter"},
+		desc:     "Removes a string from the filters list.",
+		elevated: true,
+	})
 }

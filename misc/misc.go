@@ -3,6 +3,7 @@ package misc
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bwmarrin/discordgo"
 	"io/ioutil"
 	"strings"
 	"sync"
@@ -11,8 +12,6 @@ import (
 	"regexp"
 	"strconv"
 	"time"
-
-	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/config"
 )
@@ -167,27 +166,18 @@ func (c *UserAgentTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 	return c.RoundTripper.RoundTrip(r)
 }
 
-//Writes string "word" to filters.json
+// Adds string "word" to filters.json and memory
 func FiltersWrite(word string) {
 
 	//Creates a struct in which we'll keep the word
 	wordStruct := FilterStruct{word}
 
-	//Reads all the filtered words from the filters.json file and puts them in filtersByte as bytes
-	filtersByte, _ := ioutil.ReadFile("database/filters.json")
-
-	//Makes a new variable in which we'll keep all of the filtered words
-	var filtersWrite []FilterStruct
-
-	//Takes the filtered words from filter.json from byte and puts them into the FilterStruct struct slice
-	json.Unmarshal(filtersByte, &filtersWrite)
-
 	FilterExists = false
 
 	//Appends the new filtered word to a slice of all of the old ones if it doesn't exist
-	if len(filtersWrite) != 0 {
-		for i := 0; i < len(filtersWrite); i++ {
-			if filtersWrite[i].Filter == wordStruct.Filter {
+	if len(ReadFilters) != 0 {
+		for i := 0; i < len(ReadFilters); i++ {
+			if ReadFilters[i].Filter == wordStruct.Filter {
 
 				FilterExists = true
 				break
@@ -197,11 +187,11 @@ func FiltersWrite(word string) {
 
 	if FilterExists == false {
 
-		filtersWrite = append(filtersWrite, wordStruct)
+		ReadFilters = append(ReadFilters, wordStruct)
 	}
 
 	//Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, err := json.MarshalIndent(filtersWrite, "", "    ")
+	MarshaledStruct, err := json.MarshalIndent(ReadFilters, "", "    ")
 	if err != nil {
 
 		fmt.Println(err)
@@ -215,7 +205,7 @@ func FiltersWrite(word string) {
 	}
 }
 
-//Writes string "word" to filters.json
+// Removes string "word" from filters.json and memory
 func FiltersRemove(word string) {
 
 	//Puts the filtered word into lowercase
@@ -224,34 +214,25 @@ func FiltersRemove(word string) {
 	//Creates a struct in which we'll keep the word
 	wordStruct := FilterStruct{word}
 
-	//Reads all the filtered words from the filters.json file and puts them in filtersByte as bytes
-	filtersByte, _ := ioutil.ReadFile("database/filters.json")
-
-	//Makes a new variable in which we'll keep all of the filtered words
-	var filtersWrite []FilterStruct
-
-	//Takes the filtered words from filter.json from byte and puts them into the FilterStruct struct slice
-	json.Unmarshal(filtersByte, &filtersWrite)
-
 	filterExists := false
 
 	//Deletes the filtered word if it finds it exists
-	if len(filtersWrite) != 0 {
-		for i := 0; i < len(filtersWrite); i++ {
-			if filtersWrite[i].Filter == wordStruct.Filter {
+	if len(ReadFilters) != 0 {
+		for i := 0; i < len(ReadFilters); i++ {
+			if ReadFilters[i].Filter == wordStruct.Filter {
 
 				filterExists = true
 
 				if filterExists == true {
 
-					filtersWrite = append(filtersWrite[:i], filtersWrite[i+1:]...)
+					ReadFilters = append(ReadFilters[:i], ReadFilters[i+1:]...)
 				}
 			}
 		}
 	}
 
 	//Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, err := json.Marshal(filtersWrite)
+	MarshaledStruct, err := json.Marshal(ReadFilters)
 	if err != nil {
 
 		fmt.Println(err)
@@ -265,7 +246,7 @@ func FiltersRemove(word string) {
 	}
 }
 
-//Reads filters from filters.json
+// Reads filters from filters.json
 func FiltersRead() {
 
 	//Reads all the filtered words from the filters.json file and puts them in filtersByte as bytes
@@ -275,7 +256,7 @@ func FiltersRead() {
 	json.Unmarshal(filtersByte, &ReadFilters)
 }
 
-//Writes spoilerRoles map to spoilerRoles.json
+// Writes spoilerRoles map to spoilerRoles.json
 func SpoilerRolesWrite(SpoilerMap map[string]*discordgo.Role) {
 
 	//Reads all the spoilerRoles the spoilerRoles.json file and puts them in spoilerRolesByte as bytes

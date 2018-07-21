@@ -37,6 +37,9 @@ func Start() {
 	//Reads spoiler roles database at bot start
 	misc.SpoilerRolesRead()
 
+	// Reads filters.json from storage at bot start
+	misc.FiltersRead()
+
 	//Adds Ping Command (Converted)
 	// goBot.AddHandler(commands.PingHandler)
 
