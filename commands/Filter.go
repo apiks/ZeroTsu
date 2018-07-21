@@ -41,74 +41,107 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 	}
+	//Checks if user is mod or bot before checking the message
+	if misc.HasPermissions(mem) == true {
+
+		return
+	}
 
 	//Puts the command to lowercase
 	messageLowercase := strings.ToLower(m.Content)
 
-	//Checks if user is mod or bot before checking the message
-	if misc.HasPermissions(mem) == false {
+	// Initializes a string in which if a word is removed it'll be stored for printing
+	// Initializes a slice in which all the bad words will be kept
+	// Also initializes a bool which'll be used to measure against in printing
+	var (
+		removals      string
+		badWordsSlice []string
+		badWordExists bool
+	)
 
-		//Initializes a string in which if a word is removed it'll be stored for printing
-		//Also initializes a bool which'll be used to measure against in printing
-		var (
-			removals      string
-			badWordExists bool
+	// Does isFiltered function and assigns
+	badWordExists, badWordsSlice = isFiltered(m.Message)
+
+	// If function returns true handle the filtered message
+	if badWordExists {
+
+		//Deletes the message that was sent if it has a filtered word.
+		s.ChannelMessageDelete(m.ChannelID, m.ID)
+
+		// Iterates through all the bad words
+		for i := 0; i < len(badWordsSlice); i++ {
+
+			//Stores the removals for printing
+			if len(removals) == 0 {
+
+				removals = badWordsSlice[0]
+			} else {
+
+				removals = removals + ", " + badWordsSlice[i]
+			}
+		}
+
+		//Stores time of removal
+		t := time.Now()
+		z, _ := t.Zone()
+		now := t.Format("2006-01-02 15:04:05") + " " + z
+
+		//Sends embed mod message
+		err := FilterEmbed(s, m, removals, now, m.ChannelID)
+		if err != nil {
+			l.Println(err)
+		}
+
+		//Assigns success print string for user
+		success := "Your message `" + messageLowercase + "` was removed for using: _" + removals + "_ \n" +
+			"Using such words makes me disappointed in you, darling."
+
+		//Creates a DM connection and assigns it to dm
+		dm, err := s.UserChannelCreate(m.Author.ID)
+		if err != nil {
+			l.Println("Error: ", err)
+		}
+
+		//Sends a message to that DM connection
+		_, err = s.ChannelMessageSend(dm.ID, success)
+		if err != nil {
+			l.Println("Error: ", err)
+		}
+	}
+}
+
+// Checks if the message is supposed to be filtered
+func isFiltered(m *discordgo.Message) (bool, []string){
+
+	// Initialize all needed variables
+	var (
+		filtered bool
+		badWordsSlice []string
 		)
 
-		//Iterates through all the filters to see if the message contained a filtered word
-		for i := 0; i < len(misc.ReadFilters); i++ {
+	//Puts the command to lowercase
+	messageLowercase := strings.ToLower(m.Content)
 
-			re := regexp.MustCompile(misc.ReadFilters[i].Filter)
-			badWordCheck := re.FindAllString(messageLowercase, -1)
+	//Iterates through all the filters to see if the message contained a filtered word
+	for i := 0; i < len(misc.ReadFilters); i++ {
 
-			if badWordCheck != nil {
+		re := regexp.MustCompile(misc.ReadFilters[i].Filter)
+		badWordCheck := re.FindAllString(messageLowercase, -1)
 
-				//Bool value for outside of loop to print the removals
-				badWordExists = true
+		if badWordCheck != nil {
 
-				//Deletes the message that was sent if it has a filtered word.
-				s.ChannelMessageDelete(m.ChannelID, m.ID)
-
-				//Stores the removals for printing
-				if len(removals) == 0 {
-
-					removals = badWordCheck[0]
-				} else {
-
-					removals = removals + ", " + badWordCheck[0]
-				}
-			}
+			badWordsSlice = append(badWordsSlice, badWordCheck[0])
+			filtered = true
 		}
+	}
 
-		if badWordExists == true {
+	// Returns true if it's a filtered message and returns all the filtered words. Else return false and nil
+	if filtered == true {
 
-			//Stores time of removal
-			t := time.Now()
-			z, _ := t.Zone()
-			now := t.Format("2006-01-02 15:04:05") + " " + z
+		return true, badWordsSlice
+	} else {
 
-			//Sends embed mod message
-			err := FilterEmbed(s, m, removals, now, m.ChannelID)
-			if err != nil {
-				l.Println(err)
-			}
-
-			//Assigns success print string for user
-			success := "Your message `" + messageLowercase + "` was removed for using: _" + removals + "_ \n" +
-				"Using such words makes me disappointed in you, darling."
-
-			//Creates a DM connection and assigns it to dm
-			dm, err := s.UserChannelCreate(m.Author.ID)
-			if err != nil {
-				l.Println("Error: ", err)
-			}
-
-			//Sends a message to that DM connection
-			_, err = s.ChannelMessageSend(dm.ID, success)
-			if err != nil {
-				l.Println("Error: ", err)
-			}
-		}
+		return false, nil
 	}
 }
 
@@ -139,7 +172,7 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 		} else {
 
 			//Prints failure
-			failure := "`" + word + "` is already on the filter list."
+			failure := "Error: `" + word + "` is already on the filter list."
 			_, err := s.ChannelMessageSend(m.ChannelID, failure)
 			if err != nil {
 
@@ -154,6 +187,9 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	//Creates a string variable to store the filters in for showing later
 	var filters string
+
+	// Reads filters to solve memory-type visual glitches
+	misc.FiltersRead()
 
 	//Iterates through all the filters if they exist and adds them to the filters string
 	if len(misc.ReadFilters) != 0 {
