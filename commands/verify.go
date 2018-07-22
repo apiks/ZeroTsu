@@ -7,8 +7,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"ZeroTsu/misc"
-	"ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/misc"
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
