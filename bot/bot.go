@@ -40,6 +40,9 @@ func Start() {
 	// Reads filters.json from storage at bot start
 	misc.FiltersRead()
 
+	// Reads memberInfo.json from storage at bot start
+	misc.MemberInfoRead()
+
 	//Adds Ping Command (Converted)
 	// goBot.AddHandler(commands.PingHandler)
 

@@ -515,8 +515,12 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 						}
 					}
 
-					// Assigns role
-					s.GuildMemberRoleAdd(config.ServerID, UserCookieMap[key].ID, roleID)
+					// Assigns verified role to user
+					err = s.GuildMemberRoleAdd(config.ServerID, UserCookieMap[key].ID, roleID)
+					if err != nil {
+
+						fmt.Println("Error:", err)
+					}
 
 					if UserCookieMap[key].AltCheck == false {
 
@@ -560,8 +564,12 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 					}
 				}
 
-				// Assigns role
-				s.GuildMemberRoleAdd(config.ServerID, u.User.ID, roleID)
+				// Assigns verified role to user
+				err = s.GuildMemberRoleAdd(config.ServerID, u.User.ID, roleID)
+				if err != nil {
+
+					fmt.Println("Error:", err)
+				}
 
 				CheckAltAccount(s, u.User.ID)
 			}
