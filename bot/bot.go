@@ -76,9 +76,6 @@ func Start() {
 	//React Filter
 	goBot.AddHandler(commands.FilterReacts)
 
-	//Say Command (Converted)
-	//goBot.AddHandler(commands.SayHandler)
-
 	//Deletes non-whitelisted attachments
 	goBot.AddHandler(commands.MessageAttachmentsHandler)
 
@@ -87,9 +84,6 @@ func Start() {
 
 	//Channel Lock/Unlock Command
 	goBot.AddHandler(commands.ChannelLockHandler)
-
-	//About Command (Converted)
-	// goBot.AddHandler(commands.AboutHandler)
 
 	// Abstraction of a command handler
 	goBot.AddHandler(commands.HandleCommand)
@@ -109,15 +103,6 @@ func Start() {
 
 	//Unban Command
 	//goBot.AddHandler(commands.UnbanHandler)
-
-	//AddWarning Command
-	//goBot.AddHandler(commands.AddWarningHandler)
-
-	//IssueWarning Command
-	//goBot.AddHandler(commands.IssueWarningHandler)
-
-	//Converter
-	//goBot.AddHandler(commands.ConverterHandler)
 
 	//React Channel Set Command
 	goBot.AddHandler(commands.SetReactChannelHandler)
