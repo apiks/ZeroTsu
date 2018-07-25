@@ -79,8 +79,8 @@ func Start() {
 	//Deletes non-whitelisted attachments
 	goBot.AddHandler(commands.MessageAttachmentsHandler)
 
-	//Avatar Command
-	goBot.AddHandler(commands.AvatarHandler)
+	//Avatar Command (Converted)
+	//goBot.AddHandler(commands.AvatarHandler)
 
 	//Channel Lock/Unlock Command
 	goBot.AddHandler(commands.ChannelLockHandler)

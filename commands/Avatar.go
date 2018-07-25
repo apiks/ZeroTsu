@@ -6,61 +6,50 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/misc"
 )
 
-//Sends a user avatar as a message
-func AvatarHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	if strings.HasPrefix(m.Content, config.BotPrefix) {
+	// Puts entire message in lowercase
+	messageLowercase := strings.ToLower(m.Content)
 
-		//Puts the command to lowercase
-		messageLowercase := strings.ToLower(m.Content)
+	// Separates every word in the message and puts it in a slice
+	commandStrings := strings.Split(messageLowercase, " ")
 
-		//Checks if BotPrefix + avatar was used
-		if strings.HasPrefix(messageLowercase, config.BotPrefix+"avatar ") && (messageLowercase != (config.BotPrefix + "avatar")) {
+	// Checks if there's enough parameters (command, user and index. Else prints error message
+	if len(commandStrings) != 2 {
 
-			if m.Author.ID == config.BotID {
-				return
-			}
-
-			//Pulls the user from strings after "avatar "
-			user := strings.Replace(messageLowercase, config.BotPrefix+"avatar ", "", 1)
-
-			//Checks if it's an @ mention or just user ID. If the former it removes fluff
-			if strings.Contains(user, "@") {
-
-				//Removes "<@", "!" and ">" which is what @ mention returns above
-				user = strings.Replace(user, "<@", "", -1)
-				user = strings.Replace(user, ">", "", -1)
-				user = strings.Replace(user, "!", "", -1)
-
-			}
-
-			//Fetches user from server
-			mem, err := s.User(user)
-			if err != nil {
-
-				fmt.Println("Error: ", err)
-
-				//Sends a message to the channel with error message
-				_, err = s.ChannelMessageSend(m.ChannelID, user+" is not a valid user. Use `@user` or `user ID`.")
-				if err != nil {
-
-					fmt.Println("Error: ", err)
-				}
-			} else if err == nil {
-
-				//Saves the avatar URL to avatar variable with image size 256 (how big image is on screen)
-				avatar := mem.AvatarURL("256")
-
-				//Sends a message to the channel with the avatar URL
-				_, err = s.ChannelMessageSend(m.ChannelID, avatar)
-				if err != nil {
-
-					fmt.Println("Error: ", err)
-				}
-			}
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong amount of parameters.")
+		if err != nil {
+			fmt.Println("Error:", err)
 		}
+		return
 	}
+
+	// Pulls userID from 2nd parameter of commandStrings, else print error
+	userID := misc.GetUserID(s, m, commandStrings)
+
+	// Fetches user from server
+	mem, err := s.User(userID)
+	if err != nil {
+		return
+	}
+
+	// Saves the avatar URL to avatar variable with image size 256
+	avatar := mem.AvatarURL("256")
+
+	_, err = s.ChannelMessageSend(m.ChannelID, avatar)
+	if err != nil {
+
+		fmt.Println("Error:", err)
+	}
+}
+
+func init() {
+	add(&command{
+		execute: avatarCommand,
+		trigger: "avatar",
+		desc:    "Show user avatar.",
+	})
 }
