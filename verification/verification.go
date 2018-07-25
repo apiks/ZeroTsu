@@ -191,7 +191,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 			var temp User
 			misc.MapMutex.Lock()
 			temp = *UserCookieMap[cookieValue.Value]
-			temp.Error = "Error: Wrong url. Please use the link provided by the bot."
+			temp.UsernameDiscrim = ""
 			UserCookieMap[cookieValue.Value] = &temp
 			misc.MapMutex.Unlock()
 
@@ -515,12 +515,8 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 						}
 					}
 
-					// Assigns verified role to user
-					err = s.GuildMemberRoleAdd(config.ServerID, UserCookieMap[key].ID, roleID)
-					if err != nil {
-
-						fmt.Println("Error:", err)
-					}
+					// Assigns role
+					s.GuildMemberRoleAdd(config.ServerID, UserCookieMap[key].ID, roleID)
 
 					if UserCookieMap[key].AltCheck == false {
 
@@ -564,12 +560,8 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 					}
 				}
 
-				// Assigns verified role to user
-				err = s.GuildMemberRoleAdd(config.ServerID, u.User.ID, roleID)
-				if err != nil {
-
-					fmt.Println("Error:", err)
-				}
+				// Assigns role
+				s.GuildMemberRoleAdd(config.ServerID, u.User.ID, roleID)
 
 				CheckAltAccount(s, u.User.ID)
 			}
