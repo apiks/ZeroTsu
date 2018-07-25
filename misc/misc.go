@@ -3,7 +3,6 @@ package misc
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"io/ioutil"
 	"strings"
 	"sync"
@@ -12,6 +11,8 @@ import (
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/config"
 )
@@ -641,4 +642,30 @@ func ResolveTimeFromString(given string) (ret time.Time, perma bool) {
 		perma = true
 	}
 	return
+}
+
+func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string) string {
+
+	// Pulls the userID from the second parameter
+	userID := messageSlice[1]
+
+	// Trims fluff if it was a mention. Otherwise check if it's a correct user ID
+	if strings.Contains(messageSlice[1], "<@") {
+
+		userID = strings.TrimPrefix(userID, "<@")
+		userID = strings.TrimSuffix(userID, ">")
+	} else {
+
+		_, err := strconv.ParseInt(userID, 10, 64)
+		if len(userID) != 18 || err != nil {
+
+			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid user ID.")
+			if err != nil {
+				fmt.Println("Error:", err)
+			}
+			return ""
+		}
+	}
+
+	return userID
 }

@@ -4,6 +4,7 @@ import (
 	"strings"
 	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/bwmarrin/discordgo"
 
@@ -172,10 +173,16 @@ func WhoisHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 							if len(warnings) == 0 {
 
-								warnings = user.Warnings[i]
+								// Converts index to string and appends warning
+								iStr := strconv.Itoa(i+1)
+								warnings = user.Warnings[i]  + "[" + iStr + "]"
+
 							} else {
 
-								warnings = warnings + ", " + user.Warnings[i]
+								// Converts index to string and appends new warning to old ones
+								iStr := strconv.Itoa(i+1)
+								warnings = warnings + ", " + user.Warnings[i]  + "[" + iStr + "]"
+
 							}
 						}
 					} else {
@@ -189,10 +196,16 @@ func WhoisHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 							if len(kicks) == 0 {
 
-								kicks = user.Kicks[i]
+								// Converts index to string and appends kick
+								iStr := strconv.Itoa(i+1)
+								kicks = user.Kicks[i]  + "[" + iStr + "]"
+
 							} else {
 
-								kicks = kicks + ", " + user.Kicks[i]
+								// Converts index to string and appends new kick to old ones
+								iStr := strconv.Itoa(i+1)
+								kicks = kicks + ", " + user.Kicks[i]  + "[" + iStr + "]"
+
 							}
 						}
 					} else {
@@ -206,10 +219,15 @@ func WhoisHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 							if len(bans) == 0 {
 
-								bans = user.Bans[i]
+								// Converts index to string and appends ban
+								iStr := strconv.Itoa(i+1)
+								bans = user.Bans[i] + "[" + iStr + "]"
+
 							} else {
 
-								bans = bans + ", " + user.Bans[i]
+								// Converts index to string and appends new ban to old ones
+								iStr := strconv.Itoa(i+1)
+								bans = bans + ", " + user.Bans[i] + "[" + iStr + "]"
 							}
 						}
 					} else {
@@ -227,12 +245,20 @@ func WhoisHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 					misc.MapMutex.Unlock()
 
 					// Sets whois message
-					message := "**User:** " + mem.Mention() + "\n\n**Past Usernames:** " + pastUsernames +
+					message := "**User:** " + user.Username + "#" + user.Discrim + "\n\n**Past Usernames:** " + pastUsernames +
 						"\n\n**Past Nicknames:** " + pastNicknames + "\n\n**Warnings:** " + warnings +
 						"\n\n**Kicks:** " + kicks + "\n\n**Bans:** " + bans +
 						"\n\n**Join Date:** " + user.JoinDate + "\n\n**Verification Date:** " +
-						user.VerifiedDate + "\n\n**Reddit Account:** " +
-						"<https://reddit.com/u/" + user.RedditUsername + ">"
+						user.VerifiedDate
+
+						// Sets reddit Username if it exists
+						if user.RedditUsername != "" {
+
+							message = message + "\n\n**Reddit Account:** " + "<https://reddit.com/u/" + user.RedditUsername + ">"
+						} else {
+
+							message = message + "\n\n**Reddit Account:** " + "None"
+						}
 
 					// Alt check
 					alts := CheckAltAccountWhois(mem.ID)
@@ -329,7 +355,8 @@ func CheckAltAccountWhois(id string) []string {
 	for userOne := range misc.MemberInfoMap {
 
 		// Checks if the current user has the same reddit username as id string user
-		if misc.MemberInfoMap[userOne].RedditUsername == misc.MemberInfoMap[id].RedditUsername {
+		if misc.MemberInfoMap[userOne].RedditUsername == misc.MemberInfoMap[id].RedditUsername &&
+			misc.MemberInfoMap[userOne].RedditUsername != "" && misc.MemberInfoMap[id].RedditUsername != "" {
 
 			alts = append(alts, misc.MemberInfoMap[userOne].ID)
 		}

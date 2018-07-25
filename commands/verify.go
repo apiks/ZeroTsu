@@ -3,7 +3,6 @@ package commands
 import (
 	"strings"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -30,26 +29,8 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Pulls the userID from the second parameter
-	userID := commandStrings[1]
-
-	// Trims fluff if it was a mention. Otherwise check if it's a correct user ID
-	if strings.Contains(commandStrings[1], "<@") {
-
-		userID = strings.TrimPrefix(userID, "<@")
-		userID = strings.TrimSuffix(userID, ">")
-	} else {
-
-		_, err := strconv.ParseInt(userID, 10, 64)
-		if len(userID) != 18 || err != nil {
-
-			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid user ID.")
-			if err != nil {
-				fmt.Println("Error:", err)
-			}
-			return
-		}
-	}
+	// Pulls userID from 2nd parameter of commandStrings, else print error
+	userID := misc.GetUserID(s, m, commandStrings)
 
 	//Pulls the reddit username from the third parameter
 	redditUsername := commandStrings[2]
@@ -71,6 +52,15 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 			fmt.Println(err.Error())
 		}
 	}
+	if userMem == nil {
+
+		// Prints error
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in the server.")
+		if err != nil {
+			fmt.Println("Error:", err)
+		}
+		return
+	}
 
 	// Add reddit username in map
 	if misc.MemberInfoMap[userID] != nil {
@@ -90,7 +80,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.MemberInfoWrite(misc.MemberInfoMap)
 
 		// Prints success
-		_, err := s.ChannelMessageSend(m.ChannelID, "Success. Verified "+userMem.User.Mention()+" with "+redditUsername)
+		_, err := s.ChannelMessageSend(m.ChannelID, "Success. Verified "+userMem.User.Username + "#" + userMem.User.Discriminator +" with "+redditUsername)
 		if err != nil {
 			fmt.Println("Error:", err)
 		}
