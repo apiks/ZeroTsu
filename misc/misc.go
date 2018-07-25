@@ -657,7 +657,7 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 	} else {
 
 		_, err := strconv.ParseInt(userID, 10, 64)
-		if len(userID) != 18 || err != nil {
+		if len(userID) < 17 || err != nil {
 
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid user.")
 			if err != nil {
