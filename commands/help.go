@@ -32,8 +32,8 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 			"`" + config.BotPrefix + "avatar [@mention or user ID]` | Returns user avatar URL and image embed. \n " +
 			"`" + config.BotPrefix + "create [name] [airing or general; defaults to opt-in] [category ID] [description; must have at least one other non-name parameter]` | Creates a channel and role of the same name. Do not start name with hyphens. \n " +
 			"`" + config.BotPrefix + "help` | Lists commands and their usage. \n " +
-			"`" + config.BotPrefix + "joinchannel [channel name]` | Joins an opt-in channel. `" + config.BotPrefix + "join` works too. \n " +
-			"`" + config.BotPrefix + "leavechannel [channel name]` | Leaves an opt-in channel. `" + config.BotPrefix + "leave` works too. \n " +
+			"`" + config.BotPrefix + "join [channel name]` | Joins an opt-in channel. `" + config.BotPrefix + "joinchannel` works too. \n " +
+			"`" + config.BotPrefix + "leave [channel name]` | Leaves an opt-in channel. `" + config.BotPrefix + "leavechannel` works too. \n " +
 			"`" + config.BotPrefix + "lock` | Locks a non-mod channel. Takes a few seconds only if the channel has no custom mod permissions set. \n " +
 			"`" + config.BotPrefix + "unlock` | Unlocks a non-mod channel. \n " +
 			"`" + config.BotPrefix + "ping` | Returns Pong message. \n " +
@@ -69,8 +69,8 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 		successUser := "`" + config.BotPrefix + "about` | Shows information about me. \n " +
 			"`" + config.BotPrefix + "avatar [@mention or user ID]` | Returns user avatar URL and image embed. \n " +
 			"`" + config.BotPrefix + "help` | Lists commands and their usage. \n " +
-			"`" + config.BotPrefix + "joinchannel [channel name]` | Joins an opt-in channel. `" + config.BotPrefix + "join` works too. \n " +
-			"`" + config.BotPrefix + "leavechannel [channel name]` | Leaves an opt-in channel. `" + config.BotPrefix + "leave` works too. \n "
+			"`" + config.BotPrefix + "join [channel name]` | Joins an opt-in channel. `" + config.BotPrefix + "joinchannel` works too. \n " +
+			"`" + config.BotPrefix + "leave [channel name]` | Leaves an opt-in channel. `" + config.BotPrefix + "leavechannel` works too. \n "
 
 		_, err = s.ChannelMessageSend(m.ChannelID, successUser)
 		if err != nil {

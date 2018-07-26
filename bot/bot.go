@@ -58,9 +58,6 @@ func Start() {
 	//Sorts spoiler roles alphabetically between opt-in dummy roles
 	goBot.AddHandler(commands.SortRolesHandler)
 
-	//Join Channel Command
-	goBot.AddHandler(commands.JoinChannelHandler)
-
 	//Leave Channel Command
 	goBot.AddHandler(commands.LeaveChannelHandler)
 

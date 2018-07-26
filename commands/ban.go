@@ -165,44 +165,44 @@ func BanEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, r
 		embedMess      discordgo.MessageEmbed
 		embedThumbnail discordgo.MessageEmbedThumbnail
 
-		//Embed slice and its fields
+		// Embed slice and its fields
 		embedField         []*discordgo.MessageEmbedField
 		embedFieldUserID   discordgo.MessageEmbedField
 		embedFieldReason   discordgo.MessageEmbedField
 		embedFieldDuration discordgo.MessageEmbedField
 	)
 
-	//Saves user avatar as thumbnail
+	// Saves user avatar as thumbnail
 	embedThumbnail.URL = mem.AvatarURL("128")
 
-	//Sets field titles
+	// Sets field titles
 	embedFieldUserID.Name = "User ID:"
 	embedFieldReason.Name = "Reason:"
 	embedFieldDuration.Name = "Duration:"
 
-	//Sets field content
+	// Sets field content
 	embedFieldUserID.Value = mem.ID
 	embedFieldReason.Value = reason
 	embedFieldDuration.Value = length
 
-	//Sets field inline
+	// Sets field inline
 	embedFieldUserID.Inline = true
 	embedFieldReason.Inline = true
 	embedFieldDuration.Inline = true
 
-	//Adds the two fields to embedField slice (because embedMess.Fields requires slice input)
+	// Adds the two fields to embedField slice (because embedMess.Fields requires slice input)
 	embedField = append(embedField, &embedFieldUserID)
 	embedField = append(embedField, &embedFieldDuration)
 	embedField = append(embedField, &embedFieldReason)
 
-	//Sets embed title and its description (which it uses the same way as a field)
+	// Sets embed title and its description (which it uses the same way as a field)
 	embedMess.Title = mem.Username + "#" + mem.Discriminator + " was banned by " + m.Author.Username
 
-	//Adds user thumbnail and the two other fields as well
+	// Adds user thumbnail and the two other fields as well
 	embedMess.Thumbnail = &embedThumbnail
 	embedMess.Fields = embedField
 
-	//Send embed in bot-log channel
+	// Send embed in bot-log channel
 	_, err := s.ChannelMessageSendEmbed(config.BotLogID, &embedMess)
 	if err != nil {
 
