@@ -9,8 +9,10 @@ import (
 
 	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
+	"strconv"
 )
 
+// Bans a user for a set period with a reason
 func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
@@ -18,6 +20,8 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		length string
 		reason string
 		success string
+
+		validSlice bool
 
 		temp    misc.BannedUsers
 	)
@@ -33,7 +37,27 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		reason = commandStrings[3]
 
 	} else {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error. Please use `"+config.BotPrefix+"ban [@user or userID] [time] [reason]` format. \n\n"+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Please use `"+config.BotPrefix+"ban [@user or userID] [time] [reason]` format. \n\n"+
+			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes. Use 0d for permanent.")
+		if err != nil {
+
+			fmt.Println("Error:", err)
+		}
+		return
+	}
+
+	// Checks if a number is contained in length. Fixes some cases of invalid length
+	lengthSlice := strings.Split(length, "")
+	for i := 0; i < len(lengthSlice); i++ {
+
+		if _, err := strconv.ParseInt(lengthSlice[i], 10, 64); err == nil {
+
+			validSlice = true
+			break
+		}
+	}
+	if validSlice == false {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid length. Please use `"+config.BotPrefix+"ban [@user or userID] [time] [reason]` format. \n\n"+
 			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes. Use 0d for permanent.")
 		if err != nil {
 

@@ -25,7 +25,6 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
 
 	// Pulls userID from 2nd parameter of commandStrings, else print error. Also pulls warning after it.
-	// Else print error
 	if len(commandStrings) == 3 {
 
 		userID := misc.GetUserID(s, m, commandStrings)
@@ -92,7 +91,6 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
 
 	// Pulls userID from 2nd parameter of commandStrings, else print error. Also pulls warning after it.
-	// Else print error
 	if len(commandStrings) == 3 {
 
 		userID := misc.GetUserID(s, m, commandStrings)
@@ -144,18 +142,13 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		fmt.Println("Error:", err)
 	}
 
-	// Creates a DM connection and assigns it to dm
+	// Sends message in DMs that they have been banned if able
 	dm, err := s.UserChannelCreate(userID)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		return
 	}
-	// Sends a message to that DM connection with warning
 	_, err = s.ChannelMessageSend(dm.ID, "You have been warned on " + guild.Name + ":\n`" + warning + "`")
-	if err != nil {
-
-		fmt.Println("Error:", err)
-	}
 
 	// Sends mod success message
 	_, err = s.ChannelMessageSend(m.ChannelID, userMem.Username + "#" + userMem.Discriminator + " was warned with: " + "`" + warning + "`")

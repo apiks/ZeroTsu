@@ -19,7 +19,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	// Pulls the user and and reason from message
-	commandStrings := strings.SplitN(m.Content, " ", 4)
+	commandStrings := strings.SplitN(m.Content, " ", 3)
 
 	// Checks if it has all parameters, else error
 	if len(commandStrings) == 3 {

@@ -61,13 +61,13 @@ func Start() {
 	//Listens for a role deletion
 	goBot.AddHandler(misc.ListenForDeletedRoleHandler)
 
-	//Phrase Filter
+	//Phrase Filter Handler
 	goBot.AddHandler(commands.FilterHandler)
 
-	//React Filter
+	//React Filter Handler
 	goBot.AddHandler(commands.FilterReactsHandler)
 
-	//Deletes non-whitelisted attachments
+	//Deletes non-whitelisted attachments Handler
 	goBot.AddHandler(commands.MessageAttachmentsHandler)
 
 	// Abstraction of a command handler
@@ -77,16 +77,10 @@ func Start() {
 	//goBot.AddHandler(misc.OnMemberJoinGuild)
 	//goBot.AddHandler(misc.OnMemberUpdate)
 
-	//Whois Command
-	//goBot.AddHandler(commands.WhoisHandler)
-
-	//Unban Command
-	//goBot.AddHandler(commands.UnbanHandler)
-
-	//React Channel Join Command
+	//React Channel Join Handler
 	goBot.AddHandler(commands.ReactJoinHandler)
 
-	//React Channel Remove Command
+	//React Channel Remove Handler
 	goBot.AddHandler(commands.ReactRemoveHandler)
 
 	//RSS Thread Check
