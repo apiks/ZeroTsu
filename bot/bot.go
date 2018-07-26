@@ -49,9 +49,6 @@ func Start() {
 	// Reads ongoing votes from VoteInfo.json
 	commands.VoteInfoRead()
 
-	//Adds Help Command
-	goBot.AddHandler(commands.HelpHandler)
-
 	//Updates Playing Status
 	goBot.AddHandler(misc.StatusReady)
 
