@@ -80,9 +80,6 @@ func Start() {
 	//Whois Command
 	//goBot.AddHandler(commands.WhoisHandler)
 
-	//Kick Command
-	//goBot.AddHandler(commands.KickHandler)
-
 	//Unban Command
 	//goBot.AddHandler(commands.UnbanHandler)
 

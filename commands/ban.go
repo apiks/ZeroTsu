@@ -22,7 +22,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		temp    misc.BannedUsers
 	)
 
-	// Pulls the user, time and reason from messageLowercase
+	// Pulls the user, time and reason from message
 	commandStrings := strings.SplitN(m.Content, " ", 4)
 
 	// Checks if it has all parameters, else error
@@ -42,21 +42,37 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Checks if user is in memberInfo. Prints error if not
-	if misc.MemberInfoMap == nil || misc.MemberInfoMap[userID] == nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in memberInfo. Please ban manually.")
-		if err != nil {
-
-			fmt.Println("Error:", err)
-		}
-	}
-
 	// Fetches user
 	mem, err := s.User(userID)
 	if err != nil {
 
 		fmt.Println("Error:", err)
 		return
+	}
+
+	// Checks if user is in memberInfo and handles them
+	if misc.MemberInfoMap == nil || misc.MemberInfoMap[userID] == nil {
+
+		// Pulls info on user
+		userMem, err := s.State.Member(config.ServerID, mem.ID)
+		if err != nil {
+			userMem, err = s.GuildMember(config.ServerID, mem.ID)
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+		}
+		// Checks if user is in server
+		if userMem == nil {
+			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server. Cannot ban user until they rejoin the server.")
+			if err != nil {
+
+				fmt.Println("Error:", err)
+			}
+			return
+		}
+
+		// Initializes user if he doesn't exist in memberInfo and is in server
+		misc.InitializeUser(userMem)
 	}
 
 	misc.MapMutex.Lock()
@@ -112,17 +128,9 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		success = "You have been banned from " + guildName + ": **" + reason + "**\n\nUntil: _Forever_ \n\nIf you would like to appeal, use modmail at <https://reddit.com/r/anime>"
 	}
 
-	// Sends success string to user in DMs
+	// Sends success string to user in DMs if able
 	dm, err := s.UserChannelCreate(userID)
-	if err != nil {
-
-		fmt.Println("Error: ", err)
-	}
 	_, err = s.ChannelMessageSend(dm.ID, success)
-	if err != nil {
-
-		fmt.Println("Error: ", err)
-	}
 
 	// Bans the user
 	err = s.GuildBanCreateWithReason(config.ServerID, mem.ID, reason, 0)
@@ -202,7 +210,7 @@ func BanEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, r
 	embedMess.Thumbnail = &embedThumbnail
 	embedMess.Fields = embedField
 
-	// Send embed in bot-log channel
+	// Sends embed in bot-log channel
 	_, err := s.ChannelMessageSendEmbed(config.BotLogID, &embedMess)
 	if err != nil {
 
