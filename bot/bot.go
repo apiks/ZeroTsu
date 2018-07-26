@@ -46,8 +46,8 @@ func Start() {
 	// Reads bannedUsers.json from storage at bot start
 	misc.BannedUsersRead()
 
-	//Adds Channel Creation Command
-	goBot.AddHandler(commands.CreateChannelHandler)
+	// Reads ongoing votes from VoteInfo.json
+	commands.VoteInfoRead()
 
 	//Adds Help Command
 	goBot.AddHandler(commands.HelpHandler)
@@ -60,9 +60,6 @@ func Start() {
 
 	//Sorts spoiler roles alphabetically between opt-in dummy roles
 	goBot.AddHandler(commands.SortRolesHandler)
-
-	//Sorts a category alphabetically
-	goBot.AddHandler(commands.SortCategoryHandler)
 
 	//Join Channel Command
 	goBot.AddHandler(commands.JoinChannelHandler)
@@ -78,9 +75,6 @@ func Start() {
 
 	//Deletes non-whitelisted attachments
 	goBot.AddHandler(commands.MessageAttachmentsHandler)
-
-	//Channel Lock/Unlock Command (Converted)
-	//goBot.AddHandler(commands.ChannelLockHandler)
 
 	// Abstraction of a command handler
 	goBot.AddHandler(commands.HandleCommand)
@@ -118,9 +112,6 @@ func Start() {
 
 	//RSS Thread Check
 	goBot.AddHandler(misc.RssThreadReady)
-
-	//Channel Vote Command
-	goBot.AddHandler(commands.ChannelVoteHandler)
 
 	//Channel Vote Timer
 	goBot.AddHandler(commands.ChannelVoteTimer)

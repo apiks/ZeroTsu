@@ -22,9 +22,6 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		//Saves current time
 		t := time.Now()
 
-		//Reads bannedUsers.json
-		BannedUsersRead()
-
 		//Goes through bannedUsers.json if it's not empty and unbans if needed
 		if BannedUsersSlice != nil {
 			for i := 0; i < len(BannedUsersSlice); i++ {
