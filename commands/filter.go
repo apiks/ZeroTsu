@@ -12,7 +12,7 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
-// Handles filter on an onMessage basis
+// Handles filter in an onMessage basis
 func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Checks if it's within the /r/anime server
@@ -193,9 +193,9 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	phrase := strings.Replace(messageLowercase, config.BotPrefix+"addfilter ", "", -1)
 
 	// Writes to filters.json
-	misc.FiltersWrite(phrase)
+	filterExists := misc.FiltersWrite(phrase)
 
-	if misc.FilterExists == false {
+	if filterExists == false {
 		_, err := s.ChannelMessageSend(m.ChannelID, "`" + phrase + "` has been added to the filter list.")
 		if err != nil {
 
@@ -238,9 +238,9 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	phrase := strings.Replace(messageLowercase, config.BotPrefix+"removefilter ", "", -1)
 
 	// Removes phrase from storage and memory
-	misc.FiltersRemove(phrase)
+	filterExists := misc.FiltersRemove(phrase)
 
-	if misc.FilterExists == true {
+	if filterExists == true {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "`" + phrase + "` has been removed from the filter list.")
 		if err != nil {
