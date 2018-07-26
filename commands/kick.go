@@ -85,11 +85,10 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		fmt.Println("Error:", err)
 	}
-	guildName := guild.Name
 
 	// Sends message to user DMs if able
 	dm, err := s.UserChannelCreate(mem.ID)
-	_, err = s.ChannelMessageSend(dm.ID, "You have been kicked from " + guildName + ":\n**" + reason + "**")
+	_, err = s.ChannelMessageSend(dm.ID, "You have been kicked from " + guild.Name + ":\n**" + reason + "**")
 
 	// Kicks the user from the server with a reason
 	err = s.GuildMemberDeleteWithReason(config.ServerID, mem.ID, reason)

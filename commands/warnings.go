@@ -135,7 +135,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		fmt.Println(err.Error())
 	}
 
-	//Pulls the guild Name
+	// Pulls the guild
 	guild, err := s.Guild(config.ServerID)
 	if err != nil {
 

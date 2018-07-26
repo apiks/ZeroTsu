@@ -141,15 +141,14 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		fmt.Println("Error: ", err)
 	}
-	guildName := guild.Name
 
 	// Assigns success print string for user
 	if perma == false {
 
-		success = "You have been banned from " + guildName + ": **" + reason + "**\n\nUntil: _" + UnbanDate.Format("2006-01-02 15:04:05") + "_"
+		success = "You have been banned from " + guild.Name + ": **" + reason + "**\n\nUntil: _" + UnbanDate.Format("2006-01-02 15:04:05") + "_"
 	} else {
 
-		success = "You have been banned from " + guildName + ": **" + reason + "**\n\nUntil: _Forever_ \n\nIf you would like to appeal, use modmail at <https://reddit.com/r/anime>"
+		success = "You have been banned from " + guild.Name + ": **" + reason + "**\n\nUntil: _Forever_ \n\nIf you would like to appeal, use modmail at <https://reddit.com/r/anime>"
 	}
 
 	// Sends success string to user in DMs if able
