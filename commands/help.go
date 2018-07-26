@@ -46,9 +46,9 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		// Help message 2 if user is a mod
-		successMod = "`" + config.BotPrefix + "setreactjoin [messageID] [role] [emote]` | Sets a specific message's emote to give those reacted a role. \n " +
+		successMod = "`" + config.BotPrefix + "setreactjoin [messageID] [emote] [role]` | Sets a specific message's emote to give those reacted a role. \n " +
 			"`" + config.BotPrefix + "removereactjoin [messageID] OPTIONAL[emote]` | Removes the set react emote join from an entire message or only a specific emote of that message. \n " +
-			"`" + config.BotPrefix + "viewreacts` | Prints out all current set message react emote joins. \n " +
+			"`" + config.BotPrefix + "viewreacts` | Prints out all currently set message react emote joins. \n " +
 			"`" + config.BotPrefix + "viewrss` | Prints out all currently set rss thread post. \n " +
 			"`" + config.BotPrefix + "setrss OPTIONAL[/u/author] [thread name]` | Set a thread name which it'll look for in /new by the author (default /u/AutoLovepon) and then post that thread in the channel this command was executed in. \n " +
 			"`" + config.BotPrefix + "removerss` | Remove a thread name from a previously set rss command. \n " +

@@ -16,14 +16,11 @@ var (
 		"jpeg", "jpg", "bmp", "tif", "tiff"}
 )
 
-// MessageAttachmentsHandler checks messages with uploads if they're uploading a whitelisted file type. If not it removes them
+// Checks messages with uploads if they're uploading a whitelisted file type. If not it removes them
 func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-
-	// Checks if the message author is the bot, if it is it stops
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
-	// Checks if there are any attachments to the message to start with
 	if len(m.Attachments) == 0 {
 		return
 	}
@@ -39,7 +36,6 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 	if ch.GuildID != config.ServerID {
 		return
 	}
-
 	// Pulls info on message author
 	mem, err := s.State.Member(config.ServerID, m.Author.ID)
 	if err != nil {
@@ -49,7 +45,6 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 			return
 		}
 	}
-
 	// Checks if user is mod before checking the message
 	if misc.HasPermissions(mem) {
 		return
@@ -63,42 +58,33 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		}
 
 		// Deletes the message that was sent if has a non-whitelisted attachment
-		s.ChannelMessageDelete(m.ChannelID, m.ID)
+		err = s.ChannelMessageDelete(m.ChannelID, m.ID)
+		if err != nil {
+
+			fmt.Println("Error:", err)
+		}
 
 		// Stores time of removal
 		now := time.Now().Format("2006-01-02 15:04:05")
 
-		// Assigns success print string for bot-log
-		success := m.Author.Mention() + " had their message removed for uploading non-whitelisted `" +
-			attachment.Filename + "` in " + "<#" + m.ChannelID + "> on [_" + now + "_]"
-
 		// Prints success in bot-log channel
-		_, err = s.ChannelMessageSend(config.BotLogID, success)
+		_, err = s.ChannelMessageSend(config.BotLogID, m.Author.Mention() + " had their message removed for uploading non-whitelisted `" +
+			attachment.Filename + "` in " + "<#" + m.ChannelID + "> on [_" + now + "_]")
 		if err != nil {
 			fmt.Println("Error: ", err)
 		}
 
-		//Assigns success print string for user
-		success = "Your message upload `" + attachment.Filename + "` was removed for using a non-whitelisted file type. Only gifs and images are allowed."
-
-		// Creates a DM connection and assigns it to dm
+		// Sends a message to the user in their DMs
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
-			fmt.Println("Error: ", err)
-
-			// If an error is encountered here... Then you can't actually send the DM
 			return
 		}
-
-		// Sends a message to that DM connection
-		_, err = s.ChannelMessageSend(dm.ID, success)
-		if err != nil {
-			fmt.Println("Error: ", err)
-		}
+		_, err = s.ChannelMessageSend(dm.ID, "Your message upload `" + attachment.Filename + "` was removed for using a non-whitelisted file type. Only gifs and images are allowed.")
 	}
+
 }
 
-// Checks if it's an allowed file type and returns true if it is, else false
+// Checks if it's an allowed file type and returns true if it is, else false. By Kagumi
 func isAllowed(filename string) bool {
 	filename = strings.ToLower(filename)
 	for _, ext := range whitelist {

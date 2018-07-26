@@ -80,20 +80,11 @@ func Start() {
 	//Unban Command
 	//goBot.AddHandler(commands.UnbanHandler)
 
-	//React Channel Set Command
-	goBot.AddHandler(commands.SetReactChannelHandler)
-
 	//React Channel Join Command
 	goBot.AddHandler(commands.ReactJoinHandler)
 
 	//React Channel Remove Command
 	goBot.AddHandler(commands.ReactRemoveHandler)
-
-	//React Channel Join View Command
-	goBot.AddHandler(commands.ViewSetReactJoinsHandler)
-
-	//React Channel Join Remove Command
-	goBot.AddHandler(commands.RemoveReactJoinHandler)
 
 	//RSS Parse Command
 	goBot.AddHandler(commands.RSSHandler)

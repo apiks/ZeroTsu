@@ -81,15 +81,9 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 			dm, err := s.UserChannelCreate(m.Author.ID)
 			if err != nil {
 
-				fmt.Println("Error:", err)
+				return
 			}
-			if dm != nil {
-				_, err = s.ChannelMessageSend(dm.ID, "You cannot leave "+name + " using this command.")
-				if err != nil {
-
-					fmt.Println("Error:", err)
-				}
-			}
+			_, err = s.ChannelMessageSend(dm.ID, "You cannot leave "+name + " using this command.")
 			return
 		}
 	}
@@ -112,13 +106,9 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			return
 		}
 		_, err = s.ChannelMessageSend(dm.ID, "There's no #"+name+", silly")
-		if err != nil {
-
-			fmt.Println("Error:", err)
-		}
 		return
 	}
 
@@ -153,13 +143,9 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			return
 		}
 		_, err = s.ChannelMessageSend(dm.ID, "You're already out of " + chanMention + ", daaarling~")
-		if err != nil {
-
-			fmt.Println("Error:", err)
-		}
 		return
 	}
 
@@ -207,15 +193,9 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			return
 		}
-		if dm != nil {
-			_, err = s.ChannelMessageSend(dm.ID, "You have left " + chanMention)
-			if err != nil {
-
-				fmt.Println("Error:", err)
-			}
-		}
+		_, err = s.ChannelMessageSend(dm.ID, "You have left " + chanMention)
 	}
 }
 

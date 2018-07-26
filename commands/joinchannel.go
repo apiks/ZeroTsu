@@ -74,15 +74,9 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 			dm, err := s.UserChannelCreate(m.Author.ID)
 			if err != nil {
 
-				fmt.Println("Error:", err)
+				return
 			}
-			if dm != nil {
-				_, err = s.ChannelMessageSend(dm.ID, "You already have access to "+name)
-				if err != nil {
-
-					fmt.Println("Error:", err)
-				}
-			}
+			_, err = s.ChannelMessageSend(dm.ID, "You already have access to "+name)
 			return
 		}
 	}
@@ -105,13 +99,9 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			return
 		}
 		_, err = s.ChannelMessageSend(dm.ID, "There's no #"+name+", silly")
-		if err != nil {
-
-			fmt.Println("Error:", err)
-		}
 		return
 	}
 
@@ -146,13 +136,9 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			return
 		}
 		_, err = s.ChannelMessageSend(dm.ID, "You're already in "+chanMention+", daaarling~")
-		if err != nil {
-
-			fmt.Println("Error:", err)
-		}
 		return
 	}
 
@@ -210,15 +196,9 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			return
 		}
-		if dm != nil {
-			_, err = s.ChannelMessageSend(dm.ID, success)
-			if err != nil {
-
-				fmt.Println("Error:", err)
-			}
-		}
+		_, err = s.ChannelMessageSend(dm.ID, success)
 	}
 }
 
