@@ -10,8 +10,8 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
-// Adds role to the user that uses this command if the role is between opt-in dummy roles
-func joinCommand(s *discordgo.Session, m *discordgo.Message) {
+// Removes a role from the user that uses this command if the role is between opt-in dummy roles
+func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
 		roleID         string
@@ -34,13 +34,20 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Puts the command to lowercase
 	messageLowercase := strings.ToLower(m.Content)
 
-	// Pulls the role name from strings after "joinchannel " or "join "
-	if strings.HasPrefix(messageLowercase, config.BotPrefix+"joinchannel ") {
+	// Deletes the message that was sent so it doesn't clog up the channel
+	err = s.ChannelMessageDelete(m.ChannelID, m.ID)
+	if err != nil {
 
-		name = strings.Replace(messageLowercase, config.BotPrefix+"joinchannel ", "", -1)
+		fmt.Println("Error:", err)
+	}
+
+	// Pulls the role name from strings after "leavechannel " or "leave "
+	if strings.HasPrefix(messageLowercase, config.BotPrefix+"leavechannel ") {
+
+		name = strings.Replace(messageLowercase, config.BotPrefix+"leavechannel ", "", -1)
 	} else {
 
-		name = strings.Replace(messageLowercase, config.BotPrefix+"join ", "", -1)
+		name = strings.Replace(messageLowercase, config.BotPrefix+"leave ", "", -1)
 	}
 
 	// Pulls info on server roles
@@ -77,7 +84,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 				fmt.Println("Error:", err)
 			}
 			if dm != nil {
-				_, err = s.ChannelMessageSend(dm.ID, "You already have access to "+name)
+				_, err = s.ChannelMessageSend(dm.ID, "You cannot leave "+name + " using this command.")
 				if err != nil {
 
 					fmt.Println("Error:", err)
@@ -131,7 +138,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 			hasRoleAlready = true
 		}
 	}
-	if hasRoleAlready == true {
+	if hasRoleAlready == false {
 
 		var chanMention string
 
@@ -148,7 +155,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 			fmt.Println("Error:", err)
 		}
-		_, err = s.ChannelMessageSend(dm.ID, "You're already in "+chanMention+", daaarling~")
+		_, err = s.ChannelMessageSend(dm.ID, "You're already out of " + chanMention + ", daaarling~")
 		if err != nil {
 
 			fmt.Println("Error:", err)
@@ -175,16 +182,15 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 		fmt.Println("Error:", err)
 	}
 
-	// Gives role to user if the role is between dummy opt-ins
+	// Removes role from user if the role is between dummy opt-ins
 	if role.Position < misc.OptinUnderPosition &&
 		role.Position > misc.OptinAbovePosition {
 
 		var (
 			chanMention string
-			topic		string
 		)
 
-		err = s.GuildMemberRoleAdd(config.ServerID, m.Author.ID, roleID)
+		err = s.GuildMemberRoleRemove(config.ServerID, m.Author.ID, roleID)
 		if err != nil {
 
 			fmt.Println("Error:", err)
@@ -192,18 +198,9 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		for j := 0; j < len(cha); j++ {
 			if cha[j].Name == name {
-
-				topic = cha[j].Topic
-
 				// Sets the channel mention to the variable chanMention
 				chanMention = misc.ChMention(cha[j])
 			}
-		}
-
-		success := "You have joined " + chanMention
-		if topic != "" {
-
-			success = success + "\n **Topic:** " + topic
 		}
 
 		// Sends success message to user in DMs
@@ -213,7 +210,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 			fmt.Println("Error:", err)
 		}
 		if dm != nil {
-			_, err = s.ChannelMessageSend(dm.ID, success)
+			_, err = s.ChannelMessageSend(dm.ID, "You have left " + chanMention)
 			if err != nil {
 
 				fmt.Println("Error:", err)
@@ -224,10 +221,10 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func init() {
 	add(&command{
-		execute:  joinCommand,
-		trigger:  "join",
-		aliases:  []string{"joinchannel"},
-		desc:     "Join a spoiler channel.",
+		execute:  leaveCommand,
+		trigger:  "leave",
+		aliases:  []string{"leavechannel"},
+		desc:     "Leave a spoiler channel.",
 		deleteAfter: true,
 	})
 }
