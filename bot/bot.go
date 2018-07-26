@@ -67,11 +67,11 @@ func Start() {
 	//Leave Channel Command
 	goBot.AddHandler(commands.LeaveChannelHandler)
 
-	//Word Filter
+	//Phrase Filter
 	goBot.AddHandler(commands.FilterHandler)
 
 	//React Filter
-	goBot.AddHandler(commands.FilterReacts)
+	goBot.AddHandler(commands.FilterReactsHandler)
 
 	//Deletes non-whitelisted attachments
 	goBot.AddHandler(commands.MessageAttachmentsHandler)

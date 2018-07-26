@@ -21,7 +21,6 @@ import (
 
 const UserAgent = "windows:apiksTEST:v1.0 (by /u/thechosenapiks)"
 
-//Variables for various things
 var (
 	OptinAbovePosition int
 	OptinUnderPosition int
@@ -30,39 +29,33 @@ var (
 
 	roleDeleted = false
 
-	//Variables for filter words
 	ReadFilters  []FilterStruct
-	FilterExists bool
 
 	//Variables for spoiler roles map
 	ReadSpoilerRoles []discordgo.Role
 	roleExists       bool
 
-	//Variables for threads
 	ReadRssThreads      []RssThreadStruct
 	ReadRssThreadsCheck []RssThreadCheckStruct
 	ThreadExists        bool
 )
 
-//Initialize the FilterStruct type
 type FilterStruct struct {
 	Filter string `json:"Filter"`
 }
 
-//Initialize the RssThread type
 type RssThreadStruct struct {
 	Thread  string `json:"Thread"`
 	Channel string `json:"Channel"`
 	Author  string `json:"Author"`
 }
 
-//Initialize the RssThreadCheck type
 type RssThreadCheckStruct struct {
 	Thread string    `json:"Thread"`
 	Date   time.Time `json:"Date"`
 }
 
-// HasPermissions sees if a user has elevated permissions.
+// HasPermissions sees if a user has elevated permissions. By Kagumi
 func HasPermissions(m *discordgo.Member) bool {
 	for _, r := range m.Roles {
 		for _, goodRole := range config.CommandRoles {
@@ -74,7 +67,7 @@ func HasPermissions(m *discordgo.Member) bool {
 	return false
 }
 
-//Sorts roles alphabetically
+// Sorts roles alphabetically
 type SortRoleByAlphabet []*discordgo.Role
 
 func (r SortRoleByAlphabet) Len() int {
@@ -167,64 +160,69 @@ func (c *UserAgentTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 	return c.RoundTripper.RoundTrip(r)
 }
 
-// Adds string "word" to filters.json and memory
-func FiltersWrite(word string) {
+// Adds string "phrase" to filters.json and memory and returns bool
+func FiltersWrite(phrase string) bool {
 
-	//Creates a struct in which we'll keep the word
-	wordStruct := FilterStruct{word}
+	var filterExists bool
 
-	FilterExists = false
+	// Creates a struct in which we'll keep the phrase
+	phraseStruct := FilterStruct{phrase}
 
-	//Appends the new filtered word to a slice of all of the old ones if it doesn't exist
+	// Appends the new filtered phrase to a slice of all of the old ones if it doesn't exist
 	if len(ReadFilters) != 0 {
 		for i := 0; i < len(ReadFilters); i++ {
-			if ReadFilters[i].Filter == wordStruct.Filter {
+			if ReadFilters[i].Filter == phraseStruct.Filter {
 
-				FilterExists = true
+				filterExists = true
 				break
 			}
 		}
 	}
 
-	if FilterExists == false {
+	if filterExists == false {
 
-		ReadFilters = append(ReadFilters, wordStruct)
+		ReadFilters = append(ReadFilters, phraseStruct)
 	}
 
-	//Turns that struct slice into bytes again to be ready to written to file
+	// Turns that struct slice into bytes again to be ready to written to file
 	MarshaledStruct, err := json.MarshalIndent(ReadFilters, "", "    ")
 	if err != nil {
 
 		fmt.Println(err)
 	}
 
-	//Writes to file
+	// Writes to file
 	err = ioutil.WriteFile("database/filters.json", MarshaledStruct, 0644)
 	if err != nil {
 
 		fmt.Println(err)
 	}
+
+	if filterExists == true {
+
+		return true
+	} else {
+
+		return false
+	}
 }
 
-// Removes string "word" from filters.json and memory
-func FiltersRemove(word string) {
+// Removes string "phrase" from filters.json and memory and returns bool
+func FiltersRemove(phrase string) bool {
 
-	//Puts the filtered word into lowercase
-	word = strings.ToLower(word)
+	var filterExists bool
 
-	//Creates a struct in which we'll keep the word
-	wordStruct := FilterStruct{word}
+	// Creates a struct in which we'll keep the phrase
+	phraseStruct := FilterStruct{phrase}
 
-	FilterExists = false
-
-	//Deletes the filtered word if it finds it exists
+	// Deletes the filtered phrase if it finds it exists
 	if len(ReadFilters) != 0 {
 		for i := 0; i < len(ReadFilters); i++ {
-			if ReadFilters[i].Filter == wordStruct.Filter {
+			if ReadFilters[i].Filter == phraseStruct.Filter {
 
-				FilterExists = true
+				filterExists = true
 
-				if FilterExists == true {
+				if filterExists == true {
 
 					ReadFilters = append(ReadFilters[:i], ReadFilters[i+1:]...)
 				}
@@ -232,18 +230,26 @@ func FiltersRemove(word string) {
 		}
 	}
 
-	//Turns that struct slice into bytes again to be ready to written to file
+	// Turns that struct slice into bytes again to be ready to written to file
 	MarshaledStruct, err := json.Marshal(ReadFilters)
 	if err != nil {
 
 		fmt.Println(err)
 	}
 
-	//Writes to file
+	// Writes to file
 	err = ioutil.WriteFile("database/filters.json", MarshaledStruct, 0644)
 	if err != nil {
 
 		fmt.Println(err)
+	}
+
+	if filterExists == true {
+
+		return true
+	} else {
+
+		return false
 	}
 }
 
@@ -251,10 +257,18 @@ func FiltersRemove(word string) {
 func FiltersRead() {
 
 	//Reads all the filtered words from the filters.json file and puts them in filtersByte as bytes
-	filtersByte, _ := ioutil.ReadFile("database/filters.json")
+	filtersByte, err := ioutil.ReadFile("database/filters.json")
+	if err != nil {
+
+		fmt.Println("Error:", err)
+	}
 
 	//Takes the filtered words from filter.json from byte and puts them into the FilterStruct struct slice
-	json.Unmarshal(filtersByte, &ReadFilters)
+	err = json.Unmarshal(filtersByte, &ReadFilters)
+	if err != nil {
+
+		fmt.Println("Error:", err)
+	}
 }
 
 // Writes spoilerRoles map to spoilerRoles.json
