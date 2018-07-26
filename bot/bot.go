@@ -43,8 +43,8 @@ func Start() {
 	// Reads memberInfo.json from storage at bot start
 	misc.MemberInfoRead()
 
-	//Adds Ping Command (Converted)
-	// goBot.AddHandler(commands.PingHandler)
+	// Reads bannedUsers.json from storage at bot start
+	misc.BannedUsersRead()
 
 	//Adds Channel Creation Command
 	goBot.AddHandler(commands.CreateChannelHandler)
@@ -79,9 +79,6 @@ func Start() {
 	//Deletes non-whitelisted attachments
 	goBot.AddHandler(commands.MessageAttachmentsHandler)
 
-	//Avatar Command (Converted)
-	//goBot.AddHandler(commands.AvatarHandler)
-
 	//Channel Lock/Unlock Command
 	goBot.AddHandler(commands.ChannelLockHandler)
 
@@ -97,9 +94,6 @@ func Start() {
 
 	//Kick Command
 	//goBot.AddHandler(commands.KickHandler)
-
-	//Ban Command
-	//goBot.AddHandler(commands.BanHandler)
 
 	//Unban Command
 	//goBot.AddHandler(commands.UnbanHandler)

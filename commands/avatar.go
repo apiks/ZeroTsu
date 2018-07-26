@@ -50,6 +50,6 @@ func init() {
 	add(&command{
 		execute: avatarCommand,
 		trigger: "avatar",
-		desc:    "Show user avatar.",
+		desc:    "Shows user avatar.",
 	})
 }
