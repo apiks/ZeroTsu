@@ -49,6 +49,9 @@ func Start() {
 	// Reads ongoing votes from VoteInfo.json
 	commands.VoteInfoRead()
 
+	// Reads set react joins from reactChannelJoin.json
+	commands.ReactInfoRead()
+
 	//Updates Playing Status
 	goBot.AddHandler(misc.StatusReady)
 
