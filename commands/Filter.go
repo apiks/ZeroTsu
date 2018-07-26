@@ -339,7 +339,7 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.MessageCreate, removals, now
 	embedFieldFilter.Value = "**__" + removals + "__**"
 	embedFieldMessage.Value = "`" + m.Content + "`"
 	embedFieldDate.Value = now
-	embedFieldChannel.Value = chMentionID(channelID)
+	embedFieldChannel.Value = misc.ChMentionID(channelID)
 
 	//Sets field inline
 	embedFieldFilter.Inline = true

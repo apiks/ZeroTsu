@@ -669,3 +669,13 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 
 	return userID
 }
+
+// Mentions channel by *discordgo.Channel. By Kagumi
+func ChMention(ch *discordgo.Channel) string {
+	return fmt.Sprintf("<#%s>", ch.ID)
+}
+
+// Mentions channel by channel ID. By Kagumi
+func ChMentionID(channelID string) string {
+	return fmt.Sprintf("<#%s>", channelID)
+}

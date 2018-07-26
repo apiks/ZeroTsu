@@ -171,7 +171,7 @@ func JoinChannelHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 								topic = cha[j].Topic
 
 								//Assigns the channel mention to the variable chanMention
-								chanMention = chMention(cha[j])
+								chanMention = misc.ChMention(cha[j])
 							}
 						}
 
@@ -212,7 +212,7 @@ func JoinChannelHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 							topic = cha[j].Topic
 
 							//Assigns the channel mention to the variable chanMention
-							chanMention = chMention(cha[j])
+							chanMention = misc.ChMention(cha[j])
 						}
 					}
 
