@@ -37,7 +37,6 @@ var (
 
 	ReadRssThreads      []RssThreadStruct
 	ReadRssThreadsCheck []RssThreadCheckStruct
-	ThreadExists        bool
 )
 
 type FilterStruct struct {
@@ -256,14 +255,14 @@ func FiltersRemove(phrase string) bool {
 // Reads filters from filters.json
 func FiltersRead() {
 
-	//Reads all the filtered words from the filters.json file and puts them in filtersByte as bytes
+	// Reads all the filtered words from the filters.json file and puts them in filtersByte as bytes
 	filtersByte, err := ioutil.ReadFile("database/filters.json")
 	if err != nil {
 
 		fmt.Println("Error:", err)
 	}
 
-	//Takes the filtered words from filter.json from byte and puts them into the FilterStruct struct slice
+	// Takes the filtered words from filter.json from byte and puts them into the FilterStruct struct slice
 	err = json.Unmarshal(filtersByte, &ReadFilters)
 	if err != nil {
 
@@ -274,16 +273,16 @@ func FiltersRead() {
 // Writes spoilerRoles map to spoilerRoles.json
 func SpoilerRolesWrite(SpoilerMap map[string]*discordgo.Role) {
 
-	//Reads all the spoilerRoles the spoilerRoles.json file and puts them in spoilerRolesByte as bytes
+	// Reads all the spoilerRoles the spoilerRoles.json file and puts them in spoilerRolesByte as bytes
 	spoilerRolesByte, _ := ioutil.ReadFile("database/spoilerRoles.json")
 
-	//Makes a new variable in which we'll keep all of the spoiler roles
+	// Makes a new variable in which we'll keep all of the spoiler roles
 	var spoilerRolesWrite []discordgo.Role
 
-	//Takes the spoiler roles from spoilerRoles.json from byte and puts them into the spoilerRolesWrite variable
+	// Takes the spoiler roles from spoilerRoles.json from byte and puts them into the spoilerRolesWrite variable
 	json.Unmarshal(spoilerRolesByte, &spoilerRolesWrite)
 
-	//Appends the new spoiler role to a slice of all of the old ones if it doesn't exist
+	// Appends the new spoiler role to a slice of all of the old ones if it doesn't exist
 	if len(spoilerRolesWrite) == 0 {
 		for k, _ := range SpoilerMap {
 
@@ -310,14 +309,14 @@ func SpoilerRolesWrite(SpoilerMap map[string]*discordgo.Role) {
 		}
 	}
 
-	//Turns that struct slice into bytes again to be ready to written to file
+	// Turns that struct slice into bytes again to be ready to written to file
 	MarshaledStruct, err := json.MarshalIndent(spoilerRolesWrite, "", "    ")
 	if err != nil {
 
 		fmt.Println(err)
 	}
 
-	//Writes to file
+	// Writes to file
 	err = ioutil.WriteFile("database/spoilerRoles.json", MarshaledStruct, 0644)
 	if err != nil {
 
@@ -387,156 +386,153 @@ func SpoilerRolesRead() {
 	}
 }
 
-//Writes string "thread" to rssThreadsCheck.json
-func RssThreadsWrite(thread string, channel string, author string) {
+// Writes string "thread" to rssThreadsCheck.json
+func RssThreadsWrite(thread string, channel string, author string) bool {
 
-	//Creates a struct in which we'll keep the thread
+	// Creates a struct in which we'll keep the thread
 	threadStruct := RssThreadStruct{thread, channel, author}
 
-	//Reads all the rss threads from the rssThreads.json file and puts them in rssThreadsByte as bytes
-	rssThreadsByte, _ := ioutil.ReadFile("database/rssThreads.json")
+	threadExists := false
 
-	//Makes a new variable in which we'll keep all of the threads
-	var rssThreadsWrite []RssThreadStruct
+	// Appends the new thread to a slice of all of the old ones if it doesn't exist
+	if len(ReadRssThreads) != 0 {
+		for i := 0; i < len(ReadRssThreads); i++ {
+			if ReadRssThreads[i].Thread == threadStruct.Thread {
 
-	//Takes the threads from rssThreads.json from byte and puts them into the RssThreadStruct struct slice
-	json.Unmarshal(rssThreadsByte, &rssThreadsWrite)
-
-	ThreadExists = false
-
-	//Appends the new thread to a slice of all of the old ones if it doesn't exist
-	if len(rssThreadsWrite) != 0 {
-		for i := 0; i < len(rssThreadsWrite); i++ {
-			if rssThreadsWrite[i].Thread == threadStruct.Thread {
-
-				ThreadExists = true
+				threadExists = true
 				break
 			}
 		}
 	}
 
-	if ThreadExists == false {
+	if threadExists == false {
 
-		rssThreadsWrite = append(rssThreadsWrite, threadStruct)
+		ReadRssThreads = append(ReadRssThreads, threadStruct)
 	}
 
-	//Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, err := json.MarshalIndent(rssThreadsWrite, "", "    ")
+	// Turns that struct slice into bytes again to be ready to written to file
+	MarshaledStruct, err := json.MarshalIndent(ReadRssThreads, "", "    ")
 	if err != nil {
 
 		fmt.Println(err)
 	}
 
-	//Writes to file
+	// Writes to file
 	err = ioutil.WriteFile("database/rssThreads.json", MarshaledStruct, 0644)
 	if err != nil {
 
 		fmt.Println(err)
 	}
+
+	if threadExists == true {
+
+		return true
+	} else {
+
+		return false
+	}
 }
 
-//Removes string "thread" to rssThreads.json
-func RssThreadsRemove(thread string, channel string, author string) {
+// Removes string "thread" from rssThreads.json
+func RssThreadsRemove(thread string, channel string, author string) bool {
 
-	//Puts the thread string into lowercase
+	// Puts the thread string into lowercase
 	thread = strings.ToLower(thread)
 
-	//Creates a struct in which we'll keep the thread
+	// Creates a struct in which we'll keep the thread
 	threadStruct := RssThreadStruct{thread, channel, author}
-
-	//Reads all the rss threads from the rssThreads.json file and puts them in rssThreadsByte as bytes
-	rssThreadsByte, _ := ioutil.ReadFile("database/rssThreads.json")
-
-	//Makes a new variable in which we'll keep all of the threads
-	var rssThreadsWrite []RssThreadStruct
-
-	//Takes the set threads from rssThreads.json from byte and puts them into the RssThreadStruct struct slice
-	json.Unmarshal(rssThreadsByte, &rssThreadsWrite)
 
 	threadExists := false
 
-	//Deletes the thread if it finds it exists
-	if len(rssThreadsWrite) != 0 {
-		for i := 0; i < len(rssThreadsWrite); i++ {
+	// Deletes the thread if it finds it exists
+	if len(ReadRssThreads) != 0 {
+		for i := 0; i < len(ReadRssThreads); i++ {
 
-			if rssThreadsWrite[i].Thread == threadStruct.Thread {
+			if ReadRssThreads[i].Thread == threadStruct.Thread {
 
 				threadExists = true
 
 				if threadExists == true {
 
-					rssThreadsWrite = append(rssThreadsWrite[:i], rssThreadsWrite[i+1:]...)
+					ReadRssThreads = append(ReadRssThreads[:i], ReadRssThreads[i+1:]...)
 				}
 			}
 		}
 	}
 
-	//Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, err := json.Marshal(rssThreadsWrite)
+	// Turns that struct slice into bytes again to be ready to written to file
+	MarshaledStruct, err := json.Marshal(ReadRssThreads)
 	if err != nil {
 
 		fmt.Println(err)
 	}
 
-	//Writes to file
+	// Writes to file
 	err = ioutil.WriteFile("database/rssThreads.json", MarshaledStruct, 0644)
 	if err != nil {
 
 		fmt.Println(err)
 	}
+
+	if threadExists == true {
+
+		return true
+	} else {
+
+		return false
+	}
 }
 
-//Reads threads from rssThreads.json
+// Reads threads from rssThreads.json
 func RssThreadsRead() {
 
-	//Reads all the rss threads from the rssThreads.json file and puts them in rssThreadsByte as bytes
-	rssThreadsByte, _ := ioutil.ReadFile("database/rssThreads.json")
+	// Reads all the rss threads from the rssThreads.json file and puts them in rssThreadsByte as bytes
+	rssThreadsByte, err := ioutil.ReadFile("database/rssThreads.json")
+	if err != nil {
 
-	//Takes the set threads from rssThreads.json from byte and puts them into the RssThreadStruct struct slice
-	json.Unmarshal(rssThreadsByte, &ReadRssThreads)
+		fmt.Println("Error:", err)
+	}
+
+	// Takes the set threads from rssThreads.json from byte and puts them into the RssThreadStruct struct slice
+	err = json.Unmarshal(rssThreadsByte, &ReadRssThreads)
+	if err != nil {
+
+		fmt.Println("Error:", err)
+	}
 }
 
-//Writes string "thread" to rssThreadCheck.json
+// Writes string "thread" to rssThreadCheck.json
 func RssThreadsCheckWrite(thread string, date time.Time) {
 
-	//Creates a struct in which we'll keep the thread
+	// Creates a struct in which we'll keep the thread
 	threadCheckStruct := RssThreadCheckStruct{thread, date}
 
-	//Reads all the rss threads from the rssThreadCheck.json file and puts them in rssThreadsCheckByte as bytes
-	rssThreadsCheckByte, _ := ioutil.ReadFile("database/rssThreadCheck.json")
-
-	//Makes a new variable in which we'll keep all of the threads
-	var rssThreadsCheckWrite []RssThreadCheckStruct
-
-	//Takes the threads from rssThreadCheck.json from byte and puts them into the RssThreadStruct struct slice
-	json.Unmarshal(rssThreadsCheckByte, &rssThreadsCheckWrite)
-
-	ThreadExists = false
+	threadExists := false
 
 	//Appends the new thread to a slice of all of the old ones if it doesn't exist
-	if len(rssThreadsCheckWrite) != 0 {
-		for i := 0; i < len(rssThreadsCheckWrite); i++ {
-			if rssThreadsCheckWrite[i].Thread == threadCheckStruct.Thread {
+	if len(ReadRssThreadsCheck) != 0 {
+		for i := 0; i < len(ReadRssThreadsCheck); i++ {
+			if ReadRssThreadsCheck[i].Thread == threadCheckStruct.Thread {
 
-				ThreadExists = true
+				threadExists = true
 				break
 			}
 		}
 	}
 
-	if ThreadExists == false {
+	if threadExists == false {
 
-		rssThreadsCheckWrite = append(rssThreadsCheckWrite, threadCheckStruct)
+		ReadRssThreadsCheck = append(ReadRssThreadsCheck, threadCheckStruct)
 	}
 
-	//Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, err := json.MarshalIndent(rssThreadsCheckWrite, "", "    ")
+	// Turns that struct slice into bytes again to be ready to written to file
+	MarshaledStruct, err := json.MarshalIndent(ReadRssThreadsCheck, "", "    ")
 	if err != nil {
 
 		fmt.Println(err)
 	}
 
-	//Writes to file
+	// Writes to file
 	err = ioutil.WriteFile("database/rssThreadCheck.json", MarshaledStruct, 0644)
 	if err != nil {
 
@@ -544,49 +540,40 @@ func RssThreadsCheckWrite(thread string, date time.Time) {
 	}
 }
 
-//Removes string "thread" to rssThreadCheck.json
+// Removes string "thread" to rssThreadCheck.json
 func RssThreadsCheckRemove(thread string, date time.Time) {
 
-	//Puts the thread string into lowercase
+	// Puts the thread string into lowercase
 	thread = strings.ToLower(thread)
 
-	//Creates a struct in which we'll keep the thread
+	// Creates a struct in which we'll keep the thread
 	threadCheckStruct := RssThreadCheckStruct{thread, date}
-
-	//Reads all the rss threads from the rssThreadCheck.json file and puts them in rssThreadsCheckByte as bytes
-	rssThreadsCheckByte, _ := ioutil.ReadFile("database/rssThreadCheck.json")
-
-	//Makes a new variable in which we'll keep all of the threads
-	var rssThreadsCheckWrite []RssThreadCheckStruct
-
-	//Takes the set threads from rssThreadCheck.json from byte and puts them into the RssThreadCheckStruct struct slice
-	json.Unmarshal(rssThreadsCheckByte, &rssThreadsCheckWrite)
 
 	threadExists := false
 
-	//Deletes the thread if it finds it exists
-	if len(rssThreadsCheckWrite) != 0 {
-		for i := 0; i < len(rssThreadsCheckWrite); i++ {
-			if rssThreadsCheckWrite[i].Thread == threadCheckStruct.Thread {
+	// Deletes the thread if it finds it exists
+	if len(ReadRssThreadsCheck) != 0 {
+		for i := 0; i < len(ReadRssThreadsCheck); i++ {
+			if ReadRssThreadsCheck[i].Thread == threadCheckStruct.Thread {
 
 				threadExists = true
 
 				if threadExists == true {
 
-					rssThreadsCheckWrite = append(rssThreadsCheckWrite[:i], rssThreadsCheckWrite[i+1:]...)
+					ReadRssThreadsCheck = append(ReadRssThreadsCheck[:i], ReadRssThreadsCheck[i+1:]...)
 				}
 			}
 		}
 	}
 
-	//Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, err := json.Marshal(rssThreadsCheckWrite)
+	// Turns that struct slice into bytes again to be ready to written to file
+	MarshaledStruct, err := json.Marshal(ReadRssThreads)
 	if err != nil {
 
 		fmt.Println(err)
 	}
 
-	//Writes to file
+	// Writes to file
 	err = ioutil.WriteFile("database/rssThreadCheck.json", MarshaledStruct, 0644)
 	if err != nil {
 
@@ -594,17 +581,25 @@ func RssThreadsCheckRemove(thread string, date time.Time) {
 	}
 }
 
-//Reads threads from rssThreadCheck.json
+// Reads threads from rssThreadCheck.json
 func RssThreadsCheckRead() {
 
-	//Reads all the rss threads from the rssThreadCheck.json file and puts them in rssThreadsCheckByte as bytes
-	rssThreadsCheckByte, _ := ioutil.ReadFile("database/rssThreadCheck.json")
+	// Reads all the rss threads from the rssThreadCheck.json file and puts them in rssThreadsCheckByte as bytes
+	rssThreadsCheckByte, err := ioutil.ReadFile("database/rssThreadCheck.json")
+	if err != nil {
 
-	//Takes the set threads from rssThreads.json from byte and puts them into the RssThreadCheckStruct struct slice
-	json.Unmarshal(rssThreadsCheckByte, &ReadRssThreadsCheck)
+		fmt.Println("Error:", err)
+	}
+
+	// Takes the set threads from rssThreads.json from byte and puts them into the RssThreadCheckStruct struct slice
+	err = json.Unmarshal(rssThreadsCheckByte, &ReadRssThreadsCheck)
+	if err != nil {
+
+		fmt.Println("Error:", err)
+	}
 }
 
-//Every time a role is deleted it deletes it from SpoilerMap
+// Every time a role is deleted it deletes it from SpoilerMap
 func ListenForDeletedRoleHandler(s *discordgo.Session, g *discordgo.GuildRoleDelete) {
 
 	if g.GuildID == config.ServerID {

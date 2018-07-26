@@ -6,18 +6,25 @@ import (
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/config"
+	"fmt"
 )
 
-//Sends a message from the bot to the channel
+// Sends a message from the bot to the channel
 func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	if m.Content != config.BotPrefix + "say" {
+	if m.Content == config.BotPrefix+"say" {
 
-		//Pulls the sentence from strings after "say "
-		sentence := strings.Replace(m.Content, config.BotPrefix+"say ", "", -1)
+		return
+	}
 
-		//Sends the sentence to the channel the original message was in.
-		s.ChannelMessageSend(m.ChannelID, sentence)
+	//Pulls the sentence from strings after "say "
+	sentence := strings.Replace(m.Content, config.BotPrefix+"say ", "", -1)
+
+	//Sends the sentence to the channel the original message was in.
+	_, err := s.ChannelMessageSend(m.ChannelID, sentence)
+	if err != nil {
+
+		fmt.Println("Error:", err)
 	}
 }
 

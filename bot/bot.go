@@ -52,6 +52,9 @@ func Start() {
 	// Reads set react joins from reactChannelJoin.json
 	commands.ReactInfoRead()
 
+	//Reads all the rss threads from rssThreads.json
+	misc.RssThreadsRead()
+
 	//Updates Playing Status
 	goBot.AddHandler(misc.StatusReady)
 
@@ -88,9 +91,6 @@ func Start() {
 
 	//React Channel Remove Command
 	goBot.AddHandler(commands.ReactRemoveHandler)
-
-	//RSS Parse Command
-	goBot.AddHandler(commands.RSSHandler)
 
 	//RSS Thread Check
 	goBot.AddHandler(misc.RssThreadReady)

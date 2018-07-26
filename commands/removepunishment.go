@@ -15,7 +15,7 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Puts entire message in lowercase
 	messageLowercase := strings.ToLower(m.Content)
 
-	//Separates every word in the message and puts it in a slice
+	// Separates every word in the message and puts it in a slice
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	// Checks if there's enough parameters (command, user and index. Else prints error message
@@ -56,7 +56,7 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		index = index - 1
 	}
 
-	//Pulls info on user
+	// Pulls info on user
 	userMem, err := s.User(userID)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -65,7 +65,6 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if user is in memberInfo, giving error if not
 	if misc.MemberInfoMap[userID] == nil {
 
-		// Prints error
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo.")
 		if err != nil {
 			fmt.Println("Error:", err)
@@ -73,7 +72,6 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Prints success
 	_, err = s.ChannelMessageSend(m.ChannelID, "Success. Removed warning `" + misc.MemberInfoMap[userID].Warnings[index] +
 		"` from " + userMem.Username + "#" + userMem.Discriminator)
 	if err != nil {
@@ -94,10 +92,10 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Puts entire message in lowercase
 	messageLowercase := strings.ToLower(m.Content)
 
-	//Separates every word in the message and puts it in a slice
+	// Separates every word in the message and puts it in a slice
 	commandStrings := strings.Split(messageLowercase, " ")
 
-	// Checks if there's enough parameters (command, user and index. Else prints error message
+	// Checks if there's enough parameters (command, user and index.) Else prints error message
 	if len(commandStrings) != 3 {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong amount of parameters.")
@@ -135,7 +133,7 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 		index = index - 1
 	}
 
-	//Pulls info on user
+	// Pulls info on user
 	userMem, err := s.User(userID)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -144,7 +142,6 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if user is in memberInfo, giving error if not
 	if misc.MemberInfoMap[userID] == nil {
 
-		// Prints error
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo.")
 		if err != nil {
 			fmt.Println("Error:", err)
@@ -152,7 +149,6 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Prints success
 	_, err = s.ChannelMessageSend(m.ChannelID, "Success. Removed kick `" + misc.MemberInfoMap[userID].Kicks[index] +
 		"` from " + userMem.Username + "#" + userMem.Discriminator)
 	if err != nil {
@@ -173,7 +169,7 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Puts entire message in lowercase
 	messageLowercase := strings.ToLower(m.Content)
 
-	//Separates every word in the message and puts it in a slice
+	// Separates every word in the message and puts it in a slice
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	// Checks if there's enough parameters (command, user and index. Else prints error message
@@ -231,7 +227,6 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Prints success
 	_, err = s.ChannelMessageSend(m.ChannelID, "Success. Removed ban `" + misc.MemberInfoMap[userID].Bans[index] +
 		"` from " + userMem.Username + "#" + userMem.Discriminator)
 	if err != nil {
