@@ -61,9 +61,6 @@ func Start() {
 	//Listens for a role deletion
 	goBot.AddHandler(misc.ListenForDeletedRoleHandler)
 
-	//Sorts spoiler roles alphabetically between opt-in dummy roles
-	goBot.AddHandler(commands.SortRolesHandler)
-
 	//Phrase Filter
 	goBot.AddHandler(commands.FilterHandler)
 

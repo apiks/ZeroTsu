@@ -31,7 +31,6 @@ var (
 
 	ReadFilters  []FilterStruct
 
-	//Variables for spoiler roles map
 	ReadSpoilerRoles []discordgo.Role
 	roleExists       bool
 
@@ -273,25 +272,16 @@ func FiltersRead() {
 // Writes spoilerRoles map to spoilerRoles.json
 func SpoilerRolesWrite(SpoilerMap map[string]*discordgo.Role) {
 
-	// Reads all the spoilerRoles the spoilerRoles.json file and puts them in spoilerRolesByte as bytes
-	spoilerRolesByte, _ := ioutil.ReadFile("database/spoilerRoles.json")
-
-	// Makes a new variable in which we'll keep all of the spoiler roles
-	var spoilerRolesWrite []discordgo.Role
-
-	// Takes the spoiler roles from spoilerRoles.json from byte and puts them into the spoilerRolesWrite variable
-	json.Unmarshal(spoilerRolesByte, &spoilerRolesWrite)
-
 	// Appends the new spoiler role to a slice of all of the old ones if it doesn't exist
-	if len(spoilerRolesWrite) == 0 {
+	if len(ReadSpoilerRoles) == 0 {
 		for k, _ := range SpoilerMap {
 
-			spoilerRolesWrite = append(spoilerRolesWrite, *SpoilerMap[k])
+			ReadSpoilerRoles = append(ReadSpoilerRoles, *SpoilerMap[k])
 		}
 	} else {
 		for k, _ := range SpoilerMap {
-			for i := 0; i < len(spoilerRolesWrite); i++ {
-				if spoilerRolesWrite[i].ID == SpoilerMap[k].ID {
+			for i := 0; i < len(ReadSpoilerRoles); i++ {
+				if ReadSpoilerRoles[i].ID == SpoilerMap[k].ID {
 
 					roleExists = true
 
@@ -304,13 +294,13 @@ func SpoilerRolesWrite(SpoilerMap map[string]*discordgo.Role) {
 
 			if roleExists == false {
 
-				spoilerRolesWrite = append(spoilerRolesWrite, *SpoilerMap[k])
+				ReadSpoilerRoles = append(ReadSpoilerRoles, *SpoilerMap[k])
 			}
 		}
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, err := json.MarshalIndent(spoilerRolesWrite, "", "    ")
+	MarshaledStruct, err := json.MarshalIndent(ReadSpoilerRoles, "", "    ")
 	if err != nil {
 
 		fmt.Println(err)
@@ -327,32 +317,23 @@ func SpoilerRolesWrite(SpoilerMap map[string]*discordgo.Role) {
 //Deletes a role from spoilerRoles map to spoilerRoles.json
 func SpoilerRolesDelete(roleID string) {
 
-	//Reads all the spoilerRoles the spoilerRoles.json file and puts them in spoilerRolesByte as bytes
-	spoilerRolesByte, _ := ioutil.ReadFile("database/spoilerRoles.json")
+	if len(ReadSpoilerRoles) != 0 {
+		for i := 0; i < len(ReadSpoilerRoles); i++ {
+			if ReadSpoilerRoles[i].ID == roleID {
 
-	//Makes a new variable in which we'll keep all of the spoiler roles
-	var spoilerRolesWrite []discordgo.Role
-
-	//Takes the spoiler roles from spoilerRoles.json from byte and puts them into the spoilerRolesWrite variable
-	json.Unmarshal(spoilerRolesByte, &spoilerRolesWrite)
-
-	if len(spoilerRolesWrite) != 0 {
-		for i := 0; i < len(spoilerRolesWrite); i++ {
-			if spoilerRolesWrite[i].ID == roleID {
-
-				spoilerRolesWrite = append(spoilerRolesWrite[:i], spoilerRolesWrite[i+1:]...)
+				ReadSpoilerRoles = append(ReadSpoilerRoles[:i], ReadSpoilerRoles[i+1:]...)
 			}
 		}
 	}
 
-	//Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, err := json.MarshalIndent(spoilerRolesWrite, "", "    ")
+	// Turns that struct slice into bytes again to be ready to written to file
+	MarshaledStruct, err := json.MarshalIndent(ReadSpoilerRoles, "", "    ")
 	if err != nil {
 
 		fmt.Println(err)
 	}
 
-	//Writes to file
+	// Writes to file
 	err = ioutil.WriteFile("database/spoilerRoles.json", MarshaledStruct, 0644)
 	if err != nil {
 
@@ -360,16 +341,24 @@ func SpoilerRolesDelete(roleID string) {
 	}
 }
 
-//Reads filters from spoilerRoles.json
+// Reads filters from spoilerRoles.json
 func SpoilerRolesRead() {
 
-	//Reads all the spoiler roles from the spoilerRoles.json file and puts them in spoilerRolesByte as bytes
-	spoilerRolesByte, _ := ioutil.ReadFile("database/spoilerRoles.json")
+	// Reads all the spoiler roles from the spoilerRoles.json file and puts them in spoilerRolesByte as bytes
+	spoilerRolesByte, err := ioutil.ReadFile("database/spoilerRoles.json")
+	if err != nil {
 
-	//Takes the spoiler roles from spoilerRoles.json from byte and puts them into the ReadSpoilerRoles struct slice
-	json.Unmarshal(spoilerRolesByte, &ReadSpoilerRoles)
+		fmt.Println("Error:", err)
+	}
 
-	//Resets spoilerMap map to be ready to fill
+	// Takes the spoiler roles from spoilerRoles.json from byte and puts them into the ReadSpoilerRoles struct slice
+	err = json.Unmarshal(spoilerRolesByte, &ReadSpoilerRoles)
+	if err != nil {
+
+		fmt.Println("Error:", err)
+	}
+
+	// Resets spoilerMap map to be ready to fill
 	SpoilerMap = nil
 
 	if SpoilerMap == nil {
@@ -377,7 +366,7 @@ func SpoilerRolesRead() {
 		SpoilerMap = make(map[string]*discordgo.Role)
 	}
 
-	//Fills spoilerMap with roles from the spoilerRoles.json file if latter is not empty
+	// Fills spoilerMap with roles from the spoilerRoles.json file if latter is not empty
 	if len(ReadSpoilerRoles) != 0 {
 		for i := 0; i < len(ReadSpoilerRoles); i++ {
 

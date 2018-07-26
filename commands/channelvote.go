@@ -232,17 +232,8 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				// Sortroles command if optin or airing
 				if VoteInfoMap[k].ChannelType != "general" {
 
-					success := config.BotPrefix + "sortroles"
-					message, err := s.ChannelMessageSend(config.BotLogID, success)
-					if err != nil {
-
-						fmt.Println("Error:", err)
-					}
-					err = s.ChannelMessageDelete(message.ChannelID, message.ID)
-					if err != nil {
-
-						fmt.Println("Error:", err)
-					}
+					message.Content = config.BotPrefix + "sortroles"
+					sortRolesCommand(s, &message)
 				}
 
 				time.Sleep(2 * time.Second)
@@ -255,14 +246,9 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 				}
 
-				// Reads from storage
-				VoteInfoRead()
-
 				MapMutex.Lock()
-
 				// Deletes the vote from memory
 				delete(VoteInfoMap, k)
-
 				MapMutex.Unlock()
 
 				// Writes to storage
