@@ -573,6 +573,9 @@ func viewReactJoinsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var line string
 
+	// Reads react joins from storage
+	ReactInfoRead()
+
 	if len(reactChannelJoinMap) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no set react joins.")
 		if err != nil {
