@@ -34,6 +34,17 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Puts the command to lowercase
 	messageLowercase := strings.ToLower(m.Content)
 
+	// Separates every word in messageLowercase and puts it in a slice
+	commandStrings := strings.Split(messageLowercase, " ")
+	if len(commandStrings) == 1 {
+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "join [channel]`")
+		if err != nil {
+			fmt.Println("Error:", err)
+		}
+		return
+	}
+
 	// Pulls the role name from strings after "joinchannel " or "join "
 	if strings.HasPrefix(messageLowercase, config.BotPrefix+"joinchannel ") {
 

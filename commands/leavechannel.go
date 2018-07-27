@@ -34,11 +34,15 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Puts the command to lowercase
 	messageLowercase := strings.ToLower(m.Content)
 
-	// Deletes the message that was sent so it doesn't clog up the channel
-	err = s.ChannelMessageDelete(m.ChannelID, m.ID)
-	if err != nil {
+	// Separates every word in messageLowercase and puts it in a slice
+	commandStrings := strings.Split(messageLowercase, " ")
+	if len(commandStrings) == 1 {
 
-		fmt.Println("Error:", err)
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "leave [channel]`")
+		if err != nil {
+			fmt.Println("Error:", err)
+		}
+		return
 	}
 
 	// Pulls the role name from strings after "leavechannel " or "leave "
@@ -189,7 +193,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 		}
 
-		// Sends success message to user in DMs
+		// Sends success message to user in DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 

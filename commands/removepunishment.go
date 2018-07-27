@@ -10,6 +10,7 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
+// Removes a warning log entry via index from memberInfo entry
 func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Puts entire message in lowercase
@@ -21,7 +22,7 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if there's enough parameters (command, user and index. Else prints error message
 	if len(commandStrings) != 3 {
 
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong amount of parameters.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong amount of parameters. Use `" + config.BotPrefix + "removewarning [@user or userID] [warning index]")
 		if err != nil {
 			fmt.Println("Error:", err)
 		}
@@ -87,6 +88,7 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.MemberInfoWrite(misc.MemberInfoMap)
 }
 
+// Removes a kick log entry via index from memberInfo entry
 func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Puts entire message in lowercase
@@ -98,7 +100,7 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if there's enough parameters (command, user and index.) Else prints error message
 	if len(commandStrings) != 3 {
 
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong amount of parameters.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong amount of parameters. Use `" + config.BotPrefix + "removekick [@user or userID] [kick index]")
 		if err != nil {
 			fmt.Println("Error:", err)
 		}
@@ -164,6 +166,7 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.MemberInfoWrite(misc.MemberInfoMap)
 }
 
+// Removes a ban log entry via index from memberInfo entry
 func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Puts entire message in lowercase
@@ -175,7 +178,7 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if there's enough parameters (command, user and index. Else prints error message
 	if len(commandStrings) != 3 {
 
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong amount of parameters.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong amount of parameters. Use `" + config.BotPrefix + "removeban [@user or userID] [ban index]")
 		if err != nil {
 			fmt.Println("Error:", err)
 		}

@@ -29,7 +29,7 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	if len(commandStrings) != 2 {
 
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong number of parameters")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "sortcategory [category]`")
 		if err != nil {
 
 			fmt.Println("Error:", err)

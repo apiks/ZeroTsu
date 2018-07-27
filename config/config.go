@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-//File for Bot, server, channel and role info.
+// File for Bot, server, channel and role info.
 
 var (
 	Token        string
@@ -33,6 +33,7 @@ type configStruct struct {
 	OptInAbove   string   `json:"OptInAbove"`
 }
 
+// Loads config.json values
 func ReadConfig() error {
 
 	fmt.Println("Reading from config file...")

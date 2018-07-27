@@ -17,13 +17,13 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Puts entire message in lowercase
 	messageLowercase := strings.ToLower(m.Content)
 
-	// Separates every word in the message and puts it in a slice
+	// Separates every word in the messageLowercase and puts it in a slice
 	commandStrings := strings.Split(messageLowercase, " ")
 
-	// Checks if there's enough parameters (command, user and reddit username. Else prints error message
+	// Checks if there's enough parameters (command, user and reddit username.)
 	if len(commandStrings) != 3 {
 
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong amount of parameters.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + "verify [@user or userID] [redditUsername]`")
 		if err != nil {
 			fmt.Println("Error:", err)
 		}

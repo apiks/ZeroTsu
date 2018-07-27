@@ -135,7 +135,7 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 			err := s.MessageReactionRemove(r.ChannelID, r.MessageID, r.Emoji.APIName(), r.UserID)
 			if err != nil {
 
-				fmt.Println("Error: ", err)
+				fmt.Println("Error:", err)
 			}
 		}
 	}
@@ -177,17 +177,19 @@ func isFiltered(m *discordgo.Message) (bool, []string){
 // Adds a filter to storage and memory
 func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	if len(m.Content) < 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: not enough parameters")
-		if err != nil {
+	// Puts the command to lowercase
+	messageLowercase := strings.ToLower(m.Content)
 
+	// Separates every word in messageLowercase and puts it in a slice
+	commandStrings := strings.Split(messageLowercase, " ")
+	if len(commandStrings) == 1 {
+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "addfilter [phrase]`")
+		if err != nil {
 			fmt.Println("Error:", err)
 		}
 		return
 	}
-
-	// Puts the command to lowercase
-	messageLowercase := strings.ToLower(m.Content)
 
 	// Parses the filtered phrase
 	phrase := strings.Replace(messageLowercase, config.BotPrefix+"addfilter ", "", -1)
@@ -213,14 +215,6 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 // Removes a filter from storage and memory
 func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	if len(m.Content) < 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: not enough parameters")
-		if err != nil {
-
-			fmt.Println("Error:", err)
-		}
-		return
-	}
 	if len(misc.ReadFilters) == 0 {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no filters.")
@@ -233,6 +227,17 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Puts the command to lowercase
 	messageLowercase := strings.ToLower(m.Content)
+
+	// Separates every word in messageLowercase and puts it in a slice
+	commandStrings := strings.Split(messageLowercase, " ")
+	if len(commandStrings) == 1 {
+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removefilter [phrase]`")
+		if err != nil {
+			fmt.Println("Error:", err)
+		}
+		return
+	}
 
 	// Parses the filtered phrase
 	phrase := strings.Replace(messageLowercase, config.BotPrefix+"removefilter ", "", -1)

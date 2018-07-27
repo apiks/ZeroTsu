@@ -23,14 +23,14 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 	cha, err := s.Channel(m.ChannelID)
 	if err != nil {
 
-		fmt.Println("Error: ", err)
+		fmt.Println("Error:", err)
 	}
 
 	// Fetches info on server roles from the server and puts it in deb
 	deb, err := s.GuildRoles(config.ServerID)
 	if err != nil {
 
-		fmt.Println("Error: ", err)
+		fmt.Println("Error:", err)
 	}
 
 	// Updates opt-in-under and opt-in-above position
@@ -125,14 +125,14 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	cha, err := s.Channel(m.ChannelID)
 	if err != nil {
 
-		fmt.Println("Error: ", err)
+		fmt.Println("Error:", err)
 	}
 
 	// Fetches info on server roles from the server and puts it in deb
 	deb, err := s.GuildRoles(config.ServerID)
 	if err != nil {
 
-		fmt.Println("Error: ", err)
+		fmt.Println("Error:", err)
 	}
 
 	// Updates opt-in-under and opt-in-above position
@@ -165,7 +165,7 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 		err = s.ChannelPermissionSet(m.ChannelID, roleID, "role", misc.SpoilerPerms, 0)
 		if err != nil {
 
-			fmt.Println("Error: ", err)
+			fmt.Println("Error:", err)
 		}
 	} else {
 
@@ -185,17 +185,17 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-//func init() {
-//	add(&command{
-//		execute: lockCommand,
-//		trigger: "lock",
-//		desc:    "Locks a channel.",
-//		elevated: true,
-//	})
-//	add(&command{
-//		execute: unlockCommand,
-//		trigger: "unlock",
-//		desc:    "Unlocks a channel.",
-//		elevated: true,
-//	})
-//}
+func init() {
+	add(&command{
+		execute: lockCommand,
+		trigger: "lock",
+		desc:    "Locks a channel.",
+		elevated: true,
+	})
+	add(&command{
+		execute: unlockCommand,
+		trigger: "unlock",
+		desc:    "Unlocks a channel.",
+		elevated: true,
+	})
+}

@@ -17,8 +17,15 @@ func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Separates every word in the message and puts it in a slice
 	commandStrings := strings.Split(messageLowercase, " ")
 
-	// Checks if there's enough parameters (command, user and index. Else prints error message
-	if len(commandStrings) != 2 {
+	// Checks if there's enough parameters (command, user and index.) Else prints error message
+	if len(commandStrings) == 1 {
+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Incorrect usage: Try `" + config.BotPrefix + "avatar [@user or userID]`")
+		if err != nil {
+			fmt.Println("Error:", err)
+		}
+		return
+	} else if len(commandStrings) != 2 {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong amount of parameters.")
 		if err != nil {
@@ -50,6 +57,6 @@ func init() {
 	add(&command{
 		execute: avatarCommand,
 		trigger: "avatar",
-		desc:    "Shows user avatar.",
+		desc:    "Show user avatar.",
 	})
 }

@@ -11,7 +11,6 @@ import (
 )
 
 var (
-	BotID string
 	goBot *discordgo.Session
 )
 
@@ -24,15 +23,11 @@ func Start() {
 		fmt.Println(err.Error())
 		return
 	}
-	u, err := goBot.User("@me")
 
 	if err != nil {
 
 		fmt.Println(err.Error())
 	}
-
-	// Saves bot ID
-	BotID = u.ID
 
 	// Reads spoiler roles database at bot start
 	misc.SpoilerRolesRead()

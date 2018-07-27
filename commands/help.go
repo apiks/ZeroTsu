@@ -51,7 +51,7 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 			"`" + config.BotPrefix + "viewreacts` | Prints out all currently set message react emote joins. \n " +
 			"`" + config.BotPrefix + "viewrss` | Prints out all currently set rss thread post. \n " +
 			"`" + config.BotPrefix + "setrss OPTIONAL[/u/author] [thread name]` | Set a thread name which it'll look for in /new by the author (default /u/AutoLovepon) and then post that thread in the channel this command was executed in. \n " +
-			"`" + config.BotPrefix + "removerss` | Remove a thread name from a previously set rss command. \n " +
+			"`" + config.BotPrefix + "removerss OPTIONAL[/u/author] [thread name]` | Remove a thread name from a previously set rss command. \n " +
 			"`" + config.BotPrefix + "sortcategory [category name or ID]` | Sorts all channels within given category alphabetically. \n " +
 			"`" + config.BotPrefix + "sortroles` | Sorts spoiler roles created with the create command between opt-in dummy roles alphabetically. Freezes server for a few seconds. Use preferably with large batches.\n" +
 			"`" + config.BotPrefix + "startvote OPTIONAL[required votes] [name] OPTIONAL[type] OPTIONAL[categoryID] + OPTIONAL[description]` | Starts a reaction vote in the channel the command is in. " +

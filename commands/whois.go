@@ -15,13 +15,13 @@ import (
 // Sends memberInfo user information to channel
 func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	// Saves program from panic and continues running normally without executing the command if it happens
-	defer func() {
-		if r := recover(); r != nil {
-
-			fmt.Println(r)
-		}
-	}()
+	// Saves program from panic and continues running normally without executing the command if it happens. Depreciated with CommandHandler
+	//defer func() {
+	//	if r := recover(); r != nil {
+	//
+	//		fmt.Println(r)
+	//	}
+	//}()
 
 	// Puts entire message in lowercase
 	messageLowercase := strings.ToLower(m.Content)
@@ -31,10 +31,10 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	if len(commandStrings) != 2 {
 
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid amount of parameters. Please use `"+config.BotPrefix+"whois [@user or userID]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"whois [@user or userID]`")
 		if err != nil {
 
-			fmt.Println("Error: ", err)
+			fmt.Println("Error:", err)
 		}
 		return
 	}

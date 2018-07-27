@@ -36,11 +36,23 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Puts the command to lowercase
 	messageLowercase := strings.ToLower(m.Content)
 
+	// Separates every word in messageLowercase and puts it in a slice
+	commandStrings := strings.Split(messageLowercase, " ")
+
+	if len(commandStrings) == 1 {
+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "create [name] OPTIONAL[type] [category] [description; must have at least one other non-name parameter]`")
+		if err != nil {
+			fmt.Println("Error:", err)
+		}
+		return
+	}
+
 	// Initializes two command strings without "create"
 	command := strings.Replace(messageLowercase, config.BotPrefix+"create ", "", 1)
 
 	// Separates every word in command and puts it in a slice
-	commandStrings := strings.Split(command, " ")
+	commandStrings = strings.Split(command, " ")
 
 	// Checks if [category] and [type] exist and assigns them if they do and removes them from slice
 	for i := 0; i < len(commandStrings); i++ {
@@ -236,7 +248,6 @@ func init() {
 	add(&command{
 		execute:  createChannelCommand,
 		trigger:  "create",
-		aliases:  []string{"createchannel"},
 		desc:     "Creates a channel with parameters.",
 		elevated: true,
 	})

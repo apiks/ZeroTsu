@@ -39,7 +39,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		warning = commandStrings[2]
 
 	} else {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Please use `"+config.BotPrefix+"addwarning [@user or userID] [warning]` format.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"addwarning [@user or userID] [warning]`")
 		if err != nil {
 
 			return
@@ -105,7 +105,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		warning = commandStrings[2]
 
 	} else {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Please use `"+config.BotPrefix+"issuewarning [@user or userID] [warning]` format.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"issuewarning [@user or userID] [warning]`")
 		if err != nil {
 
 			return
@@ -135,7 +135,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		fmt.Println(err.Error())
 	}
 
-	// Pulls the guild
+	//Pulls the guild Name
 	guild, err := s.Guild(config.ServerID)
 	if err != nil {
 

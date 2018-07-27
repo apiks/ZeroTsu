@@ -94,11 +94,11 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-func init() {
-	add(&command{
-		execute:  unbanCommand,
-		trigger:  "unban",
-		desc:     "Unbans a user.",
-		elevated: true,
-	})
-}
+//func init() {
+//	add(&command{
+//		execute:  unbanCommand,
+//		trigger:  "unban",
+//		desc:     "Unbans a user.",
+//		elevated: true,
+//	})
+//}

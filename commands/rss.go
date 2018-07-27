@@ -10,6 +10,44 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
+// Sets an RSS by author in the message channel
+func setRssCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	var (
+		author string
+		thread string
+	)
+
+	// Puts the command to lowercase
+	messageLowercase := strings.ToLower(m.Content)
+
+	// Splits the message parameters
+	commandStrings := strings.Split(messageLowercase, " ")
+
+	if len(commandStrings) == 1 {
+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "setrss OPTIONAL[/u/author] [thread name]`")
+		if err != nil {
+			fmt.Println("Error:", err)
+		}
+		return
+	}
+
+	if strings.Contains(commandStrings[1], "/u/") == true {
+
+		author = commandStrings[1]
+		thread = strings.Replace(messageLowercase, config.BotPrefix+"setrss "+commandStrings[1]+" ", "", 1)
+
+	} else {
+
+		// Removes the command from the string so we only have the set string which it'll check
+		thread = strings.Replace(messageLowercase, config.BotPrefix+"setrss ", "", 1)
+		author = "/u/AutoLovepon"
+	}
+
+	setRssThread(*s, *m, thread, author)
+}
+
 func setRssThread(s discordgo.Session, m discordgo.Message, thread string, author string) {
 
 	threadExists := misc.RssThreadsWrite(thread, m.ChannelID, author)
@@ -28,35 +66,6 @@ func setRssThread(s discordgo.Session, m discordgo.Message, thread string, autho
 			fmt.Println("Error:", err)
 		}
 	}
-}
-
-// Sets an RSS by author in the message channel
-func setRssCommand(s *discordgo.Session, m *discordgo.Message) {
-
-	var (
-		author string
-		thread string
-	)
-
-	// Puts the command to lowercase
-	messageLowercase := strings.ToLower(m.Content)
-
-	// Splits the message parameters
-	commandStrings := strings.Split(messageLowercase, " ")
-
-	if strings.Contains(commandStrings[1], "/u/") == true {
-
-		author = commandStrings[1]
-		thread = strings.Replace(messageLowercase, config.BotPrefix+"setrss "+commandStrings[1]+" ", "", 1)
-
-	} else {
-
-		// Removes the command from the string so we only have the set string which it'll check
-		thread = strings.Replace(messageLowercase, config.BotPrefix+"setrss ", "", 1)
-		author = "/u/AutoLovepon"
-	}
-
-	setRssThread(*s, *m, thread, author)
 }
 
 // Removes a previously set RSS
@@ -82,6 +91,15 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Splits the message parameters
 	commandStrings := strings.Split(messageLowercase, " ")
 
+	if len(commandStrings) == 1 {
+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removerss OPTIONAL[/u/author] [thread name]`")
+		if err != nil {
+			fmt.Println("Error:", err)
+		}
+		return
+	}
+
 	if strings.Contains(commandStrings[1], "/u/") == true {
 
 		author = commandStrings[1]
@@ -94,7 +112,7 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 		author = "/u/AutoLovepon"
 	}
 
-	//Calls the function to remove the threads from rssThreads.json
+	// Calls the function to remove the threads from rssThreads.json
 	threadExists := misc.RssThreadsRemove(thread, m.ChannelID, author)
 
 	if threadExists == true {
@@ -129,7 +147,7 @@ func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	//Iterates through all the filters if they exist and adds them to the filters string and print them
+	// Iterates through all the filters if they exist and adds them to the filters string and print them
 	for i := 0; i < len(misc.ReadRssThreads); i++ {
 		if len(threads) > 1850 {
 
