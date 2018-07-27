@@ -80,6 +80,14 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		id       string
 	)
 
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if r := recover(); r != nil {
+
+			fmt.Println(r)
+		}
+	}()
+
 	// Blurb fetches query from link
 	queryValues := r.URL.Query()
 	id = queryValues.Get("reqvalue")
@@ -485,6 +493,13 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 
 			return
 		}
+		// Saves program from panic and continues running normally without executing the command if it happens
+		defer func() {
+			if r := recover(); r != nil {
+
+				fmt.Println(r)
+			}
+		}()
 
 		for key := range UserCookieMap {
 

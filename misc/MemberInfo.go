@@ -165,7 +165,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		initialized = false
 	)
 
-	// Pulls info on user
+	// Pulls info on user if possible
 	user, err := s.State.Member(config.ServerID, e.User.ID)
 	if err != nil {
 		user, err = s.GuildMember(config.ServerID, e.User.ID)
@@ -174,6 +174,14 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 			return
 		}
 	}
+
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if r := recover(); r != nil {
+
+			fmt.Println(r)
+		}
+	}()
 
 	// If memberInfo is empty, it initializes
 	if len(MemberInfoMap) == 0 {
@@ -316,6 +324,14 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	if !ok {
 		return
 	}
+
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if r := recover(); r != nil {
+
+			fmt.Println(r)
+		}
+	}()
 
 	// Checks usernames and updates if needed
 	if user.Username != e.User.Username {

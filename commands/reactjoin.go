@@ -39,6 +39,13 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 
 		return
 	}
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if r := recover(); r != nil {
+
+			fmt.Println(r)
+		}
+	}()
 
 	// Puts the react API name to lowercase so it is valid with the storage emoji name
 	reactLowercase := strings.ToLower(r.Emoji.APIName())
@@ -101,6 +108,13 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 
 		return
 	}
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if r := recover(); r != nil {
+
+			fmt.Println(r)
+		}
+	}()
 
 	// Puts the react API name to lowercase so it is valid with the storage emoji name
 	reactLowercase := strings.ToLower(r.Emoji.APIName())

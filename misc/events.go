@@ -23,6 +23,14 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
 	for range time.NewTicker(15 * time.Second).C {
 
+		// Saves program from panic and continues running normally without executing the command if it happens
+		defer func() {
+			if r := recover(); r != nil {
+
+				fmt.Println(r)
+			}
+		}()
+
 
 		// Goes through bannedUsers.json if it's not empty and unbans if needed
 		if BannedUsersSlice != nil {
@@ -73,6 +81,14 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
 // Pulls the rss thread and prints it
 func RSSParser(s discordgo.Session) {
+
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if r := recover(); r != nil {
+
+			fmt.Println(r)
+		}
+	}()
 
 	// Pulls the feed from /r/anime and puts it in feed variable
 	fp := gofeed.NewParser()

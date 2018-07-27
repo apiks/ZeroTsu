@@ -40,7 +40,6 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Separates every word in messageLowercase and puts it in a slice
 	commandStrings := strings.Split(messageLowercase, " ")
-
 	if len(commandStrings) == 1 {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "startvote OPTIONAL[votes required] [name] OPTIONAL[type] OPTIONAL[categoryID] + OPTIONAL[description]`")
@@ -173,6 +172,14 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 	for range time.NewTicker(10 * time.Second).C {
 		for k := range VoteInfoMap {
+
+			// Saves program from panic and continues running normally without executing the command if it happens
+			defer func() {
+				if r := recover(); r != nil {
+
+					fmt.Println(r)
+				}
+			}()
 
 			// Saves current time
 			t := time.Now()
