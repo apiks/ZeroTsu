@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strings"
-	"sync"
 	"unicode"
 	"net/http"
 	"regexp"
@@ -314,7 +313,7 @@ func SpoilerRolesWrite(SpoilerMap map[string]*discordgo.Role) {
 	}
 }
 
-//Deletes a role from spoilerRoles map to spoilerRoles.json
+// Deletes a role from spoilerRoles map to spoilerRoles.json
 func SpoilerRolesDelete(roleID string) {
 
 	if len(ReadSpoilerRoles) != 0 {
@@ -371,6 +370,27 @@ func SpoilerRolesRead() {
 		for i := 0; i < len(ReadSpoilerRoles); i++ {
 
 			SpoilerMap[ReadSpoilerRoles[i].ID] = &ReadSpoilerRoles[i]
+		}
+	}
+}
+
+// Every time a role is deleted it deletes it from SpoilerMap
+func ListenForDeletedRoleHandler(s *discordgo.Session, g *discordgo.GuildRoleDelete) {
+
+	if g.GuildID == config.ServerID {
+
+		if SpoilerMap[g.RoleID] != nil {
+
+			roleDeleted = true
+		}
+
+		if roleDeleted == true {
+
+			MapMutex.Lock()
+			delete(SpoilerMap, g.RoleID)
+			MapMutex.Unlock()
+
+			SpoilerRolesDelete(g.RoleID)
 		}
 	}
 }
@@ -491,7 +511,7 @@ func RssThreadsRead() {
 }
 
 // Writes string "thread" to rssThreadCheck.json
-func RssThreadsCheckWrite(thread string, date time.Time) {
+func RssThreadsTimerWrite(thread string, date time.Time) {
 
 	// Creates a struct in which we'll keep the thread
 	threadCheckStruct := RssThreadCheckStruct{thread, date}
@@ -530,7 +550,7 @@ func RssThreadsCheckWrite(thread string, date time.Time) {
 }
 
 // Removes string "thread" to rssThreadCheck.json
-func RssThreadsCheckRemove(thread string, date time.Time) {
+func RssThreadsTimerRemove(thread string, date time.Time) {
 
 	// Puts the thread string into lowercase
 	thread = strings.ToLower(thread)
@@ -571,7 +591,7 @@ func RssThreadsCheckRemove(thread string, date time.Time) {
 }
 
 // Reads threads from rssThreadCheck.json
-func RssThreadsCheckRead() {
+func RssThreadsTimerRead() {
 
 	// Reads all the rss threads from the rssThreadCheck.json file and puts them in rssThreadsCheckByte as bytes
 	rssThreadsCheckByte, err := ioutil.ReadFile("database/rssThreadCheck.json")
@@ -588,32 +608,10 @@ func RssThreadsCheckRead() {
 	}
 }
 
-// Every time a role is deleted it deletes it from SpoilerMap
-func ListenForDeletedRoleHandler(s *discordgo.Session, g *discordgo.GuildRoleDelete) {
-
-	if g.GuildID == config.ServerID {
-
-		if SpoilerMap[g.RoleID] != nil {
-
-			roleDeleted = true
-		}
-
-		if roleDeleted == true {
-
-			mutex := &sync.Mutex{}
-
-			mutex.Lock()
-			delete(SpoilerMap, g.RoleID)
-			mutex.Unlock()
-
-			SpoilerRolesDelete(g.RoleID)
-		}
-	}
-}
-
 // ResolveTimeFromString resolves a time (usually for unbanning) from a given string formatted #w#d#h#m.
 // This returns current time + delay.
 // If no time is added to the offset, then this returns true for permanent.
+// By Kagumi.
 func ResolveTimeFromString(given string) (ret time.Time, perma bool) {
 
 	ret = time.Now()
@@ -642,6 +640,7 @@ func ResolveTimeFromString(given string) (ret time.Time, perma bool) {
 	return
 }
 
+// Resolves a userID from a userID or Mention
 func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string) string {
 
 	// Pulls the userID from the second parameter

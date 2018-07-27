@@ -51,6 +51,7 @@ type User struct {
 	AltCheck              bool      `json:"altcheck"`
 }
 
+// Generates a random string. By Kagumi
 func randString(n int) (string, error) {
 	data := make([]byte, n)
 	if _, err := io.ReadFull(rand.Reader, data); err != nil {
@@ -59,6 +60,7 @@ func randString(n int) (string, error) {
 	return base64.StdEncoding.EncodeToString(data), nil
 }
 
+// Handles the website
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Pulls cookie if it exists, else it creates a new one and assigns it
@@ -71,7 +73,6 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		cookieValue = &cookie
 	}
 
-	// Initializes needed variables
 	var (
 		errorVar string
 		state    string
@@ -148,9 +149,6 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Reads memberInfo.json
-	misc.MemberInfoRead()
-
 	// Fetches user username and discriminator combo for showing in website. Also checks if user is verified already
 	if cookieValue != nil {
 		if UserCookieMap[cookieValue.Value] != nil {
@@ -180,9 +178,6 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 			misc.MapMutex.Unlock()
 		}
 	}
-
-	// Reads memberInfo.json
-	misc.MemberInfoRead()
 
 	if cookieValue != nil && errorVar == "" {
 		if code == "" && id == "" && state == "" {
@@ -288,7 +283,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 				var temp User
 				misc.MapMutex.Lock()
 				temp = *UserCookieMap[cookieValue.Value]
-				temp.Error = "Error: User is not in memberInfo, cookie has expired or wrong url. Please rejoin the server and try again."
+				temp.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
 				UserCookieMap[cookieValue.Value] = &temp
 				misc.MapMutex.Unlock()
 			}
@@ -303,7 +298,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Loads the html index file
+	// Loads the html & css index file
 	t, err := template.ParseFiles("verification/web/index.html")
 	if err != nil {
 
@@ -400,7 +395,6 @@ func getRedditUsername(code string) (string, float64) {
 // Verifies user on discord and returns their discord username and discrim
 func getDiscordUsernameDiscrim(code string) (string, string, string) {
 
-	// Sets discord verification variables
 	discordConf := oauth2.Config{
 		ClientID:     "431328912090464266",
 		ClientSecret: "BNdGM_YqEgPU9h3mXHG0OFd5FB8_Msum",
@@ -452,100 +446,55 @@ func getDiscordUsernameDiscrim(code string) (string, string, string) {
 // Verifies user by assigning the necessary values
 func Verify(cookieValue *http.Cookie, r *http.Request) {
 
-	// Reads memberInfo.json
-	misc.MemberInfoRead()
-
 	// Confirms that the map is not empty
-	if misc.MemberInfoMap != nil {
+	if misc.MemberInfoMap == nil {
 
-		// Checks if cookie has expired while doing this
-		if cookieValue != nil {
-
-			//Stores time of verification
-			t := time.Now()
-			z, _ := t.Zone()
-			join := t.Format("2006-01-02 15:04:05") + " " + z
-
-			// Assigns needed values to temp
-			var temp misc.UserInfo
-			misc.MapMutex.Lock()
-			temp = *misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]
-			temp.RedditUsername = UserCookieMap[cookieValue.Value].RedditName
-			temp.VerifiedDate = join
-			misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID] = &temp
-			misc.MapMutex.Unlock()
-
-		}
-
-		// Writes the username to memberInfo.json
-		misc.MemberInfoWrite(misc.MemberInfoMap)
-
-	} else {
-
-		fmt.Println("Error: MemberInfo Map is empty")
+		return
 	}
+
+	// Checks if cookie has expired while doing this
+	if cookieValue != nil {
+
+		//Stores time of verification
+		t := time.Now()
+		z, _ := t.Zone()
+		join := t.Format("2006-01-02 15:04:05") + " " + z
+
+		// Assigns needed values to temp
+		var temp misc.UserInfo
+		misc.MapMutex.Lock()
+		temp = *misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]
+		temp.RedditUsername = UserCookieMap[cookieValue.Value].RedditName
+		temp.VerifiedDate = join
+		misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID] = &temp
+		misc.MapMutex.Unlock()
+
+	}
+
+	// Writes the username to memberInfo.json
+	misc.MemberInfoWrite(misc.MemberInfoMap)
 }
 
 // Checks if a user in the cookie map has the role and if they're verified it gives it to them, also deletes expired map fields
 func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 
-	//Checks every 10 seconds if a user in the UserCookieMap needs to be given the role
+	// Checks every 10 seconds if a user in the UserCookieMap needs to be given the role
 	for range time.NewTicker(10 * time.Second).C {
-		if UserCookieMap != nil {
-			for key := range UserCookieMap {
 
-				if UserCookieMap[key].RedditName != "" && UserCookieMap[key].DiscordVerifiedStatus == true &&
-					UserCookieMap[key].RedditVerifiedStatus == true {
+		if UserCookieMap == nil {
 
-					// Initializes var roleID which will keep the Verified role ID
-					var roleID string
-
-					// Puts all server roles in roles
-					roles, err := s.GuildRoles(config.ServerID)
-					if err != nil {
-
-						fmt.Println("Error:", err)
-					}
-
-					// Fetches ID of Verified role
-					for i := 0; i < len(roles); i++ {
-						if roles[i].Name == "Verified" {
-
-							roleID = roles[i].ID
-						}
-					}
-
-					// Assigns role
-					s.GuildMemberRoleAdd(config.ServerID, UserCookieMap[key].ID, roleID)
-
-					if UserCookieMap[key].AltCheck == false {
-
-						CheckAltAccount(s, UserCookieMap[key].ID)
-
-						misc.MapMutex.Lock()
-						UserCookieMap[key].AltCheck = true
-						misc.MapMutex.Unlock()
-					}
-				}
-			}
+			return
 		}
-	}
-}
 
-// Checks if a user is already verified when they join the server and if they are directly assigns them the verified role
-func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
+		for key := range UserCookieMap {
 
-	misc.MemberInfoRead()
-
-	// Checks if the user is an already verified one
-	if misc.MemberInfoMap != nil {
-		if misc.MemberInfoMap[u.User.ID] != nil {
-			if misc.MemberInfoMap[u.User.ID].RedditUsername != "" {
+			if UserCookieMap[key].RedditName != "" && UserCookieMap[key].DiscordVerifiedStatus == true &&
+				UserCookieMap[key].RedditVerifiedStatus == true {
 
 				// Initializes var roleID which will keep the Verified role ID
 				var roleID string
 
-				// Puts all server roles in roles
+				// Puts all server roles in roles variable
 				roles, err := s.GuildRoles(config.ServerID)
 				if err != nil {
 
@@ -561,22 +510,79 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 				}
 
 				// Assigns role
-				s.GuildMemberRoleAdd(config.ServerID, u.User.ID, roleID)
+				err = s.GuildMemberRoleAdd(config.ServerID, UserCookieMap[key].ID, roleID)
+				if err != nil {
 
-				CheckAltAccount(s, u.User.ID)
+					fmt.Println("Error:", err)
+				}
+
+				if UserCookieMap[key].AltCheck == false {
+
+					CheckAltAccount(s, UserCookieMap[key].ID)
+
+					misc.MapMutex.Lock()
+					UserCookieMap[key].AltCheck = true
+					misc.MapMutex.Unlock()
+				}
 			}
 		}
+	}
+}
+
+// Checks if a user is already verified when they join the server and if they are directly assigns them the verified role
+func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
+
+	// Checks if the user is an already verified one
+	if misc.MemberInfoMap == nil {
+
+		return
+	}
+	if misc.MemberInfoMap[u.User.ID] == nil {
+
+		return
+	}
+
+	if misc.MemberInfoMap[u.User.ID].RedditUsername != "" {
+
+		// Initializes var roleID which will keep the Verified role ID
+		var roleID string
+
+		// Puts all server roles in roles
+		roles, err := s.GuildRoles(config.ServerID)
+		if err != nil {
+
+			fmt.Println("Error:", err)
+		}
+
+		// Fetches ID of Verified role
+		for i := 0; i < len(roles); i++ {
+			if roles[i].Name == "Verified" {
+
+				roleID = roles[i].ID
+			}
+		}
+
+		// Assigns role
+		err = s.GuildMemberRoleAdd(config.ServerID, u.User.ID, roleID)
+		if err != nil {
+
+			fmt.Println("Error:", err)
+		}
+
+		CheckAltAccount(s, u.User.ID)
 	}
 }
 
 // Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Verification version
 func CheckAltAccount(s *discordgo.Session, id string) {
 
+	if misc.MemberInfoMap == nil {
+
+		return
+	}
+
 	// Initializes alts string slice to hold IDs of alts of that reddit username
 	var alts []string
-
-	// Reads memberInfo
-	misc.MemberInfoRead()
 
 	// Iterates through all users in memberInfo.json
 	for userOne := range misc.MemberInfoMap {

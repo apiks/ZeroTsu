@@ -15,7 +15,7 @@ var (
 	goBot *discordgo.Session
 )
 
-//Starts Bot and its Handlers
+// Starts Bot and its Handlers
 func Start() {
 	goBot, err := discordgo.New("Bot " + config.Token)
 
@@ -31,10 +31,10 @@ func Start() {
 		fmt.Println(err.Error())
 	}
 
-	//Saves bot ID
+	// Saves bot ID
 	BotID = u.ID
 
-	//Reads spoiler roles database at bot start
+	// Reads spoiler roles database at bot start
 	misc.SpoilerRolesRead()
 
 	// Reads filters.json from storage at bot start
@@ -52,44 +52,44 @@ func Start() {
 	// Reads set react joins from reactChannelJoin.json
 	commands.ReactInfoRead()
 
-	//Reads all the rss threads from rssThreads.json
+	// Reads all the rss threads from rssThreads.json
 	misc.RssThreadsRead()
 
-	//Updates Playing Status
+	// Reads all the check rss threads from rssThreadsCheck.json
+	misc.RssThreadsTimerRead()
+
+	// Periodic events and status
 	goBot.AddHandler(misc.StatusReady)
 
-	//Listens for a role deletion
+	// Listens for a role deletion
 	goBot.AddHandler(misc.ListenForDeletedRoleHandler)
 
-	//Phrase Filter Handler
+	// Phrase Filter Handler
 	goBot.AddHandler(commands.FilterHandler)
 
-	//React Filter Handler
+	// React Filter Handler
 	goBot.AddHandler(commands.FilterReactsHandler)
 
-	//Deletes non-whitelisted attachments Handler
+	// Deletes non-whitelisted attachments Handler
 	goBot.AddHandler(commands.MessageAttachmentsHandler)
 
 	// Abstraction of a command handler
 	goBot.AddHandler(commands.HandleCommand)
 
-	//MemberInfo
+	// MemberInfo
 	//goBot.AddHandler(misc.OnMemberJoinGuild)
 	//goBot.AddHandler(misc.OnMemberUpdate)
 
-	//React Channel Join Handler
+	// React Channel Join Handler
 	goBot.AddHandler(commands.ReactJoinHandler)
 
-	//React Channel Remove Handler
+	// React Channel Remove Handler
 	goBot.AddHandler(commands.ReactRemoveHandler)
 
-	//RSS Thread Check
-	goBot.AddHandler(misc.RssThreadReady)
-
-	//Channel Vote Timer
+	// Channel Vote Timer
 	goBot.AddHandler(commands.ChannelVoteTimer)
 
-	//Verified Role and Cookie Map Expiry Deletion Handler
+	// Verified Role and Cookie Map Expiry Deletion Handler
 	//goBot.AddHandler(verification.VerifiedRoleAdd)
 	//goBot.AddHandler(verification.VerifiedAlready)
 

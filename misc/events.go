@@ -12,74 +12,62 @@ import (
 	"github.com/r-anime/ZeroTsu/config"
 )
 
-//Sets bot playing status and checks whether it's time to unban users
+// Periodic events such as Unbanning and RSS timer every 15 seconds
 func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
-	s.UpdateStatus(0, "with her darling")
 
-	//Checks whether it has to unban a user every 10 seconds
-	for range time.NewTicker(10 * time.Second).C {
+	err := s.UpdateStatus(0, "with her darling")
+	if err != nil {
 
-		//Saves current time
-		t := time.Now()
+		fmt.Println("Error:", err)
+	}
 
-		//Goes through bannedUsers.json if it's not empty and unbans if needed
+	for range time.NewTicker(15 * time.Second).C {
+
+
+		// Goes through bannedUsers.json if it's not empty and unbans if needed
 		if BannedUsersSlice != nil {
-			for i := 0; i < len(BannedUsersSlice); i++ {
-				difference := t.Sub(BannedUsersSlice[i].UnbanDate)
-				if difference > 0 {
+			if len(BannedUsersSlice) != 0 {
 
-					MemberInfoRead()
+				// Saves current time
+				t := time.Now()
 
-					//Checks if user is in MemberInfo and assigns to user variable
-					user, ok := MemberInfoMap[BannedUsersSlice[i].ID]
-					if !ok {
-						fmt.Print("User: " + BannedUsersSlice[i].User + " not found in memberInfo")
-						return
+				for i := 0; i < len(BannedUsersSlice); i++ {
+					difference := t.Sub(BannedUsersSlice[i].UnbanDate)
+					if difference > 0 {
+
+						// Checks if user is in MemberInfo and assigns to user variable if true
+						user, ok := MemberInfoMap[BannedUsersSlice[i].ID]
+						if !ok {
+							continue
+						}
+
+						// Unbans user
+						err := s.GuildBanDelete(config.ServerID, BannedUsersSlice[i].ID)
+						if err != nil {
+
+							fmt.Println("Error:", err)
+						}
+
+						// Sends a message to bot-log
+						_, err = s.ChannelMessageSend(config.BotLogID, "User: " + user.Username + "#"+
+							user.Discrim+ " has been unbanned.")
+						if err != nil {
+
+							fmt.Println("Error:", err)
+						}
+
+						// Removes the user ban from bannedUsers.json
+						BannedUsersSlice = append(BannedUsersSlice[:i], BannedUsersSlice[i+1:]...)
+
+						// Writes to bannedUsers.json
+						BannedUsersWrite(BannedUsersSlice)
 					}
-
-					UnbanUser(BannedUsersSlice[i].ID, s)
-
-					//Sends a message to bot-log
-					_, err := s.ChannelMessageSend(config.BotLogID, "User: "+user.Username+"#"+
-						user.Discrim+" has been unbanned.")
-					if err != nil {
-
-						fmt.Println("Error: ", err)
-					}
-
-					//Removes the user ban from bannedUsers.json
-					BannedUsersSlice = append(BannedUsersSlice[:i], BannedUsersSlice[i+1:]...)
-
-					//Writes to bannedUsers.json
-					BannedUsersWrite(BannedUsersSlice)
 				}
 			}
 		}
-	}
-}
 
-// Checks if it's time to send rss thread every 15 sec
-func RssThreadReady(s *discordgo.Session, e *discordgo.Ready) {
-
-	//Checks whether it has to post rss thread every 15 seconds
-	for range time.NewTicker(15 * time.Second).C {
-
+		// Checks whether it has to post rss thread every 15 seconds
 		RSSParser(*s)
-	}
-
-}
-
-//Unbans a user via ID
-func UnbanUser(id string, s *discordgo.Session) {
-
-	//Reads memberInfo.json
-	MemberInfoRead()
-
-	//Unbans user
-	err := s.GuildBanDelete(config.ServerID, id)
-	if err != nil {
-
-		fmt.Println("Error unbanning: ", err)
 	}
 }
 
@@ -95,63 +83,61 @@ func RSSParser(s discordgo.Session) {
 		fmt.Println("Error:", err)
 	}
 
-	// Reads RssThreads files
-	RssThreadsRead()
-	RssThreadsCheckRead()
-
-	//Saves current time
+	// Saves current time
 	t := time.Now()
 
-	// Checks if the feed timeout to avoid error. If no nil then it continues down
-	if feed != nil {
+	// Checks if the feed timed out to avoid error
+	if feed == nil {
 
-		// Removes a thread if more than 16 hours have passed
-		for p := 0; p < len(ReadRssThreadsCheck); p++ {
+		return
+	}
 
-			// Saves the date of removal in separate variable and then adds 10 hours to it
-			tenHours := time.Hour * 10
-			dateRemoval := ReadRssThreadsCheck[p].Date.Add(tenHours)
+	// Removes a thread if more than 16 hours have passed
+	for p := 0; p < len(ReadRssThreadsCheck); p++ {
 
-			// Calculates if it's time to remove
-			difference := t.Sub(dateRemoval)
-			if difference > 0 {
+		// Saves the date of removal in separate variable and then adds 10 hours to it
+		tenHours := time.Hour * 10
+		dateRemoval := ReadRssThreadsCheck[p].Date.Add(tenHours)
 
-				// Removes the fact that the thread had been posted already
-				RssThreadsCheckRemove(ReadRssThreadsCheck[p].Thread, ReadRssThreadsCheck[p].Date)
-			}
+		// Calculates if it's time to remove
+		difference := t.Sub(dateRemoval)
+		if difference > 0 {
+
+			// Removes the fact that the thread had been posted already
+			RssThreadsTimerRemove(ReadRssThreadsCheck[p].Thread, ReadRssThreadsCheck[p].Date)
 		}
+	}
 
-		// Iterates through each feed item to see if it finds something from storage
-		for i := 0; i < len(feed.Items); i++ {
-			for j := 0; j < len(ReadRssThreads); j++ {
+	// Iterates through each feed item to see if it finds something from storage
+	for i := 0; i < len(feed.Items); i++ {
+		for j := 0; j < len(ReadRssThreads); j++ {
 
-				itemTitleLowercase := strings.ToLower(feed.Items[i].Title)
-				itemAuthorLowercase := strings.ToLower(feed.Items[i].Author.Name)
-				storageAuthorLowercase := strings.ToLower(ReadRssThreads[j].Author)
+			itemTitleLowercase := strings.ToLower(feed.Items[i].Title)
+			itemAuthorLowercase := strings.ToLower(feed.Items[i].Author.Name)
+			storageAuthorLowercase := strings.ToLower(ReadRssThreads[j].Author)
 
-				if strings.Contains(itemTitleLowercase, ReadRssThreads[j].Thread) &&
-					strings.Contains(itemAuthorLowercase, storageAuthorLowercase) {
+			if strings.Contains(itemTitleLowercase, ReadRssThreads[j].Thread) &&
+				strings.Contains(itemAuthorLowercase, storageAuthorLowercase) {
 
-					threadExists := false
+				threadExists := false
 
-					for k := 0; k < len(ReadRssThreadsCheck); k++ {
-						if ReadRssThreadsCheck[k].Thread == ReadRssThreads[j].Thread {
+				for k := 0; k < len(ReadRssThreadsCheck); k++ {
+					if ReadRssThreadsCheck[k].Thread == ReadRssThreads[j].Thread {
 
-							threadExists = true
-						}
+						threadExists = true
 					}
+				}
 
-					if threadExists == false {
+				if threadExists == false {
 
-						// Writes to storage that the thread has been posted
-						RssThreadsCheckWrite(ReadRssThreads[j].Thread, t)
+					// Writes to storage that the thread has been posted
+					RssThreadsTimerWrite(ReadRssThreads[j].Thread, t)
 
-						// Sends the thread to the channel
-						_, err = s.ChannelMessageSend(ReadRssThreads[j].Channel, feed.Items[i].Link)
-						if err != nil {
+					// Prints the thread to the channel
+					_, err = s.ChannelMessageSend(ReadRssThreads[j].Channel, feed.Items[i].Link)
+					if err != nil {
 
-							fmt.Println("Error: ", err)
-						}
+						fmt.Println("Error:", err)
 					}
 				}
 			}
