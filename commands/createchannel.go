@@ -124,7 +124,9 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		ID:   newRole.ID,
 		Name: command,
 	}
+	misc.MapMutex.Lock()
 	misc.SpoilerMap[newRole.ID] = &tempRole
+	misc.MapMutex.Unlock()
 	misc.SpoilerRolesWrite(misc.SpoilerMap)
 
 	// Pulls info on server roles

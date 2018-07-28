@@ -33,8 +33,10 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Pulls userID from 2nd parameter of commandStrings, else print error
-	userID := misc.GetUserID(s, m, commandStrings)
-	if userID == "" {
+	userID, err := misc.GetUserID(s, m, commandStrings)
+	if err != nil {
+
+		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
@@ -142,8 +144,10 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Pulls userID from 2nd parameter of commandStrings, else print error
-	userID := misc.GetUserID(s, m, commandStrings)
-	if userID == "" {
+	userID, err := misc.GetUserID(s, m, commandStrings)
+	if err != nil {
+
+		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
@@ -251,8 +255,10 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Pulls userID from 2nd parameter of commandStrings, else print error
-	userID := misc.GetUserID(s, m, commandStrings)
-	if userID == "" {
+	userID, err := misc.GetUserID(s, m, commandStrings)
+	if err != nil {
+
+		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 

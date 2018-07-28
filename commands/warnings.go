@@ -12,9 +12,7 @@ import (
 // Adds a warning to a specific user in memberInfo.json without telling them
 func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	var (
-		warning string
-	)
+	var warning string
 
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
@@ -34,8 +32,10 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	userID := misc.GetUserID(s, m, commandStrings)
-	if userID == "" {
+	userID, err := misc.GetUserID(s, m, commandStrings)
+	if err != nil {
+
+		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
@@ -87,9 +87,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 // Issues a warning to a specific user in memberInfo.json wand tells them
 func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	var (
-		warning string
-	)
+	var warning string
 
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
@@ -109,8 +107,10 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	userID := misc.GetUserID(s, m, commandStrings)
-	if userID == "" {
+	userID, err := misc.GetUserID(s, m, commandStrings)
+	if err != nil {
+
+		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 

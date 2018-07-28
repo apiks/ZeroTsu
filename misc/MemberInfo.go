@@ -64,6 +64,7 @@ func MemberInfoRead() {
 	err = json.Unmarshal(memberInfoByte, &MemberInfoMap)
 	if err != nil {
 
+		MapMutex.Unlock()
 		return
 	}
 	MapMutex.Unlock()
@@ -77,6 +78,7 @@ func MemberInfoWrite(info map[string]*UserInfo) {
 	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
 
+		MapMutex.Unlock()
 		return
 	}
 	MapMutex.Unlock()
@@ -92,7 +94,7 @@ func MemberInfoWrite(info map[string]*UserInfo) {
 // Reads banned users info from bannedUsers.json
 func BannedUsersRead() {
 
-	// Reads all the banned users from the bannedUsers.json file and puts them in bannedusersByte as bytes
+	// Reads all the banned users from the bannedUsers.json file and puts them in banneUsersByte as bytes
 	bannedUsersByte, err := ioutil.ReadFile("database/bannedUsers.json")
 	if err != nil {
 
@@ -112,14 +114,14 @@ func BannedUsersRead() {
 func BannedUsersWrite(info []BannedUsers) {
 
 	// Turns info into byte ready to be pushed to file
-	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
+	marshaledStruct, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
 
 		return
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile("database/bannedUsers.json", MarshaledStruct, 0644)
+	err = ioutil.WriteFile("database/bannedUsers.json", marshaledStruct, 0644)
 	if err != nil {
 
 		return
@@ -130,8 +132,6 @@ func BannedUsersWrite(info []BannedUsers) {
 func InitializeUser(u *discordgo.Member) {
 
 	var temp UserInfo
-
-	MapMutex.Lock()
 
 	// Sets ID, username and discriminator
 	temp.ID = u.User.ID
@@ -146,8 +146,8 @@ func InitializeUser(u *discordgo.Member) {
 	// Sets join date
 	temp.JoinDate = join
 
+	MapMutex.Lock()
 	MemberInfoMap[u.User.ID] = &temp
-
 	MapMutex.Unlock()
 }
 
@@ -227,10 +227,14 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	}
 
 	// Fetches user from memberInfo
+	MapMutex.Lock()
 	existingUser, ok := MemberInfoMap[e.User.ID]
 	if !ok {
+
+		MapMutex.Unlock()
 		return
 	}
+	MapMutex.Unlock()
 
 	// If user is already in memberInfo but hasn't verified before tell him to verify now
 	if MemberInfoMap[e.User.ID].RedditUsername == "" && initialized == false {
@@ -257,12 +261,10 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 			}
 		}
 
-		MapMutex.Lock()
 		if flag {
 			existingUser.PastUsernames = append(existingUser.PastUsernames, user.User.Username)
 			existingUser.Username = user.User.Username
 		}
-		MapMutex.Unlock()
 	}
 
 	// Checks if the user's current nickname is the same as the one in the database. Otherwise updates
@@ -279,20 +281,16 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 			}
 		}
 
-		MapMutex.Lock()
 		if flag {
 			existingUser.PastNicknames = append(existingUser.PastNicknames, e.Nick)
 			existingUser.Nickname = user.Nick
 		}
-		MapMutex.Unlock()
 	}
 
 	// Checks if the discrim in database is the same as the discrim used by the user. If not it changes it
 	if user.User.Discriminator != existingUser.Discrim {
 
-		MapMutex.Lock()
 		existingUser.Discrim = user.User.Discriminator
-		MapMutex.Unlock()
 	}
 
 	// Writes to memberInfo.json
@@ -319,10 +317,14 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	}
 
 	// Fetches user from memberInfo if possible
+	MapMutex.Lock()
 	user, ok := MemberInfoMap[e.User.ID]
 	if !ok {
+
+		MapMutex.Unlock()
 		return
 	}
+	MapMutex.Unlock()
 
 	// Checks usernames and updates if needed
 	if user.Username != e.User.Username {
@@ -338,12 +340,10 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 			}
 		}
 
-		MapMutex.Lock()
 		if flag {
 			user.PastUsernames = append(user.PastUsernames, e.User.Username)
 			user.Username = e.User.Username
 		}
-		MapMutex.Unlock()
 	}
 
 	// Checks nicknames and updates if needed
@@ -360,12 +360,10 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 			}
 		}
 
-		MapMutex.Lock()
 		if flag {
 			user.PastNicknames = append(user.PastNicknames, e.Nick)
 			user.Nickname = e.Nick
 		}
-		MapMutex.Unlock()
 	}
 
 	// Checks if the discrim in database is the same as the discrim used by the user. If not it changes it

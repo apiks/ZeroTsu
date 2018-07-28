@@ -31,10 +31,10 @@ type VoteInfo struct {
 func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		peopleNum= 7
-		descriptionSlice []string
+		peopleNum= 			7
+		descriptionSlice 	[]string
 
-		voteChannel channel
+		voteChannel 		channel
 	)
 
 	messageLowercase := strings.ToLower(m.Content)
@@ -157,8 +157,6 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var temp VoteInfo
 
-	MapMutex.Lock()
-
 	// Saves the date of removal in separate variable and then adds 30 hours to it
 	thirtyHours := time.Hour * 30
 	dateRemoval := t.Add(thirtyHours)
@@ -172,8 +170,8 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	temp.VotesReq = peopleNum
 	temp.MessageReact = messageReact
 
+	MapMutex.Lock()
 	VoteInfoMap[m.ID] = &temp
-
 	MapMutex.Unlock()
 
 	// Writes to storage
@@ -325,6 +323,7 @@ func VoteInfoRead() {
 	err = json.Unmarshal(voteInfoByte, &VoteInfoMap)
 	if err != nil {
 
+		MapMutex.Unlock()
 		return
 	}
 	MapMutex.Unlock()
@@ -335,15 +334,16 @@ func VoteInfoWrite(info map[string]*VoteInfo) {
 
 	// Turns info slice into byte ready to be pushed to file
 	MapMutex.Lock()
-	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
+	marshaledStruct, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
 
+		MapMutex.Unlock()
 		return
 	}
 	MapMutex.Unlock()
 
 	//Writes to file
-	err = ioutil.WriteFile("database/voteInfo.json", MarshaledStruct, 0644)
+	err = ioutil.WriteFile("database/voteInfo.json", marshaledStruct, 0644)
 	if err != nil {
 
 		return

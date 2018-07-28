@@ -13,6 +13,8 @@ import (
 // Unbans a user and updates their memberInfo entry
 func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 
+	var banFlag = false
+
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.Split(messageLowercase, " ")
 
@@ -29,8 +31,10 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
-	userID := misc.GetUserID(s, m, commandStrings)
-	if userID == "" {
+	userID, err := misc.GetUserID(s, m, commandStrings)
+	if err != nil {
+
+		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
@@ -40,8 +44,6 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
-
-	var banFlag = false
 
 	// Goes through every banned user from bannedUsers.json and if the user is in it, confirms that user is a banned one
 	if misc.BannedUsersSlice == nil {

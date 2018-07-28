@@ -97,7 +97,7 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 
-		// Sends message to user's DMs
+		// Sends message to user's DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 
@@ -206,7 +206,12 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	phrase := strings.Replace(messageLowercase, config.BotPrefix+"addfilter ", "", -1)
 
 	// Writes to filters.json
-	filterExists := misc.FiltersWrite(phrase)
+	filterExists, err := misc.FiltersWrite(phrase)
+	if err != nil {
+
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
 
 	if filterExists == false {
 		_, err := s.ChannelMessageSend(m.ChannelID, "`" + phrase + "` has been added to the filter list.")
@@ -273,7 +278,12 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	phrase := strings.Replace(messageLowercase, config.BotPrefix+"removefilter ", "", -1)
 
 	// Removes phrase from storage and memory
-	filterExists := misc.FiltersRemove(phrase)
+	filterExists, err := misc.FiltersRemove(phrase)
+	if err != nil {
+
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
 
 	if filterExists == true {
 
@@ -309,7 +319,6 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 	var filters string
 
 	if len(misc.ReadFilters) == 0 {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no filters.")
 		if err != nil {
 
@@ -324,16 +333,13 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Iterates through all the filters if they exist and adds them to the filters string
-	if len(misc.ReadFilters) != 0 {
-		for i := 0; i < len(misc.ReadFilters); i++ {
+	for i := 0; i < len(misc.ReadFilters); i++ {
+		if filters == "" {
 
-			if filters == "" {
+			filters = "`" + misc.ReadFilters[i].Filter + "`"
+		} else {
 
-				filters = "`" + misc.ReadFilters[i].Filter + "`"
-			} else {
-
-				filters = filters + "\n `" + misc.ReadFilters[i].Filter + "`"
-			}
+			filters = filters + "\n `" + misc.ReadFilters[i].Filter + "`"
 		}
 	}
 

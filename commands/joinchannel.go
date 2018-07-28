@@ -15,6 +15,8 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	var (
 		roleID         string
 		name           string
+		chanMention    string
+		topic		   string
 
 		hasRoleAlready bool
 		roleExists	   bool
@@ -138,8 +140,6 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	if hasRoleAlready == true {
 
-		var chanMention string
-
 		// Sets the channel mention to the variable chanMention
 		for j := 0; j < len(cha); j++ {
 			if cha[j].Name == name {
@@ -180,11 +180,6 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Gives role to user if the role is between dummy opt-ins
 	if role.Position < misc.OptinUnderPosition &&
 		role.Position > misc.OptinAbovePosition {
-
-		var (
-			chanMention string
-			topic		string
-		)
 
 		err = s.GuildMemberRoleAdd(config.ServerID, m.Author.ID, roleID)
 		if err != nil {

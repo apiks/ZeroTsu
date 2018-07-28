@@ -26,12 +26,9 @@ var (
 	SpoilerPerms       = discordgo.PermissionSendMessages + discordgo.PermissionReadMessages + discordgo.PermissionReadMessageHistory
 	SpoilerMap         = make(map[string]*discordgo.Role)
 
-	roleDeleted = false
-
 	ReadFilters  []FilterStruct
 
 	ReadSpoilerRoles []discordgo.Role
-	roleExists       bool
 
 	ReadRssThreads      []RssThreadStruct
 	ReadRssThreadsCheck []RssThreadCheckStruct
@@ -157,81 +154,87 @@ func (c *UserAgentTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 	return c.RoundTripper.RoundTrip(r)
 }
 
-// Adds string "phrase" to filters.json and memory and returns bool
-func FiltersWrite(phrase string) bool {
+// Adds string "phrase" to filters.json and memory
+func FiltersWrite(phrase string) (bool, error) {
 
-	var filterExists bool
+	var (
+		phraseStruct = 	FilterStruct{phrase}
+		err 			error
+	)
 
-	// Creates a struct in which we'll keep the phrase
-	phraseStruct := FilterStruct{phrase}
+	if len(ReadFilters) == 0 {
 
+		return false, err
+	}
 	// Appends the new filtered phrase to a slice of all of the old ones if it doesn't exist
-	if len(ReadFilters) != 0 {
-		for i := 0; i < len(ReadFilters); i++ {
-			if ReadFilters[i].Filter == phraseStruct.Filter {
+	for i := 0; i < len(ReadFilters); i++ {
+		if ReadFilters[i].Filter == phraseStruct.Filter {
 
-				filterExists = true
-				break
-			}
+			return true, err
+		}
+	}
+
+	ReadFilters = append(ReadFilters, phraseStruct)
+
+	// Turns that struct slice into bytes again to be ready to written to file
+	marshaledStruct, err := json.MarshalIndent(ReadFilters, "", "    ")
+	if err != nil {
+
+		return false, err
+	}
+
+	// Writes to file
+	err = ioutil.WriteFile("database/filters.json", marshaledStruct, 0644)
+	if err != nil {
+
+		return false, err
+	}
+
+	return false, err
+}
+
+// Removes string "phrase" from filters.json and memory
+func FiltersRemove(phrase string) (bool, error) {
+
+	var (
+		filterExists 	bool
+		phraseStruct = 	FilterStruct{phrase}
+		err          	error
+	)
+
+	if len(ReadFilters) == 0 {
+
+		return false, err
+	}
+	// Deletes the filtered phrase if it finds it exists
+	for i := 0; i < len(ReadFilters); i++ {
+		if ReadFilters[i].Filter == phraseStruct.Filter {
+
+			filterExists = true
+			ReadFilters = append(ReadFilters[:i], ReadFilters[i+1:]...)
 		}
 	}
 
 	if filterExists == false {
 
-		ReadFilters = append(ReadFilters, phraseStruct)
+		return false, err
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, _ := json.MarshalIndent(ReadFilters, "", "    ")
+	marshaledStruct, err := json.Marshal(ReadFilters)
+	if err != nil {
+
+		return true, err
+	}
 
 	// Writes to file
-	_ = ioutil.WriteFile("database/filters.json", MarshaledStruct, 0644)
+	err = ioutil.WriteFile("database/filters.json", marshaledStruct, 0644)
+	if err != nil {
 
-	if filterExists == true {
-
-		return true
-	} else {
-
-		return false
-	}
-}
-
-// Removes string "phrase" from filters.json and memory and returns bool
-func FiltersRemove(phrase string) bool {
-
-	var filterExists bool
-
-	// Creates a struct in which we'll keep the phrase
-	phraseStruct := FilterStruct{phrase}
-
-	// Deletes the filtered phrase if it finds it exists
-	if len(ReadFilters) != 0 {
-		for i := 0; i < len(ReadFilters); i++ {
-			if ReadFilters[i].Filter == phraseStruct.Filter {
-
-				filterExists = true
-
-				if filterExists == true {
-
-					ReadFilters = append(ReadFilters[:i], ReadFilters[i+1:]...)
-				}
-			}
-		}
+		return true, err
 	}
 
-	// Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, _ := json.Marshal(ReadFilters)
-
-	// Writes to file
-	_ = ioutil.WriteFile("database/filters.json", MarshaledStruct, 0644)
-
-	if filterExists == true {
-
-		return true
-	} else {
-
-		return false
-	}
+	return true, err
 }
 
 // Reads filters from filters.json
@@ -245,15 +248,15 @@ func FiltersRead() {
 	}
 
 	// Takes the filtered words from filter.json from byte and puts them into the FilterStruct struct slice
-	err = json.Unmarshal(filtersByte, &ReadFilters)
-	if err != nil {
-
-		return
-	}
+	_ = json.Unmarshal(filtersByte, &ReadFilters)
 }
 
 // Writes spoilerRoles map to spoilerRoles.json
 func SpoilerRolesWrite(SpoilerMap map[string]*discordgo.Role) {
+
+	var (
+		roleExists  bool
+	)
 
 	// Appends the new spoiler role to a slice of all of the old ones if it doesn't exist
 	if len(ReadSpoilerRoles) == 0 {
@@ -283,48 +286,42 @@ func SpoilerRolesWrite(SpoilerMap map[string]*discordgo.Role) {
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, err := json.MarshalIndent(ReadSpoilerRoles, "", "    ")
+	marshaledStruct, err := json.MarshalIndent(ReadSpoilerRoles, "", "    ")
 	if err != nil {
 
 		return
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile("database/spoilerRoles.json", MarshaledStruct, 0644)
-	if err != nil {
-
-		return
-	}
+	_ = ioutil.WriteFile("database/spoilerRoles.json", marshaledStruct, 0644)
 }
 
 // Deletes a role from spoilerRoles map to spoilerRoles.json
 func SpoilerRolesDelete(roleID string) {
 
-	if len(ReadSpoilerRoles) != 0 {
-		for i := 0; i < len(ReadSpoilerRoles); i++ {
-			if ReadSpoilerRoles[i].ID == roleID {
+	if len(ReadSpoilerRoles) == 0 {
 
-				ReadSpoilerRoles = append(ReadSpoilerRoles[:i], ReadSpoilerRoles[i+1:]...)
-			}
+		return
+	}
+	for i := 0; i < len(ReadSpoilerRoles); i++ {
+		if ReadSpoilerRoles[i].ID == roleID {
+
+			ReadSpoilerRoles = append(ReadSpoilerRoles[:i], ReadSpoilerRoles[i+1:]...)
 		}
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, err := json.MarshalIndent(ReadSpoilerRoles, "", "    ")
+	marshaledStruct, err := json.MarshalIndent(ReadSpoilerRoles, "", "    ")
 	if err != nil {
 
 		return
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile("database/spoilerRoles.json", MarshaledStruct, 0644)
-	if err != nil {
-
-		return
-	}
+	_ = ioutil.WriteFile("database/spoilerRoles.json", marshaledStruct, 0644)
 }
 
-// Reads filters from spoilerRoles.json
+// Reads spoiler roles from spoilerRoles.json
 func SpoilerRolesRead() {
 
 	// Reads all the spoiler roles from the spoilerRoles.json file and puts them in spoilerRolesByte as bytes
@@ -341,123 +338,115 @@ func SpoilerRolesRead() {
 		return
 	}
 
-	// Resets spoilerMap map to be ready to fill
-	SpoilerMap = nil
-
-	if SpoilerMap == nil {
-
-		SpoilerMap = make(map[string]*discordgo.Role)
-	}
-
 	// Fills spoilerMap with roles from the spoilerRoles.json file if latter is not empty
-	if len(ReadSpoilerRoles) != 0 {
-		for i := 0; i < len(ReadSpoilerRoles); i++ {
+	for i := 0; i < len(ReadSpoilerRoles); i++ {
 
-			SpoilerMap[ReadSpoilerRoles[i].ID] = &ReadSpoilerRoles[i]
-		}
+		SpoilerMap[ReadSpoilerRoles[i].ID] = &ReadSpoilerRoles[i]
 	}
 }
 
 // Every time a role is deleted it deletes it from SpoilerMap
 func ListenForDeletedRoleHandler(s *discordgo.Session, g *discordgo.GuildRoleDelete) {
 
-	if g.GuildID == config.ServerID {
+	if g.GuildID != config.ServerID {
 
-		if SpoilerMap[g.RoleID] != nil {
-
-			roleDeleted = true
-		}
-
-		if roleDeleted == true {
-
-			MapMutex.Lock()
-			delete(SpoilerMap, g.RoleID)
-			MapMutex.Unlock()
-
-			SpoilerRolesDelete(g.RoleID)
-		}
+		return
 	}
+	if SpoilerMap[g.RoleID] != nil {
+
+		return
+	}
+
+	MapMutex.Lock()
+	delete(SpoilerMap, g.RoleID)
+	MapMutex.Unlock()
+
+	SpoilerRolesDelete(g.RoleID)
 }
 
 // Writes string "thread" to rssThreadsCheck.json
-func RssThreadsWrite(thread string, channel string, author string) bool {
+func RssThreadsWrite(thread string, channel string, author string) (bool, error) {
 
-	// Creates a struct in which we'll keep the thread
-	threadStruct := RssThreadStruct{thread, channel, author}
-
-	threadExists := false
+	var (
+		threadStruct = 	RssThreadStruct{thread, channel, author}
+		err				error
+	)
 
 	// Appends the new thread to a slice of all of the old ones if it doesn't exist
-	if len(ReadRssThreads) != 0 {
-		for i := 0; i < len(ReadRssThreads); i++ {
-			if ReadRssThreads[i].Thread == threadStruct.Thread {
+	if len(ReadRssThreads) == 0 {
 
-				threadExists = true
-				break
-			}
+		return false, err
+	}
+	for i := 0; i < len(ReadRssThreads); i++ {
+		if ReadRssThreads[i].Thread == threadStruct.Thread {
+
+			return true, err
+		}
+	}
+
+	ReadRssThreads = append(ReadRssThreads, threadStruct)
+
+	// Turns that struct slice into bytes again to be ready to written to file
+	marshaledStruct, err := json.MarshalIndent(ReadRssThreads, "", "    ")
+	if err != nil {
+
+		return false, err
+	}
+
+	// Writes to file
+	err = ioutil.WriteFile("database/rssThreads.json", marshaledStruct, 0644)
+	if err != nil {
+
+		return false, err
+	}
+
+	return false, err
+}
+
+// Removes string "thread" from rssThreads.json
+func RssThreadsRemove(thread string, channel string, author string) (bool, error) {
+
+	var (
+		threadExists = false
+		threadStruct = RssThreadStruct{thread, channel, author}
+		err          error
+	)
+
+	thread = strings.ToLower(thread)
+
+	// Deletes the thread if it finds it exists
+	if len(ReadRssThreads) != 0 {
+
+		return false, err
+	}
+	for i := 0; i < len(ReadRssThreads); i++ {
+		if ReadRssThreads[i].Thread == threadStruct.Thread {
+
+			threadExists = true
+			ReadRssThreads = append(ReadRssThreads[:i], ReadRssThreads[i+1:]...)
 		}
 	}
 
 	if threadExists == false {
 
-		ReadRssThreads = append(ReadRssThreads, threadStruct)
+		return false, err
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, _ := json.MarshalIndent(ReadRssThreads, "", "    ")
+	marshaledStruct, err := json.Marshal(ReadRssThreads)
+	if err != nil {
+
+		return true, err
+	}
 
 	// Writes to file
-	_ = ioutil.WriteFile("database/rssThreads.json", MarshaledStruct, 0644)
+	err = ioutil.WriteFile("database/rssThreads.json", marshaledStruct, 0644)
+	if err != nil {
 
-	if threadExists == true {
-
-		return true
-	} else {
-
-		return false
-	}
-}
-
-// Removes string "thread" from rssThreads.json
-func RssThreadsRemove(thread string, channel string, author string) bool {
-
-	// Puts the thread string into lowercase
-	thread = strings.ToLower(thread)
-
-	// Creates a struct in which we'll keep the thread
-	threadStruct := RssThreadStruct{thread, channel, author}
-
-	threadExists := false
-
-	// Deletes the thread if it finds it exists
-	if len(ReadRssThreads) != 0 {
-		for i := 0; i < len(ReadRssThreads); i++ {
-
-			if ReadRssThreads[i].Thread == threadStruct.Thread {
-
-				threadExists = true
-
-				if threadExists == true {
-
-					ReadRssThreads = append(ReadRssThreads[:i], ReadRssThreads[i+1:]...)
-				}
-			}
-		}
+		return true, err
 	}
 
-	// Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, _ := json.Marshal(ReadRssThreads)
-
-	// Writes to file
-	_ = ioutil.WriteFile("database/rssThreads.json", MarshaledStruct, 0644)
-
-	if threadExists == true {
-
-		return true
-	} else {
-
-		return false
-	}
+	return true, err
 }
 
 // Reads threads from rssThreads.json
@@ -481,19 +470,21 @@ func RssThreadsRead() {
 // Writes string "thread" to rssThreadCheck.json
 func RssThreadsTimerWrite(thread string, date time.Time) {
 
-	// Creates a struct in which we'll keep the thread
-	threadCheckStruct := RssThreadCheckStruct{thread, date}
+	var (
+		threadExists= false
+		threadCheckStruct= RssThreadCheckStruct{thread, date}
+	)
 
-	threadExists := false
-
-	//Appends the new thread to a slice of all of the old ones if it doesn't exist
+	// Appends the new thread to a slice of all of the old ones if it doesn't exist
 	if len(ReadRssThreadsCheck) != 0 {
-		for i := 0; i < len(ReadRssThreadsCheck); i++ {
-			if ReadRssThreadsCheck[i].Thread == threadCheckStruct.Thread {
 
-				threadExists = true
-				break
-			}
+		return
+	}
+	for i := 0; i < len(ReadRssThreadsCheck); i++ {
+		if ReadRssThreadsCheck[i].Thread == threadCheckStruct.Thread {
+
+			threadExists = true
+			break
 		}
 	}
 
@@ -503,14 +494,14 @@ func RssThreadsTimerWrite(thread string, date time.Time) {
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, err := json.MarshalIndent(ReadRssThreadsCheck, "", "    ")
+	marshaledStruct, err := json.MarshalIndent(ReadRssThreadsCheck, "", "    ")
 	if err != nil {
 
 		return
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile("database/rssThreadCheck.json", MarshaledStruct, 0644)
+	err = ioutil.WriteFile("database/rssThreadCheck.json", marshaledStruct, 0644)
 	if err != nil {
 
 		return
@@ -520,38 +511,40 @@ func RssThreadsTimerWrite(thread string, date time.Time) {
 // Removes string "thread" to rssThreadCheck.json
 func RssThreadsTimerRemove(thread string, date time.Time) {
 
-	// Puts the thread string into lowercase
+	var (
+		threadExists= false
+		threadCheckStruct= RssThreadCheckStruct{thread, date}
+	)
+
 	thread = strings.ToLower(thread)
-
-	// Creates a struct in which we'll keep the thread
-	threadCheckStruct := RssThreadCheckStruct{thread, date}
-
-	threadExists := false
 
 	// Deletes the thread if it finds it exists
 	if len(ReadRssThreadsCheck) != 0 {
-		for i := 0; i < len(ReadRssThreadsCheck); i++ {
-			if ReadRssThreadsCheck[i].Thread == threadCheckStruct.Thread {
 
-				threadExists = true
+		return
+	}
+	for i := 0; i < len(ReadRssThreadsCheck); i++ {
+		if ReadRssThreadsCheck[i].Thread == threadCheckStruct.Thread {
 
-				if threadExists == true {
-
-					ReadRssThreadsCheck = append(ReadRssThreadsCheck[:i], ReadRssThreadsCheck[i+1:]...)
-				}
-			}
+			threadExists = true
+			ReadRssThreadsCheck = append(ReadRssThreadsCheck[:i], ReadRssThreadsCheck[i+1:]...)
 		}
 	}
 
+	if threadExists == false {
+
+		return
+	}
+
 	// Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, err := json.Marshal(ReadRssThreads)
+	marshaledStruct, err := json.Marshal(ReadRssThreads)
 	if err != nil {
 
 		return
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile("database/rssThreadCheck.json", MarshaledStruct, 0644)
+	err = ioutil.WriteFile("database/rssThreadCheck.json", marshaledStruct, 0644)
 	if err != nil {
 
 		return
@@ -609,7 +602,9 @@ func ResolveTimeFromString(given string) (ret time.Time, perma bool) {
 }
 
 // Resolves a userID from a userID or Mention
-func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string) string {
+func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string) (string, error) {
+
+	var err error
 
 	// Pulls the userID from the second parameter
 	userID := messageSlice[1]
@@ -630,15 +625,15 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 				if err != nil {
 
-					return ""
+					return "", err
 				}
-				return ""
+				return "", err
 			}
-			return ""
+			return "", err
 		}
 	}
 
-	return userID
+	return userID, err
 }
 
 // Mentions channel by *discordgo.Channel. By Kagumi
@@ -656,11 +651,6 @@ func CommandErrorHandler(s *discordgo.Session, m *discordgo.Message, err error) 
 
 	_, err = s.ChannelMessageSend(m.ChannelID, err.Error())
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-		if err != nil {
-
-			return
-		}
-		return
+		_, _ = s.ChannelMessageSend(config.BotLogID, err.Error())
 	}
 }

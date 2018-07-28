@@ -100,10 +100,10 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 			var temp User
 
-			misc.MapMutex.Lock()
-
 			// Decrypts encrypted id from url
 			trueid := misc.Decrypt(misc.Key, id)
+
+			misc.MapMutex.Lock()
 
 			// Make it copy the current cookie map if it exists, otherwise make a new one
 			if UserCookieMap[cookieValue.Value] != nil {
@@ -161,9 +161,10 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		if UserCookieMap[cookieValue.Value] != nil {
 
 			var temp User
-			temp = *UserCookieMap[cookieValue.Value]
 
 			misc.MapMutex.Lock()
+
+			temp = *UserCookieMap[cookieValue.Value]
 
 			// Sets the username + discrim combo if it exists, also sorts out the verified status
 			if misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID] != nil {
@@ -482,12 +483,13 @@ func Verify(cookieValue *http.Cookie, r *http.Request) {
 // Checks if a user in the cookie map has the role and if they're verified it gives it to them, also deletes expired map fields
 func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 
+	var roleID string
+
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
 
 			fmt.Println(rec)
-			VerifiedRoleAdd(s, e)
 		}
 	}()
 
@@ -502,9 +504,6 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 
 			if UserCookieMap[key].RedditName != "" && UserCookieMap[key].DiscordVerifiedStatus == true &&
 				UserCookieMap[key].RedditVerifiedStatus == true {
-
-				// Initializes var roleID which will keep the Verified role ID
-				var roleID string
 
 				// Puts all server roles in roles variable
 				roles, err := s.GuildRoles(config.ServerID)
@@ -554,6 +553,8 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 // Checks if a user is already verified when they join the server and if they are directly assigns them the verified role
 func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
+	var roleID string
+
 	// Checks if the user is an already verified one
 	if misc.MemberInfoMap == nil {
 
@@ -563,58 +564,55 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 		return
 	}
+	if misc.MemberInfoMap[u.User.ID].RedditUsername == "" {
 
-	if misc.MemberInfoMap[u.User.ID].RedditUsername != "" {
-
-		// Initializes var roleID which will keep the Verified role ID
-		var roleID string
-
-		// Puts all server roles in roles
-		roles, err := s.GuildRoles(config.ServerID)
-		if err != nil {
-
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
-			if err != nil {
-
-				return
-			}
-			return
-		}
-
-		// Fetches ID of Verified role
-		for i := 0; i < len(roles); i++ {
-			if roles[i].Name == "Verified" {
-
-				roleID = roles[i].ID
-			}
-		}
-
-		// Assigns role
-		err = s.GuildMemberRoleAdd(config.ServerID, u.User.ID, roleID)
-		if err != nil {
-
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
-			if err != nil {
-
-				return
-			}
-			return
-		}
-
-		CheckAltAccount(s, u.User.ID)
+		return
 	}
+
+	// Puts all server roles in roles
+	roles, err := s.GuildRoles(config.ServerID)
+	if err != nil {
+
+		_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+
+			return
+		}
+		return
+	}
+
+	// Fetches ID of Verified role
+	for i := 0; i < len(roles); i++ {
+		if roles[i].Name == "Verified" {
+
+			roleID = roles[i].ID
+		}
+	}
+
+	// Assigns role
+	err = s.GuildMemberRoleAdd(config.ServerID, u.User.ID, roleID)
+	if err != nil {
+
+		_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+
+			return
+		}
+		return
+	}
+
+	CheckAltAccount(s, u.User.ID)
 }
 
 // Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Verification version
 func CheckAltAccount(s *discordgo.Session, id string) {
 
+	var alts []string
+
 	if misc.MemberInfoMap == nil {
 
 		return
 	}
-
-	// Initializes alts string slice to hold IDs of alts of that reddit username
-	var alts []string
 
 	// Iterates through all users in memberInfo.json
 	for userOne := range misc.MemberInfoMap {

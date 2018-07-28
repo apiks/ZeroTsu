@@ -15,6 +15,18 @@ import (
 // Periodic events such as Unbanning and RSS timer every 15 seconds
 func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
+
+				fmt.Println(err.Error())
+				fmt.Println(rec)
+			}
+		}
+	}()
+
 	err := s.UpdateStatus(0, "with her darling")
 	if err != nil {
 
@@ -25,23 +37,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		}
 	}
 
-	// Saves program from panic and continues running normally without executing the command if it happens
-	defer func() {
-		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
-			if err != nil {
-
-				fmt.Println(err.Error())
-				fmt.Println(rec)
-				StatusReady(s, e)
-			}
-
-			StatusReady(s, e)
-		}
-	}()
-
 	for range time.NewTicker(15 * time.Second).C {
-
 
 		// Goes through bannedUsers.json if it's not empty and unbans if needed
 		if BannedUsersSlice != nil {
@@ -67,12 +63,8 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 						}
 
 						// Sends a message to bot-log
-						_, err = s.ChannelMessageSend(config.BotLogID, "User: " + user.Username + "#"+
+						_, _ = s.ChannelMessageSend(config.BotLogID, "User: " + user.Username + "#"+
 							user.Discrim+ " has been unbanned.")
-						if err != nil {
-
-							_, _ = s.ChannelMessageSend(config.BotLogID, err.Error())
-						}
 
 						// Removes the user ban from bannedUsers.json
 						BannedUsersSlice = append(BannedUsersSlice[:i], BannedUsersSlice[i+1:]...)
@@ -115,14 +107,10 @@ func RSSParser(s discordgo.Session) {
 
 			return
 		}
+		return
 	}
 
 	t := time.Now()
-
-	// Checks if the feed timed out to avoid error
-	if feed == nil {
-		return
-	}
 
 	// Removes a thread if more than 16 hours have passed
 	for p := 0; p < len(ReadRssThreadsCheck); p++ {
@@ -157,22 +145,25 @@ func RSSParser(s discordgo.Session) {
 					if ReadRssThreadsCheck[k].Thread == ReadRssThreads[j].Thread {
 
 						threadExists = true
+						break
 					}
 				}
 
-				if threadExists == false {
+				if threadExists != false {
 
-					// Writes to storage that the thread has been posted
-					RssThreadsTimerWrite(ReadRssThreads[j].Thread, t)
+					return
+				}
 
-					_, err = s.ChannelMessageSend(ReadRssThreads[j].Channel, feed.Items[i].Link)
+				// Writes to storage that the thread has been posted
+				RssThreadsTimerWrite(ReadRssThreads[j].Thread, t)
+
+				_, err = s.ChannelMessageSend(ReadRssThreads[j].Channel, feed.Items[i].Link)
+				if err != nil {
+
+					_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 					if err != nil {
 
-						_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-						if err != nil {
-
-							return
-						}
+						return
 					}
 				}
 			}

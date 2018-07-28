@@ -15,6 +15,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	var (
 		roleID         string
 		name           string
+		chanMention    string
 
 		hasRoleAlready bool
 		roleExists	   bool
@@ -137,8 +138,6 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	if hasRoleAlready == false {
-
-		var chanMention string
 
 		// Sets the channel mention to the variable chanMention
 		for j := 0; j < len(cha); j++ {

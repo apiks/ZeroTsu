@@ -47,12 +47,16 @@ func setRssCommand(s *discordgo.Session, m *discordgo.Message) {
 		author = "/u/AutoLovepon"
 	}
 
-	setRssThread(*s, *m, thread, author)
+	setRssThread(s, m, thread, author)
 }
 
-func setRssThread(s discordgo.Session, m discordgo.Message, thread string, author string) {
+func setRssThread(s *discordgo.Session, m *discordgo.Message, thread string, author string) {
 
-	threadExists := misc.RssThreadsWrite(thread, m.ChannelID, author)
+	threadExists, err := misc.RssThreadsWrite(thread, m.ChannelID, author)
+	if err != nil {
+
+		misc.CommandErrorHandler(s, m, err)
+	}
 
 	if threadExists == false {
 
@@ -133,7 +137,11 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Calls the function to remove the threads from rssThreads.json
-	threadExists := misc.RssThreadsRemove(thread, m.ChannelID, author)
+	threadExists, err := misc.RssThreadsRemove(thread, m.ChannelID, author)
+	if err != nil {
+
+		misc.CommandErrorHandler(s, m, err)
+	}
 
 	if threadExists == true {
 

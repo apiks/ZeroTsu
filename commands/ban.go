@@ -15,31 +15,21 @@ import (
 func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		userID string
-		length string
-		reason string
+		userID  string
+		length  string
+		reason  string
 		success string
 
 		validSlice bool
 
-		temp    misc.BannedUsers
+		temp misc.BannedUsers
 	)
 
 	commandStrings := strings.SplitN(m.Content, " ", 4)
 
-	// Checks if it has all parameters
-	if len(commandStrings) == 4 {
+	if len(commandStrings) != 4 {
 
-		userID = misc.GetUserID(s, m, commandStrings)
-		if userID == "" {
-			return
-		}
-		length = commandStrings[2]
-		reason = commandStrings[3]
-
-	} else {
-
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix + "ban [@user or userID] [time] [reason]` format. \n\n"+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "ban [@user or userID] [time] [reason]` format. \n\n"+
 			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes. Use 0d for permanent.")
 		if err != nil {
 
@@ -53,6 +43,15 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
+	userID, err := misc.GetUserID(s, m, commandStrings)
+	if err != nil {
+
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+	length = commandStrings[2]
+	reason = commandStrings[3]
+
 	// Checks if a number is contained in length var. Fixes some cases of invalid length
 	lengthSlice := strings.Split(length, "")
 	for i := 0; i < len(lengthSlice); i++ {
@@ -64,7 +63,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	if validSlice == false {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid length. \n Usage: `"+config.BotPrefix + "ban [@user or userID] [time] [reason]` format. \n\n"+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid length. \n Usage: `" + config.BotPrefix + "ban [@user or userID] [time] [reason]` format. \n\n"+
 			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes. Use 0d for permanent.")
 		if err != nil {
 
@@ -183,8 +182,8 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Sends a message to bot-log regarding ban
 	if perma == false {
 
-		_, err = s.ChannelMessageSend(m.ChannelID, mem.Username+"#"+mem.Discriminator+" has been banned by "+
-			m.Author.Username+" until _"+UnbanDate.Format("2006-01-02 15:04:05")+"_")
+		_, err = s.ChannelMessageSend(m.ChannelID, mem.Username + "#" + mem.Discriminator + " has been banned by "+
+			m.Author.Username+ " until _"+ UnbanDate.Format("2006-01-02 15:04:05")+ "_")
 		if err != nil {
 
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
@@ -196,7 +195,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	} else {
 
-		_, err = s.ChannelMessageSend(m.ChannelID, mem.Username+"#"+mem.Discriminator+" has been permabanned by "+
+		_, err = s.ChannelMessageSend(m.ChannelID, mem.Username + "#" + mem.Discriminator + " has been permabanned by "+
 			m.Author.Username)
 		if err != nil {
 

@@ -13,6 +13,8 @@ import (
 // Verifies a user with a reddit username and gives them the verified role
 func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
+	var roleID string
+
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.Split(messageLowercase, " ")
 
@@ -33,8 +35,10 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Pulls userID from 2nd parameter of commandStrings, else print error
-	userID := misc.GetUserID(s, m, commandStrings)
-	if userID == "" {
+	userID, err := misc.GetUserID(s, m, commandStrings)
+	if err != nil {
+
+		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
@@ -102,8 +106,6 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Writes modified memberInfo map to storage
 	misc.MemberInfoWrite(misc.MemberInfoMap)
-
-	var roleID string
 
 	// Puts all server roles in roles
 	roles, err := s.GuildRoles(config.ServerID)

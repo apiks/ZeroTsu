@@ -28,16 +28,6 @@ type ReactChannelJoinStruct struct {
 // Gives a specific role to a user if they react
 func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 
-	// Checks if a react channel join is set for that specific message and emoji and continues if true
-	if reactChannelJoinMap[r.MessageID] == nil {
-
-		return
-	}
-	// Checks if it's the correct message and emoji before going down
-	if reactChannelJoinMap[r.MessageID].MessageID != r.MessageID {
-
-		return
-	}
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -48,6 +38,17 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 			}
 		}
 	}()
+
+	// Checks if a react channel join is set for that specific message and emoji and continues if true
+	if reactChannelJoinMap[r.MessageID] == nil {
+
+		return
+	}
+	// Checks if it's the correct message and emoji before going down
+	if reactChannelJoinMap[r.MessageID].MessageID != r.MessageID {
+
+		return
+	}
 
 	// Puts the react API name to lowercase so it is valid with the storage emoji name
 	reactLowercase := strings.ToLower(r.Emoji.APIName())
@@ -115,16 +116,6 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 // Removes a role from user if they unreact
 func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove) {
 
-	// Checks if a react channel join is set for that specific message and emoji and continues if true
-	if reactChannelJoinMap[r.MessageID] == nil {
-
-		return
-	}
-	// Checks if it's the correct message and emoji before going down
-	if reactChannelJoinMap[r.MessageID].MessageID != r.MessageID {
-
-		return
-	}
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -135,6 +126,17 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 			}
 		}
 	}()
+
+	// Checks if a react channel join is set for that specific message and emoji and continues if true
+	if reactChannelJoinMap[r.MessageID] == nil {
+
+		return
+	}
+	// Checks if it's the correct message and emoji before going down
+	if reactChannelJoinMap[r.MessageID].MessageID != r.MessageID {
+
+		return
+	}
 
 	// Puts the react API name to lowercase so it is valid with the storage emoji name
 	reactLowercase := strings.ToLower(r.Emoji.APIName())
@@ -202,6 +204,8 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 // Sets react joins per specific message and emote
 func setReactJoinCommand (s *discordgo.Session, m *discordgo.Message) {
 
+	var roleExists bool
+
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(messageLowercase, " ", 4)
 
@@ -219,6 +223,7 @@ func setReactJoinCommand (s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
+
 	num, err := strconv.Atoi(commandStrings[1])
 	if err != nil || num < 17 {
 
@@ -236,7 +241,6 @@ func setReactJoinCommand (s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if the role exists on the server
-	var roleExists bool
 	roles, err := s.GuildRoles(config.ServerID)
 	if err != nil {
 
@@ -393,6 +397,7 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
+
 	num, err := strconv.Atoi(commandStrings[1])
 	if err != nil || num < 17 {
 
@@ -721,6 +726,7 @@ func viewReactJoinsCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 			return
 		}
+		return
 	}
 
 	// Iterates through all of the set channel joins and assigns them to a string
@@ -773,6 +779,7 @@ func ReactInfoRead() {
 	err = json.Unmarshal(reactChannelJoinByte, &reactChannelJoinMap)
 	if err != nil {
 
+		MapMutex.Unlock()
 		return
 	}
 	MapMutex.Unlock()
@@ -788,9 +795,8 @@ func SaveReactJoin(messageID string, role string, emoji string) {
 
 	if reactChannelJoinMap[messageID] != nil {
 
-		temp = *reactChannelJoinMap[messageID]
-
 		MapMutex.Lock()
+		temp = *reactChannelJoinMap[messageID]
 
 		// Sets MessageID
 		temp.MessageID = messageID
@@ -824,10 +830,10 @@ func SaveReactJoin(messageID string, role string, emoji string) {
 
 	} else {
 
-		MapMutex.Lock()
-
 		// Sets messageID
 		temp.MessageID = messageID
+
+		MapMutex.Lock()
 
 		// Initializes temp.RoleEmoji if it's nil
 		EmojiRoleMapDummy := make(map[string][]string)
@@ -854,15 +860,16 @@ func ReactChannelJoinWrite(info map[string]*ReactChannelJoinStruct) {
 
 	// Turns info slice into byte ready to be pushed to file
 	MapMutex.Lock()
-	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
+	marshaledStruct, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
 
+		MapMutex.Unlock()
 		return
 	}
 	MapMutex.Unlock()
 
 	// Writes to file
-	err = ioutil.WriteFile("database/reactChannelJoin.json", MarshaledStruct, 0644)
+	err = ioutil.WriteFile("database/reactChannelJoin.json", marshaledStruct, 0644)
 	if err != nil {
 
 		return

@@ -14,6 +14,16 @@ import (
 // Sends memberInfo user information to channel
 func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 
+	var (
+		pastUsernames string
+		pastNicknames string
+		warnings      string
+		kicks         string
+		bans          string
+		unbanDate     string
+		splitMessage []string
+	)
+
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.Split(messageLowercase, " ")
 
@@ -32,8 +42,10 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	userID := misc.GetUserID(s, m, commandStrings)
-	if userID == "" {
+	userID, err := misc.GetUserID(s, m, commandStrings)
+	if err != nil {
+
+		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
@@ -57,18 +69,11 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
-	var (
-		pastUsernames string
-		pastNicknames string
-		warnings      string
-		kicks         string
-		bans          string
-		unbanDate     string
-	)
-
+	misc.MapMutex.Lock()
 	// Checks if user is in MemberInfo and assigns to user variable. Else initializes user.
 	user, ok := misc.MemberInfoMap[userID]
 	if !ok {
+		misc.MapMutex.Unlock()
 
 		// Initializes user if he doesn't exist and is in server
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Initializing and whoising empty user.")
@@ -85,8 +90,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.InitializeUser(mem)
 		misc.MemberInfoWrite(misc.MemberInfoMap)
 	}
-
-	misc.MapMutex.Lock()
+	misc.MapMutex.Unlock()
 
 	// Puts past usernames into a string
 	if len(user.PastUsernames) != 0 {
@@ -197,8 +201,6 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		unbanDate = "User has never been banned."
 	}
 
-	misc.MapMutex.Unlock()
-
 	// Sets whois message
 	message := "**User:** " + user.Username + "#" + user.Discrim + "\n\n**Past Usernames:** " + pastUsernames +
 		"\n\n**Past Nicknames:** " + pastNicknames + "\n\n**Warnings:** " + warnings +
@@ -240,8 +242,6 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Resets alts variable
 		alts = nil
 	}
-
-	var splitMessage []string
 
 	// Splits the message if it's over 1950 characters
 	if len(message) > 1950 {

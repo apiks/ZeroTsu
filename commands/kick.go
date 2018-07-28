@@ -19,16 +19,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	commandStrings := strings.SplitN(m.Content, " ", 3)
 
-	// Checks if it has all parameters, else error
-	if len(commandStrings) == 3 {
-
-		userID = misc.GetUserID(s, m, commandStrings)
-		if userID == "" {
-			return
-		}
-		reason = commandStrings[2]
-
-	} else {
+	if len(commandStrings) != 3 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Please use `"+config.BotPrefix+"kick [@user or userID] [reason]` format.")
 		if err != nil {
 
@@ -41,6 +32,14 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
+
+	userID, err := misc.GetUserID(s, m, commandStrings)
+	if err != nil {
+
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+	reason = commandStrings[2]
 
 	// Fetches user from server
 	mem, err := s.User(userID)
