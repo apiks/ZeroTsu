@@ -16,11 +16,6 @@ var (
 		"jpeg", "jpg", "bmp", "tif", "tiff"}
 )
 
-var (
-	whitelist = [...]string{"png", "gif", "gifv",
-		"jpeg", "jpg", "bmp", "tif", "tiff"}
-)
-
 // Checks messages with uploads if they're uploading a whitelisted file type. If not it removes them
 func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {

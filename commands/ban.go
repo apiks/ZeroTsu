@@ -3,12 +3,12 @@ package commands
 import (
 	"strings"
 	"time"
+	"strconv"
 
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
-	"strconv"
 )
 
 // Bans a user for a set period with a reason

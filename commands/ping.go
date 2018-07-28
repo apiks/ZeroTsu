@@ -2,6 +2,8 @@ package commands
 
 import (
 	"github.com/bwmarrin/discordgo"
+
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 // Returns a message on "ping" to see if bot is alive

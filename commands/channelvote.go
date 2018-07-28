@@ -10,7 +10,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/config"
-	"ZeroTsu/misc"
+	"github.com/r-anime/ZeroTsu/misc"
 )
 
 var VoteInfoMap = make(map[string]*VoteInfo)

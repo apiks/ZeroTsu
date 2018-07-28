@@ -2,6 +2,8 @@ package commands
 
 import (
 	"github.com/bwmarrin/discordgo"
+
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 // Returns a message on "about" for bot information
