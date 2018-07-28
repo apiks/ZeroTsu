@@ -12,7 +12,7 @@ import (
 )
 
 // Handles filter in an onMessage basis
-func FilterHandler(s *discordgo.Session, m *discordgo.Message) {
+func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Checks if it's within the /r/anime server
 	ch, err := s.State.Channel(m.ChannelID)
@@ -51,7 +51,7 @@ func FilterHandler(s *discordgo.Session, m *discordgo.Message) {
 	messageLowercase := strings.ToLower(m.Content)
 
 	// Checks if message should be filtered
-	badWordExists, badWordsSlice = isFiltered(m)
+	badWordExists, badWordsSlice = isFiltered(m.Message)
 
 	// If function returns true handle the filtered message
 	if badWordExists {
@@ -86,7 +86,7 @@ func FilterHandler(s *discordgo.Session, m *discordgo.Message) {
 		now := t.Format("2006-01-02 15:04:05") + " " + z
 
 		// Sends embed mod message
-		err := FilterEmbed(s, m, removals, now, m.ChannelID)
+		err := FilterEmbed(s, m.Message, removals, now, m.ChannelID)
 		if err != nil {
 
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
