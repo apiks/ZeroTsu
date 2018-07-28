@@ -42,7 +42,8 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
 			if err != nil {
 
-				return
+				l.Println(err.Error())
+				l.Println(rec)
 			}
 		}
 	}()

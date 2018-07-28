@@ -182,18 +182,10 @@ func FiltersWrite(phrase string) bool {
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, err := json.MarshalIndent(ReadFilters, "", "    ")
-	if err != nil {
-
-		fmt.Println(err)
-	}
+	MarshaledStruct, _ := json.MarshalIndent(ReadFilters, "", "    ")
 
 	// Writes to file
-	err = ioutil.WriteFile("database/filters.json", MarshaledStruct, 0644)
-	if err != nil {
-
-		fmt.Println(err)
-	}
+	_ = ioutil.WriteFile("database/filters.json", MarshaledStruct, 0644)
 
 	if filterExists == true {
 
@@ -228,18 +220,10 @@ func FiltersRemove(phrase string) bool {
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, err := json.Marshal(ReadFilters)
-	if err != nil {
-
-		fmt.Println(err)
-	}
+	MarshaledStruct, _ := json.Marshal(ReadFilters)
 
 	// Writes to file
-	err = ioutil.WriteFile("database/filters.json", MarshaledStruct, 0644)
-	if err != nil {
-
-		fmt.Println(err)
-	}
+	_ = ioutil.WriteFile("database/filters.json", MarshaledStruct, 0644)
 
 	if filterExists == true {
 
@@ -257,14 +241,14 @@ func FiltersRead() {
 	filtersByte, err := ioutil.ReadFile("database/filters.json")
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		return
 	}
 
 	// Takes the filtered words from filter.json from byte and puts them into the FilterStruct struct slice
 	err = json.Unmarshal(filtersByte, &ReadFilters)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		return
 	}
 }
 
@@ -273,12 +257,12 @@ func SpoilerRolesWrite(SpoilerMap map[string]*discordgo.Role) {
 
 	// Appends the new spoiler role to a slice of all of the old ones if it doesn't exist
 	if len(ReadSpoilerRoles) == 0 {
-		for k, _ := range SpoilerMap {
+		for k := range SpoilerMap {
 
 			ReadSpoilerRoles = append(ReadSpoilerRoles, *SpoilerMap[k])
 		}
 	} else {
-		for k, _ := range SpoilerMap {
+		for k := range SpoilerMap {
 			for i := 0; i < len(ReadSpoilerRoles); i++ {
 				if ReadSpoilerRoles[i].ID == SpoilerMap[k].ID {
 
@@ -302,14 +286,14 @@ func SpoilerRolesWrite(SpoilerMap map[string]*discordgo.Role) {
 	MarshaledStruct, err := json.MarshalIndent(ReadSpoilerRoles, "", "    ")
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
 
 	// Writes to file
 	err = ioutil.WriteFile("database/spoilerRoles.json", MarshaledStruct, 0644)
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
 }
 
@@ -329,14 +313,14 @@ func SpoilerRolesDelete(roleID string) {
 	MarshaledStruct, err := json.MarshalIndent(ReadSpoilerRoles, "", "    ")
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
 
 	// Writes to file
 	err = ioutil.WriteFile("database/spoilerRoles.json", MarshaledStruct, 0644)
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
 }
 
@@ -347,14 +331,14 @@ func SpoilerRolesRead() {
 	spoilerRolesByte, err := ioutil.ReadFile("database/spoilerRoles.json")
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		return
 	}
 
 	// Takes the spoiler roles from spoilerRoles.json from byte and puts them into the ReadSpoilerRoles struct slice
 	err = json.Unmarshal(spoilerRolesByte, &ReadSpoilerRoles)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		return
 	}
 
 	// Resets spoilerMap map to be ready to fill
@@ -420,18 +404,10 @@ func RssThreadsWrite(thread string, channel string, author string) bool {
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, err := json.MarshalIndent(ReadRssThreads, "", "    ")
-	if err != nil {
-
-		fmt.Println(err)
-	}
+	MarshaledStruct, _ := json.MarshalIndent(ReadRssThreads, "", "    ")
 
 	// Writes to file
-	err = ioutil.WriteFile("database/rssThreads.json", MarshaledStruct, 0644)
-	if err != nil {
-
-		fmt.Println(err)
-	}
+	_ = ioutil.WriteFile("database/rssThreads.json", MarshaledStruct, 0644)
 
 	if threadExists == true {
 
@@ -470,18 +446,10 @@ func RssThreadsRemove(thread string, channel string, author string) bool {
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
-	MarshaledStruct, err := json.Marshal(ReadRssThreads)
-	if err != nil {
-
-		fmt.Println(err)
-	}
+	MarshaledStruct, _ := json.Marshal(ReadRssThreads)
 
 	// Writes to file
-	err = ioutil.WriteFile("database/rssThreads.json", MarshaledStruct, 0644)
-	if err != nil {
-
-		fmt.Println(err)
-	}
+	_ = ioutil.WriteFile("database/rssThreads.json", MarshaledStruct, 0644)
 
 	if threadExists == true {
 
@@ -499,14 +467,14 @@ func RssThreadsRead() {
 	rssThreadsByte, err := ioutil.ReadFile("database/rssThreads.json")
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		return
 	}
 
 	// Takes the set threads from rssThreads.json from byte and puts them into the RssThreadStruct struct slice
 	err = json.Unmarshal(rssThreadsByte, &ReadRssThreads)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		return
 	}
 }
 
@@ -538,14 +506,14 @@ func RssThreadsTimerWrite(thread string, date time.Time) {
 	MarshaledStruct, err := json.MarshalIndent(ReadRssThreadsCheck, "", "    ")
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
 
 	// Writes to file
 	err = ioutil.WriteFile("database/rssThreadCheck.json", MarshaledStruct, 0644)
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
 }
 
@@ -579,14 +547,14 @@ func RssThreadsTimerRemove(thread string, date time.Time) {
 	MarshaledStruct, err := json.Marshal(ReadRssThreads)
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
 
 	// Writes to file
 	err = ioutil.WriteFile("database/rssThreadCheck.json", MarshaledStruct, 0644)
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
 }
 
@@ -597,14 +565,14 @@ func RssThreadsTimerRead() {
 	rssThreadsCheckByte, err := ioutil.ReadFile("database/rssThreadCheck.json")
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		return
 	}
 
 	// Takes the set threads from rssThreads.json from byte and puts them into the RssThreadCheckStruct struct slice
 	err = json.Unmarshal(rssThreadsCheckByte, &ReadRssThreadsCheck)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		return
 	}
 }
 
@@ -658,7 +626,13 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid user.")
 			if err != nil {
-				fmt.Println("Error:", err)
+
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+				if err != nil {
+
+					return ""
+				}
+				return ""
 			}
 			return ""
 		}

@@ -30,6 +30,9 @@ func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Pulls userID from 2nd parameter of commandStrings
 	userID := misc.GetUserID(s, m, commandStrings)
+	if userID == "" {
+		return
+	}
 
 	// Fetches user
 	mem, err := s.User(userID)

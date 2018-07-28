@@ -56,40 +56,36 @@ func MemberInfoRead() {
 	memberInfoByte, err := ioutil.ReadFile("database/memberInfo.json")
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
 
-	MapMutex.Lock()
-
 	// Takes all the users from memberInfo.json from byte and puts them into the UserInfo map
+	MapMutex.Lock()
 	err = json.Unmarshal(memberInfoByte, &MemberInfoMap)
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
-
 	MapMutex.Unlock()
 }
 
 // Writes member info to memberInfo.json
 func MemberInfoWrite(info map[string]*UserInfo) {
 
-	MapMutex.Lock()
-
 	// Turns info slice into byte ready to be pushed to file
+	MapMutex.Lock()
 	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
-
 	MapMutex.Unlock()
 
 	// Writes to file
 	err = ioutil.WriteFile("database/memberInfo.json", MarshaledStruct, 0644)
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
 }
 
@@ -100,14 +96,14 @@ func BannedUsersRead() {
 	bannedUsersByte, err := ioutil.ReadFile("database/bannedUsers.json")
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
 
 	// Takes all the banned users from bannedUsers.json from byte and puts them into the BannedUsers struct slice
 	err = json.Unmarshal(bannedUsersByte, &BannedUsersSlice)
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
 
 }
@@ -119,14 +115,14 @@ func BannedUsersWrite(info []BannedUsers) {
 	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
 
 	// Writes to file
 	err = ioutil.WriteFile("database/bannedUsers.json", MarshaledStruct, 0644)
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
 }
 
@@ -165,23 +161,26 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		initialized = false
 	)
 
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
+
+				fmt.Println(err.Error())
+				fmt.Println(rec)
+			}
+		}
+	}()
+
 	// Pulls info on user if possible
 	user, err := s.State.Member(config.ServerID, e.User.ID)
 	if err != nil {
 		user, err = s.GuildMember(config.ServerID, e.User.ID)
 		if err != nil {
-			fmt.Println(err.Error())
 			return
 		}
 	}
-
-	// Saves program from panic and continues running normally without executing the command if it happens
-	defer func() {
-		if r := recover(); r != nil {
-
-			fmt.Println(r)
-		}
-	}()
 
 	// If memberInfo is empty, it initializes
 	if len(MemberInfoMap) == 0 {
@@ -196,13 +195,9 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		ciphertext := Encrypt(Key, user.User.ID)
 
 		// Sends verification message to user in DMs if possible
-		dm, err := s.UserChannelCreate(user.User.ID)
-		_, err = s.ChannelMessageSend(dm.ID, "You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
+		dm, _ := s.UserChannelCreate(user.User.ID)
+		_, _ = s.ChannelMessageSend(dm.ID, "You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
 			"Please verify your reddit account at http://localhost:3000/?reqvalue=" + ciphertext)
-		if err != nil {
-
-			fmt.Println("Error:", err)
-		}
 
 	} else {
 
@@ -226,13 +221,9 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		ciphertext := Encrypt(Key, user.User.ID)
 
 		// Sends verification message to user in DMs if possible
-		dm, err := s.UserChannelCreate(user.User.ID)
-		_, err = s.ChannelMessageSend(dm.ID, "You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
+		dm, _ := s.UserChannelCreate(user.User.ID)
+		_, _ = s.ChannelMessageSend(dm.ID, "You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
 			"Please verify your reddit account at http://localhost:3000/?reqvalue=" + ciphertext)
-		if err != nil {
-
-			fmt.Println("Error:", err)
-		}
 	}
 
 	// Fetches user from memberInfo
@@ -248,13 +239,9 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		ciphertext := Encrypt(Key, user.User.ID)
 
 		// Sends verification message to user in DMs if possible
-		dm, err := s.UserChannelCreate(user.User.ID)
-		_, err = s.ChannelMessageSend(dm.ID, "You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
+		dm, _ := s.UserChannelCreate(user.User.ID)
+		_, _ = s.ChannelMessageSend(dm.ID, "You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
 			"Please verify your reddit account at http://localhost:3000/?reqvalue=" + ciphertext)
-		if err != nil {
-
-			fmt.Println("Error:", err)
-		}
 	}
 
 	// Checks if the user's current username is the same as the one in the database. Otherwise updates
@@ -315,6 +302,18 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 // OnMemberUpdate listens for member updates to compare nicks/usernames and discrim
 func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
+
+				fmt.Println(err.Error())
+				fmt.Println(rec)
+			}
+		}
+	}()
+
 	if len(MemberInfoMap) == 0 {
 		return
 	}
@@ -324,14 +323,6 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	if !ok {
 		return
 	}
-
-	// Saves program from panic and continues running normally without executing the command if it happens
-	defer func() {
-		if r := recover(); r != nil {
-
-			fmt.Println(r)
-		}
-	}()
 
 	// Checks usernames and updates if needed
 	if user.Username != e.User.Username {

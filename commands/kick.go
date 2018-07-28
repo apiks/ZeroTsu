@@ -23,6 +23,9 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 3 {
 
 		userID = misc.GetUserID(s, m, commandStrings)
+		if userID == "" {
+			return
+		}
 		reason = commandStrings[2]
 
 	} else {

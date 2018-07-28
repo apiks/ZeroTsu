@@ -31,6 +31,9 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 4 {
 
 		userID = misc.GetUserID(s, m, commandStrings)
+		if userID == "" {
+			return
+		}
 		length = commandStrings[2]
 		reason = commandStrings[3]
 

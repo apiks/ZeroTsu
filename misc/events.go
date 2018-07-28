@@ -18,25 +18,35 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	err := s.UpdateStatus(0, "with her darling")
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+
+			fmt.Println(err.Error())
+		}
 	}
 
-	for range time.NewTicker(15 * time.Second).C {
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
 
-		// Saves program from panic and continues running normally without executing the command if it happens
-		defer func() {
-			if r := recover(); r != nil {
-
-				fmt.Println(r)
+				fmt.Println(err.Error())
+				fmt.Println(rec)
+				StatusReady(s, e)
 			}
-		}()
+
+			StatusReady(s, e)
+		}
+	}()
+
+	for range time.NewTicker(15 * time.Second).C {
 
 
 		// Goes through bannedUsers.json if it's not empty and unbans if needed
 		if BannedUsersSlice != nil {
 			if len(BannedUsersSlice) != 0 {
 
-				// Saves current time
 				t := time.Now()
 
 				for i := 0; i < len(BannedUsersSlice); i++ {
@@ -53,7 +63,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 						err := s.GuildBanDelete(config.ServerID, BannedUsersSlice[i].ID)
 						if err != nil {
 
-							fmt.Println("Error:", err)
+							_, _ = s.ChannelMessageSend(config.BotLogID, err.Error())
 						}
 
 						// Sends a message to bot-log
@@ -61,7 +71,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 							user.Discrim+ " has been unbanned.")
 						if err != nil {
 
-							fmt.Println("Error:", err)
+							_, _ = s.ChannelMessageSend(config.BotLogID, err.Error())
 						}
 
 						// Removes the user ban from bannedUsers.json
@@ -84,9 +94,13 @@ func RSSParser(s discordgo.Session) {
 
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
-		if r := recover(); r != nil {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
 
-			fmt.Println(r)
+				fmt.Println(err.Error())
+				fmt.Println(rec)
+			}
 		}
 	}()
 
@@ -96,15 +110,17 @@ func RSSParser(s discordgo.Session) {
 	feed, err := fp.ParseURL("https://www.reddit.com/r/anime/new/.rss")
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+
+			return
+		}
 	}
 
-	// Saves current time
 	t := time.Now()
 
 	// Checks if the feed timed out to avoid error
 	if feed == nil {
-
 		return
 	}
 
@@ -149,11 +165,14 @@ func RSSParser(s discordgo.Session) {
 					// Writes to storage that the thread has been posted
 					RssThreadsTimerWrite(ReadRssThreads[j].Thread, t)
 
-					// Prints the thread to the channel
 					_, err = s.ChannelMessageSend(ReadRssThreads[j].Channel, feed.Items[i].Link)
 					if err != nil {
 
-						fmt.Println("Error:", err)
+						_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+						if err != nil {
+
+							return
+						}
 					}
 				}
 			}

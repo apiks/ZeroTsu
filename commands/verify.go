@@ -34,6 +34,9 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Pulls userID from 2nd parameter of commandStrings, else print error
 	userID := misc.GetUserID(s, m, commandStrings)
+	if userID == "" {
+		return
+	}
 
 	// Pulls the reddit username from the third parameter
 	redditUsername := commandStrings[2]

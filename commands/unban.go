@@ -30,6 +30,10 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	userID := misc.GetUserID(s, m, commandStrings)
+	if userID == "" {
+		return
+	}
+
 	user, err := s.User(userID)
 	if err != nil {
 

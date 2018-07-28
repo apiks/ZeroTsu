@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"strconv"
 	"time"
+	"fmt"
 
 	"github.com/bwmarrin/discordgo"
 
@@ -182,19 +183,23 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 // Checks if the message has enough reacts every 10 seconds, and stops if it's over the time limit
 func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
+
+				fmt.Println(err.Error())
+				fmt.Println(rec)
+				ChannelVoteTimer(s, e)
+			}
+
+			ChannelVoteTimer(s, e)
+		}
+	}()
+
 	for range time.NewTicker(10 * time.Second).C {
 		for k := range VoteInfoMap {
-
-			// Saves program from panic and continues running normally without executing the command if it happens
-			defer func() {
-				if rec := recover(); rec != nil {
-					_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
-					if err != nil {
-
-						return
-					}
-				}
-			}()
 
 			t := time.Now()
 

@@ -10,7 +10,6 @@ import (
 	"html/template"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 
@@ -82,9 +81,9 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
-		if r := recover(); r != nil {
+		if rec := recover(); rec != nil {
 
-			fmt.Println(r)
+			fmt.Println(rec)
 		}
 	}()
 
@@ -310,12 +309,12 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	t, err := template.ParseFiles("verification/web/index.html")
 	if err != nil {
 
-		fmt.Print("Error:", err)
+		fmt.Print(err.Error())
 	}
 	err = t.Execute(w, UserCookieMap[cookieValue.Value])
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		fmt.Println(err.Error())
 	}
 
 	// Resets assigned Error Message
@@ -341,7 +340,7 @@ func getRedditUsername(code string) (string, float64) {
 	// Starts request to reddit
 	req, err := http.NewRequest("POST", "https://www.reddit.com/api/v1/access_token", bytes.NewBuffer([]byte(POSTinfo)))
 	if err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 
 	// Sets needed request parameters User Agent and Basic Auth
@@ -352,7 +351,7 @@ func getRedditUsername(code string) (string, float64) {
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 
 	// Initializes Access type variable to hold data
@@ -361,13 +360,13 @@ func getRedditUsername(code string) (string, float64) {
 	// Unmarshals json info into the above access variable to hold
 	jsonErr := json.Unmarshal(body, &access)
 	if jsonErr != nil {
-		log.Fatal(jsonErr)
+		panic(err)
 	}
 
 	// Makes a GET request to reddit in reqAPI
 	reqAPI, err := http.NewRequest("GET", "https://oauth.reddit.com/api/v1/me", nil)
 	if err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 
 	// Sets needed reqAPI paraemeters
@@ -377,14 +376,13 @@ func getRedditUsername(code string) (string, float64) {
 	// Does the GET request and puts it into the respAPI
 	respAPI, err := client.Do(reqAPI)
 	if err != nil {
-
-		fmt.Println("Error:", err)
+		panic(err)
 	}
 
 	// Reads the byte respAPI body into bodyAPI
 	bodyAPI, err := ioutil.ReadAll(respAPI.Body)
 	if err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 
 	// Initializes user variable of type User to hold reddit json in
@@ -393,7 +391,7 @@ func getRedditUsername(code string) (string, float64) {
 	// Unmarshals all the required json fields in the above user variable
 	jsonErr = json.Unmarshal(bodyAPI, &user)
 	if jsonErr != nil {
-		log.Fatal(jsonErr)
+		panic(err)
 	}
 
 	// Returns user reddit username and date of account creation in epoch time
@@ -416,8 +414,7 @@ func getDiscordUsernameDiscrim(code string) (string, string, string) {
 
 	token, err := discordConf.Exchange(oauth2.NoContext, code)
 	if err != nil {
-
-		fmt.Println("Error:", err)
+		panic(err)
 	}
 
 	// Initializes client
@@ -436,7 +433,7 @@ func getDiscordUsernameDiscrim(code string) (string, string, string) {
 	// Reads the byte respAPI body into bodyAPI
 	bodyAPI, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 
 	// Initializes user variable of type User to hold reddit json in
@@ -445,7 +442,7 @@ func getDiscordUsernameDiscrim(code string) (string, string, string) {
 	// Unmarshals all the required json fields in the above user variable
 	jsonErr := json.Unmarshal(bodyAPI, &user)
 	if jsonErr != nil {
-		log.Fatal(jsonErr)
+		panic(err)
 	}
 
 	return user.Username, user.Discriminator, user.ID
@@ -456,28 +453,27 @@ func Verify(cookieValue *http.Cookie, r *http.Request) {
 
 	// Confirms that the map is not empty
 	if misc.MemberInfoMap == nil {
+		return
+	}
+	// Checks if cookie has expired while doing this
+	if cookieValue != nil {
 
 		return
 	}
 
-	// Checks if cookie has expired while doing this
-	if cookieValue != nil {
+	//Stores time of verification
+	t := time.Now()
+	z, _ := t.Zone()
+	join := t.Format("2006-01-02 15:04:05") + " " + z
 
-		//Stores time of verification
-		t := time.Now()
-		z, _ := t.Zone()
-		join := t.Format("2006-01-02 15:04:05") + " " + z
-
-		// Assigns needed values to temp
-		var temp misc.UserInfo
-		misc.MapMutex.Lock()
-		temp = *misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]
-		temp.RedditUsername = UserCookieMap[cookieValue.Value].RedditName
-		temp.VerifiedDate = join
-		misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID] = &temp
-		misc.MapMutex.Unlock()
-
-	}
+	// Assigns needed values to temp
+	var temp misc.UserInfo
+	misc.MapMutex.Lock()
+	temp = *misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]
+	temp.RedditUsername = UserCookieMap[cookieValue.Value].RedditName
+	temp.VerifiedDate = join
+	misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID] = &temp
+	misc.MapMutex.Unlock()
 
 	// Writes the username to memberInfo.json
 	misc.MemberInfoWrite(misc.MemberInfoMap)
@@ -486,20 +482,21 @@ func Verify(cookieValue *http.Cookie, r *http.Request) {
 // Checks if a user in the cookie map has the role and if they're verified it gives it to them, also deletes expired map fields
 func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+
+			fmt.Println(rec)
+			VerifiedRoleAdd(s, e)
+		}
+	}()
+
 	// Checks every 10 seconds if a user in the UserCookieMap needs to be given the role
 	for range time.NewTicker(10 * time.Second).C {
 
 		if UserCookieMap == nil {
-
 			return
 		}
-		// Saves program from panic and continues running normally without executing the command if it happens
-		defer func() {
-			if r := recover(); r != nil {
-
-				fmt.Println(r)
-			}
-		}()
 
 		for key := range UserCookieMap {
 
@@ -513,7 +510,12 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 				roles, err := s.GuildRoles(config.ServerID)
 				if err != nil {
 
-					fmt.Println("Error:", err)
+					_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+					if err != nil {
+
+						return
+					}
+					return
 				}
 
 				// Fetches ID of Verified role
@@ -528,7 +530,12 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 				err = s.GuildMemberRoleAdd(config.ServerID, UserCookieMap[key].ID, roleID)
 				if err != nil {
 
-					fmt.Println("Error:", err)
+					_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+					if err != nil {
+
+						return
+					}
+					return
 				}
 
 				if UserCookieMap[key].AltCheck == false {
@@ -566,7 +573,12 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		roles, err := s.GuildRoles(config.ServerID)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 
 		// Fetches ID of Verified role
@@ -581,7 +593,12 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		err = s.GuildMemberRoleAdd(config.ServerID, u.User.ID, roleID)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 
 		CheckAltAccount(s, u.User.ID)
@@ -620,9 +637,6 @@ func CheckAltAccount(s *discordgo.Session, id string) {
 		}
 
 		// Prints the alts in bot-log channel
-		_, err := s.ChannelMessageSend(config.BotLogID, success)
-		if err != nil {
-			fmt.Println("Error:", err)
-		}
+		_, _ = s.ChannelMessageSend(config.BotLogID, success)
 	}
 }

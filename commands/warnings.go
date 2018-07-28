@@ -35,6 +35,10 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	userID := misc.GetUserID(s, m, commandStrings)
+	if userID == "" {
+		return
+	}
+
 	warning = commandStrings[2]
 
 	// If memberInfo.json file is empty or user is not there, print error
@@ -106,6 +110,10 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	userID := misc.GetUserID(s, m, commandStrings)
+	if userID == "" {
+		return
+	}
+
 	warning = commandStrings[2]
 
 	// If memberInfo.json file is empty or user is not there, print error

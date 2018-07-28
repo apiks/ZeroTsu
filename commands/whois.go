@@ -33,6 +33,9 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	userID := misc.GetUserID(s, m, commandStrings)
+	if userID == "" {
+		return
+	}
 
 	// Fetches user from server if possible
 	mem, err := s.State.Member(config.ServerID, userID)
