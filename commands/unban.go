@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -14,17 +13,19 @@ import (
 // Unbans a user and updates their memberInfo entry
 func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	// Puts entire message in lowercase
 	messageLowercase := strings.ToLower(m.Content)
-
-	// Separates every word in the message and puts it in a slice
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) != 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong amount of parameters. Please use `"+config.BotPrefix+"unban [@user or userID]` format.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 	}
 
@@ -32,7 +33,8 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 	user, err := s.User(userID)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	var banFlag = false
@@ -43,7 +45,12 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err = s.ChannelMessageSend(m.ChannelID, "No bans in storage.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -64,7 +71,12 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, user.Username+"#"+user.Discriminator+" is not banned.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 	} else {
 
@@ -72,13 +84,8 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 		err = s.GuildBanDelete(config.ServerID, userID)
 		if err != nil {
 
-			fmt.Println("Error:", err)
-		}
-
-		_, err = s.ChannelMessageSend(m.ChannelID, user.Username+"#"+user.Discriminator+" has been unbanned.")
-		if err != nil {
-
-			fmt.Println("Error:", err)
+			misc.CommandErrorHandler(s, m, err)
+			return
 		}
 
 		// Saves time of unban command usage
@@ -91,6 +98,17 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		// Writes to memberInfo.json
 		misc.MemberInfoWrite(misc.MemberInfoMap)
+
+		_, err = s.ChannelMessageSend(m.ChannelID, user.Username+"#"+user.Discriminator+" has been unbanned.")
+		if err != nil {
+
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
+		}
 	}
 }
 

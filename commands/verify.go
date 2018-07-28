@@ -2,7 +2,6 @@ package commands
 
 import (
 	"strings"
-	"fmt"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -14,18 +13,21 @@ import (
 // Verifies a user with a reddit username and gives them the verified role
 func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	// Puts entire message in lowercase
 	messageLowercase := strings.ToLower(m.Content)
-
-	// Separates every word in the messageLowercase and puts it in a slice
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	// Checks if there's enough parameters (command, user and reddit username.)
 	if len(commandStrings) != 3 {
 
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + "verify [@user or userID] [redditUsername]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+"verify [@user or userID] [redditUsername]`")
 		if err != nil {
-			fmt.Println("Error:", err)
+
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -50,16 +52,18 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		userMem, err = s.GuildMember(config.ServerID, userID)
 		if err != nil {
-			fmt.Println(err.Error())
-		}
-	}
-	if userMem == nil {
 
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in the server.")
-		if err != nil {
-			fmt.Println("Error:", err)
+			_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in the server. Cannot verify user.")
+			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+				if err != nil {
+
+					return
+				}
+				return
+			}
+			return
 		}
-		return
 	}
 
 	// Add reddit username in map
@@ -76,13 +80,6 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.MemberInfoMap[userID].VerifiedDate = ver
 		misc.MapMutex.Unlock()
 
-		// Writes modified memberInfo map to storage
-		misc.MemberInfoWrite(misc.MemberInfoMap)
-
-		_, err := s.ChannelMessageSend(m.ChannelID, "Success. Verified "+userMem.User.Username + "#" + userMem.User.Discriminator +" with "+redditUsername)
-		if err != nil {
-			fmt.Println("Error:", err)
-		}
 	} else {
 
 		// Initializes user in memberInfo.json
@@ -98,15 +95,10 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.MemberInfoMap[userID].RedditUsername = redditUsername
 		misc.MemberInfoMap[userID].VerifiedDate = ver
 		misc.MapMutex.Unlock()
-
-		// Writes modified memberInfo map to storage
-		misc.MemberInfoWrite(misc.MemberInfoMap)
-
-		_, err = s.ChannelMessageSend(m.ChannelID, "Success. Verified "+ userMem.User.Mention() + " with " + redditUsername)
-		if err != nil {
-			fmt.Println("Error:", err)
-		}
 	}
+
+	// Writes modified memberInfo map to storage
+	misc.MemberInfoWrite(misc.MemberInfoMap)
 
 	var roleID string
 
@@ -114,7 +106,8 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	roles, err := s.GuildRoles(config.ServerID)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	// Fetches ID of Verified role and finds the correct one
@@ -129,10 +122,19 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	err = s.GuildMemberRoleAdd(config.ServerID, userID, roleID)
 	if err != nil {
 
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Verified role not found.")
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+
+	_, err = s.ChannelMessageSend(m.ChannelID, "Success. Verified "+userMem.User.Username+"#"+userMem.User.Discriminator+" with "+redditUsername)
+	if err != nil {
+
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 		if err != nil {
-			fmt.Println("Error:", err)
+
+			return
 		}
+		return
 	}
 }
 

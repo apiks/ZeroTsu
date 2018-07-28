@@ -2,7 +2,6 @@ package commands
 
 import (
 	"strings"
-	"fmt"
 	"math"
 	"strconv"
 
@@ -15,18 +14,7 @@ import (
 // Sends memberInfo user information to channel
 func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	// Saves program from panic and continues running normally without executing the command if it happens. Depreciated with CommandHandler
-	//defer func() {
-	//	if r := recover(); r != nil {
-	//
-	//		fmt.Println(r)
-	//	}
-	//}()
-
-	// Puts entire message in lowercase
 	messageLowercase := strings.ToLower(m.Content)
-
-	// Separates every word in the message and puts it in a slice
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) != 2 {
@@ -34,7 +22,12 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"whois [@user or userID]`")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -50,7 +43,12 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot whois until they join server.")
 			if err != nil {
 
-				fmt.Println("Error:", err)
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+				if err != nil {
+
+					return
+				}
+				return
 			}
 			return
 		}
@@ -70,10 +68,15 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	if !ok {
 
 		// Initializes user if he doesn't exist and is in server
-		_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Initializing user.")
+		_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Initializing and whoising empty user.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 
 		misc.InitializeUser(mem)
@@ -244,30 +247,30 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Prints split or unsplit whois
-
 	if splitMessage == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err := s.ChannelMessageSend(m.ChannelID, "Error: cannot send whois message.")
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
 
-				fmt.Println(err)
 				return
 			}
-
 			return
 		}
-
 		return
 	}
-
 	for i := 0; i < len(splitMessage); i++ {
 		_, err := s.ChannelMessageSend(m.ChannelID, splitMessage[i])
 		if err != nil {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: cannot send whois message.")
 			if err != nil {
 
-				fmt.Println(err)
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+				if err != nil {
+
+					return
+				}
+				return
 			}
 		}
 	}

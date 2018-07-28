@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 
@@ -18,21 +17,23 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 		categoryID       string
 		categoryPosition int
 		categoryChannels []*discordgo.Channel
-		chaEdit			 discordgo.ChannelEdit
+		chaEdit          discordgo.ChannelEdit
 	)
 
-	// Puts the command to lowercase
 	messageLowercase := strings.ToLower(m.Content)
-
-	// Separates every word in the message and puts it in a slice
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) != 2 {
 
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "sortcategory [category]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"sortcategory [category]`")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -41,7 +42,8 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	deb, err := s.GuildChannels(config.ServerID)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	for i := 0; i < len(deb); i++ {
@@ -63,8 +65,14 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Invalid Category")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
+		return
 	}
 
 	// Puts all channels under a category in categoryChannels slice
@@ -85,18 +93,25 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err = s.ChannelEditComplex(categoryChannels[i].ID, &chaEdit)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			misc.CommandErrorHandler(s, m, err)
+			return
 		}
 	}
 
 	if m.Author.ID != config.BotID {
 
-		success := "Category `" + commandStrings[1] + "` sorted"
-		_, err = s.ChannelMessageSend(m.ChannelID, success)
+		return
+	}
+
+	_, err = s.ChannelMessageSend(m.ChannelID, "Category `"+commandStrings[1]+"` sorted")
+	if err != nil {
+
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			return
 		}
+		return
 	}
 }
 

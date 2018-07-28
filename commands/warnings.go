@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -15,42 +14,40 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
 		warning string
-		userID string
 	)
 
-	// Puts entire message in lowercase
 	messageLowercase := strings.ToLower(m.Content)
-
-	// Pulls the user and warning from strings after "addwarning"
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
 
-	// Pulls userID from 2nd parameter of commandStrings, else print error. Also pulls warning after it.
-	if len(commandStrings) == 3 {
+	if len(commandStrings) != 3 {
 
-		userID := misc.GetUserID(s, m, commandStrings)
-		if userID == "" {
-			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid user. Please use `"+config.BotPrefix+"addwarning [@user or userID] [warning]` format.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"addwarning [@user or userID] [warning]`")
+		if err != nil {
+
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
 
 				return
 			}
 			return
 		}
-		warning = commandStrings[2]
-
-	} else {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"addwarning [@user or userID] [warning]`")
-		if err != nil {
-
-			return
-		}
 		return
 	}
+
+	userID := misc.GetUserID(s, m, commandStrings)
+	warning = commandStrings[2]
 
 	// If memberInfo.json file is empty or user is not there, print error
 	if misc.MemberInfoMap == nil || misc.MemberInfoMap[userID] == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo.")
 		if err != nil {
+
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -66,13 +63,20 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls info on user
 	userMem, err := s.User(userID)
 	if err != nil {
-		fmt.Println(err.Error())
+
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	_, err = s.ChannelMessageSend(m.ChannelID, userMem.Username + "#" + userMem.Discriminator + " had warning added: " + "`" + warning + "`")
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+
+			return
+		}
+		return
 	}
 }
 
@@ -81,42 +85,40 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
 		warning string
-		userID string
 	)
 
-	// Puts entire message in lowercase
 	messageLowercase := strings.ToLower(m.Content)
-
-	// Pulls the user and warning from strings after "issuewarning"
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
 
-	// Pulls userID from 2nd parameter of commandStrings, else print error. Also pulls warning after it.
-	if len(commandStrings) == 3 {
+	if len(commandStrings) != 3 {
 
-		userID := misc.GetUserID(s, m, commandStrings)
-		if userID == "" {
-			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid user. Please use `"+config.BotPrefix+"issuewarning [@user or userID] [warning]` format.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"issuewarning [@user or userID] [warning]`")
+		if err != nil {
+
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
 
 				return
 			}
 			return
 		}
-		warning = commandStrings[2]
-
-	} else {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"issuewarning [@user or userID] [warning]`")
-		if err != nil {
-
-			return
-		}
 		return
 	}
+
+	userID := misc.GetUserID(s, m, commandStrings)
+	warning = commandStrings[2]
 
 	// If memberInfo.json file is empty or user is not there, print error
 	if misc.MemberInfoMap == nil || misc.MemberInfoMap[userID] == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo.")
 		if err != nil {
+
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -132,14 +134,17 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls info on user
 	userMem, err := s.User(userID)
 	if err != nil {
-		fmt.Println(err.Error())
+
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	//Pulls the guild Name
 	guild, err := s.Guild(config.ServerID)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	// Sends message in DMs that they have been banned if able
@@ -148,13 +153,18 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		return
 	}
-	_, err = s.ChannelMessageSend(dm.ID, "You have been warned on " + guild.Name + ":\n`" + warning + "`")
+	_, _ = s.ChannelMessageSend(dm.ID, "You have been warned on " + guild.Name + ":\n`" + warning + "`")
 
 	// Sends mod success message
 	_, err = s.ChannelMessageSend(m.ChannelID, userMem.Username + "#" + userMem.Discriminator + " was warned with: " + "`" + warning + "`")
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+
+			return
+		}
+		return
 	}
 }
 

@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"fmt"
 	"sort"
 	"time"
 
@@ -31,7 +30,8 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 	debPre, err := s.GuildRoles(config.ServerID)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	// Refreshes the positions of all roles in the server (because when created roles start at 0)
@@ -44,7 +44,8 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 	_, err = s.GuildRoleReorder(config.ServerID, spoilerRoles)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	time.Sleep(time.Millisecond * 333)
@@ -56,7 +57,8 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 	deb, err := s.GuildRoles(config.ServerID)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	// Saves the original opt-in-above position
@@ -111,7 +113,8 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err = s.GuildRoleReorder(config.ServerID, rolesOrdered)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			misc.CommandErrorHandler(s, m, err)
+			return
 		}
 
 		time.Sleep(time.Millisecond * 333)
@@ -120,7 +123,8 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 		debPost, err := s.GuildRoles(config.ServerID)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			misc.CommandErrorHandler(s, m, err)
+			return
 		}
 
 		// Saves the new opt-in-above position
@@ -141,18 +145,26 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err = s.GuildRoleReorder(config.ServerID, spoilerRoles)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			misc.CommandErrorHandler(s, m, err)
+			return
 		}
 
 		time.Sleep(time.Millisecond * 333)
 
-		if m.Author.ID != config.BotID {
+		if m.Author.ID == config.BotID {
 
-			_, err = s.ChannelMessageSend(m.ChannelID, "Roles sorted.")
+			return
+		}
+
+		_, err = s.ChannelMessageSend(m.ChannelID, "Roles sorted.")
+		if err != nil {
+
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
 
-				fmt.Println("Error:", err)
+				return
 			}
+			return
 		}
 	}
 }
