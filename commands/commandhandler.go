@@ -39,7 +39,11 @@ func add(c *command) {
 func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	defer func() {
 		if rec := recover(); rec != nil {
-			l.Printf("Recovered from error: %s", rec)
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
+
+				return
+			}
 		}
 	}()
 

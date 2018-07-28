@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"fmt"
-
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -12,7 +10,12 @@ func aboutCommand(s *discordgo.Session, m *discordgo.Message) {
 		"He says I'm from Darling in the Franxx but that's just a bunch of nonsense to me. Use `!help` to list what commands are available to you. I hope you brought sweets.")
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+
+			return
+		}
+		return
 	}
 }
 

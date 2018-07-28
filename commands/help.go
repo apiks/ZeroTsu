@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"fmt"
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/config"
@@ -16,7 +15,6 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		mem, err = s.GuildMember(config.ServerID, m.Author.ID)
 		if err != nil {
-			fmt.Println(err.Error())
 			return
 		}
 	}
@@ -41,7 +39,12 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err = s.ChannelMessageSend(m.ChannelID, successMod)
 		if err != nil {
-			fmt.Println(err.Error())
+
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
 			return
 		}
 
@@ -60,7 +63,12 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err = s.ChannelMessageSend(m.ChannelID, successMod)
 		if err != nil {
-			fmt.Println(err.Error())
+
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
 			return
 		}
 	} else {
@@ -74,7 +82,12 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err = s.ChannelMessageSend(m.ChannelID, successUser)
 		if err != nil {
-			fmt.Println(err.Error())
+
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
 			return
 		}
 	}

@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"fmt"
 	"strings"
 	"encoding/json"
 	"io/ioutil"
@@ -11,6 +10,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/config"
+	"ZeroTsu/misc"
 )
 
 var VoteInfoMap = make(map[string]*VoteInfo)
@@ -26,33 +26,35 @@ type VoteInfo struct {
 	MessageReact *discordgo.Message `json:"MessageReact"`
 }
 
+// Starts a 30 hour vote in a channel with parameters that automatically creates a spoiler channel if the vote passes
 func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		peopleNum     = 7
-		descriptionSlice  []string
+		peopleNum= 7
+		descriptionSlice []string
 
 		voteChannel channel
 	)
 
-	// Puts the command to lowercase
 	messageLowercase := strings.ToLower(m.Content)
-
-	// Separates every word in messageLowercase and puts it in a slice
 	commandStrings := strings.Split(messageLowercase, " ")
+
 	if len(commandStrings) == 1 {
 
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "startvote OPTIONAL[votes required] [name] OPTIONAL[type] OPTIONAL[categoryID] + OPTIONAL[description]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"startvote OPTIONAL[votes required] [name] OPTIONAL[type] OPTIONAL[categoryID] + OPTIONAL[description]`")
 		if err != nil {
-			fmt.Println("Error:", err)
+
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
 
-	// Initializes command string without "startvote"
 	command := strings.Replace(messageLowercase, config.BotPrefix+"startvote ", "", 1)
-
-	// Separates every word in command and puts it in a slice
 	commandStrings = strings.Split(command, " ")
 
 	// Checks if [category] and [type] exist and assigns them if they do and removes them from slice
@@ -84,7 +86,6 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 			descriptionSlice = strings.SplitAfter(m.Content, voteChannel.Type)
 		}
 
-
 		// Makes the description the second element of the slice above
 		voteChannel.Description = descriptionSlice[1]
 		// Makes a copy of description that it puts to lowercase
@@ -101,19 +102,23 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 		command = strings.Replace(command, commandStrings[0], "", 1)
 	}
 
-	// Assigns channel name and tests if it's empty
+	// Assigns channel name and checks if it's empty
 	voteChannel.Name = command
 	blank := strings.TrimSpace(voteChannel.Name) == ""
 
 	// If the name doesn't exist, print an error
 	if blank == true {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Channel name not parsed properly. Please use `" + config.BotPrefix + "startvote " +
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Channel name not parsed properly. Please use `" + config.BotPrefix + "startvote "+
 			"OPTIONAL[votes required] [name] OPTIONAL[type] OPTIONAL[categoryID] + OPTIONAL[description]`")
 		if err != nil {
 
-			fmt.Println("Error:", err)
-		}
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
 
+				return
+			}
+			return
+		}
 		return
 	}
 
@@ -122,24 +127,31 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	messageReact, err := s.ChannelMessageSend(m.ChannelID, peopleNumStr+" thumbs up reacts on this message will create `"+voteChannel.Name+"`. Time limit is 30 hours")
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
-	if messageReact != nil {
+	if messageReact == nil {
 
-		err = s.MessageReactionAdd(messageReact.ChannelID, messageReact.ID, "👍")
-		if err != nil {
-
-			fmt.Println("Error:", err)
-		}
-		messageReact, err = s.ChannelMessage(messageReact.ChannelID, messageReact.ID)
-		if err != nil {
-
-			fmt.Println("Error:", err)
-		}
+		return
 	}
 
-	// Saves the current time from which it'll start counting the 30 hours later
+	err = s.MessageReactionAdd(messageReact.ChannelID, messageReact.ID, "👍")
+	if err != nil {
+
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+
+			return
+		}
+	}
+	messageReact, err = s.ChannelMessage(messageReact.ChannelID, messageReact.ID)
+	if err != nil {
+
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+
 	t := time.Now()
 
 	var temp VoteInfo
@@ -175,20 +187,22 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 			// Saves program from panic and continues running normally without executing the command if it happens
 			defer func() {
-				if r := recover(); r != nil {
+				if rec := recover(); rec != nil {
+					_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+					if err != nil {
 
-					fmt.Println(r)
+						return
+					}
 				}
 			}()
 
-			// Saves current time
 			t := time.Now()
 
 			// Updates message
 			messageReact, err := s.ChannelMessage(VoteInfoMap[k].MessageReact.ChannelID, VoteInfoMap[k].MessageReact.ID)
 			if err != nil {
 
-				fmt.Println("Error:", err)
+				return
 			}
 
 			// Calculates if it's time to remove
@@ -205,14 +219,16 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					"gather the necessary "+ numStr+ " votes.")
 				if err != nil {
 
-					fmt.Println("Error:", err)
+					_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+					if err != nil {
+
+						return
+					}
 				}
 
-				MapMutex.Lock()
-
 				// Deletes the vote from memory
+				MapMutex.Lock()
 				delete(VoteInfoMap, k)
-
 				MapMutex.Unlock()
 
 				// Writes to storage
@@ -229,55 +245,61 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 				continue
 			}
-
 			// Checks if the vote was successful and executes if so
-			if messageReact.Reactions[0].Count >= VoteInfoMap[k].VotesReq {
+			if messageReact.Reactions[0].Count < VoteInfoMap[k].VotesReq {
 
-				var (
-					message discordgo.Message
-					author 	discordgo.User
-				)
+				return
+			}
 
-				// Create command
-				author.ID = s.State.User.ID
-				message.ID = VoteInfoMap[k].MessageReact.ChannelID
-				message.Author = &author
-				message.Content = config.BotPrefix + "create" + VoteInfoMap[k].Channel + " " + VoteInfoMap[k].ChannelType +
-					" " + VoteInfoMap[k].Category + " " + VoteInfoMap[k].Description
-				createChannelCommand(s, &message)
+			var (
+				message discordgo.Message
+				author  discordgo.User
+			)
 
-				time.Sleep(500 * time.Millisecond)
+			// Create command
+			author.ID = s.State.User.ID
+			message.ID = VoteInfoMap[k].MessageReact.ChannelID
+			message.Author = &author
+			message.Content = config.BotPrefix + "create" + VoteInfoMap[k].Channel + " " + VoteInfoMap[k].ChannelType +
+				" " + VoteInfoMap[k].Category + " " + VoteInfoMap[k].Description
+			createChannelCommand(s, &message)
 
-				// Sortroles command if optin or airing
-				if VoteInfoMap[k].ChannelType != "general" {
+			time.Sleep(500 * time.Millisecond)
 
-					message.Content = config.BotPrefix + "sortroles"
-					sortRolesCommand(s, &message)
-				}
+			// Sortroles command if optin or airing
+			if VoteInfoMap[k].ChannelType != "general" {
 
-				time.Sleep(2 * time.Second)
+				message.Content = config.BotPrefix + "sortroles"
+				sortRolesCommand(s, &message)
+			}
 
-				// Sortcategory command if category exists
-				if VoteInfoMap[k].Category != "" {
+			time.Sleep(2 * time.Second)
 
-					message.Content = config.BotPrefix + "sortcategory " + VoteInfoMap[k].Category
-					sortCategoryCommand(s, &message)
+			// Sortcategory command if category exists
+			if VoteInfoMap[k].Category != "" {
 
-				}
+				message.Content = config.BotPrefix + "sortcategory " + VoteInfoMap[k].Category
+				sortCategoryCommand(s, &message)
 
-				MapMutex.Lock()
-				// Deletes the vote from memory
-				delete(VoteInfoMap, k)
-				MapMutex.Unlock()
+			}
 
-				// Writes to storage
-				VoteInfoWrite(VoteInfoMap)
+			// Deletes the vote from memory
+			MapMutex.Lock()
+			delete(VoteInfoMap, k)
+			MapMutex.Unlock()
 
-				_, err = s.ChannelMessageSend(config.BotLogID, "Channel `" + VoteInfoMap[k].Channel  + "` was successfully created!")
+			// Writes to storage
+			VoteInfoWrite(VoteInfoMap)
+
+			_, err = s.ChannelMessageSend(config.BotLogID, "Channel `"+VoteInfoMap[k].Channel+"` was successfully created!")
+			if err != nil {
+
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 				if err != nil {
 
-					fmt.Println("Error:", err)
+					return
 				}
+				return
 			}
 		}
 	}
@@ -290,40 +312,36 @@ func VoteInfoRead() {
 	voteInfoByte, err := ioutil.ReadFile("database/voteInfo.json")
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
 
-	MapMutex.Lock()
-
 	// Takes all of the vote channels from voteInfo.json from byte and puts them into the VoteInfo map
+	MapMutex.Lock()
 	err = json.Unmarshal(voteInfoByte, &VoteInfoMap)
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
-
 	MapMutex.Unlock()
 }
 
 // Writes vote info to voteInfo.json
 func VoteInfoWrite(info map[string]*VoteInfo) {
 
-	MapMutex.Lock()
-
 	// Turns info slice into byte ready to be pushed to file
+	MapMutex.Lock()
 	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
-
 	MapMutex.Unlock()
 
 	//Writes to file
 	err = ioutil.WriteFile("database/voteInfo.json", MarshaledStruct, 0644)
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
 }
 

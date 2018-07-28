@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -18,7 +17,6 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 		reason string
 	)
 
-	// Pulls the user and and reason from message
 	commandStrings := strings.SplitN(m.Content, " ", 3)
 
 	// Checks if it has all parameters, else error
@@ -31,7 +29,12 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Please use `"+config.BotPrefix+"kick [@user or userID] [reason]` format.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -42,7 +45,12 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid user. Please use `"+config.BotPrefix+"kick [@user or userID] [reason]` format.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -52,17 +60,19 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		userMem, err = s.GuildMember(config.ServerID, mem.ID)
 		if err != nil {
-			fmt.Println(err.Error())
-		}
-	}
-	// Checks if user is in server
-	if userMem == nil {
-		_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server. Cannot kick user until they rejoin the server.")
-		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server. Cannot kick user until they rejoin the server.")
+			if err != nil {
+
+				_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+				if err != nil {
+
+					return
+				}
+				return
+			}
+			return
 		}
-		return
 	}
 
 	// Initialize user if they are not in memberInfo
@@ -83,25 +93,27 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	guild, err := s.Guild(config.ServerID)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
-	// Sends message to user DMs if able
-	dm, err := s.UserChannelCreate(mem.ID)
-	_, err = s.ChannelMessageSend(dm.ID, "You have been kicked from " + guild.Name + ":\n**" + reason + "**")
+	// Sends message to user DMs if possible
+	dm, _ := s.UserChannelCreate(mem.ID)
+	_, _ = s.ChannelMessageSend(dm.ID, "You have been kicked from " + guild.Name + ":\n**" + reason + "**")
 
 	// Kicks the user from the server with a reason
 	err = s.GuildMemberDeleteWithReason(config.ServerID, mem.ID, reason)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
-	//Sends embed bot-log message
+	// Sends embed bot-log message
 	KickEmbed(s, m, mem, reason)
 }
 
-func KickEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, reason string) {
+func KickEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, reason string) error {
 
 	var (
 		embedMess      discordgo.MessageEmbed
@@ -141,10 +153,7 @@ func KickEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, 
 
 	// Sends embed in bot-log channel
 	_, err := s.ChannelMessageSendEmbed(config.BotLogID, &embedMess)
-	if err != nil {
-
-		fmt.Println("Error:", err)
-	}
+	return err
 }
 
 //func init() {

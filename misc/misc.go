@@ -676,3 +676,17 @@ func ChMention(ch *discordgo.Channel) string {
 func ChMentionID(channelID string) string {
 	return fmt.Sprintf("<#%s>", channelID)
 }
+
+// Sends error message to channel command is in. If that throws an error send error message to bot log channel
+func CommandErrorHandler(s *discordgo.Session, m *discordgo.Message, err error) {
+
+	_, err = s.ChannelMessageSend(m.ChannelID, err.Error())
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+
+			return
+		}
+		return
+	}
+}

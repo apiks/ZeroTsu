@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"fmt"
-
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/config"
@@ -23,14 +21,20 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 	cha, err := s.Channel(m.ChannelID)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+
+			return
+		}
+		return
 	}
 
 	// Fetches info on server roles from the server and puts it in deb
 	deb, err := s.GuildRoles(config.ServerID)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	// Updates opt-in-under and opt-in-above position
@@ -63,7 +67,8 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		err = s.ChannelPermissionSet(m.ChannelID, roleID, "role", discordgo.PermissionReadMessages, discordgo.PermissionSendMessages)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			misc.CommandErrorHandler(s, m, err)
+			return
 		}
 	} else {
 
@@ -71,7 +76,8 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		err = s.ChannelPermissionSet(m.ChannelID, config.ServerID, "role", 0, discordgo.PermissionSendMessages)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			misc.CommandErrorHandler(s, m, err)
+			return
 		}
 	}
 
@@ -90,7 +96,12 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		for i := 0; i < len(deb); i++ {
 			for _, goodRole := range config.CommandRoles {
 
-				s.ChannelPermissionSet(m.ChannelID, goodRole, "role", discordgo.PermissionAll, 0)
+				err = s.ChannelPermissionSet(m.ChannelID, goodRole, "role", discordgo.PermissionAll, 0)
+				if err != nil {
+
+					misc.CommandErrorHandler(s, m, err)
+					return
+				}
 			}
 		}
 	}
@@ -98,13 +109,21 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 	_, err = s.ChannelMessageSend(m.ChannelID, "🔒 This channel has been locked.")
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+
+			return
+		}
 	}
 
 	_, err = s.ChannelMessageSend(config.BotLogID, "🔒 "+misc.ChMention(cha)+" was locked by "+m.Author.Username)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+
+			return
+		}
 	}
 }
 
@@ -125,14 +144,20 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	cha, err := s.Channel(m.ChannelID)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+
+			return
+		}
+		return
 	}
 
 	// Fetches info on server roles from the server and puts it in deb
 	deb, err := s.GuildRoles(config.ServerID)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	// Updates opt-in-under and opt-in-above position
@@ -165,23 +190,37 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 		err = s.ChannelPermissionSet(m.ChannelID, roleID, "role", misc.SpoilerPerms, 0)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			misc.CommandErrorHandler(s, m, err)
+			return
 		}
 	} else {
 
 		// Adds send permission from @everyone
-		s.ChannelPermissionSet(m.ChannelID, config.ServerID, "role", def, 0)
+		err = s.ChannelPermissionSet(m.ChannelID, config.ServerID, "role", def, 0)
+		if err != nil {
+
+			misc.CommandErrorHandler(s, m, err)
+			return
+		}
 	}
 
 	_, err = s.ChannelMessageSend(m.ChannelID, "🔓 This channel has been unlocked.")
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+
+			return
+		}
 	}
 	_, err = s.ChannelMessageSend(config.BotLogID, "🔓 "+misc.ChMention(cha)+" was unlocked by "+m.Author.Username)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+
+			return
+		}
 	}
 }
 

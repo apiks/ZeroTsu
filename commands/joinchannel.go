@@ -26,21 +26,24 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		mem, err = s.GuildMember(config.ServerID, m.Author.ID)
 		if err != nil {
-			fmt.Println(err.Error())
 			return
 		}
 	}
 
-	// Puts the command to lowercase
 	messageLowercase := strings.ToLower(m.Content)
-
-	// Separates every word in messageLowercase and puts it in a slice
 	commandStrings := strings.Split(messageLowercase, " ")
+
 	if len(commandStrings) == 1 {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "join [channel]`")
 		if err != nil {
-			fmt.Println("Error:", err)
+
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -58,14 +61,16 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	deb, err := s.GuildRoles(config.ServerID)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	// Pulls info on server channels
 	cha, err := s.GuildChannels(config.ServerID)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	// Checks if there's a # before the channel name and removes it if so
@@ -87,7 +92,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 				return
 			}
-			_, err = s.ChannelMessageSend(dm.ID, "You already have access to "+name)
+			_, _ = s.ChannelMessageSend(dm.ID, "You already have access to "+name)
 			return
 		}
 	}
@@ -106,13 +111,13 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	if roleExists == false {
 
-		// Sends error message to user in DMs
+		// Sends error message to user in DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 
 			return
 		}
-		_, err = s.ChannelMessageSend(dm.ID, "There's no #"+name+", silly")
+		_, _ = s.ChannelMessageSend(dm.ID, "There's no #"+name+", silly")
 		return
 	}
 
@@ -149,7 +154,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 			return
 		}
-		_, err = s.ChannelMessageSend(dm.ID, "You're already in "+chanMention+", daaarling~")
+		_, _ = s.ChannelMessageSend(dm.ID, "You're already in "+chanMention+", daaarling~")
 		return
 	}
 
@@ -169,7 +174,8 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	role, err := s.State.Role(config.ServerID, roleID)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	// Gives role to user if the role is between dummy opt-ins
@@ -184,7 +190,8 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 		err = s.GuildMemberRoleAdd(config.ServerID, m.Author.ID, roleID)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			misc.CommandErrorHandler(s, m, err)
+			return
 		}
 
 		for j := 0; j < len(cha); j++ {
@@ -203,13 +210,13 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 			success = success + "\n **Topic:** " + topic
 		}
 
-		// Sends success message to user in DMs
+		// Sends success message to user in DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 
 			return
 		}
-		_, err = s.ChannelMessageSend(dm.ID, success)
+		_, _ = s.ChannelMessageSend(dm.ID, success)
 	}
 }
 

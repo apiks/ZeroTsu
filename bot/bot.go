@@ -10,23 +10,13 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
-var (
-	goBot *discordgo.Session
-)
-
 // Starts Bot and its Handlers
 func Start() {
 	goBot, err := discordgo.New("Bot " + config.Token)
-
 	if err != nil {
 
 		fmt.Println(err.Error())
 		return
-	}
-
-	if err != nil {
-
-		fmt.Println(err.Error())
 	}
 
 	// Reads spoiler roles database at bot start
@@ -41,7 +31,7 @@ func Start() {
 	// Reads bannedUsers.json from storage at bot start
 	misc.BannedUsersRead()
 
-	// Reads ongoing votes from VoteInfo.json
+	// Reads ongoing votes from VoteInfo.json at bot start
 	commands.VoteInfoRead()
 
 	// Reads set react joins from reactChannelJoin.json
@@ -50,7 +40,7 @@ func Start() {
 	// Reads all the rss threads from rssThreads.json
 	misc.RssThreadsRead()
 
-	// Reads all the check rss threads from rssThreadsCheck.json
+	// Reads all the timer rss threads from rssThreadsCheck.json
 	misc.RssThreadsTimerRead()
 
 	// Periodic events and status
@@ -71,10 +61,6 @@ func Start() {
 	// Abstraction of a command handler
 	goBot.AddHandler(commands.HandleCommand)
 
-	// MemberInfo
-	//goBot.AddHandler(misc.OnMemberJoinGuild)
-	//goBot.AddHandler(misc.OnMemberUpdate)
-
 	// React Channel Join Handler
 	goBot.AddHandler(commands.ReactJoinHandler)
 
@@ -84,12 +70,15 @@ func Start() {
 	// Channel Vote Timer
 	goBot.AddHandler(commands.ChannelVoteTimer)
 
+	// MemberInfo
+	//goBot.AddHandler(misc.OnMemberJoinGuild)
+	//goBot.AddHandler(misc.OnMemberUpdate)
+
 	// Verified Role and Cookie Map Expiry Deletion Handler
 	//goBot.AddHandler(verification.VerifiedRoleAdd)
 	//goBot.AddHandler(verification.VerifiedAlready)
 
 	err = goBot.Open()
-
 	if err != nil {
 
 		fmt.Println(err.Error())

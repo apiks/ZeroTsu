@@ -33,25 +33,25 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		channelEdit       discordgo.ChannelEdit
 	)
 
-	// Puts the command to lowercase
 	messageLowercase := strings.ToLower(m.Content)
-
-	// Separates every word in messageLowercase and puts it in a slice
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) == 1 {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "create [name] OPTIONAL[type] [category] [description; must have at least one other non-name parameter]`")
 		if err != nil {
-			fmt.Println("Error:", err)
+
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
 
-	// Initializes two command strings without "create"
 	command := strings.Replace(messageLowercase, config.BotPrefix+"create ", "", 1)
-
-	// Separates every word in command and puts it in a slice
 	commandStrings = strings.Split(command, " ")
 
 	// Checks if [category] and [type] exist and assigns them if they do and removes them from slice
@@ -96,14 +96,15 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	newCha, err := s.GuildChannelCreate(config.ServerID, command, "text")
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	// Creates the new role
 	newRole, err := s.GuildRoleCreate(config.ServerID)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
@@ -114,7 +115,8 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	_, err = s.GuildRoleEdit(config.ServerID, newRole.ID, roleName, 0, false, 0, false)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	// Adds the role to the SpoilerMap and writes to storage
@@ -130,7 +132,8 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	deb, err := s.GuildRoles(config.ServerID)
 	if err != nil {
 
-		fmt.Println("Error: ", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	// Finds ID of Muted role and Airing role
@@ -151,7 +154,8 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		err = s.ChannelPermissionSet(newCha.ID, goodRole, "role", misc.SpoilerPerms, 0)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			misc.CommandErrorHandler(s, m, err)
+			return
 		}
 	}
 	if channel.Type != "general" {
@@ -160,27 +164,31 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		err = s.ChannelPermissionSet(newCha.ID, config.ServerID, "role", 0, misc.SpoilerPerms)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			misc.CommandErrorHandler(s, m, err)
+			return
 		}
 		// Spoiler role perms
 		err = s.ChannelPermissionSet(newCha.ID, newRole.ID, "role", misc.SpoilerPerms, 0)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			misc.CommandErrorHandler(s, m, err)
+			return
 		}
 	}
 	// Muted perms
 	err = s.ChannelPermissionSet(newCha.ID, muted, "role", 0, discordgo.PermissionSendMessages)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 	// Airing perms
 	if channel.Type == "airing" {
 		err = s.ChannelPermissionSet(newCha.ID, airing, "role", misc.SpoilerPerms, 0)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			misc.CommandErrorHandler(s, m, err)
+			return
 		}
 	}
 	// Sets channel description if it exists
@@ -190,7 +198,8 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err = s.ChannelEditComplex(newCha.ID, &descriptionEdit)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			misc.CommandErrorHandler(s, m, err)
+			return
 		}
 	}
 
@@ -200,7 +209,8 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		chaAll, err := s.GuildChannels(config.ServerID)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			misc.CommandErrorHandler(s, m, err)
+			return
 		}
 		for i := 0; i < len(chaAll); i++ {
 			// Puts channel name to lowercase
@@ -221,7 +231,8 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err = s.ChannelEditComplex(newCha.ID, &channelEdit)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			misc.CommandErrorHandler(s, m, err)
+			return
 		}
 	}
 
@@ -232,14 +243,24 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 			"` in #bot-commands until reaction join has been set.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 	} else {
 
 		_, err = s.ChannelMessageSend(m.ChannelID, "Channel and role `" + roleName + "` created. If opt-in please sort in the roles list. Sort category separately.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 	}
 }

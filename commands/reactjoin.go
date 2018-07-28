@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 	"encoding/json"
@@ -41,9 +40,12 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	}
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
-		if r := recover(); r != nil {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
 
-			fmt.Println(r)
+				return
+			}
 		}
 	}()
 
@@ -65,7 +67,12 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 						err := s.GuildMemberRoleAdd(config.ServerID, r.UserID, role)
 						if err != nil {
 
-							fmt.Println("Error:", err)
+							_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+							if err != nil {
+
+								return
+							}
+							return
 						}
 					}
 				} else {
@@ -74,7 +81,12 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 					roles, err := s.GuildRoles(config.ServerID)
 					if err != nil {
 
-						fmt.Println("Error:", err)
+						_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+						if err != nil {
+
+							return
+						}
+						return
 					}
 
 					// Iterates through all of the server roles and gives the role to the user if the set role exists
@@ -85,7 +97,12 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 							err := s.GuildMemberRoleAdd(config.ServerID, r.UserID, roles[i].ID)
 							if err != nil {
 
-								fmt.Println("Error:", err)
+								_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+								if err != nil {
+
+									return
+								}
+								return
 							}
 						}
 					}
@@ -110,9 +127,12 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 	}
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
-		if r := recover(); r != nil {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
 
-			fmt.Println(r)
+				return
+			}
 		}
 	}()
 
@@ -134,7 +154,12 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 						err := s.GuildMemberRoleRemove(config.ServerID, r.UserID, role)
 						if err != nil {
 
-							fmt.Println("Error:", err)
+							_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+							if err != nil {
+
+								return
+							}
+							return
 						}
 					}
 				} else {
@@ -143,7 +168,12 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 					roles, err := s.GuildRoles(config.ServerID)
 					if err != nil {
 
-						fmt.Println("Error:", err)
+						_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+						if err != nil {
+
+							return
+						}
+						return
 					}
 
 					// Iterates through all of the server roles and removes the role from the user if the set role exists
@@ -154,7 +184,12 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 							err := s.GuildMemberRoleRemove(config.ServerID, r.UserID, roles[i].ID)
 							if err != nil {
 
-								fmt.Println("Error:", err)
+								_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+								if err != nil {
+
+									return
+								}
+								return
 							}
 						}
 					}
@@ -167,10 +202,7 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 // Sets react joins per specific message and emote
 func setReactJoinCommand (s *discordgo.Session, m *discordgo.Message) {
 
-	// Puts the command to lowercase
 	messageLowercase := strings.ToLower(m.Content)
-
-	// Splits the message parameters
 	commandStrings := strings.SplitN(messageLowercase, " ", 4)
 
 	if len(commandStrings) != 4 {
@@ -178,7 +210,12 @@ func setReactJoinCommand (s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong amount of parameters. Please use `" + config.BotPrefix + "setreact [messageID] [emoji] [role]`")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -188,7 +225,12 @@ func setReactJoinCommand (s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid messageID.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -198,8 +240,10 @@ func setReactJoinCommand (s *discordgo.Session, m *discordgo.Message) {
 	roles, err := s.GuildRoles(config.ServerID)
 	if err != nil {
 
-		fmt.Println("Error: ", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
+
 	// Iterates through all of the roles and sets bool value to true if the role exists
 	for j := 0; j < len(roles); j++ {
 
@@ -213,7 +257,12 @@ func setReactJoinCommand (s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid role.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -248,7 +297,12 @@ func setReactJoinCommand (s *discordgo.Session, m *discordgo.Message) {
 							_, err = s.ChannelMessageSend(m.ChannelID, "Error: Reached the max reaction limit. (20)")
 							if err != nil {
 
-								fmt.Println("Error: ", err)
+								_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+								if err != nil {
+
+									return
+								}
+								return
 							}
 						}
 					}
@@ -258,7 +312,12 @@ func setReactJoinCommand (s *discordgo.Session, m *discordgo.Message) {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Success! React channel join set.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 
 		// Else it's a non-valid emoji or an unicode emoji (the latter preferably) and saves that
@@ -284,7 +343,12 @@ func setReactJoinCommand (s *discordgo.Session, m *discordgo.Message) {
 							_, err = s.ChannelMessageSend(m.ChannelID, "Error: Reached the max reaction limit. (20)")
 							if err != nil {
 
-								fmt.Println("Error:", err)
+								_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+								if err != nil {
+
+									return
+								}
+								return
 							}
 						}
 					}
@@ -294,7 +358,12 @@ func setReactJoinCommand (s *discordgo.Session, m *discordgo.Message) {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Success! React channel join set.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 	}
 }
@@ -307,10 +376,7 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 		key           string
 	)
 
-	// Puts the command to lowercase
 	messageLowercase := strings.ToLower(m.Content)
-
-	// Splits the message parameters
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
 
 	if len(commandStrings) != 3 && len(commandStrings) != 2 {
@@ -318,7 +384,12 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong amount of parameters. Please use `"+config.BotPrefix+"removereact [messageID] [emoji]`")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -328,7 +399,12 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid messageID.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -337,7 +413,12 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no set react joins.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -356,7 +437,12 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: No such messageID is set in storage")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -372,9 +458,13 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed entire message emoji react join.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
-		}
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
 
+				return
+			}
+			return
+		}
 		return
 	}
 
@@ -434,7 +524,12 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 									_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed Emoji react join from message.")
 									if err != nil {
 
-										fmt.Println("Error:", err)
+										_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+										if err != nil {
+
+											return
+										}
+										return
 									}
 
 									break
@@ -443,7 +538,12 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 									_, err = s.ChannelMessageSend(m.ChannelID, "Error: No such emoji for that messageID")
 									if err != nil {
 
-										fmt.Println("Error:", err)
+										_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+										if err != nil {
+
+											return
+										}
+										return
 									}
 								}
 
@@ -462,7 +562,12 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 									_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed Emoji react join from message.")
 									if err != nil {
 
-										fmt.Println("Error:", err)
+										_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+										if err != nil {
+
+											return
+										}
+										return
 									}
 
 									break
@@ -512,21 +617,29 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 									// Writes to storage
 									ReactChannelJoinWrite(reactChannelJoinMap)
 
-									// Prints success message
 									_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed Emoji react join from message.")
 									if err != nil {
 
-										fmt.Println("Error:", err)
+										_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+										if err != nil {
+
+											return
+										}
+										return
 									}
 
 									break
 								} else {
 
-									// Prints error message
 									_, err = s.ChannelMessageSend(m.ChannelID, "Error: No such emoji for that messageID")
 									if err != nil {
 
-										fmt.Println("Error:", err)
+										_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+										if err != nil {
+
+											return
+										}
+										return
 									}
 
 									break
@@ -557,7 +670,12 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 									_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed Emoji react join from message.")
 									if err != nil {
 
-										fmt.Println("Error:", err)
+										_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+										if err != nil {
+
+											return
+										}
+										return
 									}
 
 									break
@@ -566,7 +684,12 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 									_, err = s.ChannelMessageSend(m.ChannelID, "Error: No such emoji for that messageID")
 									if err != nil {
 
-										fmt.Println("Error:", err)
+										_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+										if err != nil {
+
+											return
+										}
+										return
 									}
 
 									break
@@ -591,7 +714,12 @@ func viewReactJoinsCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no set react joins.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 	}
 
@@ -620,7 +748,12 @@ func viewReactJoinsCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, line)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 	}
 }
@@ -632,18 +765,16 @@ func ReactInfoRead() {
 	reactChannelJoinByte, err := ioutil.ReadFile("database/reactChannelJoin.json")
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
 
-	MapMutex.Lock()
-
 	// Takes all the set react join from reactChannelJoin.json from byte and puts them into the reactChannelJoinMap map
+	MapMutex.Lock()
 	err = json.Unmarshal(reactChannelJoinByte, &reactChannelJoinMap)
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
-
 	MapMutex.Unlock()
 }
 
@@ -721,22 +852,20 @@ func SaveReactJoin(messageID string, role string, emoji string) {
 // Writes react channel join info to ReactChannelJoinWrite.json
 func ReactChannelJoinWrite(info map[string]*ReactChannelJoinStruct) {
 
-	MapMutex.Lock()
-
 	// Turns info slice into byte ready to be pushed to file
+	MapMutex.Lock()
 	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
-
 	MapMutex.Unlock()
 
 	// Writes to file
 	err = ioutil.WriteFile("database/reactChannelJoin.json", MarshaledStruct, 0644)
 	if err != nil {
 
-		fmt.Println(err)
+		return
 	}
 }
 

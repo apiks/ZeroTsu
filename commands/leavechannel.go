@@ -26,21 +26,24 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		mem, err = s.GuildMember(config.ServerID, m.Author.ID)
 		if err != nil {
-			fmt.Println(err.Error())
 			return
 		}
 	}
 
-	// Puts the command to lowercase
 	messageLowercase := strings.ToLower(m.Content)
-
-	// Separates every word in messageLowercase and puts it in a slice
 	commandStrings := strings.Split(messageLowercase, " ")
+
 	if len(commandStrings) == 1 {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "leave [channel]`")
 		if err != nil {
-			fmt.Println("Error:", err)
+
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -58,14 +61,16 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	deb, err := s.GuildRoles(config.ServerID)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	// Pulls info on server channels
 	cha, err := s.GuildChannels(config.ServerID)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	// Checks if there's a # before the channel name and removes it if so
@@ -87,7 +92,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 
 				return
 			}
-			_, err = s.ChannelMessageSend(dm.ID, "You cannot leave "+name + " using this command.")
+			_, _ = s.ChannelMessageSend(dm.ID, "You cannot leave "+name + " using this command.")
 			return
 		}
 	}
@@ -106,13 +111,13 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	if roleExists == false {
 
-		// Sends error message to user in DMs
+		// Sends error message to user in DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 
 			return
 		}
-		_, err = s.ChannelMessageSend(dm.ID, "There's no #"+name+", silly")
+		_, _ = s.ChannelMessageSend(dm.ID, "There's no #"+name+", silly")
 		return
 	}
 
@@ -143,13 +148,13 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 		}
 
-		// Sends error message to user in DMs
+		// Sends error message to user in DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 
 			return
 		}
-		_, err = s.ChannelMessageSend(dm.ID, "You're already out of " + chanMention + ", daaarling~")
+		_, _ = s.ChannelMessageSend(dm.ID, "You're already out of " + chanMention + ", daaarling~")
 		return
 	}
 
@@ -169,7 +174,8 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	role, err := s.State.Role(config.ServerID, roleID)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	// Removes role from user if the role is between dummy opt-ins
@@ -183,7 +189,8 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 		err = s.GuildMemberRoleRemove(config.ServerID, m.Author.ID, roleID)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			misc.CommandErrorHandler(s, m, err)
+			return
 		}
 
 		for j := 0; j < len(cha); j++ {
@@ -199,7 +206,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 
 			return
 		}
-		_, err = s.ChannelMessageSend(dm.ID, "You have left " + chanMention)
+		_, _ = s.ChannelMessageSend(dm.ID, "You have left " + chanMention)
 	}
 }
 

@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -10,47 +9,45 @@ import (
 	"github.com/r-anime/ZeroTsu/config"
 )
 
+// Returns a user avatar in channel
 func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	// Puts entire message in lowercase
-	messageLowercase := strings.ToLower(m.Content)
+	commandStrings := strings.Split(m.Content, " ")
 
-	// Separates every word in the message and puts it in a slice
-	commandStrings := strings.Split(messageLowercase, " ")
+	if len(commandStrings) != 2 {
 
-	// Checks if there's enough parameters (command, user and index.) Else prints error message
-	if len(commandStrings) == 1 {
-
-		_, err := s.ChannelMessageSend(m.ChannelID, "Incorrect usage: Try `" + config.BotPrefix + "avatar [@user or userID]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix + "avatar [@user or userID]`")
 		if err != nil {
-			fmt.Println("Error:", err)
-		}
-		return
-	} else if len(commandStrings) != 2 {
 
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong amount of parameters.")
-		if err != nil {
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
-		return
 	}
 
-	// Pulls userID from 2nd parameter of commandStrings, else print error
+	// Pulls userID from 2nd parameter of commandStrings
 	userID := misc.GetUserID(s, m, commandStrings)
 
-	// Fetches user from server
+	// Fetches user
 	mem, err := s.User(userID)
 	if err != nil {
+
+		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
-	// Saves the avatar URL to avatar variable with image size 256
-	avatar := mem.AvatarURL("256")
-
-	_, err = s.ChannelMessageSend(m.ChannelID, avatar)
+	_, err = s.ChannelMessageSend(m.ChannelID, mem.AvatarURL("256"))
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+
+			return
+		}
+		return
 	}
 }
 

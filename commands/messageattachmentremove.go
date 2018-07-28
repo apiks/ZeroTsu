@@ -16,6 +16,11 @@ var (
 		"jpeg", "jpg", "bmp", "tif", "tiff"}
 )
 
+var (
+	whitelist = [...]string{"png", "gif", "gifv",
+		"jpeg", "jpg", "bmp", "tif", "tiff"}
+)
+
 // Checks messages with uploads if they're uploading a whitelisted file type. If not it removes them
 func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
@@ -29,7 +34,6 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 	if err != nil {
 		ch, err = s.Channel(m.ChannelID)
 		if err != nil {
-			fmt.Println("Error:", err)
 			return
 		}
 	}
@@ -41,7 +45,6 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 	if err != nil {
 		mem, err = s.GuildMember(config.ServerID, m.Author.ID)
 		if err != nil {
-			fmt.Println(err.Error())
 			return
 		}
 	}
@@ -61,25 +64,27 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		err = s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 
-		// Stores time of removal
 		now := time.Now().Format("2006-01-02 15:04:05")
 
 		// Prints success in bot-log channel
-		_, err = s.ChannelMessageSend(config.BotLogID, m.Author.Mention() + " had their message removed for uploading non-whitelisted `" +
+		_, _ = s.ChannelMessageSend(config.BotLogID, m.Author.Mention() + " had their message removed for uploading non-whitelisted `" +
 			attachment.Filename + "` in " + "<#" + m.ChannelID + "> on [_" + now + "_]")
-		if err != nil {
-			fmt.Println("Error: ", err)
-		}
 
-		// Sends a message to the user in their DMs
+		// Sends a message to the user in their DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
+
 			return
 		}
-		_, err = s.ChannelMessageSend(dm.ID, "Your message upload `" + attachment.Filename + "` was removed for using a non-whitelisted file type. Only gifs and images are allowed.")
+		_, _ = s.ChannelMessageSend(dm.ID, "Your message upload `" + attachment.Filename + "` was removed for using a non-whitelisted file type. Only gifs and images are allowed.")
 	}
 
 }

@@ -13,19 +13,17 @@ import (
 )
 
 // Handles filter in an onMessage basis
-func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+func FilterHandler(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if it's within the /r/anime server
 	ch, err := s.State.Channel(m.ChannelID)
 	if err != nil {
 		ch, err = s.Channel(m.ChannelID)
 		if err != nil {
-			fmt.Println("Error:", err)
 			return
 		}
 	}
 	if ch.GuildID != config.ServerID {
-
 		return
 	}
 	// Checks if it's the bot that sent the message
@@ -37,13 +35,11 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if err != nil {
 		mem, err = s.GuildMember(config.ServerID, m.Author.ID)
 		if err != nil {
-			fmt.Println(err.Error())
 			return
 		}
 	}
 	// Checks if user is mod or bot before checking the message
 	if misc.HasPermissions(mem) == true {
-
 		return
 	}
 
@@ -53,20 +49,24 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		badWordExists bool
 	)
 
-	// Puts the message to lowercase
 	messageLowercase := strings.ToLower(m.Content)
 
 	// Checks if message should be filtered
-	badWordExists, badWordsSlice = isFiltered(m.Message)
+	badWordExists, badWordsSlice = isFiltered(m)
 
 	// If function returns true handle the filtered message
 	if badWordExists {
 
-		//Deletes the message that was sent if it has a filtered word.
+		// Deletes the message that was sent if it has a filtered word.
 		err = s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 
 		// Iterates through all the bad words
@@ -87,21 +87,25 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		now := t.Format("2006-01-02 15:04:05") + " " + z
 
 		// Sends embed mod message
-		err := FilterEmbed(s, m.Message, removals, now, m.ChannelID)
+		err := FilterEmbed(s, m, removals, now, m.ChannelID)
 		if err != nil {
-			l.Println(err)
+
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 
 		// Sends message to user's DMs
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
-			l.Println("Error:", err)
+
+			return
 		}
-		_, err = s.ChannelMessageSend(dm.ID, "Your message `" + messageLowercase + "` was removed for using: _" + removals + "_ \n" +
+		_, _ = s.ChannelMessageSend(dm.ID, "Your message `" + messageLowercase + "` was removed for using: _" + removals + "_ \n" +
 			"Using such words makes me disappointed in you, darling.")
-		if err != nil {
-			l.Println("Error:", err)
-		}
 	}
 }
 
@@ -135,7 +139,12 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 			err := s.MessageReactionRemove(r.ChannelID, r.MessageID, r.Emoji.APIName(), r.UserID)
 			if err != nil {
 
-				fmt.Println("Error:", err)
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+				if err != nil {
+
+					return
+				}
+				return
 			}
 		}
 	}
@@ -149,7 +158,6 @@ func isFiltered(m *discordgo.Message) (bool, []string){
 		badWordsSlice []string
 	)
 
-	// Puts the command to lowercase
 	messageLowercase := strings.ToLower(m.Content)
 
 	// Iterates through all the filters to see if the message contained a filtered word
@@ -177,16 +185,20 @@ func isFiltered(m *discordgo.Message) (bool, []string){
 // Adds a filter to storage and memory
 func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	// Puts the command to lowercase
 	messageLowercase := strings.ToLower(m.Content)
-
-	// Separates every word in messageLowercase and puts it in a slice
 	commandStrings := strings.Split(messageLowercase, " ")
+
 	if len(commandStrings) == 1 {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "addfilter [phrase]`")
 		if err != nil {
-			fmt.Println("Error:", err)
+
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -201,13 +213,23 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "`" + phrase + "` has been added to the filter list.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 	} else {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: `" + phrase + "` is already on the filter list.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 	}
 }
@@ -220,21 +242,30 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no filters.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
 
-	// Puts the command to lowercase
 	messageLowercase := strings.ToLower(m.Content)
-
-	// Separates every word in messageLowercase and puts it in a slice
 	commandStrings := strings.Split(messageLowercase, " ")
+
 	if len(commandStrings) == 1 {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removefilter [phrase]`")
 		if err != nil {
-			fmt.Println("Error:", err)
+
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -250,14 +281,24 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "`" + phrase + "` has been removed from the filter list.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 	} else {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: `" + phrase + "` is not in the filter list.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 	}
 }
@@ -273,7 +314,12 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no filters.")
 		if err != nil {
 
-			fmt.Println("Error:", err)
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+
+				return
+			}
+			return
 		}
 		return
 	}
@@ -295,7 +341,12 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 	_, err := s.ChannelMessageSend(m.ChannelID, filters)
 	if err != nil {
 
-		fmt.Println("Error:", err)
+		_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+
+			return
+		}
+		return
 	}
 }
 
@@ -305,7 +356,7 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, now, chan
 		embedMess      discordgo.MessageEmbed
 		embedThumbnail discordgo.MessageEmbedThumbnail
 
-		//Embed slice and its fields
+		// Embed slice and its fields
 		embedField        []*discordgo.MessageEmbedField
 		embedFieldFilter  discordgo.MessageEmbedField
 		embedFieldMessage discordgo.MessageEmbedField
@@ -313,40 +364,41 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, now, chan
 		embedFieldChannel discordgo.MessageEmbedField
 	)
 
-	//Saves user avatar as thumbnail
+	// Saves user avatar as thumbnail
 	embedThumbnail.URL = m.Author.AvatarURL("128")
 
-	//Sets field titles
+	// Sets field titles
 	embedFieldFilter.Name = "Filtered:"
 	embedFieldMessage.Name = "Message:"
 	embedFieldDate.Name = "Date:"
 	embedFieldChannel.Name = "Channel:"
 
-	//Sets field content
+	// Sets field content
 	embedFieldFilter.Value = "**__" + removals + "__**"
 	embedFieldMessage.Value = "`" + m.Content + "`"
 	embedFieldDate.Value = now
 	embedFieldChannel.Value = misc.ChMentionID(channelID)
 
-	//Sets field inline
+	// Sets field inline
 	embedFieldFilter.Inline = true
 	embedFieldDate.Inline = true
 	embedFieldChannel.Inline = true
 
-	//Adds the two fields to embedField slice (because embedMess.Fields requires slice input)
+	// Adds the two fields to embedField slice (because embedMess.Fields requires slice input)
 	embedField = append(embedField, &embedFieldFilter)
 	embedField = append(embedField, &embedFieldDate)
 	embedField = append(embedField, &embedFieldChannel)
 	embedField = append(embedField, &embedFieldMessage)
 
-	//Sets embed title and its description (which it uses the same way as a field)
+	// Sets embed title and its description (which it uses the same way as a field)
 	embedMess.Title = "User:"
 	embedMess.Description = m.Author.Mention()
 
-	//Adds user thumbnail and the two other fields as well
+	// Adds user thumbnail and the two other fields as well
 	embedMess.Thumbnail = &embedThumbnail
 	embedMess.Fields = embedField
 
+	// Sends embed in bot-log channel
 	_, err := s.ChannelMessageSendEmbed(config.BotLogID, &embedMess)
 	return err
 }
