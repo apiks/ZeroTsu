@@ -56,6 +56,7 @@ func setRssThread(s *discordgo.Session, m *discordgo.Message, thread string, aut
 	if err != nil {
 
 		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	if threadExists == false {
@@ -141,6 +142,7 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 
 		misc.CommandErrorHandler(s, m, err)
+		return
 	}
 
 	if threadExists == true {

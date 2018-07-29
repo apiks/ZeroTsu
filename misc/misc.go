@@ -162,10 +162,6 @@ func FiltersWrite(phrase string) (bool, error) {
 		err 			error
 	)
 
-	if len(ReadFilters) == 0 {
-
-		return false, err
-	}
 	// Appends the new filtered phrase to a slice of all of the old ones if it doesn't exist
 	for i := 0; i < len(ReadFilters); i++ {
 		if ReadFilters[i].Filter == phraseStruct.Filter {
@@ -202,10 +198,6 @@ func FiltersRemove(phrase string) (bool, error) {
 		err          	error
 	)
 
-	if len(ReadFilters) == 0 {
-
-		return false, err
-	}
 	// Deletes the filtered phrase if it finds it exists
 	for i := 0; i < len(ReadFilters); i++ {
 		if ReadFilters[i].Filter == phraseStruct.Filter {
@@ -373,10 +365,6 @@ func RssThreadsWrite(thread string, channel string, author string) (bool, error)
 	)
 
 	// Appends the new thread to a slice of all of the old ones if it doesn't exist
-	if len(ReadRssThreads) == 0 {
-
-		return false, err
-	}
 	for i := 0; i < len(ReadRssThreads); i++ {
 		if ReadRssThreads[i].Thread == threadStruct.Thread {
 
@@ -415,10 +403,6 @@ func RssThreadsRemove(thread string, channel string, author string) (bool, error
 	thread = strings.ToLower(thread)
 
 	// Deletes the thread if it finds it exists
-	if len(ReadRssThreads) != 0 {
-
-		return false, err
-	}
 	for i := 0; i < len(ReadRssThreads); i++ {
 		if ReadRssThreads[i].Thread == threadStruct.Thread {
 
@@ -476,10 +460,6 @@ func RssThreadsTimerWrite(thread string, date time.Time) {
 	)
 
 	// Appends the new thread to a slice of all of the old ones if it doesn't exist
-	if len(ReadRssThreadsCheck) != 0 {
-
-		return
-	}
 	for i := 0; i < len(ReadRssThreadsCheck); i++ {
 		if ReadRssThreadsCheck[i].Thread == threadCheckStruct.Thread {
 
