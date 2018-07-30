@@ -16,16 +16,16 @@ import (
 func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
 	// Saves program from panic and continues running normally without executing the command if it happens
-	defer func() {
-		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
-			if err != nil {
-
-				fmt.Println(err.Error())
-				fmt.Println(rec)
-			}
-		}
-	}()
+	//defer func() {
+	//	if rec := recover(); rec != nil {
+	//		_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+	//		if err != nil {
+	//
+	//			fmt.Println(err.Error())
+	//			fmt.Println(rec)
+	//		}
+	//	}
+	//}()
 
 	err := s.UpdateStatus(0, "with her darling")
 	if err != nil {
@@ -90,13 +90,20 @@ func RSSParser(s *discordgo.Session) {
 	feed, err := fp.ParseURL("https://www.reddit.com/r/anime/new/.rss")
 	if err != nil {
 
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		dm, err := s.UserChannelCreate("128312718779219968")
 		if err != nil {
 
 			return
 		}
+		_, _ = s.ChannelMessageSend(dm.ID, err.Error())
 		return
 	}
+	dm, err := s.UserChannelCreate("128312718779219968")
+	if err != nil {
+
+		return
+	}
+	_, _ = s.ChannelMessageSend(dm.ID, "It's in!")
 
 	t := time.Now()
 
