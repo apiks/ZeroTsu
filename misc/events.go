@@ -37,7 +37,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		}
 	}
 
-	for range time.NewTicker(15 * time.Second).C {
+	for range time.NewTicker(30 * time.Second).C {
 
 		// Checks whether it has to post rss thread every 15 seconds
 		RSSParser(s)
@@ -86,24 +86,17 @@ func RSSParser(s *discordgo.Session) {
 
 	// Pulls the feed from /r/anime and puts it in feed variable
 	fp := gofeed.NewParser()
-	fp.Client = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport}, Timeout: time.Minute * 3}
-	feed, err := fp.ParseURL("https://www.reddit.com/r/anime/new/.rss")
+	fp.Client = &http.Client{Transport: &UserAgentTransport{&http.DefaultTransport}, Timeout: time.Minute * 3}
+	feed, err := fp.ParseURL("http://www.reddit.com/r/anime/new/.rss")
 	if err != nil {
 
-		dm, err := s.UserChannelCreate("128312718779219968")
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + ". Feed var error.")
 		if err != nil {
 
 			return
 		}
-		_, _ = s.ChannelMessageSend(dm.ID, err.Error())
 		return
 	}
-	dm, err := s.UserChannelCreate("128312718779219968")
-	if err != nil {
-
-		return
-	}
-	_, _ = s.ChannelMessageSend(dm.ID, "It's in!")
 
 	t := time.Now()
 
