@@ -21,15 +21,15 @@ type channel struct {
 func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		muted             string
-		airing            string
-		roleName          string
-		descriptionSlice  []string
+		muted            string
+		airing           string
+		roleName         string
+		descriptionSlice []string
 
-		channel 		  channel
+		channel channel
 
-		descriptionEdit   discordgo.ChannelEdit
-		channelEdit       discordgo.ChannelEdit
+		descriptionEdit discordgo.ChannelEdit
+		channelEdit     discordgo.ChannelEdit
 	)
 
 	messageLowercase := strings.ToLower(m.Content)
@@ -37,7 +37,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	if len(commandStrings) == 1 {
 
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "create [name] OPTIONAL[type] [category] [description; must have at least one other non-name parameter]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"create [name] OPTIONAL[type] [category] [description; must have at least one other non-name parameter]`")
 		if err != nil {
 
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
@@ -82,7 +82,6 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 			descriptionSlice = strings.SplitAfter(m.Content, channel.Type)
 		}
 
-
 		// Makes the description the second element of the slice above
 		channel.Description = descriptionSlice[1]
 		// Makes a copy of description that it puts to lowercase
@@ -94,7 +93,6 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Creates the new channel of type text
 	newCha, err := s.GuildChannelCreate(config.ServerID, command, "text")
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
@@ -102,7 +100,6 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Creates the new role
 	newRole, err := s.GuildRoleCreate(config.ServerID)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
@@ -113,26 +110,24 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Edits the new role with proper hyphenated name
 	_, err = s.GuildRoleEdit(config.ServerID, newRole.ID, roleName, 0, false, 0, false)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
 	// Adds the role to the SpoilerMap and writes to storage
 	tempRole := discordgo.Role{
-
 		ID:   newRole.ID,
 		Name: command,
 	}
+
 	misc.MapMutex.Lock()
 	misc.SpoilerMap[newRole.ID] = &tempRole
-	misc.MapMutex.Unlock()
 	misc.SpoilerRolesWrite(misc.SpoilerMap)
+	misc.MapMutex.Unlock()
 
 	// Pulls info on server roles
 	deb, err := s.GuildRoles(config.ServerID)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
@@ -140,38 +135,31 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Finds ID of Muted role and Airing role
 	for i := 0; i < len(deb); i++ {
 		if deb[i].Name == "Muted" {
-
 			muted = deb[i].ID
 		} else if channel.Type == "airing" && deb[i].Name == "airing" {
-
 			airing = deb[i].ID
 		}
 	}
 
 	// Assigns channel permission overwrites
 	for _, goodRole := range config.CommandRoles {
-
 		// Mod perms
 		err = s.ChannelPermissionSet(newCha.ID, goodRole, "role", misc.SpoilerPerms, 0)
 		if err != nil {
-
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
 	}
 	if channel.Type != "general" {
-
 		// Everyone perms
 		err = s.ChannelPermissionSet(newCha.ID, config.ServerID, "role", 0, misc.SpoilerPerms)
 		if err != nil {
-
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
 		// Spoiler role perms
 		err = s.ChannelPermissionSet(newCha.ID, newRole.ID, "role", misc.SpoilerPerms, 0)
 		if err != nil {
-
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
@@ -179,7 +167,6 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Muted perms
 	err = s.ChannelPermissionSet(newCha.ID, muted, "role", 0, discordgo.PermissionSendMessages)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
@@ -187,18 +174,15 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	if channel.Type == "airing" {
 		err = s.ChannelPermissionSet(newCha.ID, airing, "role", misc.SpoilerPerms, 0)
 		if err != nil {
-
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
 	}
 	// Sets channel description if it exists
 	if channel.Description != "" {
-
 		descriptionEdit.Topic = channel.Description
 		_, err = s.ChannelEditComplex(newCha.ID, &descriptionEdit)
 		if err != nil {
-
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
@@ -209,7 +193,6 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Pulls info on server channel
 		chaAll, err := s.GuildChannels(config.ServerID)
 		if err != nil {
-
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
@@ -219,7 +202,6 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 			// Compares if Category is either a valid category name or ID
 			if nameLowercase == channel.Category || chaAll[i].ID == channel.Category {
 				if chaAll[i].Type == discordgo.ChannelTypeGuildCategory {
-
 					channel.Category = chaAll[i].ID
 				}
 			}
@@ -231,37 +213,16 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Pushes new parentID to channel
 		_, err = s.ChannelEditComplex(newCha.ID, &channelEdit)
 		if err != nil {
-
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
 	}
 
 	// If the message was called from StartVote, prints it for all to see, else mod-only message
-	if m.Author.ID == s.State.User.ID {
-
-		_, err = s.ChannelMessageSend(m.ChannelID, "Channel `" + roleName + "` has been created. Use `" + config.BotPrefix + "join " + roleName +
-			"` in #bot-commands until reaction join has been set.")
+	if m.Author.ID != s.State.User.ID {
+		_, err = s.ChannelMessageSend(m.ChannelID, "Channel and role `"+roleName+"` created. If opt-in please sort in the roles list. Sort category separately.")
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-			if err != nil {
-
-				return
-			}
-			return
-		}
-	} else {
-
-		_, err = s.ChannelMessageSend(m.ChannelID, "Channel and role `" + roleName + "` created. If opt-in please sort in the roles list. Sort category separately.")
-		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-			if err != nil {
-
-				return
-			}
-			return
 		}
 	}
 }

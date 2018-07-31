@@ -100,7 +100,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		peopleNum = num
 		// Removes the num from the command string
-		command = strings.Replace(command, commandStrings[0], "", 1)
+		command = strings.Replace(command, commandStrings[0] + " ", "", 1)
 	}
 
 	// Assigns channel name and checks if it's empty
@@ -187,12 +187,9 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
 			if err != nil {
 
-				fmt.Println(err.Error())
+				fmt.Println(err)
 				fmt.Println(rec)
-				ChannelVoteTimer(s, e)
 			}
-
-			ChannelVoteTimer(s, e)
 		}
 	}()
 
@@ -204,16 +201,13 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 			// Updates message
 			messageReact, err := s.ChannelMessage(VoteInfoMap[k].MessageReact.ChannelID, VoteInfoMap[k].MessageReact.ID)
 			if err != nil {
-
 				return
 			}
 
 			// Calculates if it's time to remove
 			difference := t.Sub(VoteInfoMap[k].Date)
 			if difference > 0 {
-
 				if messageReact == nil {
-
 					continue
 				}
 
@@ -221,10 +215,8 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				_, err = s.ChannelMessageSend(messageReact.ChannelID, "Channel vote has ended. `" + VoteInfoMap[k].Channel + "` has failed to "+
 					"gather the necessary "+ numStr+ " votes.")
 				if err != nil {
-
 					_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 					if err != nil {
-
 						return
 					}
 				}
@@ -236,7 +228,6 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 				// Writes to storage
 				VoteInfoWrite(VoteInfoMap)
-
 				continue
 			}
 
@@ -250,8 +241,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 			}
 			// Checks if the vote was successful and executes if so
 			if messageReact.Reactions[0].Count < VoteInfoMap[k].VotesReq {
-
-				return
+				continue
 			}
 
 			var (
@@ -263,27 +253,78 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 			author.ID = s.State.User.ID
 			message.ID = VoteInfoMap[k].MessageReact.ChannelID
 			message.Author = &author
-			message.Content = config.BotPrefix + "create" + VoteInfoMap[k].Channel + " " + VoteInfoMap[k].ChannelType +
+			message.Content = config.BotPrefix + "create " + VoteInfoMap[k].Channel + " " + VoteInfoMap[k].ChannelType +
 				" " + VoteInfoMap[k].Category + " " + VoteInfoMap[k].Description
 			createChannelCommand(s, &message)
 
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(200 * time.Millisecond)
 
 			// Sortroles command if optin or airing
 			if VoteInfoMap[k].ChannelType != "general" {
-
 				message.Content = config.BotPrefix + "sortroles"
 				sortRolesCommand(s, &message)
 			}
 
-			time.Sleep(2 * time.Second)
+			time.Sleep(500 * time.Millisecond)
 
 			// Sortcategory command if category exists
 			if VoteInfoMap[k].Category != "" {
-
 				message.Content = config.BotPrefix + "sortcategory " + VoteInfoMap[k].Category
 				sortCategoryCommand(s, &message)
+			}
 
+			role := strings.Replace(VoteInfoMap[k].Channel, " ", "-", -1)
+
+			_, err = s.ChannelMessageSend(config.BotLogID, "Channel `"+VoteInfoMap[k].Channel+"` was successfully created! Those that have voted were given the role. Use `" + config.BotPrefix + "join " + role +
+				"` until reaction join has been set if you do not have it.")
+			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+				if err != nil {
+					return
+				}
+				return
+			}
+
+			time.Sleep(200 * time.Millisecond)
+
+			roles, err := s.GuildRoles(config.ServerID)
+			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+				if err != nil {
+					return
+				}
+				return
+			}
+			for i := 0; i < len(roles); i++ {
+				if roles[i].Name == role {
+					role = roles[i].ID
+					break
+				}
+			}
+
+			// Gets the users who voted and gives them the role
+			users, err := s.MessageReactions(VoteInfoMap[k].MessageReact.ChannelID, VoteInfoMap[k].MessageReact.ID, "👍", 100)
+			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+				if err != nil {
+					return
+				}
+				return
+			}
+
+			for i := 0; i < len(users); i++ {
+				if users[i].ID == config.BotID {
+					continue
+				}
+
+				err := s.GuildMemberRoleAdd(config.ServerID, users[i].ID, role)
+				if err != nil {
+					_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+					if err != nil {
+						return
+					}
+					return
+				}
 			}
 
 			// Deletes the vote from memory
@@ -293,17 +334,6 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 			// Writes to storage
 			VoteInfoWrite(VoteInfoMap)
-
-			_, err = s.ChannelMessageSend(config.BotLogID, "Channel `"+VoteInfoMap[k].Channel+"` was successfully created!")
-			if err != nil {
-
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-				if err != nil {
-
-					return
-				}
-				return
-			}
 		}
 	}
 }
@@ -334,7 +364,7 @@ func VoteInfoWrite(info map[string]*VoteInfo) {
 
 	// Turns info slice into byte ready to be pushed to file
 	MapMutex.Lock()
-	marshaledStruct, err := json.MarshalIndent(info, "", "    ")
+	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
 
 		MapMutex.Unlock()
@@ -343,7 +373,7 @@ func VoteInfoWrite(info map[string]*VoteInfo) {
 	MapMutex.Unlock()
 
 	//Writes to file
-	err = ioutil.WriteFile("database/voteInfo.json", marshaledStruct, 0644)
+	err = ioutil.WriteFile("database/voteInfo.json", MarshaledStruct, 0644)
 	if err != nil {
 
 		return

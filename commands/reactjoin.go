@@ -40,12 +40,10 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 
 	// Checks if a react channel join is set for that specific message and emoji and continues if true
 	if reactChannelJoinMap[r.MessageID] == nil {
-
 		return
 	}
 	// Checks if it's the correct message and emoji before going down
 	if reactChannelJoinMap[r.MessageID].MessageID != r.MessageID {
-
 		return
 	}
 
@@ -56,15 +54,40 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 		for role := range reactChannelJoinMap[r.MessageID].RoleEmoji[p] {
 			for _, emote := range reactChannelJoinMap[r.MessageID].RoleEmoji[p][role] {
 				if reactLowercase != emote {
-
 					continue
 				}
 
 				if len(role) >= 17 {
 					if _, err := strconv.ParseInt(role, 10, 64); err == nil {
-
 						// Gives the role
 						err := s.GuildMemberRoleAdd(config.ServerID, r.UserID, role)
+						if err != nil {
+							_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+							if err != nil {
+								return
+							}
+							return
+						}
+						return
+					}
+				}
+
+				// Pulls all of the server roles
+				roles, err := s.GuildRoles(config.ServerID)
+				if err != nil {
+					_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+					if err != nil {
+						return
+					}
+					return
+				}
+
+				// Iterates through all of the server roles and gives the role to the user if the set role exists
+				for i := 0; i < len(roles); i++ {
+					if roles[i].Name == role {
+
+						// Gives the role
+						err := s.GuildMemberRoleAdd(config.ServerID, r.UserID, roles[i].ID)
 						if err != nil {
 
 							_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
@@ -73,37 +96,6 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 								return
 							}
 							return
-						}
-					}
-				} else {
-
-					// Pulls all of the server roles
-					roles, err := s.GuildRoles(config.ServerID)
-					if err != nil {
-
-						_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-						if err != nil {
-
-							return
-						}
-						return
-					}
-
-					// Iterates through all of the server roles and gives the role to the user if the set role exists
-					for i := 0; i < len(roles); i++ {
-						if roles[i].Name == role {
-
-							// Gives the role
-							err := s.GuildMemberRoleAdd(config.ServerID, r.UserID, roles[i].ID)
-							if err != nil {
-
-								_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-								if err != nil {
-
-									return
-								}
-								return
-							}
 						}
 					}
 				}

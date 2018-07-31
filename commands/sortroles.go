@@ -29,21 +29,18 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Fetches info from the server and puts it in debPre
 	debPre, err := s.GuildRoles(config.ServerID)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
 	// Refreshes the positions of all roles in the server (because when created roles start at 0)
 	for i := 0; i < len(debPre); i++ {
-
 		spoilerRoles = append(spoilerRoles, debPre[i])
 	}
 
 	// Pushes the refreshed positions to the server
 	_, err = s.GuildRoleReorder(config.ServerID, spoilerRoles)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
@@ -56,7 +53,6 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Fetches the refreshed info from the server and puts it in deb
 	deb, err := s.GuildRoles(config.ServerID)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
@@ -64,7 +60,6 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Saves the original opt-in-above position
 	for i := 0; i < len(deb); i++ {
 		if deb[i].Name == config.OptInAbove {
-
 			misc.OptinAbovePosition = deb[i].Position
 		}
 	}
@@ -95,14 +90,12 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		// Moves the sorted spoiler roles above opt-in-above
 		for i := 0; i < len(spoilerRoles); i++ {
-
 			spoilerRoles[i].Position = misc.OptinAbovePosition
 		}
 
 		// Moves every non-spoiler role below opt-in-above (including it) down an amount equal to the amount of roles in the
 		// spoilerRoles slice that are below opt-in-above
 		for i := 0; i < len(underSpoilerRoles); i++ {
-
 			underSpoilerRoles[i].Position = underSpoilerRoles[i].Position - controlNum
 		}
 
@@ -112,7 +105,6 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 		//Pushes the ordered role list to the server
 		_, err = s.GuildRoleReorder(config.ServerID, rolesOrdered)
 		if err != nil {
-
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
@@ -122,7 +114,6 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Fetches info from the server and puts it in debPost
 		debPost, err := s.GuildRoles(config.ServerID)
 		if err != nil {
-
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
@@ -130,13 +121,11 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Saves the new opt-in-above position
 		for i := 0; i < len(debPost); i++ {
 			if deb[i].Name == config.OptInAbove {
-
 				misc.OptinAbovePosition = deb[i].Position
 			}
 		}
 
 		for i := 0; i < len(spoilerRoles); i++ {
-
 			spoilerRoles[i].Position = misc.OptinAbovePosition + len(spoilerRoles) - i
 			misc.SpoilerMap[spoilerRoles[i].ID].Position = spoilerRoles[i].Position
 		}
@@ -144,7 +133,6 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Pushes the sorted list to the server
 		_, err = s.GuildRoleReorder(config.ServerID, spoilerRoles)
 		if err != nil {
-
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
@@ -152,16 +140,13 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 		time.Sleep(time.Millisecond * 333)
 
 		if m.Author.ID == config.BotID {
-
 			return
 		}
 
 		_, err = s.ChannelMessageSend(m.ChannelID, "Roles sorted.")
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
