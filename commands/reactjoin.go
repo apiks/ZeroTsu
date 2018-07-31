@@ -33,7 +33,6 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 		if rec := recover(); rec != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
 			if err != nil {
-
 				return
 			}
 		}
@@ -862,7 +861,6 @@ func ReactChannelJoinWrite(info map[string]*ReactChannelJoinStruct) {
 	MapMutex.Lock()
 	marshaledStruct, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
-
 		MapMutex.Unlock()
 		return
 	}
