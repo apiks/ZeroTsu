@@ -84,9 +84,13 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 // Pulls the rss thread and prints it
 func RSSParser(s *discordgo.Session) {
 
+	if len(ReadRssThreads) == 0 {
+		return
+	}
+
 	// Pulls the feed from /r/anime and puts it in feed variable
 	fp := gofeed.NewParser()
-	fp.Client = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport}, Timeout: time.Minute * 3}
+	fp.Client = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport}, Timeout: time.Minute * 1}
 	feed, err := fp.ParseURL("http://www.reddit.com/r/anime/new/.rss")
 	if err != nil {
 
@@ -103,9 +107,9 @@ func RSSParser(s *discordgo.Session) {
 	// Removes a thread if more than 16 hours have passed
 	for p := 0; p < len(ReadRssThreadsCheck); p++ {
 
-		// Saves the date of removal in separate variable and then adds 10 hours to it
-		tenHours := time.Hour * 10
-		dateRemoval := ReadRssThreadsCheck[p].Date.Add(tenHours)
+		// Saves the date of removal in separate variable and then adds 16 hours to it
+		hours := time.Hour * 16
+		dateRemoval := ReadRssThreadsCheck[p].Date.Add(hours)
 
 		// Calculates if it's time to remove
 		difference := t.Sub(dateRemoval)
@@ -127,19 +131,10 @@ func RSSParser(s *discordgo.Session) {
 			if strings.Contains(itemTitleLowercase, ReadRssThreads[j].Thread) &&
 				strings.Contains(itemAuthorLowercase, storageAuthorLowercase) {
 
-				threadExists := false
-
 				for k := 0; k < len(ReadRssThreadsCheck); k++ {
 					if ReadRssThreadsCheck[k].Thread == ReadRssThreads[j].Thread {
-
-						threadExists = true
-						break
+						return
 					}
-				}
-
-				if threadExists != false {
-
-					return
 				}
 
 				// Writes to storage that the thread has been posted
@@ -147,10 +142,8 @@ func RSSParser(s *discordgo.Session) {
 
 				_, err = s.ChannelMessageSend(ReadRssThreads[j].Channel, feed.Items[i].Link)
 				if err != nil {
-
 					_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 					if err != nil {
-
 						return
 					}
 				}
