@@ -449,8 +449,6 @@ func RssThreadsRead() {
 // Writes string "thread" to rssThreadCheck.json
 func RssThreadsTimerWrite(thread string, date time.Time) {
 
-	thread = strings.ToLower(thread)
-
 	var threadCheckStruct= RssThreadCheckStruct{thread, date}
 
 	// Appends the new thread to a slice of all of the old ones if it doesn't exist
