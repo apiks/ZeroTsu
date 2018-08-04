@@ -272,10 +272,10 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				message.Content = config.BotPrefix + "sortcategory " + VoteInfoMap[k].Category
 				sortCategoryCommand(s, &message)
 			}
+			role := strings.Trim(VoteInfoMap[k].Channel, " ")
+			role = strings.Replace(role, " ", "-", -1)
 
-			role := strings.Replace(VoteInfoMap[k].Channel, " ", "-", -1)
-
-			_, err = s.ChannelMessageSend(config.BotLogID, "Channel `"+VoteInfoMap[k].Channel+"` was successfully created! Those that have voted were given the role. Use `" + config.BotPrefix + "join " + role +
+			_, err = s.ChannelMessageSend(messageReact.ChannelID, "Channel `"+VoteInfoMap[k].Channel+"` was successfully created! Those that have voted were given the role. Use `" + config.BotPrefix + "join " + role +
 				"` until reaction join has been set if you do not have it.")
 			if err != nil {
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
