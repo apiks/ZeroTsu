@@ -84,7 +84,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 // Pulls the rss thread and prints it
 func RSSParser(s *discordgo.Session) {
 
-	var exists = false
+	var exists bool
 
 	if len(ReadRssThreads) == 0 {
 		return
@@ -124,10 +124,11 @@ func RSSParser(s *discordgo.Session) {
 
 	// Iterates through each feed item to see if it finds something from storage
 	for i := 0; i < len(feed.Items); i++ {
-		for j := 0; j < len(ReadRssThreads); j++ {
+		itemTitleLowercase := strings.ToLower(feed.Items[i].Title)
+		itemAuthorLowercase := strings.ToLower(feed.Items[i].Author.Name)
 
-			itemTitleLowercase := strings.ToLower(feed.Items[i].Title)
-			itemAuthorLowercase := strings.ToLower(feed.Items[i].Author.Name)
+		for j := 0; j < len(ReadRssThreads); j++ {
+			exists = false
 			storageAuthorLowercase := strings.ToLower(ReadRssThreads[j].Author)
 
 			if strings.Contains(itemTitleLowercase, ReadRssThreads[j].Thread) &&
@@ -153,8 +154,6 @@ func RSSParser(s *discordgo.Session) {
 						}
 					}
 				}
-
-				exists = false
 			}
 		}
 	}
