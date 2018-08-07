@@ -571,6 +571,7 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 	if strings.Contains(messageSlice[1], "<@") {
 
 		userID = strings.TrimPrefix(userID, "<@")
+		userID = strings.TrimPrefix(userID, "!")
 		userID = strings.TrimSuffix(userID, ">")
 	} else {
 
