@@ -109,7 +109,7 @@ func RSSParser(s *discordgo.Session) {
 
 		// Calculates if it's time to remove
 		difference := t.Sub(dateRemoval)
-		if difference < 0 {
+		if difference > 0 {
 
 			// Sends success string to user in DMs if able
 			dm, _ := s.UserChannelCreate("128312718779219968")
