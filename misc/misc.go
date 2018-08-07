@@ -492,6 +492,7 @@ func RssThreadsTimerRemove(thread string, date time.Time) {
 		if ReadRssThreadsCheck[i].Thread == threadCheckStruct.Thread {
 			threadExists = true
 			ReadRssThreadsCheck = append(ReadRssThreadsCheck[:i], ReadRssThreadsCheck[i+1:]...)
+			break
 		}
 	}
 	if threadExists == false {
