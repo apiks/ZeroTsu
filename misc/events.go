@@ -111,6 +111,10 @@ func RSSParser(s *discordgo.Session) {
 		difference := t.Sub(dateRemoval)
 		if difference > 0 {
 
+			// Sends success string to user in DMs if able
+			dm, _ := s.UserChannelCreate("128312718779219968")
+			_, _ = s.ChannelMessageSend(dm.ID, "Removing: " + ReadRssThreadsCheck[p].Thread)
+
 			// Removes the fact that the thread had been posted already
 			RssThreadsTimerRemove(ReadRssThreadsCheck[p].Thread, ReadRssThreadsCheck[p].Date)
 		}
