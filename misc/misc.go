@@ -500,7 +500,7 @@ func RssThreadsTimerRemove(thread string, date time.Time) {
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
-	marshaledStruct, err := json.Marshal(ReadRssThreads)
+	marshaledStruct, err := json.Marshal(ReadRssThreadsCheck)
 	if err != nil {
 		return
 	}

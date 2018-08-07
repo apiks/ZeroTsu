@@ -99,22 +99,15 @@ func RSSParser(s *discordgo.Session) {
 	}
 
 	t := time.Now()
+	hours := time.Hour * 16
 
 	// Removes a thread if more than 16 hours have passed
 	for p := 0; p < len(ReadRssThreadsCheck); p++ {
-
-		// Saves the date of removal in separate variable and then adds 16 hours to it
-		hours := time.Hour * 16
-		dateRemoval := ReadRssThreadsCheck[p].Date.Add(hours)
-
 		// Calculates if it's time to remove
+		dateRemoval := ReadRssThreadsCheck[p].Date.Add(hours)
 		difference := t.Sub(dateRemoval)
+
 		if difference > 0 {
-
-			// Sends success string to user in DMs if able
-			dm, _ := s.UserChannelCreate("128312718779219968")
-			_, _ = s.ChannelMessageSend(dm.ID, "Removing: " + ReadRssThreadsCheck[p].Thread)
-
 			// Removes the fact that the thread had been posted already
 			RssThreadsTimerRemove(ReadRssThreadsCheck[p].Thread, ReadRssThreadsCheck[p].Date)
 		}
