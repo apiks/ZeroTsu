@@ -94,6 +94,9 @@ func RSSParser(s *discordgo.Session) {
 	fp := gofeed.NewParser()
 	fp.Client = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport}, Timeout: time.Minute * 2}
 	feed, err := fp.ParseURL("http://www.reddit.com/r/anime/new/.rss")
+	if err != nil {
+		return
+	}
 
 	t := time.Now()
 
@@ -132,16 +135,13 @@ func RSSParser(s *discordgo.Session) {
 						break
 					}
 				}
-
 				if !exists {
-					// Writes to storage that the thread has been posted
-					RssThreadsTimerWrite(ReadRssThreads[j].Thread, t)
-
-					_, err = s.ChannelMessageSend(ReadRssThreads[j].Channel, feed.Items[i].Link)
-					if err != nil {
-						_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+					// Writes to storage that the thread has been posted and posts rss in channel if no error via valid bool
+					valid := RssThreadsTimerWrite(ReadRssThreads[j].Thread, t)
+					if valid {
+						_, err = s.ChannelMessageSend(ReadRssThreads[j].Channel, feed.Items[i].Link)
 						if err != nil {
-							return
+							_, _ = s.ChannelMessageSend(config.BotLogID, err.Error())
 						}
 					}
 				}

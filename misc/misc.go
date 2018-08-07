@@ -446,15 +446,17 @@ func RssThreadsRead() {
 	}
 }
 
-// Writes string "thread" to rssThreadCheck.json
-func RssThreadsTimerWrite(thread string, date time.Time) {
+// Writes string "thread" to rssThreadCheck.json. Returns bool depending on success or not
+func RssThreadsTimerWrite(thread string, date time.Time) bool {
+
+	thread = strings.ToLower(thread)
 
 	var threadCheckStruct= RssThreadCheckStruct{thread, date}
 
 	// Appends the new thread to a slice of all of the old ones if it doesn't exist
-	for i := 0; i < len(ReadRssThreadsCheck); i++ {
-		if ReadRssThreadsCheck[i].Thread == threadCheckStruct.Thread {
-			return
+	for p := 0; p < len(ReadRssThreadsCheck); p++ {
+		if ReadRssThreadsCheck[p].Thread == threadCheckStruct.Thread {
+			return false
 		}
 	}
 
@@ -463,14 +465,16 @@ func RssThreadsTimerWrite(thread string, date time.Time) {
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(ReadRssThreadsCheck, "", "    ")
 	if err != nil {
-		return
+		return false
 	}
 
 	// Writes to file
 	err = ioutil.WriteFile("database/rssThreadCheck.json", marshaledStruct, 0644)
 	if err != nil {
-		return
+		return false
 	}
+
+	return true
 }
 
 // Removes string "thread" to rssThreadCheck.json
