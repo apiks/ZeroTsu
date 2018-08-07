@@ -111,6 +111,34 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 // Filters reactions that contain a filtered phrase
 func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 
+	// Checks if it's within the /r/anime server
+	ch, err := s.State.Channel(r.ChannelID)
+	if err != nil {
+		ch, err = s.Channel(r.ChannelID)
+		if err != nil {
+			return
+		}
+	}
+	if ch.GuildID != config.ServerID {
+		return
+	}
+	// Checks if it's the bot that sent the message
+	if r.UserID == s.State.User.ID {
+		return
+	}
+	// Pulls info on message author
+	mem, err := s.State.Member(config.ServerID, r.UserID)
+	if err != nil {
+		mem, err = s.GuildMember(config.ServerID, r.UserID)
+		if err != nil {
+			return
+		}
+	}
+	// Checks if user is mod or bot before checking the message
+	if misc.HasPermissions(mem) == true {
+		return
+	}
+
 	// Iterates through all the filters to see if the message contained a filtered word
 	for i := 0; i < len(misc.ReadFilters); i++ {
 
