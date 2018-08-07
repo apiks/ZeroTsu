@@ -94,15 +94,6 @@ func RSSParser(s *discordgo.Session) {
 	fp := gofeed.NewParser()
 	fp.Client = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport}, Timeout: time.Minute * 2}
 	feed, err := fp.ParseURL("http://www.reddit.com/r/anime/new/.rss")
-	if err != nil {
-
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + ". Feed var error.")
-		if err != nil {
-
-			return
-		}
-		return
-	}
 
 	t := time.Now()
 
