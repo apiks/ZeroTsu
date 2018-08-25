@@ -85,7 +85,6 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 				// Iterates through all of the server roles and gives the role to the user if the set role exists
 				for i := 0; i < len(roles); i++ {
 					if roles[i].Name == role {
-
 						// Gives the role
 						err := s.GuildMemberRoleAdd(config.ServerID, r.UserID, roles[i].ID)
 						if err != nil {

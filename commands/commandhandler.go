@@ -51,6 +51,9 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
+	if len(m.Message.Content) == 0 {
+		return
+	}
 	if m.Message.Content[0:len(config.BotPrefix)] != config.BotPrefix {
 		return
 	}
