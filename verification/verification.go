@@ -346,7 +346,8 @@ func getRedditUsername(code string) (string, float64) {
 
 	// Sets needed request parameters User Agent and Basic Auth
 	req.Header.Set("User-Agent", "Discord-Reddit verification (by /u/thechosenapiks)")
-	req.SetBasicAuth("6qhzdUSgF6185A", "eZJjs6_oHBDREUGyK-ktt60d_xs")
+	req.SetBasicAuth("X", "X")
+	// Move basic auth above to environmental variables
 	resp, err := client.Do(req)
 
 	defer resp.Body.Close()
@@ -404,7 +405,7 @@ func getDiscordUsernameDiscrim(code string) (string, string, string) {
 
 	discordConf := oauth2.Config{
 		ClientID:     "431328912090464266",
-		ClientSecret: "BNdGM_YqEgPU9h3mXHG0OFd5FB8_Msum",
+		ClientSecret: "X",
 		Scopes:       []string{"identity"},
 		RedirectURL:  "http://localhost:3000/",
 		Endpoint: oauth2.Endpoint{
@@ -412,6 +413,8 @@ func getDiscordUsernameDiscrim(code string) (string, string, string) {
 			TokenURL: "https://discordapp.com/api/oauth2/token",
 		},
 	}
+
+	// Move above to environmental variable
 
 	token, err := discordConf.Exchange(oauth2.NoContext, code)
 	if err != nil {

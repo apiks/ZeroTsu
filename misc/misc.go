@@ -165,7 +165,6 @@ func FiltersWrite(phrase string) (bool, error) {
 	// Appends the new filtered phrase to a slice of all of the old ones if it doesn't exist
 	for i := 0; i < len(ReadFilters); i++ {
 		if ReadFilters[i].Filter == phraseStruct.Filter {
-
 			return true, err
 		}
 	}
@@ -175,14 +174,12 @@ func FiltersWrite(phrase string) (bool, error) {
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(ReadFilters, "", "    ")
 	if err != nil {
-
 		return false, err
 	}
 
 	// Writes to file
 	err = ioutil.WriteFile("database/filters.json", marshaledStruct, 0644)
 	if err != nil {
-
 		return false, err
 	}
 
