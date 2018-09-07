@@ -8,6 +8,7 @@ import (
 
 	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
+	"time"
 )
 
 type channel struct {
@@ -25,6 +26,9 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		airing           string
 		roleName         string
 		descriptionSlice []string
+		fixed            bool
+
+		categoryNum int
 
 		channel channel
 
@@ -53,22 +57,46 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	command := strings.Replace(messageLowercase, config.BotPrefix+"create ", "", 1)
 	commandStrings = strings.Split(command, " ")
 
-	// Checks if [category] and [type] exist and assigns them if they do and removes them from slice
+	// Checks if [category] and [type] exist and assigns them if they do and removes them from slice and command string
 	for i := 0; i < len(commandStrings); i++ {
 		_, err := strconv.Atoi(commandStrings[i])
 		if len(commandStrings[i]) >= 17 && err == nil {
-
 			channel.Category = commandStrings[i]
-			command = strings.Replace(command, commandStrings[i], "", -1)
+			categoryNum = i
 		}
+	}
+	for i := 0; i < len(commandStrings); i++ {
+		if categoryNum != 0 {
+			if (commandStrings[i] == "airing" ||
+				commandStrings[i] == "general" ||
+				commandStrings[i] == "opt-in" ||
+				commandStrings[i] == "optin" ||
+				commandStrings[i] == "temp" ||
+				commandStrings[i] == "temporary") &&
+				i == categoryNum-1 {
 
-		if commandStrings[i] == "airing" ||
-			commandStrings[i] == "general" ||
-			commandStrings[i] == "opt-in" ||
-			commandStrings[i] == "optin" {
+				channel.Type = commandStrings[i]
+				commandStrings = append(commandStrings[:i], commandStrings[i+1:]...)
+				commandStrings = append(commandStrings[:i], commandStrings[i+1:]...)
+				command = strings.Join(commandStrings, " ")
+				fixed = true
+			}
+		}
+	}
 
-			channel.Type = commandStrings[i]
-			command = strings.Replace(command, commandStrings[i], "", -1)
+	// If no other parameters exist, fixes a bug where it deletes [type] even if it's a channel name and not at the end of name
+	if !fixed {
+		if commandStrings[len(commandStrings)-1] == "airing" ||
+			commandStrings[len(commandStrings)-1] == "general" ||
+			commandStrings[len(commandStrings)-1] == "opt-in" ||
+			commandStrings[len(commandStrings)-1] == "optin" ||
+			commandStrings[len(commandStrings)-1] == "temp" ||
+			commandStrings[len(commandStrings)-1] == "temporary" {
+
+			channel.Type = commandStrings[len(commandStrings)-1]
+
+			commandStrings = append(commandStrings[:len(commandStrings)-1], commandStrings[len(commandStrings):]...)
+			command = strings.Join(commandStrings, " ")
 		}
 	}
 
@@ -88,6 +116,12 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		descriptionLowercase := strings.ToLower(channel.Description)
 		// Removes description from command variable
 		command = strings.Replace(command, descriptionLowercase, "", -1)
+	}
+
+	// Removes all hyphen prefixes and suffixes because discord cannot handle them
+	for strings.HasPrefix(command, "-") || strings.HasSuffix(command, "-") {
+		command = strings.TrimPrefix(command, "-")
+		command = strings.TrimSuffix(command, "-")
 	}
 
 	// Creates the new channel of type text
@@ -186,6 +220,25 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
+	}
+	if channel.Type == "temp" || channel.Type == "temporary" {
+		t := time.Now()
+		var temp TempChaInfo
+		temp.RoleName = roleName
+		temp.CreationDate = t
+		temp.Elevated = true
+		for _, v := range VoteInfoMap {
+			if roleName == v.Channel {
+				if !hasElevatedPermissions(s, v.User) {
+					temp.Elevated = false
+					break
+				}
+			}
+		}
+		misc.MapMutex.Lock()
+		TempChaMap[newRole.ID] = &temp
+		misc.MapMutex.Unlock()
+		TempChaWrite(TempChaMap)
 	}
 
 	// Parses category from name or ID

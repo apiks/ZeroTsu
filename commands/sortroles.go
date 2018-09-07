@@ -118,6 +118,13 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 
+		// Refreshes deb
+		deb, err = s.GuildRoles(config.ServerID)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err)
+			return
+		}
+
 		// Saves the new opt-in-above position
 		for i := 0; i < len(debPost); i++ {
 			if deb[i].Name == config.OptInAbove {

@@ -63,6 +63,9 @@ func Start() {
 	// Reads all the timer rss threads from rssThreadsCheck.json
 	misc.RssThreadsTimerRead()
 
+	// Reads all the user created temp channels from userTempCha.json
+	commands.TempChaRead()
+
 	// Periodic events and status
 	goBot.AddHandler(misc.StatusReady)
 

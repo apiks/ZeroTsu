@@ -28,7 +28,7 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 			"`" + config.BotPrefix + "addfilter [filter]` | Adds a normal or regex word to the filter. \n " +
 			"`" + config.BotPrefix + "removefilter [filter]` | Removes a word from the filter. \n " +
 			"`" + config.BotPrefix + "avatar [@mention or user ID]` | Returns user avatar URL and image embed. \n " +
-			"`" + config.BotPrefix + "create [name] [airing or general; defaults to opt-in] [category ID] [description; must have at least one other non-name parameter]` | Creates a channel and role of the same name. Do not start name with hyphens. \n " +
+			"`" + config.BotPrefix + "create [name] [airing or general; defaults to opt-in] [category ID] [description; must have at least one other non-name parameter]` | Creates a channel and role of the same name. \n " +
 			"`" + config.BotPrefix + "help` | Lists commands and their usage. \n " +
 			"`" + config.BotPrefix + "join [channel name]` | Joins an opt-in channel. `" + config.BotPrefix + "joinchannel` works too. \n " +
 			"`" + config.BotPrefix + "leave [channel name]` | Leaves an opt-in channel. `" + config.BotPrefix + "leavechannel` works too. \n " +
@@ -78,7 +78,8 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 			"`" + config.BotPrefix + "avatar [@mention or user ID]` | Returns user avatar URL and image embed. \n " +
 			"`" + config.BotPrefix + "help` | Lists commands and their usage. \n " +
 			"`" + config.BotPrefix + "join [channel name]` | Joins an opt-in channel. `" + config.BotPrefix + "joinchannel` works too. \n " +
-			"`" + config.BotPrefix + "leave [channel name]` | Leaves an opt-in channel. `" + config.BotPrefix + "leavechannel` works too. \n "
+			"`" + config.BotPrefix + "leave [channel name]` | Leaves an opt-in channel. `" + config.BotPrefix + "leavechannel` works too. \n " +
+			"`" + config.BotPrefix + "startvote [channel name]` | Starts a 3-person vote for the creation of a temp spoilers channel that will be removed 3 hours after last message. \n "
 
 		_, err = s.ChannelMessageSend(m.ChannelID, successUser)
 		if err != nil {
