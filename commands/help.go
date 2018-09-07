@@ -28,7 +28,7 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 			"`" + config.BotPrefix + "addfilter [filter]` | Adds a normal or regex word to the filter. \n " +
 			"`" + config.BotPrefix + "removefilter [filter]` | Removes a word from the filter. \n " +
 			"`" + config.BotPrefix + "avatar [@mention or user ID]` | Returns user avatar URL and image embed. \n " +
-			"`" + config.BotPrefix + "create [name] [airing or general; defaults to opt-in] [category ID] [description; must have at least one other non-name parameter]` | Creates a channel and role of the same name. \n " +
+			"`" + config.BotPrefix + "create [name] [airing, general or temp; defaults to opt-in] [category ID] [description; must have at least one other non-name parameter]` | Creates a channel and role of the same name. \n " +
 			"`" + config.BotPrefix + "help` | Lists commands and their usage. \n " +
 			"`" + config.BotPrefix + "join [channel name]` | Joins an opt-in channel. `" + config.BotPrefix + "joinchannel` works too. \n " +
 			"`" + config.BotPrefix + "leave [channel name]` | Leaves an opt-in channel. `" + config.BotPrefix + "leavechannel` works too. \n " +
@@ -58,7 +58,7 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 			"`" + config.BotPrefix + "sortcategory [category name or ID]` | Sorts all channels within given category alphabetically. \n " +
 			"`" + config.BotPrefix + "sortroles` | Sorts spoiler roles created with the create command between opt-in dummy roles alphabetically. Freezes server for a few seconds. Use preferably with large batches.\n" +
 			"`" + config.BotPrefix + "startvote OPTIONAL[required votes] [name] OPTIONAL[type] OPTIONAL[categoryID] + OPTIONAL[description]` | Starts a reaction vote in the channel the command is in. " +
-			"Creates and sorts the channel if successful. Required votes are how many non-bot reacts are needed for channel creation(default 7). Types are airing, general and optin(default)." +
+			"Creates and sorts the channel if successful. Required votes are how many non-bot reacts are needed for channel creation(default 7). Types are airing, general, optin(default) and temp." +
 			"CategoryID is what category to put the channel in and sort alphabetically. Description is the channel description but NEEDS a categoryID or type to work.\n"
 
 		_, err = s.ChannelMessageSend(m.ChannelID, successMod)
