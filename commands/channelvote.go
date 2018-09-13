@@ -212,6 +212,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Fixes role name bugs
 		role := strings.Replace(strings.TrimSpace(name), " ", "-", -1)
 		role = strings.Replace(role, "--", "-", -1)
+		voteChannel.Name = role
 	}
 
 	peopleNum = peopleNum + 1

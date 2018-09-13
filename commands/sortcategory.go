@@ -41,7 +41,6 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Fetches all channels from the server and puts it in deb
 	deb, err := s.GuildChannels(config.ServerID)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
@@ -53,7 +52,6 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Compares if the categoryString is either a valid category name or ID
 		if nameLowercase == commandStrings[1] || deb[i].ID == commandStrings[1] {
 			if deb[i].Type == discordgo.ChannelTypeGuildCategory {
-
 				categoryID = deb[i].ID
 				categoryPosition = deb[i].Position
 			}
@@ -64,10 +62,8 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	if categoryID == "" {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Invalid Category")
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -78,7 +74,6 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Puts all channels under a category in categoryChannels slice
 	for i := 0; i < len(deb); i++ {
 		if deb[i].ParentID == categoryID {
-
 			categoryChannels = append(categoryChannels, deb[i])
 		}
 	}
@@ -88,27 +83,22 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Updates the alphabetically sorted channels' position
 	for i := 0; i < len(categoryChannels); i++ {
-
 		chaEdit.Position = categoryPosition + i + 1
 		_, err = s.ChannelEditComplex(categoryChannels[i].ID, &chaEdit)
 		if err != nil {
-
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
 	}
 
-	if m.Author.ID != config.BotID {
-
+	if m.Author.ID == config.BotID {
 		return
 	}
 
 	_, err = s.ChannelMessageSend(m.ChannelID, "Category `"+commandStrings[1]+"` sorted")
 	if err != nil {
-
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 		if err != nil {
-
 			return
 		}
 		return
