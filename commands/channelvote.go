@@ -204,7 +204,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		// Initializes default variables
 		name := strings.Replace(messageLowercase, config.BotPrefix + "startvote ", "", -1)
-		voteChannel.Category = "486823979764678657"
+		voteChannel.Category = "363756332920340481"
 		voteChannel.Type = "temp"
 		voteChannel.Description = "Temporary channel for " + name + ". Will be deleted 3 hours after no message has been sent."
 		peopleNum = 3
@@ -270,7 +270,6 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 	var (
-		//roleName string
 		timestamp time.Time
 	)
 
@@ -294,7 +293,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 			// Updates message
 			messageReact, err := s.ChannelMessage(VoteInfoMap[k].MessageReact.ChannelID, VoteInfoMap[k].MessageReact.ID)
 			if err != nil {
-				return
+				continue
 			}
 
 			// Calculates if it's time to remove
@@ -314,7 +313,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				if err != nil {
 					_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 					if err != nil {
-						return
+						continue
 					}
 				}
 
@@ -329,11 +328,9 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 			}
 
 			if messageReact == nil {
-
 				continue
 			}
 			if messageReact.Reactions == nil {
-
 				continue
 			}
 			// Checks if the vote was successful and executes if so
@@ -388,9 +385,9 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				if err != nil {
 					_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 					if err != nil {
-						return
+						continue
 					}
-					return
+					continue
 				}
 			} else {
 				_, err = s.ChannelMessageSend(messageReact.ChannelID, "Channel `" + VoteInfoMap[k].Channel + "` was successfully created! Those that have voted were given the role. Use `"+
@@ -398,9 +395,9 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				if err != nil {
 					_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 					if err != nil {
-						return
+						continue
 					}
-					return
+					continue
 				}
 			}
 
@@ -410,14 +407,13 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 			if err != nil {
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 				if err != nil {
-					return
+					continue
 				}
-				return
+				continue
 			}
 			for i := 0; i < len(roles); i++ {
 				if roles[i].Name == role {
 					role = roles[i].ID
-					//roleName = roles[i].Name
 					break
 				}
 			}
@@ -427,9 +423,9 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 			if err != nil {
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 				if err != nil {
-					return
+					continue
 				}
-				return
+				continue
 			}
 
 			for i := 0; i < len(users); i++ {
@@ -441,9 +437,9 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				if err != nil {
 					_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 					if err != nil {
-						return
+						continue
 					}
-					return
+					continue
 				}
 			}
 
@@ -460,9 +456,9 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-				return
+				continue
 			}
-			return
+			continue
 		}
 
 		for k, v := range TempChaMap {
@@ -472,9 +468,9 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					if err != nil {
 						_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 						if err != nil {
-							return
+							continue
 						}
-						return
+						continue
 					}
 
 					// Fetches the properly parsed timestamp from discord, else uses channel creation
@@ -483,9 +479,9 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 						if err != nil {
 							_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 							if err != nil {
-								return
+								continue
 							}
-							return
+							continue
 						}
 					} else {
 						timestamp = v.CreationDate
@@ -503,18 +499,18 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 						if err != nil {
 							_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 							if err != nil {
-								return
+								continue
 							}
-							return
+							continue
 						}
 
 						err = s.GuildRoleDelete(config.ServerID, k)
 						if err != nil {
 							_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 							if err != nil {
-								return
+								continue
 							}
-							return
+							continue
 						}
 
 						MapMutex.Lock()
