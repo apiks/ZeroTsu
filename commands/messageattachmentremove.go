@@ -79,7 +79,7 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 
 			return
 		}
-		_, _ = s.ChannelMessageSend(dm.ID, "Your message upload `" + attachment.Filename + "` was removed for using a non-whitelisted file type. Only gifs and images are allowed.")
+		_, _ = s.ChannelMessageSend(dm.ID, "Your message upload `" + attachment.Filename + "` was removed for using a non-whitelisted file type. Only gif, image and webm file extensions are allowed.")
 	}
 
 }
