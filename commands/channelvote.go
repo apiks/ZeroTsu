@@ -204,7 +204,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		// Initializes default variables
 		name := strings.Replace(messageLowercase, config.BotPrefix + "startvote ", "", -1)
-		voteChannel.Category = "363756332920340481"
+		voteChannel.Category = "486823979764678657"
 		voteChannel.Type = "temp"
 		voteChannel.Description = "Temporary channel for " + name + ". Will be deleted 3 hours after no message has been sent."
 		peopleNum = 3
@@ -355,18 +355,25 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 			VoteInfoMap[k].Channel = role
 
+			// Allows entry to be deleted from memory now, rather than later, avoiding potential bugs if the below commands don't work
+			temp := VoteInfoMap[k]
+			MapMutex.Lock()
+			delete(VoteInfoMap, k)
+			MapMutex.Unlock()
+			VoteInfoWrite(VoteInfoMap)
+
 			// Create command
 			author.ID = s.State.User.ID
-			message.ID = VoteInfoMap[k].MessageReact.ChannelID
+			message.ID = temp.MessageReact.ChannelID
 			message.Author = &author
-			message.Content = config.BotPrefix + "create " + VoteInfoMap[k].Channel + " " + VoteInfoMap[k].ChannelType +
-				" " + VoteInfoMap[k].Category + " " + VoteInfoMap[k].Description
+			message.Content = config.BotPrefix + "create " + temp.Channel + " " + temp.ChannelType +
+				" " + temp.Category + " " + temp.Description
 			createChannelCommand(s, &message)
 
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(500 * time.Millisecond)
 
 			// Sortroles command if optin, airing or temp
-			if VoteInfoMap[k].ChannelType != "general" {
+			if temp.ChannelType != "general" {
 				message.Content = config.BotPrefix + "sortroles"
 				sortRolesCommand(s, &message)
 			}
@@ -374,13 +381,13 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 			time.Sleep(500 * time.Millisecond)
 
 			// Sortcategory command if category exists and it's not temp
-			if VoteInfoMap[k].Category != "" && VoteInfoMap[k].ChannelType != "temp" || VoteInfoMap[k].ChannelType != "temporary" {
-				message.Content = config.BotPrefix + "sortcategory " + VoteInfoMap[k].Category
+			if temp.Category != "" && temp.ChannelType != "temp" || temp.ChannelType != "temporary" {
+				message.Content = config.BotPrefix + "sortcategory " + temp.Category
 				sortCategoryCommand(s, &message)
 			}
 
-			if VoteInfoMap[k].ChannelType != "temp" {
-				_, err = s.ChannelMessageSend(messageReact.ChannelID, "Channel `" + VoteInfoMap[k].Channel + "` was successfully created! Those that have voted were given the role. Use `"+
+			if temp.ChannelType != "temp" {
+				_, err = s.ChannelMessageSend(messageReact.ChannelID, "Channel `" + temp.Channel + "` was successfully created! Those that have voted were given the role. Use `"+
 					config.BotPrefix+ "join "+ role + "` until reaction join has been set if you do not have it.")
 				if err != nil {
 					_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
@@ -390,7 +397,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					continue
 				}
 			} else {
-				_, err = s.ChannelMessageSend(messageReact.ChannelID, "Channel `" + VoteInfoMap[k].Channel + "` was successfully created! Those that have voted were given the role. Use `"+
+				_, err = s.ChannelMessageSend(messageReact.ChannelID, "Channel `" + temp.Channel + "` was successfully created! Those that have voted were given the role. Use `"+
 					config.BotPrefix+ "join "+ role + "` otherwise.")
 				if err != nil {
 					_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
@@ -419,7 +426,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 			}
 
 			// Gets the users who voted and gives them the role
-			users, err := s.MessageReactions(VoteInfoMap[k].MessageReact.ChannelID, VoteInfoMap[k].MessageReact.ID, "👍", 100)
+			users, err := s.MessageReactions(temp.MessageReact.ChannelID, temp.MessageReact.ID, "👍", 100)
 			if err != nil {
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 				if err != nil {
@@ -442,14 +449,6 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					continue
 				}
 			}
-
-			// Deletes the vote from memory
-			MapMutex.Lock()
-			delete(VoteInfoMap, k)
-			MapMutex.Unlock()
-
-			// Writes to storage
-			VoteInfoWrite(VoteInfoMap)
 		}
 
 		cha, err := s.GuildChannels(config.ServerID)

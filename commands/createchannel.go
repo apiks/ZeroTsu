@@ -103,10 +103,8 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	// If either [description] or [type] exist then checks if a description is also present
 	if channel.Type != "" || channel.Category != "" {
 		if channel.Category != "" {
-
 			descriptionSlice = strings.SplitAfter(m.Content, channel.Category)
 		} else {
-
 			descriptionSlice = strings.SplitAfter(m.Content, channel.Type)
 		}
 
@@ -130,6 +128,8 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
+
+	time.Sleep(500 * time.Millisecond)
 
 	// Creates the new role
 	newRole, err := s.GuildRoleCreate(config.ServerID)
@@ -184,6 +184,9 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 	}
+
+	time.Sleep(100 * time.Millisecond)
+
 	if channel.Type != "general" {
 		// Everyone perms
 		err = s.ChannelPermissionSet(newCha.ID, config.ServerID, "role", 0, misc.SpoilerPerms)
@@ -197,13 +200,18 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
+
 	// Muted perms
 	err = s.ChannelPermissionSet(newCha.ID, muted, "role", 0, discordgo.PermissionSendMessages)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
+
+	time.Sleep(100 * time.Millisecond)
+
 	// Airing perms
 	if channel.Type == "airing" {
 		err = s.ChannelPermissionSet(newCha.ID, airing, "role", misc.SpoilerPerms, 0)
@@ -211,7 +219,9 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
+
 	// Sets channel description if it exists
 	if channel.Description != "" {
 		descriptionEdit.Topic = channel.Description
@@ -220,7 +230,9 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
+
 	if channel.Type == "temp" || channel.Type == "temporary" {
 		t := time.Now()
 		var temp TempChaInfo
@@ -239,6 +251,8 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		TempChaMap[newRole.ID] = &temp
 		misc.MapMutex.Unlock()
 		TempChaWrite(TempChaMap)
+
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	// Parses category from name or ID
