@@ -204,7 +204,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		// Initializes default variables
 		name := strings.Replace(messageLowercase, config.BotPrefix + "startvote ", "", -1)
-		voteChannel.Category = "486823979764678657"
+		voteChannel.Category = "363756332920340481"
 		voteChannel.Type = "temp"
 		voteChannel.Description = "Temporary channel for " + name + ". Will be deleted 3 hours after no message has been sent."
 		peopleNum = 3
