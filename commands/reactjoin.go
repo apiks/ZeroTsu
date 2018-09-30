@@ -145,30 +145,30 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 							}
 							return
 						}
-					}
-				} else {
-
-					// Pulls all of the server roles
-					roles, err := s.GuildRoles(config.ServerID)
-					if err != nil {
-						_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+						return
+					} else {
+						// Pulls all of the server roles
+						roles, err := s.GuildRoles(config.ServerID)
 						if err != nil {
+							_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+							if err != nil {
+								return
+							}
 							return
 						}
-						return
-					}
 
-					// Iterates through all of the server roles and removes the role from the user if the set role exists
-					for i := 0; i < len(roles); i++ {
-						if roles[i].Name == role {
-							// Removes the role
-							err := s.GuildMemberRoleRemove(config.ServerID, r.UserID, roles[i].ID)
-							if err != nil {
-								_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+						// Iterates through all of the server roles and removes the role from the user if the set role exists
+						for i := 0; i < len(roles); i++ {
+							if roles[i].Name == role {
+								// Removes the role
+								err := s.GuildMemberRoleRemove(config.ServerID, r.UserID, roles[i].ID)
 								if err != nil {
+									_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+									if err != nil {
+										return
+									}
 									return
 								}
-								return
 							}
 						}
 					}
