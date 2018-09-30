@@ -9,7 +9,7 @@ import (
 	"github.com/r-anime/ZeroTsu/config"
 )
 
-//Returns user avatar in channel as message
+// Returns user avatar in channel as message
 func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	commandStrings := strings.Split(m.Content, " ")
@@ -25,13 +25,13 @@ func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	if len(commandStrings) == 1 {
-		//Fetches user
+		// Fetches user
 		mem, err := s.User(m.Author.ID)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
-		//Sends avatar
+		// Sends avatar
 		_, err = s.ChannelMessageSend(m.ChannelID, mem.AvatarURL("256"))
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
@@ -43,21 +43,21 @@ func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	//Pulls userID from 2nd parameter of commandStrings
+	// Pulls userID from 2nd parameter of commandStrings
 	userID, err := misc.GetUserID(s, m, commandStrings)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
-	//Fetches user
+	// Fetches user
 	mem, err := s.User(userID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
-	//Sends avatar
+	// Sends avatar
 	_, err = s.ChannelMessageSend(m.ChannelID, mem.AvatarURL("256"))
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())

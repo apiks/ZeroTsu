@@ -12,7 +12,7 @@ import (
 	"github.com/r-anime/ZeroTsu/config"
 )
 
-// Periodic events such as Unbanning and RSS timer every 15 seconds
+// Periodic events such as Unbanning and RSS timer every 1 min
 func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -29,15 +29,13 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
 	err := s.UpdateStatus(0, "with her darling")
 	if err != nil {
-
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 		if err != nil {
-
 			fmt.Println(err.Error())
 		}
 	}
 
-	for range time.NewTicker(30 * time.Second).C {
+	for range time.NewTicker(1 * time.Minute).C {
 
 		// Checks whether it has to post rss thread every 15 seconds
 		RSSParser(s)
@@ -92,11 +90,12 @@ func RSSParser(s *discordgo.Session) {
 
 	// Pulls the feed from /r/anime and puts it in feed variable
 	fp := gofeed.NewParser()
-	fp.Client = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport}, Timeout: time.Minute * 2}
+	fp.Client = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport}, Timeout: time.Minute * 1}
 	feed, err := fp.ParseURL("http://www.reddit.com/r/anime/new/.rss")
 	if err != nil {
 		return
 	}
+	fp.Client = &http.Client{}
 
 	t := time.Now()
 	hours := time.Hour * 16
@@ -127,7 +126,6 @@ func RSSParser(s *discordgo.Session) {
 
 				for k := 0; k < len(ReadRssThreadsCheck); k++ {
 					if ReadRssThreadsCheck[k].Thread == ReadRssThreads[j].Thread {
-
 						exists = true
 						break
 					}

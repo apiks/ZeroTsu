@@ -15,13 +15,10 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) == 1 {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "say [phrase]`")
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -34,10 +31,8 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Sends the sentence to the channel the original message was in.
 	_, err := s.ChannelMessageSend(m.ChannelID, sentence)
 	if err != nil {
-
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 		if err != nil {
-
 			return
 		}
 		return

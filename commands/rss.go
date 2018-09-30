@@ -21,13 +21,10 @@ func setRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) == 1 {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "setrss OPTIONAL[/u/author] [thread name]`")
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -36,12 +33,10 @@ func setRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if strings.Contains(commandStrings[1], "/u/") == true {
-
 		author = commandStrings[1]
 		thread = strings.Replace(messageLowercase, config.BotPrefix+"setrss "+commandStrings[1]+" ", "", 1)
 
 	} else {
-
 		// Removes the command from the string so we only have the set string which it'll check
 		thread = strings.Replace(messageLowercase, config.BotPrefix+"setrss ", "", 1)
 		author = "/u/AutoLovepon"
@@ -54,19 +49,15 @@ func setRssThread(s *discordgo.Session, m *discordgo.Message, thread string, aut
 
 	threadExists, err := misc.RssThreadsWrite(thread, m.ChannelID, author)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
 	if threadExists == false {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "`" + thread + "` has been added to the rss thread list.")
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -74,10 +65,8 @@ func setRssThread(s *discordgo.Session, m *discordgo.Message, thread string, aut
 	} else {
 		_, err := s.ChannelMessageSend(m.ChannelID, "`" + thread + "` is already on the rss thread list.")
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -96,10 +85,8 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(misc.ReadRssThreads) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error. There are no set rss threads.")
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -114,10 +101,8 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removerss OPTIONAL[/u/author] [thread name]`")
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -126,12 +111,10 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if strings.Contains(commandStrings[1], "/u/") == true {
-
 		author = commandStrings[1]
 		thread = strings.Replace(messageLowercase, config.BotPrefix+"removerss "+commandStrings[1]+" ", "", 1)
 
 	} else {
-
 		// Removes the command from the string so we only have the set string which it'll check
 		thread = strings.Replace(messageLowercase, config.BotPrefix+"removerss ", "", 1)
 		author = "/u/AutoLovepon"
@@ -140,19 +123,15 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Calls the function to remove the threads from rssThreads.json
 	threadExists, err := misc.RssThreadsRemove(thread, m.ChannelID, author)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
 	if threadExists == true {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "`" + thread + "` has been removed from the rss thread list.")
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -161,10 +140,8 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Thread does not exist in RSS list.")
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -181,10 +158,8 @@ func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no set RSS threads.")
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -195,17 +170,13 @@ func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Iterates through all the filters if they exist and adds them to the filters string and print them
 	for i := 0; i < len(misc.ReadRssThreads); i++ {
 		if len(threads) > 1850 {
-
 			_, err := s.ChannelMessageSend(m.ChannelID, threads)
 			if err != nil {
-
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 				if err != nil {
-
 					return
 				}
 			}
-
 			threads = ""
 		}
 
@@ -222,10 +193,8 @@ func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, threads)
 	if err != nil {
-
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 		if err != nil {
-
 			return
 		}
 		return

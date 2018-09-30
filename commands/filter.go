@@ -59,10 +59,8 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Deletes the message that was sent if it has a filtered word.
 		err = s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -72,10 +70,8 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		for i := 0; i < len(badWordsSlice); i++ {
 			// Stores the removals for printing
 			if len(removals) == 0 {
-
 				removals = badWordsSlice[0]
 			} else {
-
 				removals = removals + ", " + badWordsSlice[i]
 			}
 		}
@@ -88,10 +84,8 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Sends embed mod message
 		err := FilterEmbed(s, m.Message, removals, now, m.ChannelID)
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -100,11 +94,10 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Sends message to user's DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
-
 			return
 		}
 		_, _ = s.ChannelMessageSend(dm.ID, "Your message `" + messageLowercase + "` was removed for using: _" + removals + "_ \n" +
-			"Using such words makes me disappointed in you, darling.")
+			"Using such words makes me disappointed in you, darling.\nFor a list of banned phrases and words please check https://pastebin.com/JxL5wsDY.")
 	}
 }
 
@@ -147,12 +140,10 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 
 		// Trims the fluff from a reaction so it can measured against the API version below
 		if strings.Contains(reactName, "<:") {
-
 			reactName = strings.Replace(reactName, "<:", "", -1)
 			reactName = strings.TrimSuffix(reactName, ">")
 
 		} else if strings.Contains(reactName, "<a:") {
-
 			reactName = strings.Replace(reactName, "<a:", "", -1)
 			reactName = strings.TrimSuffix(reactName, ">")
 		}
@@ -161,14 +152,11 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 		badWordCheck := re.FindAllString(r.Emoji.APIName(), -1)
 
 		if badWordCheck != nil {
-
 			// Deletes the reaction that was sent if it has a filtered word
 			err := s.MessageReactionRemove(r.ChannelID, r.MessageID, r.Emoji.APIName(), r.UserID)
 			if err != nil {
-
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 				if err != nil {
-
 					return
 				}
 				return
@@ -194,17 +182,14 @@ func isFiltered(m *discordgo.Message) (bool, []string){
 		badWordCheck := re.FindAllString(messageLowercase, -1)
 
 		if badWordCheck != nil {
-
 			badWordsSlice = append(badWordsSlice, badWordCheck[0])
 			filtered = true
 		}
 	}
 
 	if filtered == true {
-
 		return true, badWordsSlice
 	} else {
-
 		return false, nil
 	}
 }
@@ -219,10 +204,8 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "addfilter [phrase]`")
 		if err != nil {
-
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -236,7 +219,6 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Writes to filters.json
 	filterExists, err := misc.FiltersWrite(phrase)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
@@ -244,10 +226,8 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	if filterExists == false {
 		_, err := s.ChannelMessageSend(m.ChannelID, "`" + phrase + "` has been added to the filter list.")
 		if err != nil {
-
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -255,10 +235,8 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	} else {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: `" + phrase + "` is already on the filter list.")
 		if err != nil {
-
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -270,13 +248,10 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	if len(misc.ReadFilters) == 0 {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no filters.")
 		if err != nil {
-
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -291,10 +266,8 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removefilter [phrase]`")
 		if err != nil {
-
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -308,19 +281,15 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Removes phrase from storage and memory
 	filterExists, err := misc.FiltersRemove(phrase)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
 	if filterExists == true {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "`" + phrase + "` has been removed from the filter list.")
 		if err != nil {
-
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -329,10 +298,8 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: `" + phrase + "` is not in the filter list.")
 		if err != nil {
-
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -349,10 +316,8 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(misc.ReadFilters) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no filters.")
 		if err != nil {
-
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -363,20 +328,16 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Iterates through all the filters if they exist and adds them to the filters string
 	for i := 0; i < len(misc.ReadFilters); i++ {
 		if filters == "" {
-
 			filters = "`" + misc.ReadFilters[i].Filter + "`"
 		} else {
-
 			filters = filters + "\n `" + misc.ReadFilters[i].Filter + "`"
 		}
 	}
 
 	_, err := s.ChannelMessageSend(m.ChannelID, filters)
 	if err != nil {
-
 		_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 		if err != nil {
-
 			return
 		}
 		return

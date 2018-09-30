@@ -49,6 +49,18 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 		controlNum =		0
 	)
 
+	// Checks if it's within the /r/anime server
+	ch, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		ch, err = s.Channel(m.ChannelID)
+		if err != nil {
+			return
+		}
+	}
+	if ch.GuildID != config.ServerID {
+		return
+	}
+
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.Split(messageLowercase, " ")
 
@@ -266,7 +278,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	VoteInfoWrite(VoteInfoMap)
 }
 
-// Checks if the message has enough reacts every 10 seconds, and stops if it's over the time limit
+// Checks if the message has enough reacts every 15 seconds, and stops if it's over the time limit
 func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 	var (
@@ -278,14 +290,13 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 		if rec := recover(); rec != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
 			if err != nil {
-
 				fmt.Println(err)
 				fmt.Println(rec)
 			}
 		}
 	}()
 
-	for range time.NewTicker(10 * time.Second).C {
+	for range time.NewTicker(15 * time.Second).C {
 		for k := range VoteInfoMap {
 
 			t := time.Now()
@@ -515,7 +526,6 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 						MapMutex.Lock()
 						delete(TempChaMap, k)
 						MapMutex.Unlock()
-
 						TempChaWrite(TempChaMap)
 					}
 				}

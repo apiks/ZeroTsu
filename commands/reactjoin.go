@@ -85,13 +85,12 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 				// Iterates through all of the server roles and gives the role to the user if the set role exists
 				for i := 0; i < len(roles); i++ {
 					if roles[i].Name == role {
+
 						// Gives the role
 						err := s.GuildMemberRoleAdd(config.ServerID, r.UserID, roles[i].ID)
 						if err != nil {
-
 							_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 							if err != nil {
-
 								return
 							}
 							return
@@ -111,7 +110,6 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 		if rec := recover(); rec != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
 			if err != nil {
-
 				return
 			}
 		}
@@ -119,12 +117,10 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 
 	// Checks if a react channel join is set for that specific message and emoji and continues if true
 	if reactChannelJoinMap[r.MessageID] == nil {
-
 		return
 	}
 	// Checks if it's the correct message and emoji before going down
 	if reactChannelJoinMap[r.MessageID].MessageID != r.MessageID {
-
 		return
 	}
 
@@ -135,20 +131,16 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 		for role := range reactChannelJoinMap[r.MessageID].RoleEmoji[p] {
 			for _, emote := range reactChannelJoinMap[r.MessageID].RoleEmoji[p][role] {
 				if reactLowercase != emote {
-
 					continue
 				}
 
 				if len(role) >= 17 {
 					if _, err := strconv.ParseInt(role, 10, 64); err == nil {
-
 						// Removes the role
 						err := s.GuildMemberRoleRemove(config.ServerID, r.UserID, role)
 						if err != nil {
-
 							_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 							if err != nil {
-
 								return
 							}
 							return
@@ -159,10 +151,8 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 					// Pulls all of the server roles
 					roles, err := s.GuildRoles(config.ServerID)
 					if err != nil {
-
 						_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 						if err != nil {
-
 							return
 						}
 						return
@@ -171,14 +161,11 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 					// Iterates through all of the server roles and removes the role from the user if the set role exists
 					for i := 0; i < len(roles); i++ {
 						if roles[i].Name == role {
-
 							// Removes the role
 							err := s.GuildMemberRoleRemove(config.ServerID, r.UserID, roles[i].ID)
 							if err != nil {
-
 								_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 								if err != nil {
-
 									return
 								}
 								return
@@ -362,38 +349,35 @@ func setReactJoinCommand (s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-// Removes a previously set react join from memory and storage. Yes, it'll make your eyes bleed
 func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
 		messageExists bool
-		key           string
+		validEmoji =  false
+
+		messageID     string
+		emojiRegexAPI []string
+		emojiAPI	  []string
 	)
 
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
 
 	if len(commandStrings) != 3 && len(commandStrings) != 2 {
-
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong amount of parameters. Please use `"+config.BotPrefix+"removereact [messageID] [emoji]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong amount of parameters. Please use `"+config.BotPrefix+"removereact [messageID] Optional[emoji]`")
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
 		}
 		return
 	}
-
 	num, err := strconv.Atoi(commandStrings[1])
 	if err != nil || num < 17 {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid messageID.")
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
 
@@ -404,37 +388,29 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 	if len(reactChannelJoinMap) == 0 {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no set react joins.")
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
 		}
 		return
 	}
-
 	// Checks if the messageID already exists in the map
 	for k := range reactChannelJoinMap {
-
 		if commandStrings[1] == k {
-
 			messageExists = true
-			key = k
+			messageID = k
+			break
 		}
 	}
 	if messageExists == false {
-
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: No such messageID is set in storage")
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -442,9 +418,9 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
+	// Removes the entire message from the map and writes to storage
 	if len(commandStrings) == 2 {
 
-		// Removes the entire message from the map and writes to storage
 		misc.MapMutex.Lock()
 		delete(reactChannelJoinMap, commandStrings[1])
 		misc.MapMutex.Unlock()
@@ -452,10 +428,8 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed entire message emoji react join.")
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -463,239 +437,107 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	if reactChannelJoinMap[key].RoleEmoji == nil {
-
+	if reactChannelJoinMap[messageID].RoleEmoji == nil {
 		return
 	}
 
 	if len(commandStrings) == 3 {
+		// Parses if it's custom emoji or unicode
+		re := regexp.MustCompile("(?i)<:+([a-zA-Z]|[0-9])+:+[0-9]+>")
+		emojiRegex := re.FindAllString(commandStrings[2], 1)
+		if emojiRegex == nil {
+			// Second parser if it's custom emoji or unicode but for emoji API name instead
+			reAPI := regexp.MustCompile("(?i)([a-zA-Z]|[0-9])+:[0-9]+")
+			emojiRegexAPI = reAPI.FindAllString(commandStrings[2], 1)
+		}
 
-		for p := 0; p < len(reactChannelJoinMap[key].RoleEmoji); p++ {
-			for role := range reactChannelJoinMap[key].RoleEmoji[p] {
-				for _, emote := range reactChannelJoinMap[key].RoleEmoji[p][role] {
+		// Note: Simplify map
+		for emojiKey := range reactChannelJoinMap[messageID].RoleEmoji {
+			for role := range reactChannelJoinMap[messageID].RoleEmoji[emojiKey] {
+				for index, emoji := range reactChannelJoinMap[messageID].RoleEmoji[emojiKey][role] {
 
-					// Parses if it's custom emoji or unicode
-					re := regexp.MustCompile("(?i)<:+([a-zA-Z]|[0-9])+:+[0-9]+>")
-					emojiRegex := re.FindAllString(commandStrings[2], 1)
-
-					// Second parser if it's custom emoji or unicode but for emoji API name instead
-					reTwo := regexp.MustCompile("(?i)([a-zA-Z]|[0-9])+:[0-9]+")
-					emojiRegexTwo := reTwo.FindAllString(commandStrings[2], 1)
-
-					// Check whether emojiRegexTwo is empty or not to avoid index error
-					var regexTwoBool = false
-					if len(emojiRegexTwo) > 0 {
-						if emote == emojiRegexTwo[0] {
-
-							regexTwoBool = true
+					// Checks for unicode emoji
+					if len(emojiRegex) == 0 && len(emojiRegexAPI) == 0 {
+						if commandStrings[2] == emoji {
+							validEmoji = true
 						}
-					}
+						// Checks for non-unicode emoji
+					} else {
+						// Trims non-unicode emoji name to fit API emoji name
+						re = regexp.MustCompile("(?i)([a-zA-Z]|[0-9])+:[0-9]+")
 
-					// Checks if either regexTwoBool exists or the emote <-> commandStrings[2] are the same
-					if emote == commandStrings[2] || regexTwoBool == true {
-						if len(reactChannelJoinMap[key].RoleEmoji[p][role]) == 1 && len(reactChannelJoinMap[key].RoleEmoji[p]) == 1 {
-							if emojiRegex != nil || emojiRegexTwo != nil {
-
-								var emojiName []string
-
-								// Fetches emoji API name
-								re = regexp.MustCompile("(?i)([a-zA-Z]|[0-9])+:[0-9]+")
-								if emojiRegex != nil {
-
-									emojiName = re.FindAllString(emojiRegex[0], 1)
-
-								} else if emojiRegexTwo != nil {
-
-									emojiName = re.FindAllString(emojiRegexTwo[0], 1)
-								}
-
-								// Checks if the emoji in the map is the same as the one in the command
-								if emojiName[0] == emote {
-
-									// Removes the entire message from the map and writes to storage
-									delete(reactChannelJoinMap, commandStrings[1])
-									ReactChannelJoinWrite(reactChannelJoinMap)
-
-									_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed Emoji react join from message.")
-									if err != nil {
-
-										_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-										if err != nil {
-
-											return
-										}
-										return
-									}
-
-									break
-								} else {
-
-									_, err = s.ChannelMessageSend(m.ChannelID, "Error: No such emoji for that messageID")
-									if err != nil {
-
-										_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-										if err != nil {
-
-											return
-										}
-										return
-									}
-								}
-
-								break
-
-								// If it's an unicode message it removes it with this
-							} else {
-
-								// Checks if the emoji in the map is the same as the one in the command
-								if commandStrings[2] == emote {
-
-									// Removes the entire message from the map
-									delete(reactChannelJoinMap, commandStrings[1])
-									ReactChannelJoinWrite(reactChannelJoinMap)
-
-									_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed Emoji react join from message.")
-									if err != nil {
-
-										_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-										if err != nil {
-
-											return
-										}
-										return
-									}
-
-									break
+						if len(emojiRegex) == 0 {
+							if len(emojiRegexAPI) != 0 {
+								emojiAPI = re.FindAllString(emojiRegexAPI[0], 1)
+								if emoji == emojiAPI[0] {
+									validEmoji = true
 								}
 							}
 						} else {
-
-							var index int
-							for i := 0; i < len(reactChannelJoinMap[key].RoleEmoji[p][role]); i++ {
-								if reactChannelJoinMap[key].RoleEmoji[p][role][i] == emote {
-
-									index = i
-								}
-							}
-
-							if emojiRegex != nil || emojiRegexTwo != nil {
-
-								var emojiName []string
-
-								// Fetches emoji API name
-								re = regexp.MustCompile("(?i)([a-zA-Z]|[0-9])+:[0-9]+")
-								if emojiRegex != nil {
-
-									emojiName = re.FindAllString(emojiRegex[0], 1)
-
-								} else if emojiRegexTwo != nil {
-
-									emojiName = re.FindAllString(emojiRegexTwo[0], 1)
-								}
-
-								// Checks if the emoji in the map is the same as the one in the command
-								if emojiName[0] == emote {
-
-									if len(reactChannelJoinMap[commandStrings[1]].RoleEmoji[p][role]) > 1 {
-
-										// Removes the emoji from the map
-										a := reactChannelJoinMap[commandStrings[1]].RoleEmoji[p][role]
-										a = append(a[:index], a[index+1:]...)
-										reactChannelJoinMap[commandStrings[1]].RoleEmoji[p][role] = a
-
-									} else {
-
-										// Removes the entire role from the map
-										delete(reactChannelJoinMap[key].RoleEmoji[p], role)
-									}
-
-									// Writes to storage
-									ReactChannelJoinWrite(reactChannelJoinMap)
-
-									_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed Emoji react join from message.")
-									if err != nil {
-
-										_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-										if err != nil {
-
-											return
-										}
-										return
-									}
-
-									break
-								} else {
-
-									_, err = s.ChannelMessageSend(m.ChannelID, "Error: No such emoji for that messageID")
-									if err != nil {
-
-										_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-										if err != nil {
-
-											return
-										}
-										return
-									}
-
-									break
-								}
-
-								// If it's an unicode message it removes it with this
-							} else {
-
-								// Checks if the emoji in the map is the same as the one in the command
-								if commandStrings[2] == emote {
-
-									if len(reactChannelJoinMap[commandStrings[1]].RoleEmoji[p][role]) > 1 {
-
-										// Removes the emoji from the map
-										a := reactChannelJoinMap[commandStrings[1]].RoleEmoji[p][role]
-										a = append(a[:index], a[index+1:]...)
-										reactChannelJoinMap[commandStrings[1]].RoleEmoji[p][role] = a
-
-									} else {
-
-										// Removes the entire role from the map
-										delete(reactChannelJoinMap[key].RoleEmoji[p], role)
-									}
-
-									// Writes to storage
-									ReactChannelJoinWrite(reactChannelJoinMap)
-
-									_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed Emoji react join from message.")
-									if err != nil {
-
-										_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-										if err != nil {
-
-											return
-										}
-										return
-									}
-
-									break
-								} else {
-
-									_, err = s.ChannelMessageSend(m.ChannelID, "Error: No such emoji for that messageID")
-									if err != nil {
-
-										_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-										if err != nil {
-
-											return
-										}
-										return
-									}
-
-									break
-								}
+							emojiAPI = re.FindAllString(emojiRegex[0], 1)
+							if emoji == emojiAPI[0] {
+								validEmoji = true
 							}
 						}
 					}
+
+					// Delete only if it's a valid emoji in map
+					if validEmoji == true {
+						// Delete the entire message from map if it's the only set emoji react join
+						if len(reactChannelJoinMap[messageID].RoleEmoji[emojiKey]) == 1 && len(reactChannelJoinMap[messageID].RoleEmoji[emojiKey][role]) == 1 {
+							delete(reactChannelJoinMap, commandStrings[1])
+							ReactChannelJoinWrite(reactChannelJoinMap)
+							_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed emoji react join from message.")
+							if err != nil {
+								_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+								if err != nil {
+									return
+								}
+								return
+							}
+							// Delete only the role from map if other set react join roles exist in the map
+						} else if len(reactChannelJoinMap[messageID].RoleEmoji[emojiKey][role]) == 1 {
+							delete(reactChannelJoinMap[messageID].RoleEmoji[emojiKey], role)
+							ReactChannelJoinWrite(reactChannelJoinMap)
+							_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed emoji react join from message.")
+							if err != nil {
+								_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+								if err != nil {
+									return
+								}
+								return
+							}
+							// Delete only that specific emoji for that specific role
+						} else {
+							a := reactChannelJoinMap[commandStrings[1]].RoleEmoji[emojiKey][role]
+							a = append(a[:index], a[index+1:]...)
+							reactChannelJoinMap[commandStrings[1]].RoleEmoji[emojiKey][role] = a
+							_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed emoji react join from message.")
+							if err != nil {
+								_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+								if err != nil {
+									return
+								}
+								return
+							}
+						}
+						return
+					}
 				}
 			}
+		}
 
-			break
+		// If it comes this far it means it's an invalid emoji
+		if emojiRegex == nil && emojiRegexAPI == nil {
+			_, err = s.ChannelMessageSend(m.ChannelID, "Error: Invalid emoji. Please input a valid emoji or emoji API name.")
+			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+				if err != nil {
+					return
+				}
+				return
+			}
+			return
 		}
 	}
 }
@@ -708,10 +550,8 @@ func viewReactJoinsCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(reactChannelJoinMap) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no set react joins.")
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -729,12 +569,9 @@ func viewReactJoinsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 				line = line + "`" + role + "` — "
 				for j := 0; j < len(emoji); j++ {
-
 					if j != len(emoji)-1 {
-
 						line = line + emoji[j] + ", "
 					} else {
-
 						line = line + emoji[j] + "\n"
 					}
 				}
@@ -743,10 +580,8 @@ func viewReactJoinsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, line)
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -760,7 +595,6 @@ func ReactInfoRead() {
 	// Reads all the set react joins from the reactChannelJoin.json file and puts them in reactChannelJoinMap as bytes
 	reactChannelJoinByte, err := ioutil.ReadFile("database/reactChannelJoin.json")
 	if err != nil {
-
 		return
 	}
 
@@ -768,7 +602,6 @@ func ReactInfoRead() {
 	MapMutex.Lock()
 	err = json.Unmarshal(reactChannelJoinByte, &reactChannelJoinMap)
 	if err != nil {
-
 		MapMutex.Unlock()
 		return
 	}
@@ -784,7 +617,6 @@ func SaveReactJoin(messageID string, role string, emoji string) {
 	)
 
 	if reactChannelJoinMap[messageID] != nil {
-
 		MapMutex.Lock()
 		temp = *reactChannelJoinMap[messageID]
 
@@ -792,24 +624,20 @@ func SaveReactJoin(messageID string, role string, emoji string) {
 		temp.MessageID = messageID
 
 		if temp.RoleEmoji == nil {
-
 			temp.RoleEmoji = append(temp.RoleEmoji, EmojiRoleMap)
 		}
 
 		for i := 0; i < len(temp.RoleEmoji); i++ {
 			if temp.RoleEmoji[i][role] == nil {
-
 				temp.RoleEmoji[i][role] = append(temp.RoleEmoji[i][role], emoji)
 			}
 
 			for j := 0; j < len(temp.RoleEmoji[i][role]); j++ {
 				if temp.RoleEmoji[i][role][j] == emoji {
-
 					emojiExists = true
 				}
 			}
 			if emojiExists == false {
-
 				temp.RoleEmoji[i][role] = append(temp.RoleEmoji[i][role], emoji)
 			}
 		}
@@ -817,7 +645,6 @@ func SaveReactJoin(messageID string, role string, emoji string) {
 		reactChannelJoinMap[messageID] = &temp
 
 		MapMutex.Unlock()
-
 	} else {
 
 		// Sets messageID
@@ -828,13 +655,11 @@ func SaveReactJoin(messageID string, role string, emoji string) {
 		// Initializes temp.RoleEmoji if it's nil
 		EmojiRoleMapDummy := make(map[string][]string)
 		if temp.RoleEmoji == nil {
-
 			temp.RoleEmoji = append(temp.RoleEmoji, EmojiRoleMapDummy)
 		}
 
 		for i := 0; i < len(temp.RoleEmoji); i++ {
 			if temp.RoleEmoji[i][role] == nil {
-
 				temp.RoleEmoji[i][role] = append(temp.RoleEmoji[i][role], emoji)
 			}
 		}
@@ -860,7 +685,6 @@ func ReactChannelJoinWrite(info map[string]*ReactChannelJoinStruct) {
 	// Writes to file
 	err = ioutil.WriteFile("database/reactChannelJoin.json", marshaledStruct, 0644)
 	if err != nil {
-
 		return
 	}
 }

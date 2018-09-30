@@ -10,10 +10,8 @@ import (
 func pingCommand(s *discordgo.Session, m *discordgo.Message) {
 	_, err := s.ChannelMessageSend(m.ChannelID, "Hmm? Do you want some honey, darling? Open wide~")
 	if err != nil {
-
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 		if err != nil {
-
 			return
 		}
 		return
