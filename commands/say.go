@@ -47,6 +47,14 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 			return
 		}
+		err = s.ChannelMessageDelete(m.ChannelID, m.ID)
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+				return
+			}
+			return
+		}
 		return
 	}
 
@@ -168,7 +176,7 @@ func init() {
 		trigger:  "say",
 		desc:     "Sends message from bot in command channel",
 		elevated: true,
-		deleteAfter: true,
+		deleteAfter: false,
 	})
 	add(&command{
 		execute:  editMessageCommand,
