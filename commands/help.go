@@ -51,6 +51,7 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Help message 2 if user is a mod
 		successMod = "`" + config.BotPrefix + "editmessage [channelID] [messageID] [message]` | Edits a bot message with the command's set message, replacing it entirely." +
 			"`" + config.BotPrefix + "setreactjoin [messageID] [emote] [role]` | Sets a specific message's emote to give those reacted a role. \n " +
+			"`" + config.BotPrefix + "setreactjoin [messageID] [emote] [role]` | Sets a specific message's emote to give those reacted a role. \n " +
 			"`" + config.BotPrefix + "removereactjoin [messageID] OPTIONAL[emote]` | Removes the set react emote join from an entire message or only a specific emote of that message. \n " +
 			"`" + config.BotPrefix + "viewreacts` | Prints out all currently set message react emote joins. \n " +
 			"`" + config.BotPrefix + "viewrss` | Prints out all currently set rss thread post. \n " +
