@@ -35,7 +35,7 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 			"`" + config.BotPrefix + "lock` | Locks a non-mod channel. Takes a few seconds only if the channel has no custom mod permissions set. \n " +
 			"`" + config.BotPrefix + "unlock` | Unlocks a non-mod channel. \n " +
 			"`" + config.BotPrefix + "ping` | Returns Pong message. \n " +
-			"`" + config.BotPrefix + "say [message]` | Sends a message from the bot. \n "
+			"`" + config.BotPrefix + "say OPTIONAL[channelID] [message]` | Sends a message from the bot. \n "
 
 		_, err = s.ChannelMessageSend(m.ChannelID, successMod)
 		if err != nil {
@@ -49,7 +49,8 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		// Help message 2 if user is a mod
-		successMod = "`" + config.BotPrefix + "setreactjoin [messageID] [emote] [role]` | Sets a specific message's emote to give those reacted a role. \n " +
+		successMod = "`" + config.BotPrefix + "editmessage [channelID] [messageID] [message]` | Edits a bot message with the command's set message, replacing it entirely." +
+			"`" + config.BotPrefix + "setreactjoin [messageID] [emote] [role]` | Sets a specific message's emote to give those reacted a role. \n " +
 			"`" + config.BotPrefix + "removereactjoin [messageID] OPTIONAL[emote]` | Removes the set react emote join from an entire message or only a specific emote of that message. \n " +
 			"`" + config.BotPrefix + "viewreacts` | Prints out all currently set message react emote joins. \n " +
 			"`" + config.BotPrefix + "viewrss` | Prints out all currently set rss thread post. \n " +
@@ -58,7 +59,7 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 			"`" + config.BotPrefix + "sortcategory [category name or ID]` | Sorts all channels within given category alphabetically. \n " +
 			"`" + config.BotPrefix + "sortroles` | Sorts spoiler roles created with the create command between opt-in dummy roles alphabetically. Freezes server for a few seconds. Use preferably with large batches.\n" +
 			"`" + config.BotPrefix + "startvote OPTIONAL[required votes] [name] OPTIONAL[type] OPTIONAL[categoryID] + OPTIONAL[description]` | Starts a reaction vote in the channel the command is in. " +
-			"Creates and sorts the channel if successful. Required votes are how many non-bot reacts are needed for channel creation(default 7). Types are airing, general, optin(default) and temp." +
+			"Creates and sorts the channel if successful. Required votes are how many non-bot reacts are needed for channel creation(default 7). Types are airing, general, temp and optin(default)." +
 			"CategoryID is what category to put the channel in and sort alphabetically. Description is the channel description but NEEDS a categoryID or type to work.\n"
 
 		_, err = s.ChannelMessageSend(m.ChannelID, successMod)
