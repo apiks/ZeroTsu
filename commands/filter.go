@@ -97,7 +97,7 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		_, _ = s.ChannelMessageSend(dm.ID, "Your message `" + messageLowercase + "` was removed for using: _" + removals + "_ \n" +
-			"Using such words makes me disappointed in you, darling.\nFor a list of banned phrases and words please check https://pastebin.com/JxL5wsDY.")
+			"Using such words makes me disappointed in you, darling.\nFor a list of banned phrases and words please check https://pastebin.com/GgkD4pT9.")
 	}
 }
 
