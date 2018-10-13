@@ -106,10 +106,9 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 }
 
 // Edits a message sent by the bot with another message
-func editMessageCommand(s *discordgo.Session, m *discordgo.Message) {
+func editCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	command := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(command, " ", 4)
+	commandStrings := strings.SplitN(m.Content, " ", 4)
 
 	if len(commandStrings) < 4 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "edit [channelID] [messageID] [message]`")
@@ -179,7 +178,7 @@ func init() {
 		deleteAfter: false,
 	})
 	add(&command{
-		execute:  editMessageCommand,
+		execute:  editCommand,
 		trigger:  "edit",
 		desc:     "Edits a message sent by the bot with another message",
 		elevated: true,
