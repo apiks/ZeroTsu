@@ -27,7 +27,7 @@ func OnMessageEmoji(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
-	// Checks if it's within the /r/anime server
+	// Checks if it's within config server
 	ch, err := s.State.Channel(m.ChannelID)
 	if err != nil {
 		ch, err = s.Channel(m.ChannelID)
@@ -200,12 +200,38 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	misc.MapMutex.Unlock()
-	sort.Sort(byFrequency(emojis))
+	sort.Sort(byEmojiFrequency(emojis))
+
+	// Pull guild info
+	guild, err := s.State.Guild(config.ServerID)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+			return
+		}
+		return
+	}
 
 	// Add every emoji and its stats to message and format it
 	message := "```CSS\nName:                         ([Message Usage] | [Unique Usage] | [Reactions]) \n\n"
 	for _, emoji := range emojis {
-		message += lineSpaceFormat(emoji.ID)
+		// Fixes emojis without ID
+		if emoji.ID == "" {
+			for index := range guild.Emojis {
+				fmt.Println(guild.Emojis[index].Name)
+				if guild.Emojis[index].Name == emoji.Name {
+					emoji.ID = guild.Emojis[index].ID
+					misc.MapMutex.Lock()
+					misc.EmojiStats[emoji.ID] = emoji
+					misc.MapMutex.Unlock()
+					break
+				}
+			}
+		}
+
+		if emoji.ID != "" {
+			message += lineSpaceFormatEmoji(emoji.ID)
+		}
 	}
 	msgs = misc.SplitLongMessage(message)
 	msgs[len(msgs)-1] += "```"
@@ -223,7 +249,7 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 }
 
 // Formats the line space length for the above to keep level spacing
-func lineSpaceFormat(id string) string {
+func lineSpaceFormatEmoji(id string) string {
 	misc.MapMutex.Lock()
 	line := fmt.Sprintf("%v", misc.EmojiStats[id].Name)
 	spacesRequired := 30 - len(misc.EmojiStats[id].Name)
@@ -247,15 +273,15 @@ func lineSpaceFormat(id string) string {
 }
 
 // Sort functions for emoji use by message use. By Kagumi
-type byFrequency []*misc.Emoji
+type byEmojiFrequency []*misc.Emoji
 
-func (e byFrequency) Len() int {
+func (e byEmojiFrequency) Len() int {
 	return len(e)
 }
-func (e byFrequency) Swap(i, j int) {
+func (e byEmojiFrequency) Swap(i, j int) {
 	e[i], e[j] = e[j], e[i]
 }
-func (e byFrequency) Less(i, j int) bool {
+func (e byEmojiFrequency) Less(i, j int) bool {
 	return e[j].MessageUsage < e[i].MessageUsage
 }
 
