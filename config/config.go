@@ -18,6 +18,7 @@ var (
 	CommandRoles []string
 	OptInUnder   string
 	OptInAbove   string
+	VoiceChaID   string
 
 	config *configStruct
 )
@@ -31,6 +32,7 @@ type configStruct struct {
 	CommandRoles []string `json:"CommandRoles"`
 	OptInUnder   string   `json:"OptInUnder"`
 	OptInAbove   string   `json:"OptInAbove"`
+	VoiceChaID   string   `json:"VoiceChaID"`
 }
 
 // Loads config.json values
@@ -59,6 +61,7 @@ func ReadConfig() error {
 	CommandRoles = config.CommandRoles
 	OptInUnder = config.OptInUnder
 	OptInAbove = config.OptInAbove
+	VoiceChaID = config.VoiceChaID
 
 	// Takes the bot token from the environment variable. Reason is to avoid pushing token to github
 	if os.Getenv("ZeroTsuToken") == "" {

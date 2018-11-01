@@ -153,3 +153,61 @@ func RSSParser(s *discordgo.Session) {
 		}
 	}
 }
+
+// Adds the voice role whenever a user joins the config voice chat
+func VoiceRoleAdd(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
+
+	var roleIDString string
+
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
+				return
+			}
+		}
+	}()
+
+	m, err := s.State.Member(v.GuildID, v.UserID)
+	if err != nil {
+		m, err = s.GuildMember(v.GuildID, v.UserID)
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
+	if v.ChannelID == config.VoiceChaID {
+		// Does checks and adds role if ok
+		guildRoles, err := s.GuildRoles(config.ServerID)
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+				return
+			}
+			return
+		}
+		for roleID := range guildRoles {
+			if guildRoles[roleID].Name == "voice" {
+				roleIDString = guildRoles[roleID].ID
+			}
+		}
+		for _, role := range m.Roles {
+			if role == roleIDString {
+				return
+			}
+		}
+		err = s.GuildMemberRoleAdd(v.GuildID, v.UserID, roleIDString)
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+				return
+			}
+			return
+		}
+	}
+}
