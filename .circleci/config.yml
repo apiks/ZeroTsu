@@ -17,7 +17,7 @@ jobs:
       - run:
           name: Deploy to Server as Service (SSH)
           command: |
-            ssh $SSH_USER@$SSH_IP "GOPATH=/home/apiks/go; service zerotsu stop; cd /home/apiks/go/src/github.com/r-anime/ZeroTsu; /snap/bin/go get -u github.com/r-anime/ZeroTsu; /snap/bin/go build -o ZeroTsu; service zerotsu start"
+            ssh $SSH_USER@$SSH_IP "export GOPATH=/home/apiks/go; service zerotsu stop; cd /home/apiks/go/src/github.com/r-anime/ZeroTsu; /snap/bin/go get -u github.com/r-anime/ZeroTsu; /snap/bin/go build -o ZeroTsu; service zerotsu start"
 workflows:
   version: 2
   build-and-deploy:
