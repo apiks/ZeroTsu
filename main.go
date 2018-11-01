@@ -116,7 +116,7 @@ func Start() {
 	goBot.AddHandler(misc.HourTimer)
 
 	// Voice Role Event Handler
-	//goBot.AddHandler(misc.VoiceRoleAdd)
+	//goBot.AddHandler(misc.VoiceRoleHandler)
 
 	err = goBot.Open()
 	if err != nil {

@@ -155,7 +155,7 @@ func RSSParser(s *discordgo.Session) {
 }
 
 // Adds the voice role whenever a user joins the config voice chat
-func VoiceRoleAdd(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
+func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 
 	var roleIDString string
 
@@ -181,21 +181,24 @@ func VoiceRoleAdd(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 		}
 		return
 	}
-	if v.ChannelID == config.VoiceChaID {
-		// Does checks and adds role if ok
-		guildRoles, err := s.GuildRoles(config.ServerID)
+
+	// Fetches role ID
+	guildRoles, err := s.GuildRoles(config.ServerID)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-			if err != nil {
-				return
-			}
 			return
 		}
-		for roleID := range guildRoles {
-			if guildRoles[roleID].Name == "voice" {
-				roleIDString = guildRoles[roleID].ID
-			}
+		return
+	}
+	for roleID := range guildRoles {
+		if guildRoles[roleID].Name == "voice" {
+			roleIDString = guildRoles[roleID].ID
 		}
+	}
+
+	if v.ChannelID == config.VoiceChaID {
+		// Adds role
 		for _, role := range m.Roles {
 			if role == roleIDString {
 				return
@@ -208,6 +211,21 @@ func VoiceRoleAdd(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 				return
 			}
 			return
+		}
+	} else {
+		// Removes role
+		for _, role := range m.Roles {
+			if role == roleIDString {
+				err := s.GuildMemberRoleRemove(v.GuildID, v.UserID, roleIDString)
+				if err != nil {
+					_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+					if err != nil {
+						return
+					}
+					return
+				}
+				break
+			}
 		}
 	}
 }
