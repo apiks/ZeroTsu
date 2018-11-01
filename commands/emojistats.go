@@ -235,7 +235,7 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 	msgs = misc.SplitLongMessage(message)
 	msgs[0] += "```"
 	for i := 1; i < len(msgs); i++ {
-		msgs[i] = "```CSS\n                              " + msgs[i] + "\n```"
+		msgs[i] = "```CSS\n                                   " + msgs[i] + "\n```"
 	}
 
 	for j := 0; j < len(msgs); j++ {
