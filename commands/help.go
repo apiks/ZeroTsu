@@ -32,6 +32,7 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 			"`" + config.BotPrefix + "emoji` | Shows emoji stats. \n " +
 			"`" + config.BotPrefix + "help` | Lists commands and their usage. \n " +
 			"`" + config.BotPrefix + "join [channel name]` | Joins an opt-in channel. `" + config.BotPrefix + "joinchannel` works too. \n " +
+			"`" + config.BotPrefix + "joke` | Prints a random joke." +
 			"`" + config.BotPrefix + "leave [channel name]` | Leaves an opt-in channel. `" + config.BotPrefix + "leavechannel` works too. \n " +
 			"`" + config.BotPrefix + "lock` | Locks a non-mod channel. Takes a few seconds only if the channel has no custom mod permissions set. \n " +
 			"`" + config.BotPrefix + "unlock` | Unlocks a non-mod channel. \n " +
@@ -81,6 +82,7 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 			"`" + config.BotPrefix + "avatar [@mention or user ID]` | Returns user avatar URL and image embed. \n " +
 			"`" + config.BotPrefix + "help` | Lists commands and their usage. \n " +
 			"`" + config.BotPrefix + "join [channel name]` | Joins an opt-in channel. `" + config.BotPrefix + "joinchannel` works too. \n " +
+			"`" + config.BotPrefix + "joke` | Prints a random joke." +
 			"`" + config.BotPrefix + "leave [channel name]` | Leaves an opt-in channel. `" + config.BotPrefix + "leavechannel` works too. \n " +
 			"`" + config.BotPrefix + "startvote [channel name]` | Starts a 3-person vote for the creation of a temp spoilers channel that will be removed 3 hours after last message. \n "
 
