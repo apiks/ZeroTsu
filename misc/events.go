@@ -79,6 +79,15 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	}
 }
 
+// Periodic 1 hour events
+func HourTimer(s *discordgo.Session, e *discordgo.Ready) {
+	for range time.NewTicker(1 * time.Hour).C {
+		MapMutex.Lock()
+		EmojiStatsWrite(EmojiStats)
+		MapMutex.Unlock()
+	}
+}
+
 // Pulls the rss thread and prints it
 func RSSParser(s *discordgo.Session) {
 

@@ -66,6 +66,9 @@ func Start() {
 	// Reads all the user created temp channels from userTempCha.json
 	commands.TempChaRead()
 
+	// Reads saved emoji stats from emojiStats.json
+	misc.EmojiStatsRead()
+
 	// Periodic events and status
 	goBot.AddHandler(misc.StatusReady)
 
@@ -103,6 +106,14 @@ func Start() {
 	// Verified Role and Cookie Map Expiry Deletion Handler
 	//goBot.AddHandler(verification.VerifiedRoleAdd)
 	//goBot.AddHandler(verification.VerifiedAlready)
+
+	// Emoji Tracker
+	goBot.AddHandler(commands.OnMessageEmoji)
+	goBot.AddHandler(commands.OnMessageEmojiReact)
+	goBot.AddHandler(commands.OnMessageEmojiUnreact)
+
+	// Hour Timer
+	goBot.AddHandler(misc.HourTimer)
 
 	err = goBot.Open()
 	if err != nil {

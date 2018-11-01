@@ -1,9 +1,8 @@
 package commands
 
 import (
-	"strings"
-	"math"
 	"strconv"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 
@@ -245,8 +244,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Splits the message if it's over 1950 characters
 	if len(message) > 1950 {
-
-		splitMessage = SplitLongMessage(message)
+		splitMessage = misc.SplitLongMessage(message)
 	}
 
 	// Prints split or unsplit whois
@@ -255,7 +253,6 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -267,39 +264,14 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: cannot send whois message.")
 			if err != nil {
-
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 				if err != nil {
-
 					return
 				}
 				return
 			}
 		}
 	}
-}
-
-// SplitLongMessage takes a message and splits it if it's longer than 1950. By Kagumi
-func SplitLongMessage(message string) (split []string) {
-	const maxLength = 1950
-	if len(message) > maxLength {
-		partitions := len(message) / maxLength
-		if math.Mod(float64(len(message)), maxLength) > 0 {
-			partitions++
-		}
-		split = make([]string, partitions)
-		for i := 0; i < partitions; i++ {
-			if i == partitions-1 {
-				split[i] = message[i*maxLength:]
-				break
-			}
-			split[i] = message[i*maxLength : (i+1)*maxLength]
-		}
-	} else {
-		split = make([]string, 1)
-		split[0] = message
-	}
-	return
 }
 
 // Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Whois version

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"strings"
 	"unicode"
 	"net/http"
@@ -32,6 +33,8 @@ var (
 
 	ReadRssThreads      []RssThreadStruct
 	ReadRssThreadsCheck []RssThreadCheckStruct
+
+	EmojiStats = make(map[string]*Emoji)
 )
 
 type FilterStruct struct {
@@ -47,6 +50,14 @@ type RssThreadStruct struct {
 type RssThreadCheckStruct struct {
 	Thread string    `json:"Thread"`
 	Date   time.Time `json:"Date"`
+}
+
+type Emoji struct {
+	ID                 string `json:"id"`
+	Name               string `json:"name"`
+	MessageUsage       int    `json:"messageUsage"`
+	UniqueMessageUsage int    `json:"uniqueMessages"`
+	Reactions          int    `json:"reactions"`
 }
 
 // HasPermissions sees if a user has elevated permissions. By Kagumi
@@ -506,6 +517,36 @@ func RssThreadsTimerRead() {
 	}
 }
 
+// Writes emoji stats to emojiStats.json
+func EmojiStatsWrite(emojiStats map[string]*Emoji) (bool, error) {
+
+	// Turns that map into bytes to be ready to written to file
+	marshaledStruct, err := json.MarshalIndent(emojiStats, "", "    ")
+	if err != nil {
+		return false, err
+	}
+
+	// Writes to file
+	err = ioutil.WriteFile("database/emojiStats.json", marshaledStruct, 0644)
+	if err != nil {
+		return false, err
+	}
+
+	return false, err
+}
+
+// Reads emoji stats from emojiStats.json
+func EmojiStatsRead() {
+
+	// Reads the emoji stats and puts them in emojiStatsByte as bytes
+	emojiStatsByte, _ := ioutil.ReadFile("database/emojiStats.json")
+
+	MapMutex.Lock()
+	// Takes the bytes and puts them into the EmojiStats map
+	_ = json.Unmarshal(emojiStatsByte, &EmojiStats)
+	MapMutex.Unlock()
+}
+
 // ResolveTimeFromString resolves a time (usually for unbanning) from a given string formatted #w#d#h#m.
 // This returns current time + delay.
 // If no time is added to the offset, then this returns true for permanent.
@@ -587,4 +628,27 @@ func CommandErrorHandler(s *discordgo.Session, m *discordgo.Message, err error) 
 	if err != nil {
 		_, _ = s.ChannelMessageSend(config.BotLogID, err.Error())
 	}
+}
+
+// SplitLongMessage takes a message and splits it if it's longer than 1950. By Kagumi
+func SplitLongMessage(message string) (split []string) {
+	const maxLength = 1950
+	if len(message) > maxLength {
+		partitions := len(message) / maxLength
+		if math.Mod(float64(len(message)), maxLength) > 0 {
+			partitions++
+		}
+		split = make([]string, partitions)
+		for i := 0; i < partitions; i++ {
+			if i == partitions-1 {
+				split[i] = message[i*maxLength:]
+				break
+			}
+			split[i] = message[i*maxLength : (i+1)*maxLength]
+		}
+	} else {
+		split = make([]string, 1)
+		split[0] = message
+	}
+	return
 }
