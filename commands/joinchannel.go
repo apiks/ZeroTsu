@@ -35,13 +35,10 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) == 1 {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "join [channel]`")
 		if err != nil {
-
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -61,7 +58,6 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls info on server roles
 	deb, err := s.GuildRoles(config.ServerID)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
@@ -69,7 +65,6 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls info on server channels
 	cha, err := s.GuildChannels(config.ServerID)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
@@ -125,7 +120,6 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Sets role ID
 	for i := 0; i < len(deb); i++ {
 		if deb[i].Name == name && roleID != "" {
-
 			roleID = deb[i].ID
 			break
 		}
@@ -150,7 +144,6 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Sends error message to user in DMs
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
-
 			return
 		}
 		_, _ = s.ChannelMessageSend(dm.ID, "You're already in "+chanMention+", daaarling~")
@@ -160,11 +153,9 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Updates the position of opt-in-under and opt-in-above position
 	for i := 0; i < len(deb); i++ {
 		if deb[i].Name == config.OptInUnder {
-
 			misc.OptinUnderPosition = deb[i].Position
 		}
 		if deb[i].Name == config.OptInAbove {
-
 			misc.OptinAbovePosition = deb[i].Position
 		}
 	}
@@ -172,7 +163,6 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Sets role
 	role, err := s.State.Role(config.ServerID, roleID)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
@@ -180,7 +170,6 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Gives role to user if the role is between dummy opt-ins
 	if role.Position < misc.OptinUnderPosition &&
 		role.Position > misc.OptinAbovePosition {
-
 		err = s.GuildMemberRoleAdd(config.ServerID, m.Author.ID, roleID)
 		if err != nil {
 
@@ -200,14 +189,12 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		success := "You have joined " + chanMention
 		if topic != "" {
-
 			success = success + "\n **Topic:** " + topic
 		}
 
 		// Sends success message to user in DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
-
 			return
 		}
 		_, _ = s.ChannelMessageSend(dm.ID, success)

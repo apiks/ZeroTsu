@@ -30,6 +30,7 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 			"`" + config.BotPrefix + "avatar [@mention or user ID]` | Returns user avatar URL and image embed. \n " +
 			"`" + config.BotPrefix + "create [name] [airing, general or temp; defaults to opt-in] [category ID] [description; must have at least one other non-name parameter]` | Creates a channel and role of the same name. \n " +
 			"`" + config.BotPrefix + "emoji` | Shows emoji stats. \n " +
+			"`" + config.BotPrefix + "stats` | Shows stats. \n " +
 			"`" + config.BotPrefix + "help` | Lists commands and their usage. \n " +
 			"`" + config.BotPrefix + "join [channel name]` | Joins an opt-in channel. `" + config.BotPrefix + "joinchannel` works too. \n " +
 			"`" + config.BotPrefix + "joke` | Prints a random joke." +

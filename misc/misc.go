@@ -35,6 +35,8 @@ var (
 	ReadRssThreadsCheck []RssThreadCheckStruct
 
 	EmojiStats = make(map[string]*Emoji)
+	ChannelStats = make(map[string]*Channel)
+	UserStats = make(map[string]int)
 )
 
 type FilterStruct struct {
@@ -53,11 +55,20 @@ type RssThreadCheckStruct struct {
 }
 
 type Emoji struct {
-	ID                 string `json:"id"`
+	ID          	   string `json:"id"`
 	Name               string `json:"name"`
 	MessageUsage       int    `json:"messageUsage"`
 	UniqueMessageUsage int    `json:"uniqueMessages"`
 	Reactions          int    `json:"reactions"`
+}
+
+type Channel struct {
+	ChannelID 	  string
+	Name 		  string
+	Messages  	  map[string]int
+	RoleCount 	  map[string]int `json:",omitempty"`
+	Optin     	  bool
+	Exists    	  bool
 }
 
 // HasPermissions sees if a user has elevated permissions. By Kagumi
@@ -541,9 +552,69 @@ func EmojiStatsRead() {
 	// Reads the emoji stats and puts them in emojiStatsByte as bytes
 	emojiStatsByte, _ := ioutil.ReadFile("database/emojiStats.json")
 
-	MapMutex.Lock()
 	// Takes the bytes and puts them into the EmojiStats map
+	MapMutex.Lock()
 	_ = json.Unmarshal(emojiStatsByte, &EmojiStats)
+	MapMutex.Unlock()
+}
+
+// Writes channel stats to channelStats.json
+func ChannelStatsWrite(channelStats map[string]*Channel) (bool, error) {
+
+	// Turns that map into bytes to be ready to written to file
+	marshaledStruct, err := json.MarshalIndent(channelStats, "", "    ")
+	if err != nil {
+		return false, err
+	}
+
+	// Writes to file
+	err = ioutil.WriteFile("database/channelStats.json", marshaledStruct, 0644)
+	if err != nil {
+		return false, err
+	}
+
+	return false, err
+}
+
+// Reads channel stats from channelStats.json
+func ChannelStatsRead() {
+
+	// Reads the channel stats and puts them in channelStatsByte as bytes
+	channelStatsByte, _ := ioutil.ReadFile("database/channelStats.json")
+
+	// Takes the bytes and puts them into the ChannelStats map
+	MapMutex.Lock()
+	_ = json.Unmarshal(channelStatsByte, &ChannelStats)
+	MapMutex.Unlock()
+}
+
+// Writes User Change stats to userChangeStats.json
+func UserChangeStatsWrite(userStats map[string]int) (bool, error) {
+
+	// Turns that map into bytes to be ready to written to file
+	marshaledStruct, err := json.MarshalIndent(UserStats, "", "    ")
+	if err != nil {
+		return false, err
+	}
+
+	// Writes to file
+	err = ioutil.WriteFile("database/userChangeStats.json", marshaledStruct, 0644)
+	if err != nil {
+		return false, err
+	}
+
+	return false, err
+}
+
+// Reads User Change stats from userChangeStats.json
+func UserChangeStatsRead() {
+
+	// Reads the channel stats and puts them in userChangeStatsByte as bytes
+	userChangeStatsByte, _ := ioutil.ReadFile("database/userChangeStats.json")
+
+	// Takes the bytes and puts them into the userStats map
+	MapMutex.Lock()
+	_ = json.Unmarshal(userChangeStatsByte, &UserStats)
 	MapMutex.Unlock()
 }
 
@@ -630,7 +701,7 @@ func CommandErrorHandler(s *discordgo.Session, m *discordgo.Message, err error) 
 	}
 }
 
-// SplitLongMessage takes a message and splits it if it's longer than 1950. By Kagumi
+// SplitLongMessage takes a message and splits it if it's longer than 1900. By Kagumi
 func SplitLongMessage(message string) (split []string) {
 	const maxLength = 1950
 	if len(message) > maxLength {
@@ -651,4 +722,50 @@ func SplitLongMessage(message string) (split []string) {
 		split[0] = message
 	}
 	return
+}
+
+// Finds out how many users have the role and returns that number
+func GetRoleUserAmount(s discordgo.Session, roleName string) int {
+
+	var (
+		users int
+		roleID string
+	)
+
+	// Fetches all server roles
+	roles, err := s.GuildRoles(config.ServerID)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+			return 0
+		}
+		return 0
+	}
+	// Fetches all guild users
+	guild, err := s.Guild(config.ServerID)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+			return 0
+		}
+		return 0
+	}
+
+	// Finds and saves the requested role's ID
+	for roleIndex := range roles {
+		if roles[roleIndex].Name == roleName {
+			roleID = roles[roleIndex].ID
+			break
+		}
+	}
+	// If a user has the requested role, add +1 to users var
+	for userID := range guild.Members {
+		for roleIndex := range guild.Members[userID].Roles {
+			if guild.Members[userID].Roles[roleIndex] == roleID {
+				users++
+				break
+			}
+		}
+	}
+	return users
 }

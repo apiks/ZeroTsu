@@ -69,6 +69,12 @@ func Start() {
 	// Reads saved emoji stats from emojiStats.json
 	misc.EmojiStatsRead()
 
+	// Reads saved channel stats from channelStats.json
+	misc.ChannelStatsRead()
+
+	// Reads user gain stats from UserGainStats.json
+	misc.UserChangeStatsRead()
+
 	// Periodic events and status
 	goBot.AddHandler(misc.StatusReady)
 
@@ -117,6 +123,10 @@ func Start() {
 
 	// Voice Role Event Handler
 	//goBot.AddHandler(misc.VoiceRoleHandler)
+
+	// User stats
+	goBot.AddHandler(commands.OnMemberJoin)
+	goBot.AddHandler(commands.OnMemberRemoval)
 
 	err = goBot.Open()
 	if err != nil {

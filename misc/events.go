@@ -82,9 +82,44 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 // Periodic 1 hour events
 func HourTimer(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(1 * time.Hour).C {
+		// Writes emoji stats to disk
+		_, err := EmojiStatsWrite(EmojiStats)
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+				return
+			}
+			return
+		}
+
+		// Updates optin role stat
 		MapMutex.Lock()
-		EmojiStatsWrite(EmojiStats)
+		for chas := range ChannelStats {
+			if ChannelStats[chas].Optin {
+				ChannelStats[chas].RoleCount[ChannelStats[chas].Name] = GetRoleUserAmount(*s, ChannelStats[chas].Name)
+			}
+		}
 		MapMutex.Unlock()
+
+		// Writes channel stats to disk
+		_, err = ChannelStatsWrite(ChannelStats)
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+				return
+			}
+			return
+		}
+
+		// Writes user gain stats to disk
+		_, err = UserChangeStatsWrite(UserStats)
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+				return
+			}
+			return
+		}
 	}
 }
 
