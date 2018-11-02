@@ -128,6 +128,10 @@ func Start() {
 	goBot.AddHandler(commands.OnMemberJoin)
 	goBot.AddHandler(commands.OnMemberRemoval)
 
+	// Spam filter
+	//goBot.AddHandler(commands.SpamFilter)
+	//goBot.AddHandler(commands.SpamFilterTimer)
+
 	err = goBot.Open()
 	if err != nil {
 		panic(err)

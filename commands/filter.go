@@ -11,6 +11,8 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
+var spamFilterMap = make(map[string]int)
+
 // Handles filter in an onMessage basis
 func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
@@ -395,6 +397,65 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, now, chan
 	// Sends embed in bot-log channel
 	_, err := s.ChannelMessageSendEmbed(config.BotLogID, &embedMess)
 	return err
+}
+
+// Removes user message if sent too quickly in succession
+func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
+	// Checks if it's within the /r/anime server
+	ch, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		ch, err = s.Channel(m.ChannelID)
+		if err != nil {
+			return
+		}
+	}
+	if ch.GuildID != config.ServerID {
+		return
+	}
+	// Checks if it's the bot that sent the message
+	if m.Author.ID == s.State.User.ID {
+		return
+	}
+	// Pulls info on message author
+	mem, err := s.State.Member(config.ServerID, m.Author.ID)
+	if err != nil {
+		mem, err = s.GuildMember(config.ServerID, m.Author.ID)
+		if err != nil {
+			return
+		}
+	}
+	// Checks if user is mod or bot before checking the message
+	if misc.HasPermissions(mem) == true {
+		return
+	}
+
+	// Removes message if there were over 4 rapidly sent messages
+	misc.MapMutex.Lock()
+	if spamFilterMap[m.Author.ID] < 4 {
+		spamFilterMap[m.Author.ID]++
+	} else {
+		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
+		if err != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+				return
+			}
+		}
+	}
+	misc.MapMutex.Unlock()
+}
+
+// Handles expiring user spam map
+func SpamFilterTimer(s *discordgo.Session, e *discordgo.Ready) {
+	for range time.NewTicker(4 * time.Second).C {
+		misc.MapMutex.Lock()
+		for userID := range spamFilterMap {
+			if spamFilterMap[userID] > 0 {
+				spamFilterMap[userID]--
+			}
+		}
+		misc.MapMutex.Unlock()
+	}
 }
 
 // Adds filter commands to the commandHandler
