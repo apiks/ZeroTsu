@@ -261,7 +261,7 @@ func lineSpaceFormatChannel(id string, optin bool, s discordgo.Session) string {
 		line += " "
 	}
 	if optin {
-		line += fmt.Sprintf("| [%d])\n", misc.GetRoleUserAmount(s, misc.ChannelStats[id].Name))
+		line += fmt.Sprintf("| [%d])\n", misc.ChannelStats[id].RoleCount[t.Format(dateFormat)])
 	}
 
 	return line

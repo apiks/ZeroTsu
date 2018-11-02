@@ -82,6 +82,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 // Periodic 1 hour events
 func HourTimer(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(1 * time.Hour).C {
+		t := time.Now()
 		// Writes emoji stats to disk
 		_, err := EmojiStatsWrite(EmojiStats)
 		if err != nil {
@@ -96,7 +97,7 @@ func HourTimer(s *discordgo.Session, e *discordgo.Ready) {
 		MapMutex.Lock()
 		for chas := range ChannelStats {
 			if ChannelStats[chas].Optin {
-				ChannelStats[chas].RoleCount[ChannelStats[chas].Name] = GetRoleUserAmount(*s, ChannelStats[chas].Name)
+				ChannelStats[chas].RoleCount[t.Format(dateFormat)] = GetRoleUserAmount(*s, ChannelStats[chas].Name)
 			}
 		}
 		MapMutex.Unlock()

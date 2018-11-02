@@ -19,7 +19,10 @@ import (
 
 // File for misc. functions, commands and variables.
 
-const UserAgent = "windows:apiksTEST:v1.0 (by /u/thechosenapiks)"
+const (
+	UserAgent = "windows:apiksTEST:v1.0 (by /u/thechosenapiks)"
+	dateFormat = "2006-01-02"
+)
 
 var (
 	OptinAbovePosition int
