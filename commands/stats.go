@@ -141,7 +141,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	message := "```CSS\nName:                            ([Daily Messages] | [Total Messages]) \n\n"
 	for _, channel := range channels {
 
-		// Fixes channels without ID param
+		// Fixes channels without ID param. Also fixes role size
 		if channel.ChannelID == "" {
 			misc.MapMutex.Lock()
 			for id := range misc.ChannelStats {
@@ -159,7 +159,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		// Formats  and splits message
 		if !channel.Optin {
 			misc.MapMutex.Lock()
-			message += lineSpaceFormatChannel(channel.ChannelID, false)
+			message += lineSpaceFormatChannel(channel.ChannelID, false, *s)
 			misc.MapMutex.Unlock()
 			message += "\n"
 		}
@@ -179,7 +179,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 			}
 			// Formats  and splits message
 			misc.MapMutex.Lock()
-			message += lineSpaceFormatChannel(channel.ChannelID, true)
+			message += lineSpaceFormatChannel(channel.ChannelID, true, *s)
 			misc.MapMutex.Unlock()
 			msgs, message = splitStatMessages(msgs, message)
 		}
@@ -237,7 +237,7 @@ func (e byFrequencyChannel) Less(i, j int) bool {
 }
 
 // Formats the line space length for the above to keep level spacing
-func lineSpaceFormatChannel(id string, optin bool) string {
+func lineSpaceFormatChannel(id string, optin bool, s discordgo.Session) string {
 
 	var totalMessages int
 	t := time.Now()
@@ -261,7 +261,7 @@ func lineSpaceFormatChannel(id string, optin bool) string {
 		line += " "
 	}
 	if optin {
-		line += fmt.Sprintf("| [%d])\n", misc.ChannelStats[id].RoleCount[misc.ChannelStats[id].Name])
+		line += fmt.Sprintf("| [%d])\n", misc.GetRoleUserAmount(s, misc.ChannelStats[id].Name))
 	}
 
 	return line
