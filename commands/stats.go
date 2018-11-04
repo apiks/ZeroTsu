@@ -11,8 +11,6 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
-const dateFormat = "2006-01-02"
-
 func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	var channelStatsVar misc.Channel
@@ -76,11 +74,11 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 		misc.ChannelStats[m.ChannelID].ChannelID = channel.Name
 	}
 
-	misc.ChannelStats[m.ChannelID].Messages[t.Format(dateFormat)]++
+	misc.ChannelStats[m.ChannelID].Messages[t.Format(misc.DateFormat)]++
 	misc.MapMutex.Unlock()
 }
 
-// Prints all channel stats
+// Prints all channel web
 func showStats(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
@@ -137,7 +135,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Adds the channels and their stats to message and formats it
+	// Adds the channels and their web to message and formats it
 	message := "```CSS\nName:                            ([Daily Messages] | [Total Messages]) \n\n"
 	for _, channel := range channels {
 
@@ -152,7 +150,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 			misc.MapMutex.Unlock()
 		}
 		// Checks if channel exists and sets optin status
-		ok := isChannelUsable(channel, guild)
+		ok := isChannelUsable(*channel, guild)
 		if !ok {
 			continue
 		}
@@ -173,7 +171,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		if channel.Optin {
 
 			// Checks if channel exists and sets optin status
-			ok := isChannelUsable(channel, guild)
+			ok := isChannelUsable(*channel, guild)
 			if !ok {
 				continue
 			}
@@ -188,7 +186,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	message += fmt.Sprintf("\nOpt-in Total: %d\n\n------\n", optinChannelTotal)
 	message += fmt.Sprintf("\nGrand Total Messages: %d\n\n", optinChannelTotal+normalChannelTotal)
 	misc.MapMutex.Lock()
-	message += fmt.Sprintf("\nDaily User Change: %d\n\n", misc.UserStats[t.Format(dateFormat)])
+	message += fmt.Sprintf("\nDaily User Change: %d\n\n", misc.UserStats[t.Format(misc.DateFormat)])
 	misc.MapMutex.Unlock()
 
 	// Final message split for last block + formatting
@@ -250,7 +248,7 @@ func lineSpaceFormatChannel(id string, optin bool, s discordgo.Session) string {
 	for i := 0; i < spacesRequired; i++ {
 		line += " "
 	}
-	line += fmt.Sprintf("([%d])", misc.ChannelStats[id].Messages[t.Format(dateFormat)])
+	line += fmt.Sprintf("([%d])", misc.ChannelStats[id].Messages[t.Format(misc.DateFormat)])
 	spacesRequired = 51 - len(line)
 	for i := 0; i < spacesRequired; i++ {
 		line += " "
@@ -261,7 +259,7 @@ func lineSpaceFormatChannel(id string, optin bool, s discordgo.Session) string {
 		line += " "
 	}
 	if optin {
-		line += fmt.Sprintf("| [%d])\n", misc.ChannelStats[id].RoleCount[t.Format(dateFormat)])
+		line += fmt.Sprintf("| [%d])\n", misc.ChannelStats[id].RoleCount[t.Format(misc.DateFormat)])
 	}
 
 	return line
@@ -271,7 +269,7 @@ func lineSpaceFormatChannel(id string, optin bool, s discordgo.Session) string {
 func OnMemberJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	t := time.Now()
 	misc.MapMutex.Lock()
-	misc.UserStats[t.Format(dateFormat)]++
+	misc.UserStats[t.Format(misc.DateFormat)]++
 	misc.MapMutex.Unlock()
 }
 
@@ -279,12 +277,12 @@ func OnMemberJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 	t := time.Now()
 	misc.MapMutex.Lock()
-	misc.UserStats[t.Format(dateFormat)]--
+	misc.UserStats[t.Format(misc.DateFormat)]--
 	misc.MapMutex.Unlock()
 }
 
 // Checks if specific channel stat should be printed
-func isChannelUsable(channel *misc.Channel, guild *discordgo.Guild) bool {
+func isChannelUsable(channel misc.Channel, guild *discordgo.Guild) bool {
 	// Checks if channel exists and if it's optin
 	for guildIndex := range guild.Channels {
 		for roleIndex := range guild.Roles {
@@ -303,7 +301,7 @@ func isChannelUsable(channel *misc.Channel, guild *discordgo.Guild) bool {
 		}
 	}
 	misc.MapMutex.Lock()
-	misc.ChannelStats[channel.ChannelID] = channel
+	misc.ChannelStats[channel.ChannelID] = &channel
 	misc.MapMutex.Unlock()
 
 	if channel.Exists {
@@ -322,13 +320,13 @@ func splitStatMessages (msgs []string, message string) ([]string, string) {
 	return msgs, message
 }
 
-// Adds channel stats command to the commandHandler
+// Adds channel web command to the commandHandler
 func init() {
 	add(&command{
 		execute:   showStats,
 		trigger:  "channels",
-		aliases:  []string{"channelstats", "stats"},
-		desc:     "Prints channel stats.",
+		aliases:  []string{"channelstats", "web"},
+		desc:     "Prints channel web.",
 		elevated: true,
 	})
 }
