@@ -14,19 +14,6 @@ import (
 
 // Periodic events such as Unbanning and RSS timer every 1 min
 func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
-
-	// Saves program from panic and continues running normally without executing the command if it happens
-	//defer func() {
-	//	if rec := recover(); rec != nil {
-	//		_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
-	//		if err != nil {
-	//
-	//			fmt.Println(err.Error())
-	//			fmt.Println(rec)
-	//		}
-	//	}
-	//}()
-
 	err := s.UpdateStatus(0, "with her darling")
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
@@ -40,7 +27,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		// Checks whether it has to post rss thread every 15 seconds
 		RSSParser(s)
 
-		// Goes through bannedUsers.json if it's not empty and unbans if needed
+		////Goes through bannedUsers.json if it's not empty and unbans if needed
 		//if BannedUsersSlice != nil {
 		//	if len(BannedUsersSlice) != 0 {
 		//
@@ -82,7 +69,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 // Periodic 1 hour events
 func HourTimer(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(1 * time.Hour).C {
-		t := time.Now()
+
 		// Writes emoji stats to disk
 		_, err := EmojiStatsWrite(EmojiStats)
 		if err != nil {
@@ -93,11 +80,30 @@ func HourTimer(s *discordgo.Session, e *discordgo.Ready) {
 			return
 		}
 
+		// Fetches all guild users
+		guild, err := s.Guild(config.ServerID)
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+				return
+			}
+			return
+		}
+		// Fetches all server roles
+		roles, err := s.GuildRoles(config.ServerID)
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+				return
+			}
+			return
+		}
 		// Updates optin role stat
+		t := time.Now()
 		MapMutex.Lock()
 		for chas := range ChannelStats {
 			if ChannelStats[chas].Optin {
-				ChannelStats[chas].RoleCount[t.Format(DateFormat)] = GetRoleUserAmount(*s, ChannelStats[chas].Name)
+				ChannelStats[chas].RoleCount[t.Format(DateFormat)] = GetRoleUserAmount(guild, roles, ChannelStats[chas].Name)
 			}
 		}
 		MapMutex.Unlock()

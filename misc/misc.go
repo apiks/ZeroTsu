@@ -531,7 +531,7 @@ func RssThreadsTimerRead() {
 	}
 }
 
-// Writes emoji web to emojiStats.json
+// Writes emoji stats to emojiStats.json
 func EmojiStatsWrite(emojiStats map[string]*Emoji) (bool, error) {
 
 	// Turns that map into bytes to be ready to written to file
@@ -549,10 +549,10 @@ func EmojiStatsWrite(emojiStats map[string]*Emoji) (bool, error) {
 	return false, err
 }
 
-// Reads emoji web from emojiStats.json
+// Reads emoji stats from emojiStats.json
 func EmojiStatsRead() {
 
-	// Reads the emoji web and puts them in emojiStatsByte as bytes
+	// Reads the emoji stats and puts them in emojiStatsByte as bytes
 	emojiStatsByte, _ := ioutil.ReadFile("database/emojiStats.json")
 
 	// Takes the bytes and puts them into the EmojiStats map
@@ -561,7 +561,7 @@ func EmojiStatsRead() {
 	MapMutex.Unlock()
 }
 
-// Writes channel web to channelStats.json
+// Writes channel stats to channelStats.json
 func ChannelStatsWrite(channelStats map[string]*Channel) (bool, error) {
 
 	// Turns that map into bytes to be ready to written to file
@@ -579,10 +579,10 @@ func ChannelStatsWrite(channelStats map[string]*Channel) (bool, error) {
 	return false, err
 }
 
-// Reads channel web from channelStats.json
+// Reads channel stats from channelStats.json
 func ChannelStatsRead() {
 
-	// Reads the channel web and puts them in channelStatsByte as bytes
+	// Reads the channel stats and puts them in channelStatsByte as bytes
 	channelStatsByte, _ := ioutil.ReadFile("database/channelStats.json")
 
 	// Takes the bytes and puts them into the ChannelStats map
@@ -591,7 +591,7 @@ func ChannelStatsRead() {
 	MapMutex.Unlock()
 }
 
-// Writes User Change web to userChangeStats.json
+// Writes User Change stats to userChangeStats.json
 func UserChangeStatsWrite(userStats map[string]int) (bool, error) {
 
 	// Turns that map into bytes to be ready to written to file
@@ -609,10 +609,10 @@ func UserChangeStatsWrite(userStats map[string]int) (bool, error) {
 	return false, err
 }
 
-// Reads User Change web from userChangeStats.json
+// Reads User Change stats from userChangeStats.json
 func UserChangeStatsRead() {
 
-	// Reads the channel web and puts them in userChangeStatsByte as bytes
+	// Reads the channel stats and puts them in userChangeStatsByte as bytes
 	userChangeStatsByte, _ := ioutil.ReadFile("database/userChangeStats.json")
 
 	// Takes the bytes and puts them into the userStats map
@@ -728,31 +728,12 @@ func SplitLongMessage(message string) (split []string) {
 }
 
 // Finds out how many users have the role and returns that number
-func GetRoleUserAmount(s discordgo.Session, roleName string) int {
+func GetRoleUserAmount(guild *discordgo.Guild, roles []*discordgo.Role, roleName string) int {
 
 	var (
 		users int
 		roleID string
 	)
-
-	// Fetches all server roles
-	roles, err := s.GuildRoles(config.ServerID)
-	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-		if err != nil {
-			return 0
-		}
-		return 0
-	}
-	// Fetches all guild users
-	guild, err := s.Guild(config.ServerID)
-	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-		if err != nil {
-			return 0
-		}
-		return 0
-	}
 
 	// Finds and saves the requested role's ID
 	for roleIndex := range roles {

@@ -11,6 +11,7 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
+// Adds to message count on every message for that channel
 func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	var channelStatsVar misc.Channel
@@ -54,10 +55,29 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Sets channel params if it didn't exist before in database
 	misc.MapMutex.Lock()
 	if misc.ChannelStats[m.ChannelID] == nil {
+		// Fetches all guild users
+		guild, err := s.Guild(config.ServerID)
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+				return
+			}
+			return
+		}
+		// Fetches all server roles
+		roles, err := s.GuildRoles(config.ServerID)
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+				return
+			}
+			return
+		}
+
 		channelStatsVar.ChannelID = channel.ID
 		channelStatsVar.Name = channel.Name
 		channelStatsVar.RoleCount = make(map[string]int)
-		channelStatsVar.RoleCount[channel.Name] = misc.GetRoleUserAmount(*s, channel.Name)
+		channelStatsVar.RoleCount[channel.Name] = misc.GetRoleUserAmount(guild, roles, channel.Name)
 
 		// Removes role stat for channels without associated roles. Else turns bool to true
 		if channelStatsVar.RoleCount[channel.Name] == 0 {
@@ -78,17 +98,16 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 	misc.MapMutex.Unlock()
 }
 
-// Prints all channel web
+// Prints all channel stats
 func showStats(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
 		msgs               []string
 		normalChannelTotal int
 		optinChannelTotal  int
+		flag			   bool
 	)
 	t := time.Now()
-
-	fmt.Println("in")
 
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
@@ -100,8 +119,31 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}()
 
-	// Sorts channel by their message use
+	// Fixes channels without ID param
 	misc.MapMutex.Lock()
+	for id := range misc.ChannelStats {
+		if misc.ChannelStats[id].ChannelID == "" {
+			misc.ChannelStats[id].ChannelID = id
+			flag = true
+		}
+	}
+
+	// Writes channel stats to disk if IDs were fixed
+	if flag {
+		_, err := misc.ChannelStatsWrite(misc.ChannelStats)
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+				misc.MapMutex.Unlock()
+				return
+			}
+			misc.MapMutex.Unlock()
+			return
+		}
+	}
+
+
+	// Sorts channel by their message use
 	channels := make([]*misc.Channel, len(misc.ChannelStats))
 	for i := 0; i < len(misc.ChannelStats); i++ {
 		for _, channel := range misc.ChannelStats {
@@ -137,22 +179,10 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	fmt.Println("in")
-
-	// Adds the channels and their web to message and formats it
+	// Adds the channels and their stats to message and formats it
 	message := "```CSS\nName:                            ([Daily Messages] | [Total Messages]) \n\n"
 	for _, channel := range channels {
 
-		// Fixes channels without ID param. Also fixes role size
-		if channel.ChannelID == "" {
-			misc.MapMutex.Lock()
-			for id := range misc.ChannelStats {
-				if misc.ChannelStats[id].ChannelID == "" {
-					misc.ChannelStats[id].ChannelID = id
-				}
-			}
-			misc.MapMutex.Unlock()
-		}
 		// Checks if channel exists and sets optin status
 		ok := isChannelUsable(*channel, guild)
 		if !ok {
