@@ -327,7 +327,8 @@ func isChannelUsable(channel misc.Channel, guild *discordgo.Guild) bool {
 				break
 			}
 		}
-		if guild.Channels[guildIndex].Name == channel.Name {
+		if guild.Channels[guildIndex].Name == channel.Name &&
+			guild.Channels[guildIndex].ID == channel.ChannelID {
 			channel.Exists = true
 			break
 		} else {
