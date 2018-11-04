@@ -97,7 +97,7 @@ func HourTimer(s *discordgo.Session, e *discordgo.Ready) {
 		MapMutex.Lock()
 		for chas := range ChannelStats {
 			if ChannelStats[chas].Optin {
-				ChannelStats[chas].RoleCount[t.Format(dateFormat)] = GetRoleUserAmount(*s, ChannelStats[chas].Name)
+				ChannelStats[chas].RoleCount[t.Format(DateFormat)] = GetRoleUserAmount(*s, ChannelStats[chas].Name)
 			}
 		}
 		MapMutex.Unlock()
