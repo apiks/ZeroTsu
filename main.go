@@ -118,8 +118,8 @@ func Start() {
 	goBot.AddHandler(commands.OnMessageEmojiReact)
 	goBot.AddHandler(commands.OnMessageEmojiUnreact)
 
-	// Hour Timer
-	goBot.AddHandler(misc.HourTimer)
+	// Twenty Minute Timer
+	goBot.AddHandler(misc.TwentyMinTimer)
 
 	// Voice Role Event Handler
 	//goBot.AddHandler(misc.VoiceRoleHandler)

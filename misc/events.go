@@ -66,9 +66,9 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	}
 }
 
-// Periodic 1 hour events
-func HourTimer(s *discordgo.Session, e *discordgo.Ready) {
-	for range time.NewTicker(1 * time.Hour).C {
+// Periodic 20min Events
+func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
+	for range time.NewTicker(20 * time.Minute).C {
 
 		// Writes emoji stats to disk
 		_, err := EmojiStatsWrite(EmojiStats)
