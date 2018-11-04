@@ -88,6 +88,8 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	)
 	t := time.Now()
 
+	fmt.Println("in")
+
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -134,6 +136,8 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
+
+	fmt.Println("in")
 
 	// Adds the channels and their web to message and formats it
 	message := "```CSS\nName:                            ([Daily Messages] | [Total Messages]) \n\n"
@@ -320,13 +324,13 @@ func splitStatMessages (msgs []string, message string) ([]string, string) {
 	return msgs, message
 }
 
-// Adds channel web command to the commandHandler
+// Adds channel stats command to the commandHandler
 func init() {
 	add(&command{
 		execute:   showStats,
-		trigger:  "channels",
-		aliases:  []string{"channelstats", "web"},
-		desc:     "Prints channel web.",
+		trigger:  "stats",
+		aliases:  []string{"channelstats", "channels"},
+		desc:     "Prints all channel stats.",
 		elevated: true,
 	})
 }
