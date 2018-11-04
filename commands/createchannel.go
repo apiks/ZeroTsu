@@ -123,7 +123,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Creates the new channel of type text
-	newCha, err := s.GuildChannelCreate(config.ServerID, command, "text")
+	newCha, err := s.GuildChannelCreate(config.ServerID, command, 0)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
