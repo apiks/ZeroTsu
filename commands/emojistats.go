@@ -213,7 +213,7 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Add every emoji and its stats to message and format it
-	message := "```CSS\nName:                      ([Message Usage] | [Unique Usage] | [Reactions]) \n\n"
+	message := "```CSS\nName:                         ([Message Usage] | [Unique Usage] | [Reactions]) \n\n"
 	for _, emoji := range emojis {
 		// Fixes emojis without ID
 		if emoji.ID == "" {
@@ -230,12 +230,17 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 
 		if emoji.ID != "" {
 			message += lineSpaceFormatEmoji(emoji.ID)
+			msgs, message = splitStatMessages(msgs, message)
 		}
 	}
-	msgs = misc.SplitLongMessage(message)
+
+	msgs, message = splitStatMessages(msgs, message)
+	if message != "" {
+		msgs = append(msgs, message)
+	}
 	msgs[0] += "```"
 	for i := 1; i < len(msgs); i++ {
-		msgs[i] = "```CSS\n                    " + msgs[i] + "\n```"
+		msgs[i] = "```CSS\n" + msgs[i] + "\n```"
 	}
 
 	for j := 0; j < len(msgs); j++ {
