@@ -60,8 +60,10 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
+				misc.MapMutex.Unlock()
 				return
 			}
+			misc.MapMutex.Unlock()
 			return
 		}
 		// Fetches all server roles
@@ -69,8 +71,10 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
+				misc.MapMutex.Unlock()
 				return
 			}
+			misc.MapMutex.Unlock()
 			return
 		}
 
@@ -91,10 +95,10 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 		misc.ChannelStats[m.ChannelID] = &channelStatsVar
 	}
 	if misc.ChannelStats[m.ChannelID].ChannelID == "" {
-		misc.ChannelStats[m.ChannelID].ChannelID = channel.Name
+		misc.ChannelStats[m.ChannelID].ChannelID = m.ChannelID
 	}
 
-	misc.ChannelStats[m.ChannelID].Messages[t.Format(misc.DateFormat)]++
+	misc.ChannelStats[m.ChannelID].Messages[t.Format(misc.DateFormat)] += 1
 	misc.MapMutex.Unlock()
 }
 
