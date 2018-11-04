@@ -658,29 +658,24 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 
 	var err error
 
+	if len(messageSlice) < 2 {
+		err = fmt.Errorf("Error: No @user or userID detected.")
+		return "", err
+	}
+
 	// Pulls the userID from the second parameter
 	userID := messageSlice[1]
 
 	// Trims fluff if it was a mention. Otherwise check if it's a correct user ID
 	if strings.Contains(messageSlice[1], "<@") {
-
 		userID = strings.TrimPrefix(userID, "<@")
 		userID = strings.TrimPrefix(userID, "!")
 		userID = strings.TrimSuffix(userID, ">")
-	} else {
-
-		_, err := strconv.ParseInt(userID, 10, 64)
-		if len(userID) < 17 || err != nil {
-			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid user.")
-			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-				if err != nil {
-					return "", err
-				}
-				return "", err
-			}
-			return "", err
-		}
+	}
+	_, err = strconv.ParseInt(userID, 10, 64)
+	if len(userID) < 17 || err != nil {
+		err = fmt.Errorf("Error: Invalid user.")
+		return userID, err
 	}
 
 	return userID, err
@@ -725,6 +720,13 @@ func SplitLongMessage(message string) (split []string) {
 		split[0] = message
 	}
 	return
+}
+
+// Returns a string that shows where the error occured exactly
+func ErrorLocation(err error) string {
+	_, file, line, _ := runtime.Caller(1)
+	errorLocation := fmt.Sprintf("Error is in file [%v] near line %v", file, line)
+	return errorLocation
 }
 
 // Finds out how many users have the role and returns that number

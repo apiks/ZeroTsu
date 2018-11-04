@@ -45,7 +45,7 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Pull channel info
 	channel, err := s.State.Channel(m.ChannelID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -58,7 +58,7 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Fetches all guild users
 		guild, err := s.Guild(config.ServerID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -67,7 +67,7 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Fetches all server roles
 		roles, err := s.GuildRoles(config.ServerID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -132,7 +132,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	if flag {
 		_, err := misc.ChannelStatsWrite(misc.ChannelStats)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -172,7 +172,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	// Pull guild info
 	guild, err := s.State.Guild(config.ServerID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -236,7 +236,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	for j := 0; j < len(msgs); j++ {
 		_, err := s.ChannelMessageSend(m.ChannelID, msgs[j])
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -287,8 +287,8 @@ func lineSpaceFormatChannel(id string, optin bool, s discordgo.Session) string {
 	for i := 0; i < spacesRequired; i++ {
 		line += " "
 	}
-	line += fmt.Sprintf("| [%d])", totalMessages)
-	spacesRequired = 70 - len(line)
+	line += fmt.Sprintf("| ([%d])", totalMessages)
+	spacesRequired = 59 - len(line)
 	for i := 0; i < spacesRequired; i++ {
 		line += " "
 	}
