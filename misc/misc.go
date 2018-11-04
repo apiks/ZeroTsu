@@ -20,8 +20,8 @@ import (
 // File for misc. functions, commands and variables.
 
 const (
-	UserAgent = "windows:apiksTEST:v1.0 (by /u/thechosenapiks)"
-	dateFormat = "2006-01-02"
+	UserAgent  = "windows:apiksTEST:v1.0 (by /u/thechosenapiks)"
+	DateFormat = "2006-01-02"
 )
 
 var (
@@ -531,7 +531,7 @@ func RssThreadsTimerRead() {
 	}
 }
 
-// Writes emoji stats to emojiStats.json
+// Writes emoji web to emojiStats.json
 func EmojiStatsWrite(emojiStats map[string]*Emoji) (bool, error) {
 
 	// Turns that map into bytes to be ready to written to file
@@ -549,10 +549,10 @@ func EmojiStatsWrite(emojiStats map[string]*Emoji) (bool, error) {
 	return false, err
 }
 
-// Reads emoji stats from emojiStats.json
+// Reads emoji web from emojiStats.json
 func EmojiStatsRead() {
 
-	// Reads the emoji stats and puts them in emojiStatsByte as bytes
+	// Reads the emoji web and puts them in emojiStatsByte as bytes
 	emojiStatsByte, _ := ioutil.ReadFile("database/emojiStats.json")
 
 	// Takes the bytes and puts them into the EmojiStats map
@@ -561,7 +561,7 @@ func EmojiStatsRead() {
 	MapMutex.Unlock()
 }
 
-// Writes channel stats to channelStats.json
+// Writes channel web to channelStats.json
 func ChannelStatsWrite(channelStats map[string]*Channel) (bool, error) {
 
 	// Turns that map into bytes to be ready to written to file
@@ -579,10 +579,10 @@ func ChannelStatsWrite(channelStats map[string]*Channel) (bool, error) {
 	return false, err
 }
 
-// Reads channel stats from channelStats.json
+// Reads channel web from channelStats.json
 func ChannelStatsRead() {
 
-	// Reads the channel stats and puts them in channelStatsByte as bytes
+	// Reads the channel web and puts them in channelStatsByte as bytes
 	channelStatsByte, _ := ioutil.ReadFile("database/channelStats.json")
 
 	// Takes the bytes and puts them into the ChannelStats map
@@ -591,7 +591,7 @@ func ChannelStatsRead() {
 	MapMutex.Unlock()
 }
 
-// Writes User Change stats to userChangeStats.json
+// Writes User Change web to userChangeStats.json
 func UserChangeStatsWrite(userStats map[string]int) (bool, error) {
 
 	// Turns that map into bytes to be ready to written to file
@@ -609,10 +609,10 @@ func UserChangeStatsWrite(userStats map[string]int) (bool, error) {
 	return false, err
 }
 
-// Reads User Change stats from userChangeStats.json
+// Reads User Change web from userChangeStats.json
 func UserChangeStatsRead() {
 
-	// Reads the channel stats and puts them in userChangeStatsByte as bytes
+	// Reads the channel web and puts them in userChangeStatsByte as bytes
 	userChangeStatsByte, _ := ioutil.ReadFile("database/userChangeStats.json")
 
 	// Takes the bytes and puts them into the userStats map
