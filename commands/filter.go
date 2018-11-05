@@ -16,6 +16,17 @@ var spamFilterMap = make(map[string]int)
 // Handles filter in an onMessage basis
 func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
+	// Checks if it's within the config server
+	ch, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		ch, err = s.Channel(m.ChannelID)
+		if err != nil {
+			return
+		}
+	}
+	if ch.GuildID != config.ServerID {
+		return
+	}
 	// Checks if it's the bot that sent the message
 	if m.Author.ID == s.State.User.ID {
 		return

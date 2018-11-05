@@ -20,6 +20,18 @@ func helpEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 		admin bool
 	)
 
+	// Checks if it's within the config server
+	ch, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		ch, err = s.Channel(m.ChannelID)
+		if err != nil {
+			return
+		}
+	}
+	if ch.GuildID != config.ServerID {
+		return
+	}
+
 	// Pulls info on message author
 	mem, err := s.State.Member(config.ServerID, m.Author.ID)
 	if err != nil {
@@ -144,7 +156,19 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
 
 // Mod command help page
 func helpChannelCommand(s *discordgo.Session, m *discordgo.Message) {
-	err := helpChannelEmbed(s, m)
+	// Checks if it's within the config server
+	ch, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		ch, err = s.Channel(m.ChannelID)
+		if err != nil {
+			return
+		}
+	}
+	if ch.GuildID != config.ServerID {
+		return
+	}
+
+	err = helpChannelEmbed(s, m)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -210,7 +234,19 @@ func helpChannelEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 // Mod command help page
 func helpFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
-	err := helpFiltersEmbed(s, m)
+	// Checks if it's within the config server
+	ch, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		ch, err = s.Channel(m.ChannelID)
+		if err != nil {
+			return
+		}
+	}
+	if ch.GuildID != config.ServerID {
+		return
+	}
+
+	err = helpFiltersEmbed(s, m)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -276,7 +312,19 @@ func helpFiltersEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 // Mod command help page
 func helpMiscCommand(s *discordgo.Session, m *discordgo.Message) {
-	err := helpMiscEmbed(s, m)
+	// Checks if it's within the config server
+	ch, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		ch, err = s.Channel(m.ChannelID)
+		if err != nil {
+			return
+		}
+	}
+	if ch.GuildID != config.ServerID {
+		return
+	}
+
+	err = helpMiscEmbed(s, m)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -342,7 +390,19 @@ func helpMiscEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 // Mod command help page
 func helpNormalCommand(s *discordgo.Session, m *discordgo.Message) {
-	err := helpNormalEmbed(s, m)
+	// Checks if it's within the config server
+	ch, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		ch, err = s.Channel(m.ChannelID)
+		if err != nil {
+			return
+		}
+	}
+	if ch.GuildID != config.ServerID {
+		return
+	}
+
+	err = helpNormalEmbed(s, m)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -408,7 +468,19 @@ func helpNormalEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 // Mod command help page
 func helpPunishmentCommand(s *discordgo.Session, m *discordgo.Message) {
-	err := helpPunishmentEmbed(s, m)
+	// Checks if it's within the config server
+	ch, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		ch, err = s.Channel(m.ChannelID)
+		if err != nil {
+			return
+		}
+	}
+	if ch.GuildID != config.ServerID {
+		return
+	}
+
+	err = helpPunishmentEmbed(s, m)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -474,7 +546,19 @@ func helpPunishmentEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 // Mod command help page
 func helpReactsCommand(s *discordgo.Session, m *discordgo.Message) {
-	err := helpReactsEmbed(s, m)
+	// Checks if it's within the config server
+	ch, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		ch, err = s.Channel(m.ChannelID)
+		if err != nil {
+			return
+		}
+	}
+	if ch.GuildID != config.ServerID {
+		return
+	}
+
+	err = helpReactsEmbed(s, m)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -540,7 +624,19 @@ func helpReactsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 // Mod command help page
 func helpRssCommand(s *discordgo.Session, m *discordgo.Message) {
-	err := helpRssEmbed(s, m)
+	// Checks if it's within the config server
+	ch, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		ch, err = s.Channel(m.ChannelID)
+		if err != nil {
+			return
+		}
+	}
+	if ch.GuildID != config.ServerID {
+		return
+	}
+
+	err = helpRssEmbed(s, m)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -606,7 +702,19 @@ func helpRssEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 // Mod command help page
 func helpStatsCommand(s *discordgo.Session, m *discordgo.Message) {
-	err := helpStatsEmbed(s, m)
+	// Checks if it's within the config server
+	ch, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		ch, err = s.Channel(m.ChannelID)
+		if err != nil {
+			return
+		}
+	}
+	if ch.GuildID != config.ServerID {
+		return
+	}
+
+	err = helpStatsEmbed(s, m)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return

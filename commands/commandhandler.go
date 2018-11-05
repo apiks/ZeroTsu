@@ -48,16 +48,6 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}()
 
-	ch, err := s.State.Channel(m.ChannelID)
-	if err != nil {
-		ch, err = s.Channel(m.ChannelID)
-		if err != nil {
-			return
-		}
-	}
-	if ch.GuildID != config.ServerID {
-		return
-	}
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
