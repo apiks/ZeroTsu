@@ -40,13 +40,10 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) == 1 {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"create [name] OPTIONAL[type] [category] [description; must have at least one other non-name parameter]`")
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -156,8 +153,9 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	misc.MapMutex.Lock()
 	misc.SpoilerMap[newRole.ID] = &tempRole
-	misc.SpoilerRolesWrite(misc.SpoilerMap)
 	misc.MapMutex.Unlock()
+	misc.SpoilerRolesWrite(misc.SpoilerMap)
+
 
 	// Pulls info on server roles
 	deb, err := s.GuildRoles(config.ServerID)
@@ -289,7 +287,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	if m.Author.ID != s.State.User.ID {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Channel and role `"+roleName+"` created. If opt-in please sort in the roles list. Sort category separately.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		}
 	}
 }
@@ -298,7 +296,8 @@ func init() {
 	add(&command{
 		execute:  createChannelCommand,
 		trigger:  "create",
-		desc:     "Creates a channel with parameters.",
+		desc:     "Creates a channel.",
 		elevated: true,
+		category: "channel",
 	})
 }

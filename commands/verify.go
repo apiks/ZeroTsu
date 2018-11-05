@@ -20,13 +20,10 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if there's enough parameters (command, user and reddit username.)
 	if len(commandStrings) != 3 {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+"verify [@user or userID] [redditUsername]`")
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -37,7 +34,6 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls userID from 2nd parameter of commandStrings, else print error
 	userID, err := misc.GetUserID(s, m, commandStrings)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
@@ -47,10 +43,8 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Trims the reddit username if it's done with /u/ or u/
 	if strings.HasPrefix(redditUsername, "/u/") {
-
 		redditUsername = strings.TrimPrefix(redditUsername, "/u/")
 	} else if strings.HasPrefix(redditUsername, "u/") {
-
 		redditUsername = strings.TrimPrefix(redditUsername, "u/")
 	}
 
@@ -59,12 +53,10 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		userMem, err = s.GuildMember(config.ServerID, userID)
 		if err != nil {
-
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in the server. Cannot verify user.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 				if err != nil {
-
 					return
 				}
 				return
@@ -110,7 +102,6 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Puts all server roles in roles
 	roles, err := s.GuildRoles(config.ServerID)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
@@ -118,7 +109,6 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Fetches ID of Verified role and finds the correct one
 	for i := 0; i < len(roles); i++ {
 		if roles[i].Name == "Verified" {
-
 			roleID = roles[i].ID
 		}
 	}
@@ -126,17 +116,14 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Assigns verified role to user
 	err = s.GuildMemberRoleAdd(config.ServerID, userID, roleID)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
 	_, err = s.ChannelMessageSend(m.ChannelID, "Success. Verified "+userMem.User.Username+"#"+userMem.User.Discriminator+" with "+redditUsername)
 	if err != nil {
-
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
-
 			return
 		}
 		return
@@ -149,5 +136,6 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 //		trigger:  "verify",
 //		desc:     "Verifies a user with a reddit username.",
 //		elevated: true,
+//		category: "misc",
 //	})
 //}

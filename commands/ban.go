@@ -24,18 +24,16 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		temp misc.BannedUsers
 	)
+	z, _ := time.Now().Zone()
 
 	commandStrings := strings.SplitN(m.Content, " ", 4)
 
 	if len(commandStrings) != 4 {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "ban [@user or userID] [time] [reason]` format. \n\n"+
 			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes. Use 0d for permanent.")
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -45,7 +43,6 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	userID, err := misc.GetUserID(s, m, commandStrings)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
@@ -55,21 +52,17 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if a number is contained in length var. Fixes some cases of invalid length
 	lengthSlice := strings.Split(length, "")
 	for i := 0; i < len(lengthSlice); i++ {
-
 		if _, err := strconv.ParseInt(lengthSlice[i], 10, 64); err == nil {
-
 			validSlice = true
 			break
 		}
 	}
-	if validSlice == false {
+	if !validSlice {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid length. \n Usage: `" + config.BotPrefix + "ban [@user or userID] [time] [reason]` format. \n\n"+
 			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes. Use 0d for permanent.")
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -80,14 +73,12 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Fetches user
 	mem, err := s.User(userID)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
 	// Checks if user is in memberInfo and handles them
 	if misc.MemberInfoMap == nil || misc.MemberInfoMap[userID] == nil {
-
 		// Pulls info on user if they're in the server
 		userMem, err := s.State.Member(config.ServerID, mem.ID)
 		if err != nil {
@@ -95,10 +86,8 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 			if err != nil {
 				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot ban user until they join the server.")
 				if err != nil {
-
-					_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 					if err != nil {
-
 						return
 					}
 					return
@@ -106,7 +95,6 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 				return
 			}
 		}
-
 		// Initializes user if he doesn't exist in memberInfo but is in server
 		misc.InitializeUser(userMem)
 	}
@@ -116,11 +104,9 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Adds unban date to memberInfo and checks if perma
 	misc.MemberInfoMap[userID].Bans = append(misc.MemberInfoMap[userID].Bans, reason)
 	UnbanDate, perma := misc.ResolveTimeFromString(length)
-	if perma == false {
+	if !perma {
 		misc.MemberInfoMap[userID].UnbanDate = UnbanDate.Format("2006-01-02 15:04:05")
-
 	} else {
-
 		misc.MemberInfoMap[userID].UnbanDate = "_Never_"
 	}
 
@@ -133,11 +119,9 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	temp.ID = userID
 	temp.User = mem.Username
 
-	if perma == false {
-
+	if !perma {
 		temp.UnbanDate = UnbanDate
 	} else {
-
 		temp.UnbanDate = time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
 	}
 
@@ -150,17 +134,14 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls the guild Name
 	guild, err := s.Guild(config.ServerID)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
-	// Assigns success print string for user
-	if perma == false {
-
-		success = "You have been banned from " + guild.Name + ": **" + reason + "**\n\nUntil: _" + UnbanDate.Format("2006-01-02 15:04:05") + "_"
+	// Assigns success ban print string for user
+	if !perma {
+		success = "You have been banned from " + guild.Name + ": **" + reason + "**\n\nUntil: _" + UnbanDate.Format("2006-01-02 15:04:05") + " " + z + "_"
 	} else {
-
 		success = "You have been banned from " + guild.Name + ": **" + reason + "**\n\nUntil: _Forever_ \n\nIf you would like to appeal, use modmail at <https://reddit.com/r/anime>"
 	}
 
@@ -171,41 +152,38 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Bans the user
 	err = s.GuildBanCreateWithReason(config.ServerID, mem.ID, reason, 0)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
 	// Sends embed bot-log message
-	BanEmbed(s, m, mem, reason, length)
+	err = BanEmbed(s, m, mem, reason, length)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
 
 	// Sends a message to bot-log regarding ban
-	if perma == false {
-
+	if !perma {
 		_, err = s.ChannelMessageSend(m.ChannelID, mem.Username + "#" + mem.Discriminator + " has been banned by "+
-			m.Author.Username+ " until _"+ UnbanDate.Format("2006-01-02 15:04:05")+ "_")
+			m.Author.Username+ " until _"+ UnbanDate.Format("2006-01-02 15:04:05") + " " + z + "_")
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
 		}
-	} else {
-
-		_, err = s.ChannelMessageSend(m.ChannelID, mem.Username + "#" + mem.Discriminator + " has been permabanned by "+
-			m.Author.Username)
+		return
+	}
+	_, err = s.ChannelMessageSend(m.ChannelID, mem.Username + "#" + mem.Discriminator + " has been permabanned by "+
+		m.Author.Username)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-			if err != nil {
-
-				return
-			}
 			return
 		}
+		return
 	}
 }
 
@@ -263,5 +241,6 @@ func BanEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, r
 //		trigger:  "ban",
 //		desc:     "Bans a user for a set period of time.",
 //		elevated: true,
+//		category: "punishment",
 //	})
 //}

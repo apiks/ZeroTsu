@@ -176,7 +176,6 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Sets permission variable to be neutral for send messages
 	def &= ^discordgo.PermissionSendMessages
 
-
 	// Error if lock used in moderator category
 	if cha.ParentID == "360994750796529665" {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot lock a mod channel due to permission reasons.")
@@ -255,11 +254,13 @@ func init() {
 		trigger: "lock",
 		desc:    "Locks a channel.",
 		elevated: true,
+		category: "channel",
 	})
 	add(&command{
 		execute: unlockCommand,
 		trigger: "unlock",
 		desc:    "Unlocks a channel.",
 		elevated: true,
+		category: "channel",
 	})
 }

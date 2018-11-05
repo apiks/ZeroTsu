@@ -8,9 +8,9 @@ import (
 
 // Returns a message on "ping" to see if bot is alive
 func pingCommand(s *discordgo.Session, m *discordgo.Message) {
-	_, err := s.ChannelMessageSend(m.ChannelID, "Hmm? Do you want some honey, darling? Open wide~")
+	_, err := s.ChannelMessageSend(m.ChannelID, "Hmm? Do you want some honey, darling? Open wide~~")
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -25,5 +25,6 @@ func init() {
 		aliases:  []string{"pingme"},
 		desc:     "Am I alive?",
 		elevated: true,
+		category: "misc",
 	})
 }

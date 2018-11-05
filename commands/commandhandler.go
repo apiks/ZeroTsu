@@ -25,6 +25,7 @@ type command struct {
 	commandCount int
 	deleteAfter  bool
 	elevated     bool
+	category	 string
 }
 
 func add(c *command) {
@@ -32,7 +33,7 @@ func add(c *command) {
 	for _, alias := range c.aliases {
 		aliasMap[alias] = c.trigger
 	}
-	l.Printf("Added command %s | %d aliases", c.trigger, len(c.aliases))
+	l.Printf("Added command %s | %d aliases | %v category", c.trigger, len(c.aliases), c.category)
 }
 
 // HandleCommand handles the incoming message
@@ -41,13 +42,22 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if rec := recover(); rec != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
 			if err != nil {
-
 				l.Println(err.Error())
 				l.Println(rec)
 			}
 		}
 	}()
 
+	ch, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		ch, err = s.Channel(m.ChannelID)
+		if err != nil {
+			return
+		}
+	}
+	if ch.GuildID != config.ServerID {
+		return
+	}
 	if m.Author.ID == s.State.User.ID {
 		return
 	}

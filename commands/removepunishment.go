@@ -18,13 +18,10 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if there's enough parameters
 	if len(commandStrings) != 3 {
-
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong amount of parameters. Use `" + config.BotPrefix + "removewarning [@user or userID] [warning index]")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removewarning [@user or userID] [warning index]")
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -35,7 +32,6 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls userID from 2nd parameter of commandStrings, else print error
 	userID, err := misc.GetUserID(s, m, commandStrings)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
@@ -43,18 +39,15 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls info on user
 	userMem, err := s.User(userID)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
 	// Checks if user is in memberInfo
 	if misc.MemberInfoMap[userID] == nil {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo.")
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 
 				return
@@ -67,13 +60,10 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Index checks
 	index, err := strconv.Atoi(commandStrings[2])
 	if err != nil {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid warning index.")
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -81,13 +71,10 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 	if index > len(misc.MemberInfoMap[userID].Warnings) || index < 0 {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid warning index.")
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -97,17 +84,14 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Fixes index for future use if it's 0
 	if index != 0 {
-
 		index = index - 1
 	}
 
 	_, err = s.ChannelMessageSend(m.ChannelID, "Success. Removed warning `" + misc.MemberInfoMap[userID].Warnings[index] +
 		"` from " + userMem.Username + "#" + userMem.Discriminator)
 	if err != nil {
-
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
-
 			return
 		}
 	}
@@ -129,13 +113,10 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if there's enough parameters (command, user and index.) Else prints error message
 	if len(commandStrings) != 3 {
-
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong amount of parameters. Use `" + config.BotPrefix + "removekick [@user or userID] [kick index]")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removekick [@user or userID] [kick index]")
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -146,7 +127,6 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls userID from 2nd parameter of commandStrings, else print error
 	userID, err := misc.GetUserID(s, m, commandStrings)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
@@ -154,20 +134,16 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls info on user
 	userMem, err := s.User(userID)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
 	// Checks if user is in memberInfo
 	if misc.MemberInfoMap[userID] == nil {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo.")
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -178,13 +154,10 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Index checks
 	index, err := strconv.Atoi(commandStrings[2])
 	if err != nil {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid kick index.")
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -195,10 +168,8 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid kick index.")
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -208,17 +179,14 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Fixes index for future use if it's 0
 	if index != 0 {
-
 		index = index - 1
 	}
 
 	_, err = s.ChannelMessageSend(m.ChannelID, "Success. Removed kick `" + misc.MemberInfoMap[userID].Kicks[index] +
 		"` from " + userMem.Username + "#" + userMem.Discriminator)
 	if err != nil {
-
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
-
 			return
 		}
 	}
@@ -240,13 +208,10 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if there's enough parameters (command, user and index. Else prints error message
 	if len(commandStrings) != 3 {
-
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Wrong amount of parameters. Use `" + config.BotPrefix + "removeban [@user or userID] [ban index]")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removeban [@user or userID] [ban index]")
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -257,7 +222,6 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls userID from 2nd parameter of commandStrings, else print error
 	userID, err := misc.GetUserID(s, m, commandStrings)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
@@ -265,20 +229,16 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls info on user
 	userMem, err := s.User(userID)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
 	// Checks if user is in memberInfo
 	if misc.MemberInfoMap[userID] == nil {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo.")
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -289,13 +249,10 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Index checks
 	index, err := strconv.Atoi(commandStrings[2])
 	if err != nil {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid ban index.")
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -303,13 +260,10 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 	if index > len(misc.MemberInfoMap[userID].Warnings) || index < 0 {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid ban index.")
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -319,17 +273,14 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Fixes index for future use if it's 0
 	if index != 0 {
-
 		index = index - 1
 	}
 
 	_, err = s.ChannelMessageSend(m.ChannelID, "Success. Removed ban `" + misc.MemberInfoMap[userID].Bans[index] +
 		"` from " + userMem.Username + "#" + userMem.Discriminator)
 	if err != nil {
-
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
-
 			return
 		}
 	}
@@ -349,17 +300,20 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 //		trigger:  "removewarning",
 //		desc:     "Removes a user warning whois text",
 //		elevated: true,
+//		category: "punishment",
 //	})
 //	add(&command{
 //		execute:  removeKickCommand,
 //		trigger:  "removekick",
 //		desc:     "Removes a user kick whois text",
 //		elevated: true,
+//		category: "punishment",
 //	})
 //	add(&command{
 //		execute:  removeBanCommand,
 //		trigger:  "removeban",
 //		desc:     "Removes a user ban whois text",
 //		elevated: true,
+//		category: "punishment",
 //	})
 //}

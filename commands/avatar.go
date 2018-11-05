@@ -17,7 +17,7 @@ func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) > 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix + "avatar [@user or userID]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -34,7 +34,7 @@ func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Sends avatar
 		_, err = s.ChannelMessageSend(m.ChannelID, mem.AvatarURL("256"))
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -60,7 +60,7 @@ func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Sends avatar
 	_, err = s.ChannelMessageSend(m.ChannelID, mem.AvatarURL("256"))
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -72,6 +72,7 @@ func init() {
 	add(&command{
 		execute: avatarCommand,
 		trigger: "avatar",
-		desc:    "Show user avatar.",
+		desc:    "Show user avatar. Add [@mention] or [userID] to specify a user.",
+		category:"normal",
 	})
 }

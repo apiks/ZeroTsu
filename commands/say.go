@@ -20,7 +20,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "say OPTIONAL[channelID] [message]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -41,7 +41,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 		message := strings.TrimPrefix(m.Content, config.BotPrefix + "say ")
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -49,7 +49,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		err = s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -61,7 +61,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls server channels and checks if it's a valid channel
 	channels, err := s.GuildChannels(config.ServerID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -76,7 +76,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 	if channelID == "1" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid channel.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -88,7 +88,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 	message := strings.TrimPrefix(m.Content, config.BotPrefix + "say " + channelID)
 	_, err = s.ChannelMessageSend(channelID, message)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -97,7 +97,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err = s.ChannelMessageSend(m.ChannelID, "Success! Message sent.")
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -113,7 +113,7 @@ func editCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) < 4 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "edit [channelID] [messageID] [message]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -127,7 +127,7 @@ func editCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings[1]) < 17 || err != nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid channel.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -140,7 +140,7 @@ func editCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings[2]) < 17 || err != nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid message.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -152,7 +152,7 @@ func editCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Edits the target message
 	_, err = s.ChannelMessageEdit(commandStrings[1], commandStrings[2], commandStrings[3])
 	if err != nil {
-		_, err = s.ChannelMessageSend(m.ChannelID, err.Error())
+		_, err = s.ChannelMessageSend(m.ChannelID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -161,7 +161,7 @@ func editCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err = s.ChannelMessageSend(m.ChannelID, "Success! Selected message edited.")
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -176,6 +176,7 @@ func init() {
 		desc:     "Sends message from bot in command channel",
 		elevated: true,
 		deleteAfter: false,
+		category: "misc",
 	})
 	add(&command{
 		execute:  editCommand,
@@ -183,5 +184,6 @@ func init() {
 		desc:     "Edits a message sent by the bot with another message",
 		elevated: true,
 		deleteAfter: false,
+		category: "misc",
 	})
 }

@@ -173,6 +173,22 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	}
 	misc.MapMutex.Unlock()
 
+	// Fetches info on server roles from the server and puts it in deb
+	deb, err := s.GuildRoles(config.ServerID)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+
+	// Updates opt-in-under and opt-in-above position for use later in isChannlUsable func
+	for i := 0; i < len(deb); i++ {
+		if deb[i].Name == config.OptInUnder {
+			misc.OptinUnderPosition = deb[i].Position
+		} else if deb[i].Name == config.OptInAbove {
+			misc.OptinAbovePosition = deb[i].Position
+		}
+	}
+
 	// Pull guild info
 	guild, err := s.State.Guild(config.ServerID)
 	if err != nil {
@@ -321,6 +337,7 @@ func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 
 // Checks if specific channel stat should be printed
 func isChannelUsable(channel misc.Channel, guild *discordgo.Guild) bool {
+
 	// Checks if channel exists and if it's optin
 	for guildIndex := range guild.Channels {
 		for roleIndex := range guild.Roles {
@@ -367,5 +384,6 @@ func init() {
 		aliases:  []string{"channelstats", "channels"},
 		desc:     "Prints all channel stats.",
 		elevated: true,
+		category: "normal",
 	})
 }

@@ -37,7 +37,7 @@ func jokeCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, joke.Setup + "\n\n" + joke.Punchline)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -50,5 +50,6 @@ func init() {
 		execute: jokeCommand,
 		trigger: "joke",
 		desc:    "Print a joke.",
+		category: "normal",
 	})
 }

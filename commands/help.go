@@ -1,14 +1,677 @@
 package commands
 
 import (
+	"fmt"
 	"github.com/bwmarrin/discordgo"
+	"sort"
 
 	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
-// Prints two versions of help depending on whether the user is a mod or not
-func helpCommand(s *discordgo.Session, m *discordgo.Message) {
+// Command categories in sorted form and map form(map for descriptions)
+var categoriesSorted = [8]string{"Channel", "Filters", "Misc", "Normal", "Punishment", "Reacts", "Rss", "Stats"}
+var categoriesMap = make(map[string]string)
+
+// Prints pretty help command
+func helpEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	var (
+		admin bool
+	)
+
+	// Pulls info on message author
+	mem, err := s.State.Member(config.ServerID, m.Author.ID)
+	if err != nil {
+		mem, err = s.GuildMember(config.ServerID, m.Author.ID)
+		if err != nil {
+			return
+		}
+	}
+	// Checks for mod perms and handles accordingly
+	if misc.HasPermissions(mem) {
+		admin = true
+	}
+
+	err = helpEmbed(s, m, admin)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+}
+
+// Embed message for general all-purpose help message
+func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
+
+	var (
+		embedMess          discordgo.MessageEmbed
+		embedFooter	   	   discordgo.MessageEmbedFooter
+
+		// Embed slice and its fields
+		embed              []*discordgo.MessageEmbedField
+		user               discordgo.MessageEmbedField
+		permission         discordgo.MessageEmbedField
+		usage              discordgo.MessageEmbedField
+		userCommands       discordgo.MessageEmbedField
+		adminCategories	   discordgo.MessageEmbedField
+
+		// Slice for sorting
+		commands		   []string
+	)
+
+	// Set embed color
+	embedMess.Color = 0x00ff00
+
+	// Sets user field
+	user.Name = "User:"
+	user.Value = m.Author.Mention()
+	user.Inline = true
+
+	// Sets permission field
+	permission.Name = "Permission Level:"
+	if admin {
+		permission.Value = "_Admin_"
+	} else {
+		permission.Value = "_User_"
+	}
+	permission.Inline = true
+
+	// Sets usage field if admin
+	if admin {
+		usage.Name = "Usage:"
+		usage.Value = fmt.Sprintf("Pick a category with __%vh[category]__", config.BotPrefix)
+		usage.Inline = true
+	}
+
+	if !admin {
+		// Sets user commands field
+		userCommands.Name = "Command:"
+		userCommands.Inline = true
+
+		// Iterates through non-mod commands and adds them to the embed sorted
+		misc.MapMutex.Lock()
+		for command := range commandMap {
+			commands = append(commands, command)
+		}
+		sort.Strings(commands)
+		for i := 0; i < len(commands); i++ {
+			if !commandMap[commands[i]].elevated {
+				userCommands.Value += fmt.Sprintf("`%v` - %v\n", commands[i], commandMap[commands[i]].desc)
+			}
+		}
+		misc.MapMutex.Unlock()
+
+		// Sets footer field
+		embedFooter.Text = fmt.Sprintf("Tip: Type %v[command] to see a detailed description.", config.BotPrefix)
+		embedMess.Footer = &embedFooter
+	} else {
+		// Sets user commands field
+		adminCategories.Name = "Categories:"
+		adminCategories.Inline = true
+
+		// Iterates through categories and their descriptions and adds them to the embed
+		misc.MapMutex.Lock()
+		for i := 0; i < len(categoriesSorted); i++ {
+			adminCategories.Value += fmt.Sprintf("%v - %v\n", categoriesSorted[i], categoriesMap[categoriesSorted[i]])
+		}
+		misc.MapMutex.Unlock()
+	}
+
+	// Adds the fields to embed slice (because embedMess.Fields requires slice input)
+	embed = append(embed, &user)
+	embed = append(embed, &permission)
+	if admin {
+		embed = append(embed, &usage)
+		embed = append(embed, &adminCategories)
+	} else {
+		embed = append(embed, &userCommands)
+	}
+
+	// Adds everything together
+	embedMess.Fields = embed
+
+	// Sends embed in channel
+	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return err
+		}
+		return err
+	}
+	return err
+}
+
+// Mod command help page
+func helpChannelCommand(s *discordgo.Session, m *discordgo.Message) {
+	err := helpChannelEmbed(s, m)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+}
+
+// Mod command help page embed
+func helpChannelEmbed(s *discordgo.Session, m *discordgo.Message) error {
+
+	var (
+		embedMess          discordgo.MessageEmbed
+		embedFooter	   	   discordgo.MessageEmbedFooter
+
+		// Embed slice and its fields
+		embed    		   []*discordgo.MessageEmbedField
+		commandsField  	   discordgo.MessageEmbedField
+
+		// Slice for sorting
+		commands		   []string
+	)
+
+	// Set embed color
+	embedMess.Color = 0x00ff00
+
+	// Sets footer field
+	embedFooter.Text = fmt.Sprintf("Tip: Type %v[command] to see a detailed description.", config.BotPrefix)
+	embedMess.Footer = &embedFooter
+
+	// Sets command field
+	commandsField.Name = "Command:"
+	commandsField.Inline = true
+
+	// Iterates through commands in the filter category
+	misc.MapMutex.Lock()
+	for command := range commandMap {
+		commands = append(commands, command)
+	}
+	sort.Strings(commands)
+	for i := 0; i < len(commands); i++ {
+		if commandMap[commands[i]].category == "channel" {
+			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], commandMap[commands[i]].desc)
+		}
+	}
+	misc.MapMutex.Unlock()
+
+	// Adds the field to embed slice (because embedMess.Fields requires slice input)
+	embed = append(embed, &commandsField)
+
+	// Adds everything together
+	embedMess.Fields = embed
+
+	// Sends embed in channel
+	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return err
+		}
+		return err
+	}
+	return err
+}
+
+// Mod command help page
+func helpFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
+	err := helpFiltersEmbed(s, m)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+}
+
+// Mod command help page embed
+func helpFiltersEmbed(s *discordgo.Session, m *discordgo.Message) error {
+
+	var (
+		embedMess          discordgo.MessageEmbed
+		embedFooter	   	   discordgo.MessageEmbedFooter
+
+		// Embed slice and its fields
+		embed    		   []*discordgo.MessageEmbedField
+		commandsField  	   discordgo.MessageEmbedField
+
+		// Slice for sorting
+		commands		   []string
+	)
+
+	// Set embed color
+	embedMess.Color = 0x00ff00
+
+	// Sets footer field
+	embedFooter.Text = fmt.Sprintf("Tip: Type %v[command] to see a detailed description.", config.BotPrefix)
+	embedMess.Footer = &embedFooter
+
+	// Sets command field
+	commandsField.Name = "Command:"
+	commandsField.Inline = true
+
+	// Iterates through commands in the filter category
+	misc.MapMutex.Lock()
+	for command := range commandMap {
+		commands = append(commands, command)
+	}
+	sort.Strings(commands)
+	for i := 0; i < len(commands); i++ {
+		if commandMap[commands[i]].category == "filters" {
+			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], commandMap[commands[i]].desc)
+		}
+	}
+	misc.MapMutex.Unlock()
+
+	// Adds the field to embed slice (because embedMess.Fields requires slice input)
+	embed = append(embed, &commandsField)
+
+	// Adds everything together
+	embedMess.Fields = embed
+
+	// Sends embed in channel
+	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return err
+		}
+		return err
+	}
+	return err
+}
+
+// Mod command help page
+func helpMiscCommand(s *discordgo.Session, m *discordgo.Message) {
+	err := helpMiscEmbed(s, m)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+}
+
+// Mod command help page embed
+func helpMiscEmbed(s *discordgo.Session, m *discordgo.Message) error {
+
+	var (
+		embedMess          discordgo.MessageEmbed
+		embedFooter	   	   discordgo.MessageEmbedFooter
+
+		// Embed slice and its fields
+		embed    		   []*discordgo.MessageEmbedField
+		commandsField  	   discordgo.MessageEmbedField
+
+		// Slice for sorting
+		commands		   []string
+	)
+
+	// Set embed color
+	embedMess.Color = 0x00ff00
+
+	// Sets footer field
+	embedFooter.Text = fmt.Sprintf("Tip: Type %v[command] to see a detailed description.", config.BotPrefix)
+	embedMess.Footer = &embedFooter
+
+	// Sets command field
+	commandsField.Name = "Command:"
+	commandsField.Inline = true
+
+	// Iterates through commands in the filter category
+	misc.MapMutex.Lock()
+	for command := range commandMap {
+		commands = append(commands, command)
+	}
+	sort.Strings(commands)
+	for i := 0; i < len(commands); i++ {
+		if commandMap[commands[i]].category == "misc" {
+			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], commandMap[commands[i]].desc)
+		}
+	}
+	misc.MapMutex.Unlock()
+
+	// Adds the field to embed slice (because embedMess.Fields requires slice input)
+	embed = append(embed, &commandsField)
+
+	// Adds everything together
+	embedMess.Fields = embed
+
+	// Sends embed in channel
+	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return err
+		}
+		return err
+	}
+	return err
+}
+
+// Mod command help page
+func helpNormalCommand(s *discordgo.Session, m *discordgo.Message) {
+	err := helpNormalEmbed(s, m)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+}
+
+// Mod command help page embed
+func helpNormalEmbed(s *discordgo.Session, m *discordgo.Message) error {
+
+	var (
+		embedMess          discordgo.MessageEmbed
+		embedFooter	   	   discordgo.MessageEmbedFooter
+
+		// Embed slice and its fields
+		embed    		   []*discordgo.MessageEmbedField
+		commandsField  	   discordgo.MessageEmbedField
+
+		// Slice for sorting
+		commands		   []string
+	)
+
+	// Set embed color
+	embedMess.Color = 0x00ff00
+
+	// Sets footer field
+	embedFooter.Text = fmt.Sprintf("Tip: Type %v[command] to see a detailed description.", config.BotPrefix)
+	embedMess.Footer = &embedFooter
+
+	// Sets command field
+	commandsField.Name = "Command:"
+	commandsField.Inline = true
+
+	// Iterates through commands in the filter category
+	misc.MapMutex.Lock()
+	for command := range commandMap {
+		commands = append(commands, command)
+	}
+	sort.Strings(commands)
+	for i := 0; i < len(commands); i++ {
+		if commandMap[commands[i]].category == "normal" {
+			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], commandMap[commands[i]].desc)
+		}
+	}
+	misc.MapMutex.Unlock()
+
+	// Adds the field to embed slice (because embedMess.Fields requires slice input)
+	embed = append(embed, &commandsField)
+
+	// Adds everything together
+	embedMess.Fields = embed
+
+	// Sends embed in channel
+	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return err
+		}
+		return err
+	}
+	return err
+}
+
+// Mod command help page
+func helpPunishmentCommand(s *discordgo.Session, m *discordgo.Message) {
+	err := helpPunishmentEmbed(s, m)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+}
+
+// Mod command help page embed
+func helpPunishmentEmbed(s *discordgo.Session, m *discordgo.Message) error {
+
+	var (
+		embedMess          discordgo.MessageEmbed
+		embedFooter	   	   discordgo.MessageEmbedFooter
+
+		// Embed slice and its fields
+		embed    		   []*discordgo.MessageEmbedField
+		commandsField  	   discordgo.MessageEmbedField
+
+		// Slice for sorting
+		commands		   []string
+	)
+
+	// Set embed color
+	embedMess.Color = 0x00ff00
+
+	// Sets footer field
+	embedFooter.Text = fmt.Sprintf("Tip: Type %v[command] to see a detailed description.", config.BotPrefix)
+	embedMess.Footer = &embedFooter
+
+	// Sets command field
+	commandsField.Name = "Command:"
+	commandsField.Inline = true
+
+	// Iterates through commands in the filter category
+	misc.MapMutex.Lock()
+	for command := range commandMap {
+		commands = append(commands, command)
+	}
+	sort.Strings(commands)
+	for i := 0; i < len(commands); i++ {
+		if commandMap[commands[i]].category == "punishment" {
+			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], commandMap[commands[i]].desc)
+		}
+	}
+	misc.MapMutex.Unlock()
+
+	// Adds the field to embed slice (because embedMess.Fields requires slice input)
+	embed = append(embed, &commandsField)
+
+	// Adds everything together
+	embedMess.Fields = embed
+
+	// Sends embed in channel
+	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return err
+		}
+		return err
+	}
+	return err
+}
+
+// Mod command help page
+func helpReactsCommand(s *discordgo.Session, m *discordgo.Message) {
+	err := helpReactsEmbed(s, m)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+}
+
+// Mod command help page embed
+func helpReactsEmbed(s *discordgo.Session, m *discordgo.Message) error {
+
+	var (
+		embedMess          discordgo.MessageEmbed
+		embedFooter	   	   discordgo.MessageEmbedFooter
+
+		// Embed slice and its fields
+		embed    		   []*discordgo.MessageEmbedField
+		commandsField  	   discordgo.MessageEmbedField
+
+		// Slice for sorting
+		commands		   []string
+	)
+
+	// Set embed color
+	embedMess.Color = 0x00ff00
+
+	// Sets footer field
+	embedFooter.Text = fmt.Sprintf("Tip: Type %v[command] to see a detailed description.", config.BotPrefix)
+	embedMess.Footer = &embedFooter
+
+	// Sets command field
+	commandsField.Name = "Command:"
+	commandsField.Inline = true
+
+	// Iterates through commands in the filter category
+	misc.MapMutex.Lock()
+	for command := range commandMap {
+		commands = append(commands, command)
+	}
+	sort.Strings(commands)
+	for i := 0; i < len(commands); i++ {
+		if commandMap[commands[i]].category == "reacts" {
+			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], commandMap[commands[i]].desc)
+		}
+	}
+	misc.MapMutex.Unlock()
+
+	// Adds the field to embed slice (because embedMess.Fields requires slice input)
+	embed = append(embed, &commandsField)
+
+	// Adds everything together
+	embedMess.Fields = embed
+
+	// Sends embed in channel
+	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return err
+		}
+		return err
+	}
+	return err
+}
+
+// Mod command help page
+func helpRssCommand(s *discordgo.Session, m *discordgo.Message) {
+	err := helpRssEmbed(s, m)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+}
+
+// Mod command help page embed
+func helpRssEmbed(s *discordgo.Session, m *discordgo.Message) error {
+
+	var (
+		embedMess          discordgo.MessageEmbed
+		embedFooter	   	   discordgo.MessageEmbedFooter
+
+		// Embed slice and its fields
+		embed    		   []*discordgo.MessageEmbedField
+		commandsField  	   discordgo.MessageEmbedField
+
+		// Slice for sorting
+		commands		   []string
+	)
+
+	// Set embed color
+	embedMess.Color = 0x00ff00
+
+	// Sets footer field
+	embedFooter.Text = fmt.Sprintf("Tip: Type %v[command] to see a detailed description.", config.BotPrefix)
+	embedMess.Footer = &embedFooter
+
+	// Sets command field
+	commandsField.Name = "Command:"
+	commandsField.Inline = true
+
+	// Iterates through commands in the filter category
+	misc.MapMutex.Lock()
+	for command := range commandMap {
+		commands = append(commands, command)
+	}
+	sort.Strings(commands)
+	for i := 0; i < len(commands); i++ {
+		if commandMap[commands[i]].category == "rss" {
+			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], commandMap[commands[i]].desc)
+		}
+	}
+	misc.MapMutex.Unlock()
+
+	// Adds the field to embed slice (because embedMess.Fields requires slice input)
+	embed = append(embed, &commandsField)
+
+	// Adds everything together
+	embedMess.Fields = embed
+
+	// Sends embed in channel
+	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return err
+		}
+		return err
+	}
+	return err
+}
+
+// Mod command help page
+func helpStatsCommand(s *discordgo.Session, m *discordgo.Message) {
+	err := helpStatsEmbed(s, m)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+}
+
+// Mod command help page embed
+func helpStatsEmbed(s *discordgo.Session, m *discordgo.Message) error {
+
+	var (
+		embedMess          discordgo.MessageEmbed
+		embedFooter	   	   discordgo.MessageEmbedFooter
+
+		// Embed slice and its fields
+		embed    		   []*discordgo.MessageEmbedField
+		commandsField  	   discordgo.MessageEmbedField
+
+		// Slice for sorting
+		commands		   []string
+	)
+
+	// Set embed color
+	embedMess.Color = 0x00ff00
+
+	// Sets footer field
+	embedFooter.Text = fmt.Sprintf("Tip: Type %v[command] to see a detailed description.", config.BotPrefix)
+	embedMess.Footer = &embedFooter
+
+	// Sets command field
+	commandsField.Name = "Command:"
+	commandsField.Inline = true
+
+	// Iterates through commands in the filter category
+	misc.MapMutex.Lock()
+	for command := range commandMap {
+		commands = append(commands, command)
+	}
+	sort.Strings(commands)
+	for i := 0; i < len(commands); i++ {
+		if commandMap[commands[i]].category == "stats" {
+			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], commandMap[commands[i]].desc)
+		}
+	}
+	misc.MapMutex.Unlock()
+
+	// Adds the field to embed slice (because embedMess.Fields requires slice input)
+	embed = append(embed, &commandsField)
+
+	// Adds everything together
+	embedMess.Fields = embed
+
+	// Sends embed in channel
+	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return err
+		}
+		return err
+	}
+	return err
+}
+
+// Prints two versions of help depending on whether the user is a mod or not in plain text
+func helpPlaintextCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Pulls message author
 	mem, err := s.State.Member(config.ServerID, m.Author.ID)
@@ -29,11 +692,11 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 			"`" + config.BotPrefix + "removefilter [filter]` | Removes a word from the filter. \n " +
 			"`" + config.BotPrefix + "avatar [@mention or user ID]` | Returns user avatar URL and image embed. \n " +
 			"`" + config.BotPrefix + "create [name] [airing, general or temp; defaults to opt-in] [category ID] [description; must have at least one other non-name parameter]` | Creates a channel and role of the same name. \n " +
-			"`" + config.BotPrefix + "emoji` | Shows emoji stats. \n " +
-			"`" + config.BotPrefix + "stats` | Shows stats. \n " +
+			"`" + config.BotPrefix + "emoji` | Shows emoji web. \n " +
+			"`" + config.BotPrefix + "web` | Shows web. \n " +
 			"`" + config.BotPrefix + "help` | Lists commands and their usage. \n " +
 			"`" + config.BotPrefix + "join [channel name]` | Joins an opt-in channel. `" + config.BotPrefix + "joinchannel` works too. \n " +
-			"`" + config.BotPrefix + "joke` | Prints a random joke." +
+			"`" + config.BotPrefix + "joke` | Prints a random joke. \n" +
 			"`" + config.BotPrefix + "leave [channel name]` | Leaves an opt-in channel. `" + config.BotPrefix + "leavechannel` works too. \n " +
 			"`" + config.BotPrefix + "lock` | Locks a non-mod channel. Takes a few seconds only if the channel has no custom mod permissions set. \n " +
 			"`" + config.BotPrefix + "unlock` | Unlocks a non-mod channel. \n " +
@@ -43,7 +706,7 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err = s.ChannelMessageSend(m.ChannelID, successMod)
 		if err != nil {
 
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 
 				return
@@ -69,7 +732,7 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err = s.ChannelMessageSend(m.ChannelID, successMod)
 		if err != nil {
 
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 
 				return
@@ -90,7 +753,7 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err = s.ChannelMessageSend(m.ChannelID, successUser)
 		if err != nil {
 
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 
 				return
@@ -102,8 +765,72 @@ func helpCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func init() {
 	add(&command{
-		execute:  helpCommand,
+		execute:  helpEmbedCommand,
 		trigger:  "help",
-		desc:     "Prints all available commands",
+		desc:     "Print all available commands in embed form.",
+		category: "normal",
 	})
+	add(&command{
+		execute:  helpPlaintextCommand,
+		trigger:  "helpplain",
+		desc:     "Prints all available commands in plain text.",
+		category: "normal",
+	})
+	add(&command{
+		execute:  helpChannelCommand,
+		trigger:  "hchannel",
+		desc:     "Print all channel related commands.",
+		elevated: true,
+	})
+	add(&command{
+		execute:  helpFiltersCommand,
+		trigger:  "hfilters",
+		desc:     "Print all commands related to filters.",
+		elevated: true,
+	})
+	add(&command{
+		execute:  helpMiscCommand,
+		trigger:  "hmisc",
+		desc:     "Print all miscellaneous mod commands.",
+		elevated: true,
+	})
+	add(&command{
+		execute:  helpNormalCommand,
+		trigger:  "hnormal",
+		desc:     "Print all normal user commands.",
+		elevated: true,
+	})
+	//add(&command{
+	//	execute:  helpPunishmentCommand,
+	//	trigger:  "hpunishment",
+	//	desc:     "Print all mod pusnihment commands.",
+	//	elevated: true,
+	//})
+	add(&command{
+		execute:  helpReactsCommand,
+		trigger:  "hreacts",
+		desc:     "Print all channel join via react commands.",
+		elevated: true,
+	})
+	add(&command{
+		execute:  helpRssCommand,
+		trigger:  "hrss",
+		desc:     "Print all RSS feed from sub commands.",
+		elevated: true,
+	})
+	add(&command{
+		execute:  helpStatsCommand,
+		trigger:  "hstats",
+		desc:     "Print all channel and emoji stats commands.",
+		elevated: true,
+	})
+
+	categoriesMap["Channel"] = "Mod channel-related commands."
+	categoriesMap["Filters"] = "Word and emoji filters."
+	categoriesMap["Misc"] = "Miscellaneous mod commands."
+	categoriesMap["Normal"] = "Normal user commands."
+	categoriesMap["Punishment"] = "Warnings, kicks and bans.[Disabled]"
+	categoriesMap["Reacts"] = "Channel join via react commands."
+	categoriesMap["Rss"] = "RSS feed from sub commands."
+	categoriesMap["Stats"] = "Channel and emoji stats."
 }

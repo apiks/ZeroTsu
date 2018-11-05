@@ -24,13 +24,10 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) != 2 {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"sortcategory [category]`")
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -62,7 +59,7 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	if categoryID == "" {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Invalid Category")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -97,7 +94,7 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err = s.ChannelMessageSend(m.ChannelID, "Category `"+commandStrings[1]+"` sorted")
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -109,7 +106,8 @@ func init() {
 	add(&command{
 		execute:  sortCategoryCommand,
 		trigger:  "sortcategory",
-		desc:     "Sorts a category alphabetically",
+		desc:     "Sorts a category alphabetically.",
 		elevated: true,
+		category: "misc",
 	})
 }

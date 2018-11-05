@@ -616,5 +616,6 @@ func init() {
 		trigger:  "startvote",
 		desc:     "Starts a vote for channel creation with parameters.",
 		elevated: false,
+		category: "channel",
 	})
 }

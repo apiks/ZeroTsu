@@ -37,10 +37,8 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "leave [channel]`")
 		if err != nil {
-
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
-
 				return
 			}
 			return
@@ -50,17 +48,14 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Pulls the role name from strings after "leavechannel " or "leave "
 	if strings.HasPrefix(messageLowercase, config.BotPrefix+"leavechannel ") {
-
 		name = strings.Replace(messageLowercase, config.BotPrefix+"leavechannel ", "", -1)
 	} else {
-
 		name = strings.Replace(messageLowercase, config.BotPrefix+"leave ", "", -1)
 	}
 
 	// Pulls info on server roles
 	deb, err := s.GuildRoles(config.ServerID)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
@@ -68,16 +63,13 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls info on server channels
 	cha, err := s.GuildChannels(config.ServerID)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
 	// Checks if there's a # before the channel name and removes it if so
 	if strings.Contains(name, "#") {
-
 		name = strings.Replace(name, "#", "", -1)
-
 		// Checks if it's in a mention format. If so then user already has access to channel
 		if strings.Contains(name, "<") {
 
@@ -89,7 +81,6 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 			// Sends error message to user in DMs
 			dm, err := s.UserChannelCreate(m.Author.ID)
 			if err != nil {
-
 				return
 			}
 			_, _ = s.ChannelMessageSend(dm.ID, "You cannot leave "+name + " using this command.")
@@ -100,21 +91,16 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if the role exists on the server, sends error message if not
 	for i := 0; i < len(deb); i++ {
 		if deb[i].Name == name {
-
 			roleID = deb[i].ID
-
 			if strings.Contains(deb[i].ID, roleID) {
-
 				roleExists = true
 			}
 		}
 	}
-	if roleExists == false {
-
+	if !roleExists  {
 		// Sends error message to user in DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
-
 			return
 		}
 		_, _ = s.ChannelMessageSend(dm.ID, "There's no #"+name+", silly")
@@ -124,7 +110,6 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Sets role ID
 	for i := 0; i < len(deb); i++ {
 		if deb[i].Name == name && roleID != "" {
-
 			roleID = deb[i].ID
 			break
 		}
@@ -133,11 +118,10 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if the user already has the role. Sends error message if he does
 	for i := 0; i < len(mem.Roles); i++ {
 		if strings.Contains(mem.Roles[i], roleID) {
-
 			hasRoleAlready = true
 		}
 	}
-	if hasRoleAlready == false {
+	if !hasRoleAlready {
 
 		// Sets the channel mention to the variable chanMention
 		for j := 0; j < len(cha); j++ {
@@ -149,7 +133,6 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Sends error message to user in DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
-
 			return
 		}
 		_, _ = s.ChannelMessageSend(dm.ID, "You're already out of " + chanMention + ", daaarling~")
@@ -159,11 +142,8 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Updates the position of opt-in-under and opt-in-above position
 	for i := 0; i < len(deb); i++ {
 		if deb[i].Name == config.OptInUnder {
-
 			misc.OptinUnderPosition = deb[i].Position
-		}
-		if deb[i].Name == config.OptInAbove {
-
+		} else if deb[i].Name == config.OptInAbove {
 			misc.OptinAbovePosition = deb[i].Position
 		}
 	}
@@ -171,7 +151,6 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Sets role
 	role, err := s.State.Role(config.ServerID, roleID)
 	if err != nil {
-
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
@@ -186,7 +165,6 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		err = s.GuildMemberRoleRemove(config.ServerID, m.Author.ID, roleID)
 		if err != nil {
-
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
@@ -201,7 +179,6 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Sends success message to user in DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
-
 			return
 		}
 		_, _ = s.ChannelMessageSend(dm.ID, "You have left " + chanMention)
@@ -215,5 +192,6 @@ func init() {
 		aliases:  []string{"leavechannel"},
 		desc:     "Leave a spoiler channel.",
 		deleteAfter: true,
+		category: "normal",
 	})
 }

@@ -22,7 +22,6 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	if misc.SpoilerMap == nil {
-
 		return
 	}
 
@@ -68,16 +67,14 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Adds all non-spoiler roles under opt-in-above (including it) in the underSpoilerRoles slice
 	for i := 0; i < len(deb); i++ {
 		_, ok := misc.SpoilerMap[deb[i].ID]
-		if ok == true {
-
+		if ok {
 			spoilerRoles = append(spoilerRoles, misc.SpoilerMap[deb[i].ID])
-
 			if deb[i].Position < misc.OptinAbovePosition {
-
 				controlNum++
 			}
-		} else if ok == false && deb[i].Position <= misc.OptinAbovePosition && deb[i].ID != config.ServerID {
-
+		} else if !ok &&
+			deb[i].Position <= misc.OptinAbovePosition &&
+			deb[i].ID != config.ServerID {
 			underSpoilerRoles = append(underSpoilerRoles, deb[i])
 		}
 	}
@@ -152,7 +149,7 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err = s.ChannelMessageSend(m.ChannelID, "Roles sorted.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -165,7 +162,8 @@ func init() {
 	add(&command{
 		execute:  sortRolesCommand,
 		trigger:  "sortroles",
-		desc:     "Sorts all spoiler roles alphabetically between dummy optin roles.",
+		desc:     "Sorts all spoiler roles alphabetically between dummy opt-in roles.",
 		elevated: true,
+		category: "misc",
 	})
 }

@@ -16,17 +16,6 @@ var spamFilterMap = make(map[string]int)
 // Handles filter in an onMessage basis
 func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
-	// Checks if it's within the /r/anime server
-	ch, err := s.State.Channel(m.ChannelID)
-	if err != nil {
-		ch, err = s.Channel(m.ChannelID)
-		if err != nil {
-			return
-		}
-	}
-	if ch.GuildID != config.ServerID {
-		return
-	}
 	// Checks if it's the bot that sent the message
 	if m.Author.ID == s.State.User.ID {
 		return
@@ -460,17 +449,20 @@ func init() {
 		aliases:  []string{"filter"},
 		desc:     "Prints all current filters.",
 		elevated: true,
+		category: "filters",
 	})
 	add(&command{
 		execute:  addFilterCommand,
 		trigger:  "addfilter",
-		desc:     "Adds a string to the filters list.",
+		desc:     "Adds a phrase to the filters list.",
 		elevated: true,
+		category: "filters",
 	})
 	add(&command{
 		execute:  removeFilterCommand,
 		trigger:  "removefilter",
-		desc:     "Removes a string from the filters list.",
+		desc:     "Removes a phrase from the filters list.",
 		elevated: true,
+		category: "filters",
 	})
 }

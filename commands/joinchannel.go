@@ -37,7 +37,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "join [channel]`")
 		if err != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -48,10 +48,8 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Pulls the role name from strings after "joinchannel " or "join "
 	if strings.HasPrefix(messageLowercase, config.BotPrefix+"joinchannel ") {
-
 		name = strings.Replace(messageLowercase, config.BotPrefix+"joinchannel ", "", -1)
 	} else {
-
 		name = strings.Replace(messageLowercase, config.BotPrefix+"join ", "", -1)
 	}
 
@@ -71,7 +69,6 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if there's a # before the channel name and removes it if so
 	if strings.Contains(name, "#") {
-
 		name = strings.Replace(name, "#", "", -1)
 
 		// Checks if it's in a mention format. If so then user already has access to channel
@@ -85,7 +82,6 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 			// Sends error message to user in DMs
 			dm, err := s.UserChannelCreate(m.Author.ID)
 			if err != nil {
-
 				return
 			}
 			_, _ = s.ChannelMessageSend(dm.ID, "You already have access to "+name)
@@ -96,21 +92,17 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if the role exists on the server, sends error message if not
 	for i := 0; i < len(deb); i++ {
 		if deb[i].Name == name {
-
 			roleID = deb[i].ID
-
 			if strings.Contains(deb[i].ID, roleID) {
-
 				roleExists = true
 			}
 		}
 	}
-	if roleExists == false {
+	if !roleExists {
 
 		// Sends error message to user in DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
-
 			return
 		}
 		_, _ = s.ChannelMessageSend(dm.ID, "There's no #"+name+", silly")
@@ -128,12 +120,10 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if the user already has the role. Sends error message if he does
 	for i := 0; i < len(mem.Roles); i++ {
 		if strings.Contains(mem.Roles[i], roleID) {
-
 			hasRoleAlready = true
 		}
 	}
-	if hasRoleAlready == true {
-
+	if hasRoleAlready {
 		// Sets the channel mention to the variable chanMention
 		for j := 0; j < len(cha); j++ {
 			if cha[j].Name == name {
@@ -154,8 +144,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	for i := 0; i < len(deb); i++ {
 		if deb[i].Name == config.OptInUnder {
 			misc.OptinUnderPosition = deb[i].Position
-		}
-		if deb[i].Name == config.OptInAbove {
+		} else if deb[i].Name == config.OptInAbove {
 			misc.OptinAbovePosition = deb[i].Position
 		}
 	}
@@ -172,16 +161,13 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 		role.Position > misc.OptinAbovePosition {
 		err = s.GuildMemberRoleAdd(config.ServerID, m.Author.ID, roleID)
 		if err != nil {
-
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
 
 		for j := 0; j < len(cha); j++ {
 			if cha[j].Name == name {
-
 				topic = cha[j].Topic
-
 				// Sets the channel mention to the variable chanMention
 				chanMention = misc.ChMention(cha[j])
 			}
@@ -208,5 +194,6 @@ func init() {
 		aliases:  []string{"joinchannel"},
 		desc:     "Join a spoiler channel.",
 		deleteAfter: true,
+		category: "normal",
 	})
 }

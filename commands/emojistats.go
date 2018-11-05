@@ -98,7 +98,7 @@ func OnMessageEmojiReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 	// Pulls the entire guild structure so we can check guild emojis from it later
 	guild, err := s.Guild(ch.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -155,7 +155,7 @@ func OnMessageEmojiUnreact(s *discordgo.Session, r *discordgo.MessageReactionRem
 	// Pulls the entire guild structure so we can check guild emojis from it later
 	guild, err := s.Guild(ch.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -205,7 +205,7 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 	// Pull guild info
 	guild, err := s.State.Guild(config.ServerID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -246,7 +246,7 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 	for j := 0; j < len(msgs); j++ {
 		_, err := s.ChannelMessageSend(m.ChannelID, msgs[j])
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -268,12 +268,12 @@ func lineSpaceFormatEmoji(id string) string {
 	for i := 0; i < spacesRequired; i++ {
 		line += " "
 	}
-	line += fmt.Sprintf("| [%d])", misc.EmojiStats[id].UniqueMessageUsage)
+	line += fmt.Sprintf("| ([%d])", misc.EmojiStats[id].UniqueMessageUsage)
 	spacesRequired = 64 - len(line)
 	for i := 0; i < spacesRequired; i++ {
 		line += " "
 	}
-	line += fmt.Sprintf("| [%d])\n", misc.EmojiStats[id].Reactions)
+	line += fmt.Sprintf("| ([%d])\n", misc.EmojiStats[id].Reactions)
 	misc.MapMutex.Unlock()
 
 	return line
@@ -300,5 +300,6 @@ func init() {
 		aliases:  []string{"emojistats", "emojis"},
 		desc:     "Prints server emoji usage stats.",
 		elevated: true,
+		category: "normal",
 	})
 }
