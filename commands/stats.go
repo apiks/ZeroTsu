@@ -98,7 +98,7 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 		misc.ChannelStats[m.ChannelID].ChannelID = m.ChannelID
 	}
 
-	misc.ChannelStats[m.ChannelID].Messages[t.Format(misc.DateFormat)] += 1
+	misc.ChannelStats[m.ChannelID].Messages[t.Format(misc.DateFormat)]++
 	misc.MapMutex.Unlock()
 }
 
