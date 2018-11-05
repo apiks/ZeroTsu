@@ -4,6 +4,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/misc"
 )
 
 // Returns a message on "about" for bot information
