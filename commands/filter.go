@@ -40,7 +40,7 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 	// Checks if user is mod or bot before checking the message
-	if misc.HasPermissions(mem) == true {
+	if misc.HasPermissions(mem) {
 		return
 	}
 
@@ -57,11 +57,10 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// If function returns true handle the filtered message
 	if badWordExists {
-
 		// Deletes the message that was sent if it has a filtered word.
 		err = s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -78,15 +77,10 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 		}
 
-		// Stores time of removal
-		t := time.Now()
-		z, _ := t.Zone()
-		now := t.Format("2006-01-02 15:04:05") + " " + z
-
 		// Sends embed mod message
-		err := FilterEmbed(s, m.Message, removals, now, m.ChannelID)
+		err := FilterEmbed(s, m.Message, removals, m.ChannelID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -130,7 +124,7 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 		}
 	}
 	// Checks if user is mod or bot before checking the message
-	if misc.HasPermissions(mem) == true {
+	if misc.HasPermissions(mem) {
 		return
 	}
 
@@ -157,7 +151,7 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 			// Deletes the reaction that was sent if it has a filtered word
 			err := s.MessageReactionRemove(r.ChannelID, r.MessageID, r.Emoji.APIName(), r.UserID)
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 				if err != nil {
 					return
 				}
@@ -189,7 +183,7 @@ func isFiltered(m *discordgo.Message) (bool, []string){
 		}
 	}
 
-	if filtered == true {
+	if filtered {
 		return true, badWordsSlice
 	} else {
 		return false, nil
@@ -203,10 +197,9 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) == 1 {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "addfilter [phrase]`")
 		if err != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -228,7 +221,7 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	if filterExists == false {
 		_, err := s.ChannelMessageSend(m.ChannelID, "`" + phrase + "` has been added to the filter list.")
 		if err != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -252,7 +245,7 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(misc.ReadFilters) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no filters.")
 		if err != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -265,10 +258,9 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) == 1 {
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removefilter [phrase]`")
 		if err != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -287,25 +279,25 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	if filterExists == true {
+	if filterExists {
 		_, err := s.ChannelMessageSend(m.ChannelID, "`" + phrase + "` has been removed from the filter list.")
 		if err != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
 			return
 		}
-	} else {
+		return
+	}
 
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: `" + phrase + "` is not in the filter list.")
+	_, err = s.ChannelMessageSend(m.ChannelID, "Error: `" + phrase + "` is not in the filter list.")
+	if err != nil {
+		_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
-			if err != nil {
-				return
-			}
 			return
 		}
+		return
 	}
 }
 
@@ -318,7 +310,7 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(misc.ReadFilters) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no filters.")
 		if err != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -346,7 +338,7 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, now, channelID string) error {
+func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID string) error {
 
 	var (
 		embedMess      discordgo.MessageEmbed
@@ -356,9 +348,13 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, now, chan
 		embedField        []*discordgo.MessageEmbedField
 		embedFieldFilter  discordgo.MessageEmbedField
 		embedFieldMessage discordgo.MessageEmbedField
-		embedFieldDate    discordgo.MessageEmbedField
 		embedFieldChannel discordgo.MessageEmbedField
 	)
+
+	// Sets timestamp for removal
+	t := time.Now()
+	now := t.Format(time.RFC3339)
+	embedMess.Timestamp = now
 
 	// Saves user avatar as thumbnail
 	embedThumbnail.URL = m.Author.AvatarURL("128")
@@ -366,23 +362,19 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, now, chan
 	// Sets field titles
 	embedFieldFilter.Name = "Filtered:"
 	embedFieldMessage.Name = "Message:"
-	embedFieldDate.Name = "Date:"
 	embedFieldChannel.Name = "Channel:"
 
 	// Sets field content
 	embedFieldFilter.Value = "**__" + removals + "__**"
 	embedFieldMessage.Value = "`" + m.Content + "`"
-	embedFieldDate.Value = now
 	embedFieldChannel.Value = misc.ChMentionID(channelID)
 
 	// Sets field inline
 	embedFieldFilter.Inline = true
-	embedFieldDate.Inline = true
 	embedFieldChannel.Inline = true
 
 	// Adds the two fields to embedField slice (because embedMess.Fields requires slice input)
 	embedField = append(embedField, &embedFieldFilter)
-	embedField = append(embedField, &embedFieldDate)
 	embedField = append(embedField, &embedFieldChannel)
 	embedField = append(embedField, &embedFieldMessage)
 
@@ -425,7 +417,7 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 	// Checks if user is mod or bot before checking the message
-	if misc.HasPermissions(mem) == true {
+	if misc.HasPermissions(mem) {
 		return
 	}
 
@@ -436,11 +428,13 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 	} else {
 		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
-				return
+				misc.MapMutex.Unlock()
 			}
+			misc.MapMutex.Unlock()
 		}
+		misc.MapMutex.Unlock()
 	}
 	misc.MapMutex.Unlock()
 }
