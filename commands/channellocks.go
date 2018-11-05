@@ -40,17 +40,18 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	//if cha.ParentID == "360994750796529665" {
-	//	_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot lock a mod channel due to permission reasons.")
-	//	if err != nil {
-	//		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + misc.ErrorLocation(err))
-	//		if err != nil {
-	//			return
-	//		}
-	//		return
-	//	}
-	//	return
-	//}
+	// Error if lock used in moderator category
+	if cha.ParentID == "360994750796529665" {
+		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot lock a mod channel due to permission reasons.")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
 
 	// Fetches info on server roles from the server and puts it in deb
 	deb, err := s.GuildRoles(config.ServerID)
@@ -175,17 +176,19 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Sets permission variable to be neutral for send messages
 	def &= ^discordgo.PermissionSendMessages
 
-	//if cha.ParentID == "360994750796529665" {
-	//	_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot lock a mod channel due to permission reasons.")
-	//	if err != nil {
-	//		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + misc.ErrorLocation(err))
-	//		if err != nil {
-	//			return
-	//		}
-	//		return
-	//	}
-	//	return
-	//}
+
+	// Error if lock used in moderator category
+	if cha.ParentID == "360994750796529665" {
+		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot lock a mod channel due to permission reasons.")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
 
 	// Fetches info on server roles from the server and puts it in deb
 	deb, err := s.GuildRoles(config.ServerID)
