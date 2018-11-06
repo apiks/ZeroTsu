@@ -6,6 +6,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/oauth2"
+	"html/template"
 	"io"
 	"io/ioutil"
 	"net/http"
