@@ -240,7 +240,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	code = queryValues.Get("code")
 	errorVar = queryValues.Get("error")
 
-	// Saves the id in the user map
+	// Saves the id in the user map if it exists
 	if id != "" {
 
 		var temp User
@@ -300,7 +300,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Fetches user username and discriminator combo for showing in website. Also checks if user is verified already
 	misc.MapMutex.Lock()
-	if UserCookieMap[cookieValue.Value] != nil && UserCookieMap[cookieValue.Value].ID != "" {
+	if UserCookieMap[cookieValue.Value] != nil {
 		var temp User
 		temp = *UserCookieMap[cookieValue.Value]
 
@@ -314,7 +314,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				temp.RedditVerifiedStatus = true
 			}
 		} else {
-
 			temp.UsernameDiscrim = "Invalid User"
 		}
 
@@ -332,99 +331,97 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 			UserCookieMap[cookieValue.Value] = &temp
 
 		} else if _, ok := UserCookieMap[cookieValue.Value]; ok {
-			if misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID] != nil {
-				if misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID].RedditUsername == "" {
-					if state == "overlordconfirmsdiscord" && UserCookieMap[cookieValue.Value].Code != "" {
+			if state == "overlordconfirmsdiscord" && UserCookieMap[cookieValue.Value].Code != "" {
 
-						uname, udiscrim, uid := getDiscordUsernameDiscrim(UserCookieMap[cookieValue.Value].Code)
+				uname, udiscrim, uid := getDiscordUsernameDiscrim(UserCookieMap[cookieValue.Value].Code)
+
+				var temp User
+
+				temp = *UserCookieMap[cookieValue.Value]
+				temp.ID = uid
+				temp.Username = uname
+				temp.Discriminator = udiscrim
+				temp.UsernameDiscrim = uname + "#" + udiscrim
+				temp.DiscordVerifiedStatus = true
+				UserCookieMap[cookieValue.Value] = &temp
+
+				if UserCookieMap[cookieValue.Value].AccOldEnough == true && UserCookieMap[cookieValue.Value].ID != "" &&
+					UserCookieMap[cookieValue.Value].RedditVerifiedStatus == true && UserCookieMap[cookieValue.Value].RedditName != "" {
+
+					// Verifies user
+					Verify(cookieValue, r)
+				}
+
+				if misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID] != nil {
+					if misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID].RedditUsername != "" {
 
 						var temp User
-
 						temp = *UserCookieMap[cookieValue.Value]
-						temp.ID = uid
-						temp.Username = uname
-						temp.Discriminator = udiscrim
-						temp.UsernameDiscrim = uname + "#" + udiscrim
+						temp.RedditVerifiedStatus = true
 						temp.DiscordVerifiedStatus = true
 						UserCookieMap[cookieValue.Value] = &temp
-
-						if UserCookieMap[cookieValue.Value].AccOldEnough == true && UserCookieMap[cookieValue.Value].ID != "" &&
-							UserCookieMap[cookieValue.Value].RedditVerifiedStatus == true && UserCookieMap[cookieValue.Value].RedditName != "" {
-
-							// Verifies user
-							Verify(cookieValue, r)
-						}
-
-					} else if state == "overlordconfirmsstring" && UserCookieMap[cookieValue.Value].Code != "" {
-
-						// Fetches reddit username and checks whether account is at least 1 week old
-						Name, DateUnix = getRedditUsername(UserCookieMap[cookieValue.Value].Code)
-
-						epochT := time.Unix(int64(DateUnix), 0)
-						prevWeek := time.Now().AddDate(0, 0, -7)
-						accOldEnough := epochT.Before(prevWeek)
-
-						// If account is old enough continue, else show error message
-						if accOldEnough != true {
-
-							// Sets error message
-							var temp User
-							temp = *UserCookieMap[cookieValue.Value]
-							temp.Error = "Error: Reddit account is not old enough. Please try again once it is one week old."
-							UserCookieMap[cookieValue.Value] = &temp
-
-						} else if accOldEnough == true && UserCookieMap[cookieValue.Value].ID != "" &&
-							UserCookieMap[cookieValue.Value].DiscordVerifiedStatus == true && UserCookieMap[cookieValue.Value].RedditName == "" {
-
-							// Saves the reddit username and acc age bool
-							var temp User
-							temp = *UserCookieMap[cookieValue.Value]
-							temp.RedditName = Name
-							temp.RedditVerifiedStatus = true
-							temp.AccOldEnough = true
-							UserCookieMap[cookieValue.Value] = &temp
-
-							// Verifies user
-							Verify(cookieValue, r)
-
-						} else if accOldEnough == true && UserCookieMap[cookieValue.Value].RedditName == "" {
-
-							// Saves the reddit username and acc age bool
-							var temp User
-							temp = *UserCookieMap[cookieValue.Value]
-							temp.RedditName = Name
-							temp.RedditVerifiedStatus = true
-							temp.AccOldEnough = true
-							UserCookieMap[cookieValue.Value] = &temp
-						}
 					}
 				} else {
 
+					// Sets error message
 					var temp User
 					temp = *UserCookieMap[cookieValue.Value]
-					temp.RedditVerifiedStatus = true
-					temp.DiscordVerifiedStatus = true
+					temp.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
 					UserCookieMap[cookieValue.Value] = &temp
 				}
-			} else {
 
-				// Sets error message
-				var temp User
-				temp = *UserCookieMap[cookieValue.Value]
-				temp.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
-				UserCookieMap[cookieValue.Value] = &temp
+			} else if state == "overlordconfirmsstring" && UserCookieMap[cookieValue.Value].Code != "" {
+
+				// Fetches reddit username and checks whether account is at least 1 week old
+				Name, DateUnix = getRedditUsername(UserCookieMap[cookieValue.Value].Code)
+
+				epochT := time.Unix(int64(DateUnix), 0)
+				prevWeek := time.Now().AddDate(0, 0, -7)
+				accOldEnough := epochT.Before(prevWeek)
+
+				// If account is old enough continue, else show error message
+				if accOldEnough != true {
+
+					// Sets error message
+					var temp User
+					temp = *UserCookieMap[cookieValue.Value]
+					temp.Error = "Error: Reddit account is not old enough. Please try again once it is one week old."
+					UserCookieMap[cookieValue.Value] = &temp
+
+				} else if accOldEnough == true && UserCookieMap[cookieValue.Value].ID != "" &&
+					UserCookieMap[cookieValue.Value].DiscordVerifiedStatus == true &&
+					UserCookieMap[cookieValue.Value].RedditName == "" {
+
+					// Saves the reddit username and acc age bool
+					var temp User
+					temp = *UserCookieMap[cookieValue.Value]
+					temp.RedditName = Name
+					temp.RedditVerifiedStatus = true
+					temp.AccOldEnough = true
+					UserCookieMap[cookieValue.Value] = &temp
+
+					// Verifies user
+					Verify(cookieValue, r)
+
+				} else if accOldEnough == true && UserCookieMap[cookieValue.Value].RedditName == "" {
+
+					// Saves the reddit username and acc age bool
+					var temp User
+					temp = *UserCookieMap[cookieValue.Value]
+					temp.RedditName = Name
+					temp.RedditVerifiedStatus = true
+					temp.AccOldEnough = true
+					UserCookieMap[cookieValue.Value] = &temp
+				}
 			}
 		} else {
-
-			fmt.Println("last else")
-
 			// Sets error message
 			var temp User
 			temp.Error = "Error: Cookie has expired. Please try the bot link again."
 			UserCookieMap[cookieValue.Value] = &temp
 		}
+		misc.MapMutex.Unlock()
 	}
-	misc.MapMutex.Unlock()
 
 	// Loads the html & css verification files
 	t, err := template.ParseFiles("web/assets/verification.html")
@@ -574,12 +571,9 @@ func getDiscordUsernameDiscrim(code string) (string, string, string) {
 func Verify(cookieValue *http.Cookie, r *http.Request) {
 
 	// Confirms that the map is not empty
-	misc.MapMutex.Lock()
 	if len(misc.MemberInfoMap) == 0 {
-		misc.MapMutex.Unlock()
 		return
 	}
-	misc.MapMutex.Unlock()
 	// Checks if cookie has expired while doing this
 	if cookieValue != nil {
 		return
