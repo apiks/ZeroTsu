@@ -41,7 +41,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Fetches user from server
 	mem, err := s.User(userID)
 	if err != nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid user. Please use `"+config.BotPrefix+"kick [@user or userID] [reason]` format.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid user. Please use `"+config.BotPrefix+"kick [@user, userID, or username#discrim] [reason]` format.")
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {

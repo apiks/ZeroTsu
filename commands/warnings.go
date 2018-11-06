@@ -19,7 +19,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
 
 	if len(commandStrings) != 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"addwarning [@user or userID] [warning]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"addwarning [@user, userID, or username#discrim] [warning]`")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -90,7 +90,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
 
 	if len(commandStrings) != 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"issuewarning [@user or userID] [warning]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"issuewarning [@user, userID, or username#discrim] [warning]`")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {

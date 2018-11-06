@@ -21,7 +21,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if there's enough parameters (command, user and reddit username.)
 	if len(commandStrings) != 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"verify [@user or userID] [redditUsername]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"verify [@user, userID, or username#discrim] [redditUsername]`")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
