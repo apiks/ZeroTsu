@@ -81,7 +81,9 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		channelStatsVar.ChannelID = channel.ID
 		channelStatsVar.Name = channel.Name
+		misc.MapMutex.Lock()
 		channelStatsVar.RoleCount = make(map[string]int)
+		misc.MapMutex.Unlock()
 		channelStatsVar.RoleCount[channel.Name] = misc.GetRoleUserAmount(guild, roles, channel.Name)
 
 		// Removes role stat for channels without associated roles. Else turns bool to true
@@ -396,6 +398,7 @@ func splitStatMessages (msgs []string, message string) ([]string, string) {
 
 // Posts daily stats
 func dailyStats(s *discordgo.Session) {
+
 	var (
 		message discordgo.Message
 		author  discordgo.User
@@ -425,9 +428,11 @@ func dailyStats(s *discordgo.Session) {
 			return
 		}
 
+		misc.MapMutex.Lock()
 		author.ID = s.State.User.ID
 		message.Author = &author
 		message.Content = config.BotPrefix + "stats"
+		misc.MapMutex.Unlock()
 		showStats(s, &message)
 		dailyFlag = true
 	}

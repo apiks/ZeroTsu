@@ -70,7 +70,9 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	cmd.execute(s, m.Message)
+	misc.MapMutex.Lock()
 	cmd.commandCount++
+	misc.MapMutex.Unlock()
 	if cmd.deleteAfter {
 		s.ChannelMessageDelete(m.ChannelID, m.ID)
 	}

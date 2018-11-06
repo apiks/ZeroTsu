@@ -239,7 +239,6 @@ func CheckAltAccountWhois(id string) []string {
 
 	// Iterates through all users in memberInfo.json
 	for _, user := range misc.MemberInfoMap {
-
 		// Checks if the current user has the same reddit username as id string user
 		if user.RedditUsername == misc.MemberInfoMap[id].RedditUsername &&
 			user.RedditUsername != "" &&

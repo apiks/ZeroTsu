@@ -269,9 +269,9 @@ func SpoilerRolesWrite(SpoilerMap map[string]*discordgo.Role) {
 	)
 
 	// Appends the new spoiler role to a slice of all of the old ones if it doesn't exist
+	MapMutex.Lock()
 	if len(ReadSpoilerRoles) == 0 {
 		for k := range SpoilerMap {
-
 			ReadSpoilerRoles = append(ReadSpoilerRoles, *SpoilerMap[k])
 		}
 	} else {
@@ -291,6 +291,7 @@ func SpoilerRolesWrite(SpoilerMap map[string]*discordgo.Role) {
 			}
 		}
 	}
+	MapMutex.Unlock()
 
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(ReadSpoilerRoles, "", "    ")
@@ -334,8 +335,10 @@ func SpoilerRolesRead() {
 	}
 
 	// Takes the spoiler roles from spoilerRoles.json from byte and puts them into the ReadSpoilerRoles struct slice
+	MapMutex.Lock()
 	err = json.Unmarshal(spoilerRolesByte, &ReadSpoilerRoles)
 	if err != nil {
+		MapMutex.Unlock()
 		return
 	}
 
@@ -343,6 +346,7 @@ func SpoilerRolesRead() {
 	for i := 0; i < len(ReadSpoilerRoles); i++ {
 		SpoilerMap[ReadSpoilerRoles[i].ID] = &ReadSpoilerRoles[i]
 	}
+	MapMutex.Unlock()
 }
 
 // Every time a role is deleted it deletes it from SpoilerMap
