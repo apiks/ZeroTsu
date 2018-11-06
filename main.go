@@ -127,6 +127,7 @@ func Start() {
 
 	// Channel Stats
 	goBot.AddHandler(commands.OnMessageChannel)
+	goBot.AddHandler(commands.DailyStatsTimer)
 
 	// Twenty Minute Timer
 	goBot.AddHandler(misc.TwentyMinTimer)

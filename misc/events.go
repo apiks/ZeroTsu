@@ -39,8 +39,6 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 				}
 				if difference > 0 {
 
-					fmt.Println("in")
-
 					// Checks if user is in MemberInfo and assigns to user variable if true
 					MapMutex.Lock()
 					user, ok := MemberInfoMap[BannedUsersSlice[i].ID]

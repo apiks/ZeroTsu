@@ -11,6 +11,8 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
+var dailyFlag bool
+
 // Adds to message count on every message for that channel
 func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 
@@ -36,9 +38,6 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 	if ch.GuildID != config.ServerID {
-		return
-	}
-	if m.Author.ID == s.State.User.ID {
 		return
 	}
 
@@ -364,6 +363,46 @@ func splitStatMessages (msgs []string, message string) ([]string, string) {
 		message = ""
 	}
 	return msgs, message
+}
+
+// Posts daily stats
+func dailyStats(s *discordgo.Session) {
+	var (
+		message discordgo.Message
+		author  discordgo.User
+	)
+
+	t := time.Now()
+	hour := t.Hour()
+	minute := t.Minute()
+
+	if hour == 23 && minute == 59 && !dailyFlag {
+		_, err := s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Update for **%v %v, %v**", t.Month(), t.Day(), t.Year()))
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+
+		author.ID = s.State.User.ID
+		message.Author = &author
+		message.Content = config.BotPrefix + "stats"
+		showStats(s, &message)
+		dailyFlag = true
+	}
+
+	if hour == 0 && minute == 0 && dailyFlag {
+		dailyFlag = false
+	}
+}
+
+// Daily stat update timer
+func DailyStatsTimer(s *discordgo.Session, e *discordgo.Ready) {
+	for range time.NewTicker(15 * time.Second).C {
+		dailyStats(s)
+	}
 }
 
 // Adds channel stats command to the commandHandler
