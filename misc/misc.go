@@ -667,6 +667,31 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 	// Pulls the userID from the second parameter
 	userID := messageSlice[1]
 
+	if strings.Contains(userID, "/u/") {
+		userID = strings.TrimPrefix(userID, "/u/")
+		MapMutex.Lock()
+		for _, user := range MemberInfoMap {
+			if user.RedditUsername == userID {
+				userID = user.ID
+				break
+			}
+		}
+		MapMutex.Unlock()
+		return userID, err
+	}
+	if strings.Contains(userID, "u/") {
+		userID = strings.TrimPrefix(userID, "u/")
+		MapMutex.Lock()
+		for _, user := range MemberInfoMap {
+			if user.RedditUsername == userID {
+				userID = user.ID
+				break
+			}
+		}
+		MapMutex.Unlock()
+		return userID, err
+	}
+
 	// Trims fluff if it was a mention. Otherwise check if it's a correct user ID
 	if strings.Contains(messageSlice[1], "<@") {
 		userID = strings.TrimPrefix(userID, "<@")
