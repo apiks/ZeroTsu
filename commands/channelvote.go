@@ -216,7 +216,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 		voteChannel.Category = "486823979764678657"
 		voteChannel.Type = "temp"
 		voteChannel.Description = "Temporary channel for " + name + ". Will be deleted 3 hours after no message has been sent."
-		peopleNum = 1
+		peopleNum = 3
 
 		// Fixes role name bugs
 		role := strings.Replace(strings.TrimSpace(name), " ", "-", -1)
