@@ -317,9 +317,8 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 		UserCookieMap[cookieValue.Value] = &temp
 	}
-	misc.MapMutex.Unlock()
 
-	misc.MapMutex.Lock()
+
 	if cookieValue != nil && errorVar == "" {
 		if code == "" && id == "" && state == "" {
 
@@ -343,8 +342,8 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				temp.DiscordVerifiedStatus = true
 				UserCookieMap[cookieValue.Value] = &temp
 
-				if UserCookieMap[cookieValue.Value].AccOldEnough == true && UserCookieMap[cookieValue.Value].ID != "" &&
-					UserCookieMap[cookieValue.Value].RedditVerifiedStatus == true && UserCookieMap[cookieValue.Value].RedditName != "" {
+				if UserCookieMap[cookieValue.Value].AccOldEnough && UserCookieMap[cookieValue.Value].ID != "" &&
+					UserCookieMap[cookieValue.Value].RedditVerifiedStatus&& UserCookieMap[cookieValue.Value].RedditName != "" {
 
 					// Verifies user
 					Verify(cookieValue, r)
@@ -378,7 +377,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				accOldEnough := epochT.Before(prevWeek)
 
 				// If account is old enough continue, else show error message
-				if accOldEnough != true {
+				if !accOldEnough {
 
 					// Sets error message
 					var temp User
@@ -386,8 +385,8 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					temp.Error = "Error: Reddit account is not old enough. Please try again once it is one week old."
 					UserCookieMap[cookieValue.Value] = &temp
 
-				} else if accOldEnough == true && UserCookieMap[cookieValue.Value].ID != "" &&
-					UserCookieMap[cookieValue.Value].DiscordVerifiedStatus == true &&
+				} else if accOldEnough && UserCookieMap[cookieValue.Value].ID != "" &&
+					UserCookieMap[cookieValue.Value].DiscordVerifiedStatus &&
 					UserCookieMap[cookieValue.Value].RedditName == "" {
 
 					// Saves the reddit username and acc age bool
@@ -573,7 +572,7 @@ func Verify(cookieValue *http.Cookie, r *http.Request) {
 		return
 	}
 	// Checks if cookie has expired while doing this
-	if cookieValue != nil {
+	if cookieValue == nil {
 		return
 	}
 
@@ -584,12 +583,10 @@ func Verify(cookieValue *http.Cookie, r *http.Request) {
 
 	// Assigns needed values to temp
 	var temp misc.UserInfo
-	misc.MapMutex.Lock()
 	temp = *misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]
 	temp.RedditUsername = UserCookieMap[cookieValue.Value].RedditName
 	temp.VerifiedDate = join
 	misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID] = &temp
-	misc.MapMutex.Unlock()
 
 	// Writes the username to memberInfo.json
 	misc.MemberInfoWrite(misc.MemberInfoMap)
