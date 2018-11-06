@@ -240,6 +240,10 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	code = queryValues.Get("code")
 	errorVar = queryValues.Get("error")
 
+	if id == "" {
+		return
+	}
+
 	// Saves the id in the user map
 	if cookieValue != nil {
 		if id != "" {
