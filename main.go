@@ -44,6 +44,10 @@ func Start() {
 	if err != nil {
 		panic(err)
 	}
+	err = config.ReadConfigSecrets()
+	if err != nil {
+		panic(err)
+	}
 
 	// Reads all spoiler roles created with create command from spoilerRoles.json
 	misc.SpoilerRolesRead()
