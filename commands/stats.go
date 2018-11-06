@@ -199,9 +199,11 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		if !ok {
 			continue
 		}
+		fmt.Println(channel.Name)
+		fmt.Println(channel.Optin)
+
 		// Formats  and splits message
 		if !channel.Optin {
-			fmt.Println(channel.Name)
 			misc.MapMutex.Lock()
 			message += lineSpaceFormatChannel(channel.ChannelID, false, *s)
 			misc.MapMutex.Unlock()
