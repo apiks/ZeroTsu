@@ -104,11 +104,11 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 			if len(warnings) == 0 {
 				// Converts index to string and appends warning
 				iStr := strconv.Itoa(i + 1)
-				warnings = user.Warnings[i] + "[" + iStr + "]"
+				warnings = user.Warnings[i] + " [" + iStr + "]"
 			} else {
 				// Converts index to string and appends new warning to old ones
 				iStr := strconv.Itoa(i + 1)
-				warnings = warnings + ", " + user.Warnings[i] + "[" + iStr + "]"
+				warnings = warnings + ", " + user.Warnings[i] + " [" + iStr + "]"
 
 			}
 		}
@@ -122,11 +122,11 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 			if len(kicks) == 0 {
 				// Converts index to string and appends kick
 				iStr := strconv.Itoa(i + 1)
-				kicks = user.Kicks[i] + "[" + iStr + "]"
+				kicks = user.Kicks[i] + " [" + iStr + "]"
 			} else {
 				// Converts index to string and appends new kick to old ones
 				iStr := strconv.Itoa(i + 1)
-				kicks = kicks + ", " + user.Kicks[i] + "[" + iStr + "]"
+				kicks = kicks + ", " + user.Kicks[i] + " [" + iStr + "]"
 			}
 		}
 	} else {
@@ -139,11 +139,11 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 			if len(bans) == 0 {
 				// Converts index to string and appends ban
 				iStr := strconv.Itoa(i + 1)
-				bans = user.Bans[i] + "[" + iStr + "]"
+				bans = user.Bans[i] + " [" + iStr + "]"
 			} else {
 				// Converts index to string and appends new ban to old ones
 				iStr := strconv.Itoa(i + 1)
-				bans = bans + ", " + user.Bans[i] + "[" + iStr + "]"
+				bans = bans + ", " + user.Bans[i] + " [" + iStr + "]"
 			}
 		}
 	} else {
