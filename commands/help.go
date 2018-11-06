@@ -92,7 +92,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
 	// Sets usage field if admin
 	if admin {
 		// Sets footer field
-		embedFooter.Text = fmt.Sprintf("Usage: Pick a category with %vh[category]", config.BotPrefix)
+		embedFooter.Text = fmt.Sprintf("Usage: Pick a category with %v%v[category]", config.BotPrefix, config.BotPrefix)
 		embedMess.Footer = &embedFooter
 	}
 
@@ -875,6 +875,7 @@ func init() {
 	add(&command{
 		execute:  helpEmbedCommand,
 		trigger:  "help",
+		aliases:  []string{"h"},
 		desc:     "Print all available commands in embed form.",
 		category: "normal",
 	})
@@ -886,25 +887,25 @@ func init() {
 	})
 	add(&command{
 		execute:  helpChannelCommand,
-		trigger:  "hchannel",
+		trigger:  config.BotPrefix + "channel",
 		desc:     "Print all channel related commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpFiltersCommand,
-		trigger:  "hfilters",
+		trigger:  config.BotPrefix + "filters",
 		desc:     "Print all commands related to filters.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpMiscCommand,
-		trigger:  "hmisc",
+		trigger:  config.BotPrefix + "misc",
 		desc:     "Print all miscellaneous mod commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpNormalCommand,
-		trigger:  "hnormal",
+		trigger:  config.BotPrefix + "normal",
 		desc:     "Print all normal user commands.",
 		elevated: true,
 	})
@@ -916,19 +917,19 @@ func init() {
 	//})
 	add(&command{
 		execute:  helpReactsCommand,
-		trigger:  "hreacts",
+		trigger:  config.BotPrefix + "reacts",
 		desc:     "Print all channel join via react commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpRssCommand,
-		trigger:  "hrss",
+		trigger:  config.BotPrefix + "rss",
 		desc:     "Print all RSS feed from sub commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpStatsCommand,
-		trigger:  "hstats",
+		trigger:  config.BotPrefix + "stats",
 		desc:     "Print all channel and emoji stats commands.",
 		elevated: true,
 	})
