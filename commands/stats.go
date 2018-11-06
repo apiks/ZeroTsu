@@ -199,9 +199,6 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		if !ok {
 			continue
 		}
-		fmt.Println(channel.Name)
-		fmt.Println(channel.Optin)
-
 		// Formats  and splits message
 		if !channel.Optin {
 			misc.MapMutex.Lock()
@@ -222,7 +219,6 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		if !ok {
 			continue
 		}
-
 		if channel.Optin {
 			// Formats  and splits message
 			misc.MapMutex.Lock()
