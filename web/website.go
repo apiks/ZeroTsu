@@ -313,8 +313,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 			if misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID].RedditUsername != "" {
 				temp.RedditVerifiedStatus = true
 			}
-		} else {
-			temp.UsernameDiscrim = "Invalid User"
 		}
 
 		UserCookieMap[cookieValue.Value] = &temp
