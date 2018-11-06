@@ -605,11 +605,11 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 		}
 	}()
 
-	// Checks every 10 seconds if a user in the UserCookieMap needs to be given the role
-	for range time.NewTicker(10 * time.Second).C {
+	// Checks every 2 seconds if a user in the UserCookieMap needs to be given the role
+	for range time.NewTicker(2 * time.Second).C {
 
-		misc.MapMutex.Lock()
 		if len(UserCookieMap) != 0 {
+			misc.MapMutex.Lock()
 			for key := range UserCookieMap {
 				if UserCookieMap[key].RedditName != "" &&
 					UserCookieMap[key].DiscordVerifiedStatus &&
@@ -646,8 +646,8 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 					delete(UserCookieMap, key)
 				}
 			}
+			misc.MapMutex.Unlock()
 		}
-		misc.MapMutex.Unlock()
 	}
 }
 
