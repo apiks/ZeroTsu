@@ -14,7 +14,7 @@ import (
 
 var darlingTrigger int
 
-// Periodic events such as Unbanning and RSS timer every 1 min
+// Periodic events such as Unbanning and RSS timer every 15 sec
 func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	err := s.UpdateStatus(0, "with her darling")
 	if err != nil {
@@ -24,7 +24,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		}
 	}
 
-	for range time.NewTicker(10 * time.Second).C {
+	for range time.NewTicker(15 * time.Second).C {
 
 		// Checks whether it has to post rss thread every 15 seconds
 		RSSParser(s)
@@ -115,6 +115,29 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			return
 		}
 
+		// Writes channel stats to disk
+		_, err = ChannelStatsWrite(ChannelStats)
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+
+		// Writes user gain stats to disk
+		_, err = UserChangeStatsWrite(UserStats)
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+
+		// Writes memberInfo to disk
+		MemberInfoWrite(MemberInfoMap)
+
 		// Fetches all guild users
 		guild, err := s.Guild(config.ServerID)
 		if err != nil {
@@ -142,26 +165,6 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			}
 		}
 		MapMutex.Unlock()
-
-		// Writes channel stats to disk
-		_, err = ChannelStatsWrite(ChannelStats)
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
-			if err != nil {
-				return
-			}
-			return
-		}
-
-		// Writes user gain stats to disk
-		_, err = UserChangeStatsWrite(UserStats)
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
-			if err != nil {
-				return
-			}
-			return
-		}
 	}
 }
 
@@ -321,7 +324,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		return
 	}
-	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) && darlingTrigger > 19 {
+	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) && darlingTrigger > 10 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Daaarling~")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))

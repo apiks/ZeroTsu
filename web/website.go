@@ -609,49 +609,41 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(10 * time.Second).C {
 
 		misc.MapMutex.Lock()
-		if len(UserCookieMap) == 0 {
-			misc.MapMutex.Unlock()
-			return
-		}
+		if len(UserCookieMap) != 0 {
+			for key := range UserCookieMap {
+				if UserCookieMap[key].RedditName != "" &&
+					UserCookieMap[key].DiscordVerifiedStatus &&
+					UserCookieMap[key].RedditVerifiedStatus {
 
-		for key := range UserCookieMap {
-			if UserCookieMap[key].RedditName != "" && UserCookieMap[key].DiscordVerifiedStatus == true &&
-				UserCookieMap[key].RedditVerifiedStatus == true {
-
-				// Puts all server roles in roles variable
-				roles, err := s.GuildRoles(config.ServerID)
-				if err != nil {
-					_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+					// Puts all server roles in roles variable
+					roles, err := s.GuildRoles(config.ServerID)
 					if err != nil {
-						misc.MapMutex.Unlock()
-						return
+						_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+						if err != nil {
+						}
 					}
-					misc.MapMutex.Unlock()
-					return
-				}
 
-				// Fetches ID of Verified role
-				for i := 0; i < len(roles); i++ {
-					if roles[i].Name == "Verified" {
-						roleID = roles[i].ID
+					// Fetches ID of Verified role
+					for i := 0; i < len(roles); i++ {
+						if roles[i].Name == "Verified" {
+							roleID = roles[i].ID
+						}
 					}
-				}
 
-				// Assigns role
-				err = s.GuildMemberRoleAdd(config.ServerID, UserCookieMap[key].ID, roleID)
-				if err != nil {
-					_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+					// Assigns role
+					err = s.GuildMemberRoleAdd(config.ServerID, UserCookieMap[key].ID, roleID)
 					if err != nil {
-						misc.MapMutex.Unlock()
-						return
+						_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+						if err != nil {
+						}
 					}
-					misc.MapMutex.Unlock()
-					return
-				}
 
-				if !UserCookieMap[key].AltCheck {
-					CheckAltAccount(s, UserCookieMap[key].ID)
-					UserCookieMap[key].AltCheck = true
+					if !UserCookieMap[key].AltCheck {
+						CheckAltAccount(s, UserCookieMap[key].ID)
+						UserCookieMap[key].AltCheck = true
+					}
+
+					delete(UserCookieMap, key)
 				}
 			}
 		}

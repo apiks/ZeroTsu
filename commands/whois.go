@@ -54,7 +54,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			mem, err = s.GuildMember(config.ServerID, userID)
 			if err != nil {
-				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot whois until they join server.")
+				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot whois until they rejoin server.")
 				if err != nil {
 					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 					if err != nil {
@@ -167,12 +167,16 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	if user.RedditUsername != "" {
 		message = message + "\n\n**Reddit Account:** " + "<https://reddit.com/u/" + user.RedditUsername + ">"
 	} else {
-		message = message + "\n\n**Reddit Account:** " + "None"
+		message += "\n\n**Reddit Account:** " + "None"
 	}
 
 	// Sets unban date if it exists
 	if user.UnbanDate != "" {
-		message = message + "\n\n**Unban Date:** " + user.UnbanDate
+		message += "\n\n**Unban Date:** " + user.UnbanDate
+	}
+
+	if user.OutsideServer {
+		message += "\n\n**_User is not in the server._**"
 	}
 
 	// Alt check

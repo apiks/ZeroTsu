@@ -213,13 +213,13 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	message += "\n\nOpt-in Name:                     ([Daily Messages] | [Total Messages] | [Role Members]) \n\n"
 
 	for _, channel := range channels {
-
-		// Checks if channel exists and sets optin status
-		channel, ok := isChannelUsable(*channel, guild)
-		if !ok {
-			continue
-		}
 		if channel.Optin {
+
+			// Checks if channel exists and sets optin status
+			channel, ok := isChannelUsable(*channel, guild)
+			if !ok {
+				continue
+			}
 			// Formats  and splits message
 			misc.MapMutex.Lock()
 			message += lineSpaceFormatChannel(channel.ChannelID, true, *s)
@@ -312,17 +312,42 @@ func lineSpaceFormatChannel(id string, optin bool, s discordgo.Session) string {
 
 // Adds 1 to User Change on member join
 func OnMemberJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
+				return
+			}
+		}
+	}()
+
 	t := time.Now()
 	misc.MapMutex.Lock()
 	misc.UserStats[t.Format(misc.DateFormat)]++
 	misc.MapMutex.Unlock()
 }
 
-// Removes 1 from User Change on member removal
+// Removes 1 from User Change on member removal and also resets variables
 func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
+				return
+			}
+		}
+	}()
+
 	t := time.Now()
 	misc.MapMutex.Lock()
 	misc.UserStats[t.Format(misc.DateFormat)]--
+	if misc.MemberInfoMap[u.User.ID] != nil {
+		misc.MemberInfoMap[u.User.ID].Discrim = ""
+		misc.MemberInfoMap[u.User.ID].OutsideServer = true
+		misc.MemberInfoWrite(misc.MemberInfoMap)
+	}
 	misc.MapMutex.Unlock()
 }
 
@@ -375,6 +400,16 @@ func dailyStats(s *discordgo.Session) {
 		message discordgo.Message
 		author  discordgo.User
 	)
+
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
+				return
+			}
+		}
+	}()
 
 	t := time.Now()
 	hour := t.Hour()

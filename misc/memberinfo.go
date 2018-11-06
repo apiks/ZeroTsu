@@ -40,6 +40,7 @@ type UserInfo struct {
 	RedditUsername string   `json:"redditUser,omitempty"`
 	VerifiedDate   string   `json:"verifiedDate,omitempty"`
 	UnbanDate      string   `json:"unbanDate,omitempty"`
+	OutsideServer  bool		`json:"-,omitempty"`
 }
 
 // Creates a struct type in which we'll hold every banned user
@@ -158,7 +159,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		// Sends verification message to user in DMs if possible
 		dm, _ := s.UserChannelCreate(user.User.ID)
 		_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
-			"Please verify your reddit account at http://%v/?reqvalue=%v", config.Website, ciphertext))
+			"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
 
 	} else {
 		// Checks if user exists in memberInfo.json. If yes it changes flag to true
@@ -186,7 +187,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		// Sends verification message to user in DMs if possible
 		dm, _ := s.UserChannelCreate(user.User.ID)
 		_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
-			"Please verify your reddit account at http://%v/?reqvalue=%v", config.Website, ciphertext))
+			"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
 	}
 
 	// Fetches user from memberInfo
@@ -206,7 +207,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		// Sends verification message to user in DMs if possible
 		dm, _ := s.UserChannelCreate(user.User.ID)
 		_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
-			"Please verify your reddit account at http://%v/?reqvalue=%v", config.Website, ciphertext))
+			"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
 	}
 	MapMutex.Unlock()
 
