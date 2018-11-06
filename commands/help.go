@@ -18,9 +18,7 @@ var (
 // Prints pretty help command
 func helpEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	var (
-		admin bool
-	)
+	var admin bool
 
 	// Checks if it's within the config server
 	ch, err := s.State.Channel(m.ChannelID)
@@ -813,10 +811,8 @@ func helpPlaintextCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err = s.ChannelMessageSend(m.ChannelID, successMod)
 		if err != nil {
-
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -839,10 +835,8 @@ func helpPlaintextCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err = s.ChannelMessageSend(m.ChannelID, successMod)
 		if err != nil {
-
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -860,10 +854,8 @@ func helpPlaintextCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err = s.ChannelMessageSend(m.ChannelID, successUser)
 		if err != nil {
-
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -934,6 +926,7 @@ func init() {
 		elevated: true,
 	})
 
+	misc.MapMutex.Lock()
 	categoriesMap["Channel"] = "Mod channel-related commands."
 	categoriesMap["Filters"] = "Word and emoji filters."
 	categoriesMap["Misc"] = "Miscellaneous mod commands."
@@ -942,4 +935,5 @@ func init() {
 	categoriesMap["Reacts"] = "Channel join via react commands."
 	categoriesMap["Rss"] = "RSS feed from sub commands."
 	categoriesMap["Stats"] = "Channel and emoji stats."
+	misc.MapMutex.Unlock()
 }
