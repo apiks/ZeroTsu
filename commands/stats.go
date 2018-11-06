@@ -195,7 +195,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	for _, channel := range channels {
 
 		// Checks if channel exists and sets optin status
-		ok := isChannelUsable(channel, guild)
+		channel, ok := isChannelUsable(*channel, guild)
 		if !ok {
 			continue
 		}
@@ -216,7 +216,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		if channel.Optin {
 
 			// Checks if channel exists and sets optin status
-			ok := isChannelUsable(channel, guild)
+			channel, ok := isChannelUsable(*channel, guild)
 			if !ok {
 				continue
 			}
@@ -327,7 +327,7 @@ func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 }
 
 // Checks if specific channel stat should be printed
-func isChannelUsable(channel *misc.Channel, guild *discordgo.Guild) bool {
+func isChannelUsable(channel misc.Channel, guild *discordgo.Guild) (misc.Channel, bool) {
 
 	// Checks if channel exists and if it's optin
 	for guildIndex := range guild.Channels {
@@ -348,13 +348,13 @@ func isChannelUsable(channel *misc.Channel, guild *discordgo.Guild) bool {
 		}
 	}
 	misc.MapMutex.Lock()
-	misc.ChannelStats[channel.ChannelID] = channel
+	misc.ChannelStats[channel.ChannelID] = &channel
 	misc.MapMutex.Unlock()
 
 	if channel.Exists {
-		return true
+		return channel, true
 	}
-	return false
+	return channel, false
 }
 
 // Splits the stat messages into blocks
