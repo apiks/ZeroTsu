@@ -201,6 +201,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		}
 		// Formats  and splits message
 		if !channel.Optin {
+			fmt.Println(channel.Name)
 			misc.MapMutex.Lock()
 			message += lineSpaceFormatChannel(channel.ChannelID, false, *s)
 			misc.MapMutex.Unlock()
@@ -213,13 +214,14 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	message += "\n\nOpt-in Name:                     ([Daily Messages] | [Total Messages] | [Role Members]) \n\n"
 
 	for _, channel := range channels {
-		if channel.Optin {
 
-			// Checks if channel exists and sets optin status
-			channel, ok := isChannelUsable(*channel, guild)
-			if !ok {
-				continue
-			}
+		// Checks if channel exists and sets optin status
+		channel, ok := isChannelUsable(*channel, guild)
+		if !ok {
+			continue
+		}
+
+		if channel.Optin {
 			// Formats  and splits message
 			misc.MapMutex.Lock()
 			message += lineSpaceFormatChannel(channel.ChannelID, true, *s)
