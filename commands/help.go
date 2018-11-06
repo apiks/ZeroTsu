@@ -13,7 +13,7 @@ import (
 var (
 	categoriesSorted = [8]string{"Channel", "Filters", "Misc", "Normal", "Punishment", "Reacts", "Rss", "Stats"}
 	categoriesMap = make(map[string]string)
-	)
+)
 
 // Prints pretty help command
 func helpEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
@@ -65,7 +65,6 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
 		embed              []*discordgo.MessageEmbedField
 		user               discordgo.MessageEmbedField
 		permission         discordgo.MessageEmbedField
-		usage              discordgo.MessageEmbedField
 		userCommands       discordgo.MessageEmbedField
 		adminCategories	   discordgo.MessageEmbedField
 
@@ -92,9 +91,9 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
 
 	// Sets usage field if admin
 	if admin {
-		usage.Name = "Usage:"
-		usage.Value = fmt.Sprintf("Pick a category with __%vh[category]__", config.BotPrefix)
-		usage.Inline = true
+		// Sets footer field
+		embedFooter.Text = fmt.Sprintf("Usage: Pick a category with %vh[category]", config.BotPrefix)
+		embedMess.Footer = &embedFooter
 	}
 
 	if !admin {
@@ -135,7 +134,6 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
 	embed = append(embed, &user)
 	embed = append(embed, &permission)
 	if admin {
-		embed = append(embed, &usage)
 		embed = append(embed, &adminCategories)
 	} else {
 		embed = append(embed, &userCommands)
