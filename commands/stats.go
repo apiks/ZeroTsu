@@ -341,6 +341,8 @@ func isChannelUsable(channel misc.Channel, guild *discordgo.Guild) (misc.Channel
 				guild.Channels[guildIndex].Name == guild.Roles[roleIndex].Name {
 				channel.Optin = true
 				break
+			} else {
+				channel.Optin = false
 			}
 		}
 		if guild.Channels[guildIndex].Name == channel.Name &&
