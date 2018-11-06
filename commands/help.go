@@ -92,7 +92,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
 	// Sets usage field if admin
 	if admin {
 		// Sets footer field
-		embedFooter.Text = fmt.Sprintf("Usage: Pick a category with %v%v[category]", config.BotPrefix, config.BotPrefix)
+		embedFooter.Text = fmt.Sprintf("Usage: Pick a category with %vh[category]", config.BotPrefix)
 		embedMess.Footer = &embedFooter
 	}
 
@@ -887,49 +887,49 @@ func init() {
 	})
 	add(&command{
 		execute:  helpChannelCommand,
-		trigger:  config.BotPrefix + "channel",
+		trigger:  "hchannel",
 		desc:     "Print all channel related commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpFiltersCommand,
-		trigger:  config.BotPrefix + "filters",
+		trigger:  "hfilters",
 		desc:     "Print all commands related to filters.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpMiscCommand,
-		trigger:  config.BotPrefix + "misc",
+		trigger:  "hmisc",
 		desc:     "Print all miscellaneous mod commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpNormalCommand,
-		trigger:  config.BotPrefix + "normal",
+		trigger:  "hnormal",
 		desc:     "Print all normal user commands.",
 		elevated: true,
 	})
-	//add(&command{
-	//	execute:  helpPunishmentCommand,
-	//	trigger:  "hpunishment",
-	//	desc:     "Print all mod pusnihment commands.",
-	//	elevated: true,
-	//})
+	add(&command{
+		execute:  helpPunishmentCommand,
+		trigger:  "hpunishment",
+		desc:     "Print all mod pusnihment commands.",
+		elevated: true,
+	})
 	add(&command{
 		execute:  helpReactsCommand,
-		trigger:  config.BotPrefix + "reacts",
+		trigger:  "hreacts",
 		desc:     "Print all channel join via react commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpRssCommand,
-		trigger:  config.BotPrefix + "rss",
+		trigger:  "hrss",
 		desc:     "Print all RSS feed from sub commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpStatsCommand,
-		trigger:  config.BotPrefix + "stats",
+		trigger:  "hstats",
 		desc:     "Print all channel and emoji stats commands.",
 		elevated: true,
 	})
