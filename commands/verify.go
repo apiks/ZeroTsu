@@ -1,13 +1,14 @@
 package commands
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/misc"
 	"github.com/r-anime/ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/misc"
 )
 
 // Verifies a user with a reddit username and gives them the verified role
@@ -20,7 +21,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if there's enough parameters (command, user and reddit username.)
 	if len(commandStrings) != 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+"verify [@user or userID] [redditUsername]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"verify [@user or userID] [redditUsername]`")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -66,6 +67,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Add reddit username in map
+	misc.MapMutex.Lock()
 	if misc.MemberInfoMap[userID] != nil {
 
 		// Stores time of verification
@@ -74,11 +76,8 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		ver := t.Format("2006-01-02 15:04:05") + " " + z
 
 		// Sets verification variables
-		misc.MapMutex.Lock()
 		misc.MemberInfoMap[userID].RedditUsername = redditUsername
 		misc.MemberInfoMap[userID].VerifiedDate = ver
-		misc.MapMutex.Unlock()
-
 	} else {
 
 		// Initializes user in memberInfo.json
@@ -90,11 +89,10 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		ver := t.Format("2006-01-02 15:04:05") + " " + z
 
 		// Sets verification variables
-		misc.MapMutex.Lock()
 		misc.MemberInfoMap[userID].RedditUsername = redditUsername
 		misc.MemberInfoMap[userID].VerifiedDate = ver
-		misc.MapMutex.Unlock()
 	}
+	misc.MapMutex.Unlock()
 
 	// Writes modified memberInfo map to storage
 	misc.MemberInfoWrite(misc.MemberInfoMap)
@@ -120,22 +118,38 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	_, err = s.ChannelMessageSend(m.ChannelID, "Success. Verified "+userMem.User.Username+"#"+userMem.User.Discriminator+" with "+redditUsername)
+	err = verifyEmbed(s, m, userMem, redditUsername)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
 			return
 		}
 		return
 	}
 }
 
-//func init() {
-//	add(&command{
-//		execute:  verifyCommand,
-//		trigger:  "verify",
-//		desc:     "Verifies a user with a reddit username.",
-//		elevated: true,
-//		category: "misc",
-//	})
-//}
+func verifyEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.Member, username string) error {
+
+	var embedMess      discordgo.MessageEmbed
+
+	// Sets punishment embed color
+	embedMess.Color = 0x00ff00
+	embedMess.Title = fmt.Sprintf("Successfuly verified %v#%v with /u/%v", mem.User.Username, mem.User.Discriminator, username)
+
+	// Sends embed in channel
+	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
+	return err
+}
+
+func init() {
+	add(&command{
+		execute:  verifyCommand,
+		trigger:  "verify",
+		desc:     "Verifies a user with a reddit username.",
+		elevated: true,
+		category: "misc",
+	})
+}

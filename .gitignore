@@ -28,3 +28,6 @@ database/*
 
 # ZeroTsu ELF
 ZeroTsu
+
+# Config of app secrets
+configsecrets.json

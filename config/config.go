@@ -7,20 +7,26 @@ import (
 	"os"
 )
 
-// File for Bot, server, channel and role info.
+// File for Bot, server, channel and role info
 
 var (
-	Token        string
-	BotPrefix    string
-	BotID        string
-	ServerID     string
-	BotLogID     string
-	CommandRoles []string
-	OptInUnder   string
-	OptInAbove   string
-	VoiceChaID   string
+	Token        		string
+	BotPrefix    		string
+	BotID        		string
+	ServerID     		string
+	BotLogID     		string
+	CommandRoles 		[]string
+	OptInUnder   		string
+	OptInAbove   		string
+	VoiceChaID   		string
+	Website				string
 
-	config *configStruct
+	RedditAppName		string
+	RedditAppSecret		string
+	DiscordAppSecret	string
+
+	config 				*configStruct
+	configsecrets 		*configSecrets
 )
 
 type configStruct struct {
@@ -33,6 +39,13 @@ type configStruct struct {
 	OptInUnder   string   `json:"OptInUnder"`
 	OptInAbove   string   `json:"OptInAbove"`
 	VoiceChaID   string   `json:"VoiceChaID"`
+	Website		 string	  `json:"Website"`
+}
+
+type configSecrets struct {
+	RedditAppName		string	`json:"RedditName"`
+	RedditAppSecret		string	`json:"RedditSecret"`
+	DiscordAppSecret	string	`json:"DiscordSecret"`
 }
 
 // Loads config.json values
@@ -62,11 +75,37 @@ func ReadConfig() error {
 	OptInUnder = config.OptInUnder
 	OptInAbove = config.OptInAbove
 	VoiceChaID = config.VoiceChaID
+	Website = config.Website
 
 	// Takes the bot token from the environment variable. Reason is to avoid pushing token to github
 	if os.Getenv("ZeroTsuToken") == "" {
 		panic("No token set in your environment variables for key \"ZeroTsuToken\"")
 	}
 	Token = os.Getenv("ZeroTsuToken")
+	return nil
+}
+
+// Loads hidden configSecrets.json values
+func ReadConfigSecrets() error {
+	fmt.Println("Reading from configsecrets file...")
+
+	file, err := ioutil.ReadFile("configsecrets.json")
+	if err != nil {
+
+		panic(err)
+	}
+
+	fmt.Println(string(file))
+
+	err = json.Unmarshal(file, &configsecrets)
+	if err != nil {
+
+		panic(err)
+	}
+
+	RedditAppName = configsecrets.RedditAppName
+	RedditAppSecret = configsecrets.RedditAppSecret
+	DiscordAppSecret = configsecrets.DiscordAppSecret
+
 	return nil
 }

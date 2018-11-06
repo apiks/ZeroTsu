@@ -1,0 +1,24 @@
+* {
+	margin: 0;
+	padding: 0;
+}
+
+.button {
+	background-color: #7289da;
+    border: solid;
+    border-color: black;
+    border-radius: 1vw;
+    color: white;
+    padding: 1vw 2vw;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 1.5vw;
+}
+
+.buttonFlex {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	margin: 2vw;
+}

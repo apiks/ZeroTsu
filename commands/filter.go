@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -15,6 +16,16 @@ var spamFilterMap = make(map[string]int)
 
 // Handles filter in an onMessage basis
 func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
+				fmt.Println(rec)
+			}
+		}
+	}()
 
 	// Checks if it's within the config server
 	ch, err := s.State.Channel(m.ChannelID)
@@ -99,6 +110,16 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 // Filters reactions that contain a filtered phrase
 func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
+
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
+				fmt.Println(rec)
+			}
+		}
+	}()
 
 	// Checks if it's within the /r/anime server
 	ch, err := s.State.Channel(r.ChannelID)

@@ -55,7 +55,6 @@ func MemberInfoRead() {
 	// Reads all the member users from the memberInfo.json file and puts them in memberInfoByte as bytes
 	memberInfoByte, err := ioutil.ReadFile("database/memberInfo.json")
 	if err != nil {
-
 		return
 	}
 
@@ -63,9 +62,15 @@ func MemberInfoRead() {
 	MapMutex.Lock()
 	err = json.Unmarshal(memberInfoByte, &MemberInfoMap)
 	if err != nil {
-
 		MapMutex.Unlock()
 		return
+	}
+
+	// Fixes empty IDs
+	for ID, user := range MemberInfoMap {
+		if user.ID == "" {
+			user.ID = ID
+		}
 	}
 	MapMutex.Unlock()
 }
@@ -74,56 +79,15 @@ func MemberInfoRead() {
 func MemberInfoWrite(info map[string]*UserInfo) {
 
 	// Turns info slice into byte ready to be pushed to file
-	MapMutex.Lock()
 	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
-
 		MapMutex.Unlock()
 		return
 	}
-	MapMutex.Unlock()
 
 	// Writes to file
 	err = ioutil.WriteFile("database/memberInfo.json", MarshaledStruct, 0644)
 	if err != nil {
-
-		return
-	}
-}
-
-// Reads banned users info from bannedUsers.json
-func BannedUsersRead() {
-
-	// Reads all the banned users from the bannedUsers.json file and puts them in banneUsersByte as bytes
-	bannedUsersByte, err := ioutil.ReadFile("database/bannedUsers.json")
-	if err != nil {
-
-		return
-	}
-
-	// Takes all the banned users from bannedUsers.json from byte and puts them into the BannedUsers struct slice
-	err = json.Unmarshal(bannedUsersByte, &BannedUsersSlice)
-	if err != nil {
-
-		return
-	}
-
-}
-
-// Writes banned users info to bannedUsers.json
-func BannedUsersWrite(info []BannedUsers) {
-
-	// Turns info into byte ready to be pushed to file
-	marshaledStruct, err := json.MarshalIndent(info, "", "    ")
-	if err != nil {
-
-		return
-	}
-
-	// Writes to file
-	err = ioutil.WriteFile("database/bannedUsers.json", marshaledStruct, 0644)
-	if err != nil {
-
 		return
 	}
 }
@@ -146,9 +110,7 @@ func InitializeUser(u *discordgo.Member) {
 	// Sets join date
 	temp.JoinDate = join
 
-	MapMutex.Lock()
 	MemberInfoMap[u.User.ID] = &temp
-	MapMutex.Unlock()
 }
 
 // Checks if user exists in memberInfo on joining server and adds him if he doesn't
@@ -164,10 +126,8 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string) + "\n" + ErrorLocation(rec.(error)))
 			if err != nil {
-
-				fmt.Println(err.Error())
 				fmt.Println(rec)
 			}
 		}
@@ -183,6 +143,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	}
 
 	// If memberInfo is empty, it initializes
+	MapMutex.Lock()
 	if len(MemberInfoMap) == 0 {
 
 		// Initializes the first user of memberInfo.
@@ -196,11 +157,10 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 		// Sends verification message to user in DMs if possible
 		dm, _ := s.UserChannelCreate(user.User.ID)
-		_, _ = s.ChannelMessageSend(dm.ID, "You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
-			"Please verify your reddit account at http://localhost:3000/?reqvalue=" + ciphertext)
+		_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
+			"Please verify your reddit account at http://%v/?reqvalue=%v", config.Website, ciphertext))
 
 	} else {
-
 		// Checks if user exists in memberInfo.json. If yes it changes flag to true
 		for id := range MemberInfoMap {
 			if MemberInfoMap[id].ID == user.User.ID {
@@ -209,12 +169,15 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 			}
 		}
 	}
+	MapMutex.Unlock()
 
 	// If user still doesn't exist after check above, it initializes user
-	if flag == false {
+	if !flag  {
 
 		// Initializes the new user
+		MapMutex.Lock()
 		InitializeUser(user)
+		MapMutex.Unlock()
 		initialized = true
 
 		// Encrypts id
@@ -222,35 +185,33 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 		// Sends verification message to user in DMs if possible
 		dm, _ := s.UserChannelCreate(user.User.ID)
-		_, _ = s.ChannelMessageSend(dm.ID, "You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
-			"Please verify your reddit account at http://localhost:3000/?reqvalue=" + ciphertext)
+		_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
+			"Please verify your reddit account at http://%v/?reqvalue=%v", config.Website, ciphertext))
 	}
 
 	// Fetches user from memberInfo
 	MapMutex.Lock()
 	existingUser, ok := MemberInfoMap[e.User.ID]
 	if !ok {
-
 		MapMutex.Unlock()
 		return
 	}
-	MapMutex.Unlock()
 
 	// If user is already in memberInfo but hasn't verified before tell him to verify now
-	if MemberInfoMap[e.User.ID].RedditUsername == "" && initialized == false {
+	if MemberInfoMap[e.User.ID].RedditUsername == "" && !initialized {
 
 		// Encrypts id
 		ciphertext := Encrypt(Key, user.User.ID)
 
 		// Sends verification message to user in DMs if possible
 		dm, _ := s.UserChannelCreate(user.User.ID)
-		_, _ = s.ChannelMessageSend(dm.ID, "You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
-			"Please verify your reddit account at http://localhost:3000/?reqvalue=" + ciphertext)
+		_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
+			"Please verify your reddit account at http://%v/?reqvalue=%v", config.Website, ciphertext))
 	}
+	MapMutex.Unlock()
 
 	// Checks if the user's current username is the same as the one in the database. Otherwise updates
 	if user.User.Username != existingUser.Username {
-
 		flag := true
 		lower := strings.ToLower(e.User.Username)
 
@@ -269,9 +230,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 	// Checks if the user's current nickname is the same as the one in the database. Otherwise updates
 	if existingUser.Nickname != user.Nick && user.Nick != "" {
-
 		flag := true
-
 		lower := strings.ToLower(user.Nick)
 
 		for _, names := range existingUser.PastNicknames {
@@ -289,9 +248,13 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 	// Checks if the discrim in database is the same as the discrim used by the user. If not it changes it
 	if user.User.Discriminator != existingUser.Discrim {
-
 		existingUser.Discrim = user.User.Discriminator
 	}
+
+	// Saves the updates to memberInfoMap
+	MapMutex.Lock()
+	MemberInfoMap[e.User.ID] = existingUser
+	MapMutex.Unlock()
 
 	// Writes to memberInfo.json
 	MemberInfoWrite(MemberInfoMap)
@@ -303,24 +266,22 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string) + "\n" + ErrorLocation(rec.(error)))
 			if err != nil {
-
-				fmt.Println(err.Error())
 				fmt.Println(rec)
 			}
 		}
 	}()
 
+	MapMutex.Lock()
 	if len(MemberInfoMap) == 0 {
+		MapMutex.Unlock()
 		return
 	}
 
 	// Fetches user from memberInfo if possible
-	MapMutex.Lock()
 	user, ok := MemberInfoMap[e.User.ID]
 	if !ok {
-
 		MapMutex.Unlock()
 		return
 	}
@@ -328,9 +289,7 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 
 	// Checks usernames and updates if needed
 	if user.Username != e.User.Username {
-
 		flag := true
-
 		lower := strings.ToLower(e.User.Username)
 
 		for _, names := range user.PastUsernames {
@@ -348,9 +307,7 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 
 	// Checks nicknames and updates if needed
 	if user.Nickname != e.Nick && e.Nick != "" {
-
 		flag := true
-
 		lower := strings.ToLower(e.Nick)
 
 		for _, names := range user.PastNicknames {
@@ -368,12 +325,13 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 
 	// Checks if the discrim in database is the same as the discrim used by the user. If not it changes it
 	if user.Discrim != e.User.Discriminator {
-
-		MapMutex.Lock()
 		user.Discrim = e.User.Discriminator
-		MapMutex.Unlock()
-
 	}
+
+	// Saves the updates to memberInfoMap
+	MapMutex.Lock()
+	MemberInfoMap[e.User.ID] = user
+	MapMutex.Unlock()
 
 	// Writes to memberInfo.json
 	MemberInfoWrite(MemberInfoMap)

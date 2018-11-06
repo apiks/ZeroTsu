@@ -43,9 +43,9 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Goes through every banned user from bannedUsers.json and if the user is in it, confirms that user is a banned one
-	if misc.BannedUsersSlice == nil {
-		_, err = s.ChannelMessageSend(m.ChannelID, "No bans in storage.")
+	// Goes through every banned user from BannedUsersSlice and if the user is in it, confirms that user is a banned one
+	if len(misc.BannedUsersSlice) == 0 {
+		_, err = s.ChannelMessageSend(m.ChannelID, "No bans found.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -58,12 +58,10 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	for i := 0; i < len(misc.BannedUsersSlice); i++ {
 		if misc.BannedUsersSlice[i].ID == userID {
-
 			banFlag = true
 
-			// Removes the ban from bannedUsers.json and writes to bannedUsers.json
+			// Removes the ban from BannedUsersSlice
 			misc.BannedUsersSlice = append(misc.BannedUsersSlice[:i], misc.BannedUsersSlice[i+1:]...)
-			misc.BannedUsersWrite(misc.BannedUsersSlice)
 			break
 		}
 	}
@@ -106,14 +104,19 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
+
+	// Sends an embed message to bot-log
+	misc.MapMutex.Lock()
+	err = misc.UnbanEmbed(s, misc.MemberInfoMap[userID], m.Author.Username)
+	misc.MapMutex.Unlock()
 }
 
-//func init() {
-//	add(&command{
-//		execute:  unbanCommand,
-//		trigger:  "unban",
-//		desc:     "Unbans a user.",
-//		elevated: true,
-//		category: "punishment",
-//	})
-//}
+func init() {
+	add(&command{
+		execute:  unbanCommand,
+		trigger:  "unban",
+		desc:     "Unbans a user.",
+		elevated: true,
+		category: "punishment",
+	})
+}

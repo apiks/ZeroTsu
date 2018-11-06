@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>/r/anime Discord Homepage</title>
+    <link rel="stylesheet" href="/web/assets/channelstats.css">
+    <meta charset="UTF-8">
+    <meta name="author" content="Apiks">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js"></script>
+</head>
+<body background="/web/assets/background.png">
+
+    {{ if .Flag }}
+    <div class="dataFlex">
+        <div>
+            <p class="header">Total messages</p>
+            <p class="data">{{ .Stats.TotalMessages }}</p>
+        </div>
+        <div>
+            <p class="header">Daily Average</p>
+            <p class="data">{{ .Stats.DailyAverage }}</p>
+        </div>
+    </div>
+
+    <div class="chart-container" style="position: relative; height:10vh; width:80vw; width: 80%; margin: auto;">
+        <canvas id="stats" style="background-color: rgb(240,242,252); border-style: solid; border-radius: 0.5%; border-color: rgb(44,47,51);"></canvas>
+    </div>
+
+    <script>
+        var chart = document.getElementById("stats").getContext('2d');
+        var channelChart = new Chart(chart, {
+            type: `line`,
+            data: {
+                labels: {{ $.Stats.Dates }},
+                datasets: [{
+                    label: '# of messages',
+                    data: {{ $.Stats.Messages }},
+                    backgroundColor: [
+                        'rgba(116,150,229, 0.3)',
+                    ],
+                    borderColor: [
+                        'rgb(114,137,218)',
+                    ],
+                    borderWidth: 1
+                }]
+        },
+        options: {
+             responsive: true,
+             title: {
+                 display: true,
+                 text: {{ $.Stats.Name }}
+             },
+             scales: {
+                 xAxes: [{
+                     scaleLabel: {
+                         display: true,
+                         labelString: 'Date'
+                     },
+                 }],
+                 yAxes: [{
+                     scaleLabel: {
+                         display: true,
+                         labelString: 'Messages'
+                     }
+                 }]
+             },
+        }
+    });
+    </script>
+    {{ else}}
+        {{ if .Error }}
+        <div class="channels">
+        <table>
+            <thead>
+                <tr>
+                    <th>Permanent</th>
+                </tr>
+            </thead>
+            <tbody>
+            {{ range $id, $value := .ChannelStats }}
+                {{ if $value.Exists }}
+                    {{ if not $value.Optin }}
+                        <tr>
+                            <th><a href="http://localhost:3000/channelstats?channelid={{$id}}" class="channel">
+                            #{{ $value.Name }}
+                            </a></th>
+                        </tr>
+                    {{ end }}
+                {{ end }}
+            {{ end }}
+            </tbody>
+        </table>
+
+        <table>
+                <thead>
+                    <tr>
+                        <th>Opt-in</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {{ range $id, $value := .ChannelStats }}
+                    {{ if $value.Exists }}
+                        {{ if $value.Optin }}
+                            <tr>
+                                <th><a href="http://localhost:3000/channelstats?channelid={{$id}}" class="channel">
+                                #{{ $value.Name }}
+                                </a></th>
+                            </tr>
+                        {{ end }}
+                    {{ end }}
+                {{ end }}
+                </tbody>
+            </table>
+        </div>
+        {{ else }}
+                <p class="error">Error 404: No such channel with stats exists.</p>
+        {{ end }}
+    {{ end }}
+
+</body>
+</html>

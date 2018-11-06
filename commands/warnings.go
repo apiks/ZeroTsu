@@ -6,8 +6,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/misc"
 	"github.com/r-anime/ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/misc"
 )
 
 // Adds a warning to a specific user in memberInfo.json without telling them
@@ -39,36 +39,41 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	warning = commandStrings[2]
 
 	// If memberInfo.json file is empty or user is not there, print error
-	if misc.MemberInfoMap == nil || misc.MemberInfoMap[userID] == nil {
+	misc.MapMutex.Lock()
+	if len(misc.MemberInfoMap) == 0 || misc.MemberInfoMap[userID] == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + misc.ErrorLocation(err) + "\n" + misc.ErrorLocation(err))
 			if err != nil {
+				misc.MapMutex.Unlock()
 				return
 			}
+			misc.MapMutex.Unlock()
 			return
 		}
+		misc.MapMutex.Unlock()
+		return
+	}
+
+	// Pulls info on user
+	userMem, err := s.User(userID)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		misc.MapMutex.Unlock()
 		return
 	}
 
 	// Appends warning to user in memberInfo
-	misc.MapMutex.Lock()
 	misc.MemberInfoMap[userID].Warnings = append(misc.MemberInfoMap[userID].Warnings, warning)
 	misc.MapMutex.Unlock()
 
 	// Writes to memberInfo.json
 	misc.MemberInfoWrite(misc.MemberInfoMap)
 
-	// Pulls info on user
-	userMem, err := s.User(userID)
+	// Sends warning embed message to channel
+	err = WarningEmbed(s, m, userMem, warning, m.ChannelID, true)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
-		return
-	}
-
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("_%v#%v_ had warning added: \"**[**%v**]**\"", userMem.Username, userMem.Discriminator, warning))
-	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + misc.ErrorLocation(err) + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -89,11 +94,17 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
 		}
+		return
+	}
+
+	// Pulls the guild Name
+	guild, err := s.Guild(config.ServerID)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
@@ -106,50 +117,46 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	warning = commandStrings[2]
 
 	// If memberInfo.json file is empty or user is not there, print error
-	if misc.MemberInfoMap == nil || misc.MemberInfoMap[userID] == nil {
+	misc.MapMutex.Lock()
+	if len(misc.MemberInfoMap) == 0 || misc.MemberInfoMap[userID] == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
-
+				misc.MapMutex.Unlock()
 				return
 			}
+			misc.MapMutex.Unlock()
 			return
 		}
+		misc.MapMutex.Unlock()
+		return
+	}
+
+	// Pulls info on user
+	userMem, err := s.User(userID)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		misc.MapMutex.Unlock()
 		return
 	}
 
 	// Appends warning to user in memberInfo
-	misc.MapMutex.Lock()
 	misc.MemberInfoMap[userID].Warnings = append(misc.MemberInfoMap[userID].Warnings, warning)
 	misc.MapMutex.Unlock()
 
 	// Writes to memberInfo.json
 	misc.MemberInfoWrite(misc.MemberInfoMap)
 
-	// Pulls info on user
-	userMem, err := s.User(userID)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
-		return
-	}
-
-	// Pulls the guild Name
-	guild, err := s.Guild(config.ServerID)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
-		return
-	}
-
-	// Sends message in DMs that they have been banned if able
+	// Sends message in DMs that they have been warned if able
 	dm, err := s.UserChannelCreate(userID)
 	if err != nil {
 		return
 	}
 	_, _ = s.ChannelMessageSend(dm.ID, "You have been warned on " + guild.Name + ":\n`" + warning + "`")
 
-	// Sends mod success message
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%v#%v__ was warned with: %v", userMem.Username, userMem.Discriminator, warning))
+	// Sends warning embed message to channel
+	err = WarningEmbed(s, m, userMem, warning, m.ChannelID, false)
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
@@ -159,19 +166,64 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-//func init() {
-//	add(&command{
-//		execute:  addWarningCommand,
-//		trigger:  "addwarning",
-//		desc:     "Adds a warning to a user without telling them",
-//		elevated: true,
-//		category: "punishment",
-//	})
-//	add(&command{
-//		execute:  issueWarningCommand,
-//		trigger:  "issuewarning",
-//		desc:     "Issues a warning to a user and tells them",
-//		elevated: true,
-//		category: "punishment",
-//	})
-//}
+func WarningEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, reason string, channelID string, discrete bool) error {
+
+	var (
+		embedMess      discordgo.MessageEmbed
+		embedThumbnail discordgo.MessageEmbedThumbnail
+
+		// Embed slice and its fields
+		embedField         []*discordgo.MessageEmbedField
+		embedFieldUserID   discordgo.MessageEmbedField
+		embedFieldReason   discordgo.MessageEmbedField
+	)
+
+	// Sets warning embed color
+	embedMess.Color = 0xff0000
+
+	// Saves user avatar as thumbnail
+	embedThumbnail.URL = mem.AvatarURL("128")
+
+	// Sets field titles
+	embedFieldUserID.Name = "User ID:"
+	embedFieldReason.Name = "Reason:"
+
+	// Sets field content
+	embedFieldUserID.Value = mem.ID
+	embedFieldReason.Value = reason
+
+	// Adds the two fields to embedField slice (because embedMess.Fields requires slice input)
+	embedField = append(embedField, &embedFieldUserID)
+	embedField = append(embedField, &embedFieldReason)
+
+	if discrete {
+		embedMess.Title = fmt.Sprintf("Added warning to %v#%v", mem.Username, mem.Discriminator)
+	} else {
+		embedMess.Title = mem.Username + "#" + mem.Discriminator + " was warned by " + m.Author.Username
+	}
+
+	// Adds user thumbnail and the two other fields as well
+	embedMess.Thumbnail = &embedThumbnail
+	embedMess.Fields = embedField
+
+	// Sends embed in channel
+	_, err := s.ChannelMessageSendEmbed(channelID, &embedMess)
+	return err
+}
+
+func init() {
+	add(&command{
+		execute:  addWarningCommand,
+		trigger:  "addwarning",
+		desc:     "Adds a warning to a user without telling them",
+		elevated: true,
+		category: "punishment",
+	})
+	add(&command{
+		execute:  issueWarningCommand,
+		trigger:  "issuewarning",
+		desc:     "Issues a warning to a user and tells them",
+		elevated: true,
+		category: "punishment",
+	})
+}

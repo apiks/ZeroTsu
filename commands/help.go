@@ -10,8 +10,10 @@ import (
 )
 
 // Command categories in sorted form and map form(map for descriptions)
-var categoriesSorted = [8]string{"Channel", "Filters", "Misc", "Normal", "Punishment", "Reacts", "Rss", "Stats"}
-var categoriesMap = make(map[string]string)
+var (
+	categoriesSorted = [8]string{"Channel", "Filters", "Misc", "Normal", "Punishment", "Reacts", "Rss", "Stats"}
+	categoriesMap = make(map[string]string)
+	)
 
 // Prints pretty help command
 func helpEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
@@ -937,7 +939,7 @@ func init() {
 	categoriesMap["Filters"] = "Word and emoji filters."
 	categoriesMap["Misc"] = "Miscellaneous mod commands."
 	categoriesMap["Normal"] = "Normal user commands."
-	categoriesMap["Punishment"] = "Warnings, kicks and bans.[Disabled]"
+	categoriesMap["Punishment"] = "Warnings, kicks and bans."
 	categoriesMap["Reacts"] = "Channel join via react commands."
 	categoriesMap["Rss"] = "RSS feed from sub commands."
 	categoriesMap["Stats"] = "Channel and emoji stats."

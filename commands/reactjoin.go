@@ -659,7 +659,6 @@ func ReactChannelJoinWrite(info map[string]*ReactChannelJoinStruct) {
 	// Turns info slice into byte ready to be pushed to file
 	marshaledStruct, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
-		MapMutex.Unlock()
 		return
 	}
 

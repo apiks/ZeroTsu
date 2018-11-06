@@ -12,68 +12,105 @@ import (
 	"github.com/r-anime/ZeroTsu/config"
 )
 
+var darlingTrigger int
+
 // Periodic events such as Unbanning and RSS timer every 1 min
 func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	err := s.UpdateStatus(0, "with her darling")
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Println(err.Error() + "\n" + ErrorLocation(err))
 		}
 	}
 
-	for range time.NewTicker(1 * time.Minute).C {
+	for range time.NewTicker(10 * time.Second).C {
 
 		// Checks whether it has to post rss thread every 15 seconds
 		RSSParser(s)
 
-		////Goes through bannedUsers.json if it's not empty and unbans if needed
-		//if BannedUsersSlice != nil {
-		//	if len(BannedUsersSlice) != 0 {
-		//
-		//		t := time.Now()
-		//
-		//		for i := 0; i < len(BannedUsersSlice); i++ {
-		//			difference := t.Sub(BannedUsersSlice[i].UnbanDate)
-		//			if difference > 0 {
-		//
-		//				// Checks if user is in MemberInfo and assigns to user variable if true
-		//				user, ok := MemberInfoMap[BannedUsersSlice[i].ID]
-		//				if !ok {
-		//					continue
-		//				}
-		//
-		//				// Unbans user
-		//				err := s.GuildBanDelete(config.ServerID, BannedUsersSlice[i].ID)
-		//				if err != nil {
-		//
-		//					_, _ = s.ChannelMessageSend(config.BotLogID, err.Error())
-		//				}
-		//
-		//				// Sends a message to bot-log
-		//				_, _ = s.ChannelMessageSend(config.BotLogID, "User: " + user.Username + "#"+
-		//					user.Discrim+ " has been unbanned.")
-		//
-		//				// Removes the user ban from bannedUsers.json
-		//				BannedUsersSlice = append(BannedUsersSlice[:i], BannedUsersSlice[i+1:]...)
-		//
-		//				// Writes to bannedUsers.json
-		//				BannedUsersWrite(BannedUsersSlice)
-		//			}
-		//		}
-		//	}
-		//}
+		// Goes through bannedUsers.json if it's not empty and unbans if needed
+		if len(BannedUsersSlice) != 0 {
+			t := time.Now()
+			for i := 0; i < len(BannedUsersSlice); i++ {
+				difference := t.Sub(BannedUsersSlice[i].UnbanDate)
+				if BannedUsersSlice[i].ID == "183927122832785408" {
+					fmt.Println(difference)
+				}
+				if difference > 0 {
+
+					fmt.Println("in")
+
+					// Checks if user is in MemberInfo and assigns to user variable if true
+					MapMutex.Lock()
+					user, ok := MemberInfoMap[BannedUsersSlice[i].ID]
+					if !ok {
+						MapMutex.Unlock()
+						continue
+					}
+					// Sets unban date to now
+					MemberInfoMap[BannedUsersSlice[i].ID].UnbanDate = "No ban"
+					MapMutex.Unlock()
+
+					// Unbans user
+					err := s.GuildBanDelete(config.ServerID, BannedUsersSlice[i].ID)
+					if err != nil {
+						_, _ = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+					}
+
+					// Removes the user ban from bannedUsers.json
+					BannedUsersSlice = append(BannedUsersSlice[:i], BannedUsersSlice[i+1:]...)
+
+					// Writes to memberInfo.json
+					MemberInfoWrite(MemberInfoMap)
+
+					// Sends an embed message to bot-log
+					err = UnbanEmbed(s, user, "")
+				}
+			}
+		}
 	}
 }
 
-// Periodic 20min Events
+func UnbanEmbed(s *discordgo.Session, user *UserInfo, mod string) error {
+
+	var (
+		embedMess          discordgo.MessageEmbed
+		embed    		   []*discordgo.MessageEmbedField
+	)
+	// Sets timestamp of unban
+	t := time.Now()
+	now := t.Format(time.RFC3339)
+	embedMess.Timestamp = now
+
+	// Set embed color
+	embedMess.Color = 0x00ff00
+
+	if mod == "" {
+		embedMess.Title = fmt.Sprintf("%v#%v has been unbanned.", user.Username, user.Discrim)
+	} else {
+		embedMess.Title = fmt.Sprintf("%v#%v has been unbanned by %v.",user.Username, user.Discrim, mod)
+	}
+
+	// Adds everything together
+	embedMess.Fields = embed
+
+	// Sends embed in bot-log
+	_, err := s.ChannelMessageSendEmbed(config.BotLogID, &embedMess)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+// Periodic 20min events
 func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(20 * time.Minute).C {
 
 		// Writes emoji stats to disk
 		_, err := EmojiStatsWrite(EmojiStats)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -83,7 +120,7 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 		// Fetches all guild users
 		guild, err := s.Guild(config.ServerID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -92,7 +129,7 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 		// Fetches all server roles
 		roles, err := s.GuildRoles(config.ServerID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -111,7 +148,7 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 		// Writes channel stats to disk
 		_, err = ChannelStatsWrite(ChannelStats)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -121,7 +158,7 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 		// Writes user gain stats to disk
 		_, err = UserChangeStatsWrite(UserStats)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -187,7 +224,7 @@ func RSSParser(s *discordgo.Session) {
 					if valid {
 						_, err = s.ChannelMessageSend(ReadRssThreads[j].Channel, feed.Items[i].Link)
 						if err != nil {
-							_, _ = s.ChannelMessageSend(config.BotLogID, err.Error())
+							_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 						}
 					}
 				}
@@ -204,7 +241,7 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string) + "\n" + ErrorLocation(rec.(error)))
 			if err != nil {
 				return
 			}
@@ -215,7 +252,7 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 	if err != nil {
 		m, err = s.GuildMember(v.GuildID, v.UserID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -227,7 +264,7 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 	// Fetches role ID
 	guildRoles, err := s.GuildRoles(config.ServerID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -248,26 +285,78 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 		}
 		err = s.GuildMemberRoleAdd(v.GuildID, v.UserID, roleIDString)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 			if err != nil {
 				return
 			}
 			return
 		}
-	} else {
-		// Removes role
-		for _, role := range m.Roles {
-			if role == roleIDString {
-				err := s.GuildMemberRoleRemove(v.GuildID, v.UserID, roleIDString)
+		return
+	}
+
+	// Removes role
+	for _, role := range m.Roles {
+		if role == roleIDString {
+			err := s.GuildMemberRoleRemove(v.GuildID, v.UserID, roleIDString)
+			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 				if err != nil {
-					_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-					if err != nil {
-						return
-					}
 					return
 				}
-				break
+				return
 			}
+			break
 		}
+	}
+}
+
+// Print fluff message on bot ping
+func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
+	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) && m.Author.ID == "128312718779219968" {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Professor!")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
+	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) && darlingTrigger > 19 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Daaarling~")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		darlingTrigger = 0
+		return
+	}
+	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Baka!")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		darlingTrigger++
+	}
+}
+
+// If there's a manual ban handle it correctly
+func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
+	for i := 0; i < len(BannedUsersSlice); i++ {
+		if BannedUsersSlice[i].ID == e.User.ID {
+			return
+		}
+	}
+	_, err := s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("%v#%v was manually permabanned. ID: %v", e.User.Username, e.User.Discriminator, e.User.ID))
+	if err != nil {
+		return
 	}
 }

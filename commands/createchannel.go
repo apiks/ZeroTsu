@@ -3,12 +3,12 @@ package commands
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
-	"time"
 )
 
 type channel struct {

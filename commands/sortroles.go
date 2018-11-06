@@ -21,7 +21,7 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 		controlNum int
 	)
 
-	if misc.SpoilerMap == nil {
+	if len(misc.SpoilerMap) == 0 {
 		return
 	}
 

@@ -44,39 +44,29 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Fetches user from server if possible
-	mem, err := s.State.Member(config.ServerID, userID)
-	if err != nil {
-		mem, err = s.GuildMember(config.ServerID, userID)
-		if err != nil {
-			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot whois until they join server.")
-			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-				if err != nil {
-					return
-				}
-				return
-			}
-			return
-		}
-	}
-
 	misc.MapMutex.Lock()
 	// Checks if user is in MemberInfo and assigns to user variable. Else initializes user.
 	user, ok := misc.MemberInfoMap[userID]
 	if !ok {
-		misc.MapMutex.Unlock()
 
-		// Initializes user if he doesn't exist and is in server
-		_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Initializing and whoising empty user.")
+		// Fetches user from server if possible
+		mem, err := s.State.Member(config.ServerID, userID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			mem, err = s.GuildMember(config.ServerID, userID)
 			if err != nil {
+				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot whois until they join server.")
+				if err != nil {
+					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+					if err != nil {
+						return
+					}
+					return
+				}
 				return
 			}
-			return
 		}
 
+		// Initializes user if he doesn't exist and is in server
 		misc.InitializeUser(mem)
 		misc.MemberInfoWrite(misc.MemberInfoMap)
 	}
@@ -163,7 +153,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Puts unban Date into a separate string variable
 	unbanDate = user.UnbanDate
 	if unbanDate == "" {
-		unbanDate = "Has never been banned."
+		unbanDate = "No Ban"
 	}
 
 	// Sets whois message
@@ -186,13 +176,15 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Alt check
+	misc.MapMutex.Lock()
 	alts := CheckAltAccountWhois(userID)
+	misc.MapMutex.Unlock()
 
 	// If there's more than one account with that reddit username print a message
 	if len(alts) > 1 {
 
 		// Forms the success string
-		success := "\n\n**Alts:** \n\n"
+		success := "\n\n**Alts:** \n"
 		for i := 0; i < len(alts); i++ {
 			success = success + "<@" + alts[i] + "> \n"
 		}
@@ -258,12 +250,12 @@ func CheckAltAccountWhois(id string) []string {
 	}
 }
 
-//func init() {
-//	add(&command{
-//		execute:  whoisCommand,
-//		trigger:  "whois",
-//		desc:     "Pulls mod information about a user.",
-//		elevated: true,
-//		category: "misc",
-//	})
-//}
+func init() {
+	add(&command{
+		execute:  whoisCommand,
+		trigger:  "whois",
+		desc:     "Pulls mod information about a user.",
+		elevated: true,
+		category: "misc",
+	})
+}

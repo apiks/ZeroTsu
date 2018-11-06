@@ -24,7 +24,6 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -71,25 +70,24 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
-	// Initialize user if they are not in memberInfo
-	if misc.MemberInfoMap == nil || misc.MemberInfoMap[userID] == nil {
-		misc.InitializeUser(userMem)
-	}
-
-	// Adds kick reason to user memberInfo info
-	misc.MapMutex.Lock()
-	misc.MemberInfoMap[userID].Kicks = append(misc.MemberInfoMap[userID].Kicks, reason)
-	misc.MapMutex.Unlock()
-
-	// Writes memberInfo.json
-	misc.MemberInfoWrite(misc.MemberInfoMap)
-
 	// Fetches the guild Name
 	guild, err := s.Guild(config.ServerID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
+
+	// Initialize user if they are not in memberInfo
+	misc.MapMutex.Lock()
+	if len(misc.MemberInfoMap) == 0 || misc.MemberInfoMap[userID] == nil {
+		misc.InitializeUser(userMem)
+	}
+	// Adds kick reason to user memberInfo info
+	misc.MemberInfoMap[userID].Kicks = append(misc.MemberInfoMap[userID].Kicks, reason)
+	misc.MapMutex.Unlock()
+
+	// Writes memberInfo.json
+	misc.MemberInfoWrite(misc.MemberInfoMap)
 
 	// Sends message to user DMs if possible
 	dm, _ := s.UserChannelCreate(mem.ID)
@@ -103,7 +101,17 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sends embed bot-log message
-	err = KickEmbed(s, m, mem, reason)
+	err = KickEmbed(s, m, mem, reason, config.BotLogID)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return
+		}
+		return
+	}
+
+	// Sends embed channel message
+	err = KickEmbed(s, m, mem, reason, m.ChannelID)
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
@@ -113,7 +121,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-func KickEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, reason string) error {
+func KickEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, reason string, channelID string) error {
 
 	var (
 		embedMess      discordgo.MessageEmbed
@@ -124,6 +132,9 @@ func KickEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, 
 		embedFieldUserID discordgo.MessageEmbedField
 		embedFieldReason discordgo.MessageEmbedField
 	)
+
+	// Sets warning embed color
+	embedMess.Color = 0xff0000
 
 	// Saves user avatar as thumbnail
 	embedThumbnail.URL = mem.AvatarURL("128")
@@ -151,17 +162,17 @@ func KickEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, 
 	embedMess.Thumbnail = &embedThumbnail
 	embedMess.Fields = embedField
 
-	// Sends embed in bot-log channel
-	_, err := s.ChannelMessageSendEmbed(config.BotLogID, &embedMess)
+	// Sends embed in channel
+	_, err := s.ChannelMessageSendEmbed(channelID, &embedMess)
 	return err
 }
 
-//func init() {
-//	add(&command{
-//		execute:  kickCommand,
-//		trigger:  "kick",
-//		desc:     "Kicks a user from the server and logs reason.",
-//		elevated: true,
-//		category: "punishment",
-//	})
-//}
+func init() {
+	add(&command{
+		execute:  kickCommand,
+		trigger:  "kick",
+		desc:     "Kicks a user from the server and logs reason.",
+		elevated: true,
+		category: "punishment",
+	})
+}

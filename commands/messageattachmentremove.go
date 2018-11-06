@@ -18,6 +18,17 @@ var (
 
 // Checks messages with uploads if they're uploading a whitelisted file type. If not it removes them
 func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string) + "\n" + misc.ErrorLocation(rec.(error)))
+			if err != nil {
+				fmt.Println(rec)
+			}
+		}
+	}()
+
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
@@ -58,10 +69,8 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		// Deletes the message that was sent if has a non-whitelisted attachment
 		err = s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {
-
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
-
 				return
 			}
 			return
@@ -76,7 +85,6 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		// Sends a message to the user in their DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
-
 			return
 		}
 		_, _ = s.ChannelMessageSend(dm.ID, "Your message upload `" + attachment.Filename + "` was removed for using a non-whitelisted file type. Only gif, image and webm file extensions are allowed.")

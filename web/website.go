@@ -1,4 +1,4 @@
-package verification
+package web
 
 import (
 	"bytes"
@@ -6,11 +6,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/oauth2"
-	"html/template"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -50,6 +49,38 @@ type User struct {
 	AltCheck              bool      `json:"altcheck"`
 }
 
+type Stats struct {
+	Name string
+	Dates []string
+	Messages []int
+	TotalMessages int
+	DailyAverage int
+}
+
+type ChannelPick struct {
+	ChannelStats map[string]*misc.Channel
+	Flag bool
+	Stats Stats
+	Error bool
+}
+
+// Sorting by date. By Kagumi
+type byDate []string
+
+func (d byDate) Len() int {
+	return len(d)
+}
+
+func (d byDate) Swap(i, j int) {
+	d[i], d[j] = d[j], d[i]
+}
+
+func (d byDate) Less(i, j int) bool {
+	t1, _ := time.Parse(misc.DateFormat, d[i])
+	t2, _ := time.Parse(misc.DateFormat, d[j])
+	return t1.Before(t2)
+}
+
 // Generates a random string. By Kagumi
 func randString(n int) (string, error) {
 	data := make([]byte, n)
@@ -59,8 +90,122 @@ func randString(n int) (string, error) {
 	return base64.StdEncoding.EncodeToString(data), nil
 }
 
-// Handles the website
-func IndexHandler(w http.ResponseWriter, r *http.Request) {
+func HomepageHandler(w http.ResponseWriter, r *http.Request) {
+	// Loads the html & css homepage files
+	t, err := template.ParseFiles("./web/assets/index.html")
+	if err != nil {
+		fmt.Print(err.Error())
+	}
+	err = t.Execute(w, nil)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+}
+
+func StatsPageHandler(w http.ResponseWriter, r *http.Request) {
+
+	var (
+		dateLabels []string
+		messageCount []int
+		stats Stats
+		totalMessages int
+		id string
+		pick ChannelPick
+	)
+
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			fmt.Println(rec)
+		}
+	}()
+
+	// Fetches channel ID from url query
+	queryValues := r.URL.Query()
+	id = queryValues.Get("channelid")
+	pick.Error = true
+
+	// Checks for nil entry assignment error and saves from that (could be abused to stop bot)
+	if id != "" {
+		misc.MapMutex.Lock()
+		if misc.ChannelStats[id] == nil {
+			pick.Error = false
+			// Loads the html & css stats files
+			t, err := template.ParseFiles("./web/assets/channelstats.html")
+			if err != nil {
+				fmt.Print(err.Error())
+				misc.MapMutex.Unlock()
+				return
+			}
+			err = t.Execute(w, pick)
+			if err != nil {
+				fmt.Println(err.Error())
+				misc.MapMutex.Unlock()
+				return
+			}
+			misc.MapMutex.Unlock()
+			return
+		}
+		misc.MapMutex.Unlock()
+	}
+
+	if id == "" {
+		pick.ChannelStats = make(map[string]*misc.Channel)
+		misc.MapMutex.Lock()
+		pick.ChannelStats = misc.ChannelStats
+		// Loads the html & css stats files
+		t, err := template.ParseFiles("./web/assets/channelstats.html")
+		if err != nil {
+			fmt.Print(err.Error())
+			misc.MapMutex.Unlock()
+			return
+		}
+		err = t.Execute(w, pick)
+		if err != nil {
+			fmt.Println(err.Error())
+			misc.MapMutex.Unlock()
+			return
+		}
+		misc.MapMutex.Unlock()
+		return
+	} else {
+		pick.Flag = true
+	}
+
+	// Save dates, sort them and then assign messages in order of the dates
+	misc.MapMutex.Lock()
+	for date := range misc.ChannelStats[id].Messages {
+		dateLabels = append(dateLabels, date)
+	}
+	sort.Sort(byDate(dateLabels))
+	for i := 0; i < len(dateLabels); i++ {
+		messageCount = append(messageCount, misc.ChannelStats[id].Messages[dateLabels[i]])
+		totalMessages += misc.ChannelStats[id].Messages[dateLabels[i]]
+	}
+
+	stats.Name = misc.ChannelStats["267799767843602452"].Name
+	misc.MapMutex.Unlock()
+	stats.Dates = dateLabels
+	stats.Messages = messageCount
+	stats.TotalMessages = totalMessages
+	stats.DailyAverage = totalMessages / len(dateLabels)
+	pick.Stats = stats
+
+
+	// Loads the html & css stats files
+	t, err := template.ParseFiles("./web/assets/channelstats.html")
+	if err != nil {
+		fmt.Print(err.Error())
+		return
+	}
+	err = t.Execute(w, pick)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+}
+
+// Handles the verification
+func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Pulls cookie if it exists, else it creates a new one and assigns it
 	cookieValue, err := r.Cookie("session-id")
@@ -82,7 +227,6 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-
 			fmt.Println(rec)
 		}
 	}()
@@ -131,39 +275,34 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if code != "" {
+		misc.MapMutex.Lock()
 		if UserCookieMap[cookieValue.Value] != nil {
-
 			// Sets code
 			var temp User
-			misc.MapMutex.Lock()
 			temp = *UserCookieMap[cookieValue.Value]
 			temp.Code = code
 			UserCookieMap[cookieValue.Value] = &temp
-			misc.MapMutex.Unlock()
 		}
+		misc.MapMutex.Unlock()
 	}
 
 	if errorVar != "" {
+		misc.MapMutex.Lock()
 		if UserCookieMap[cookieValue.Value] != nil {
-
 			// Sets error message
 			var temp User
-			misc.MapMutex.Lock()
 			temp = *UserCookieMap[cookieValue.Value]
 			temp.Error = "Error: Permission not given in verification. If this was a mistake please try to verify again."
 			UserCookieMap[cookieValue.Value] = &temp
-			misc.MapMutex.Unlock()
 		}
+		misc.MapMutex.Unlock()
 	}
 
 	// Fetches user username and discriminator combo for showing in website. Also checks if user is verified already
 	if cookieValue != nil {
+		misc.MapMutex.Lock()
 		if UserCookieMap[cookieValue.Value] != nil {
-
 			var temp User
-
-			misc.MapMutex.Lock()
-
 			temp = *UserCookieMap[cookieValue.Value]
 
 			// Sets the username + discrim combo if it exists, also sorts out the verified status
@@ -175,39 +314,34 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 				if misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID].RedditUsername != "" {
 					temp.RedditVerifiedStatus = true
 				}
-
 			} else {
 
 				temp.UsernameDiscrim = "Invalid User"
 			}
 
 			UserCookieMap[cookieValue.Value] = &temp
-
-			misc.MapMutex.Unlock()
 		}
+		misc.MapMutex.Unlock()
 	}
 
 	if cookieValue != nil && errorVar == "" {
+		misc.MapMutex.Lock()
 		if code == "" && id == "" && state == "" {
 
 			// Sets error message
 			var temp User
-			misc.MapMutex.Lock()
 			temp = *UserCookieMap[cookieValue.Value]
 			temp.UsernameDiscrim = ""
 			UserCookieMap[cookieValue.Value] = &temp
-			misc.MapMutex.Unlock()
 
 		} else if UserCookieMap[cookieValue.Value] != nil {
 			if misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID] != nil {
 				if misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID].RedditUsername == "" {
-
 					if state == "overlordconfirmsdiscord" && UserCookieMap[cookieValue.Value].Code != "" {
 
 						uname, udiscrim, uid := getDiscordUsernameDiscrim(UserCookieMap[cookieValue.Value].Code)
 
 						var temp User
-						misc.MapMutex.Lock()
 
 						temp = *UserCookieMap[cookieValue.Value]
 						temp.ID = uid
@@ -216,8 +350,6 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 						temp.UsernameDiscrim = uname + "#" + udiscrim
 						temp.DiscordVerifiedStatus = true
 						UserCookieMap[cookieValue.Value] = &temp
-
-						misc.MapMutex.Unlock()
 
 						if UserCookieMap[cookieValue.Value].AccOldEnough == true && UserCookieMap[cookieValue.Value].ID != "" &&
 							UserCookieMap[cookieValue.Value].RedditVerifiedStatus == true && UserCookieMap[cookieValue.Value].RedditName != "" {
@@ -240,24 +372,20 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 							// Sets error message
 							var temp User
-							misc.MapMutex.Lock()
 							temp = *UserCookieMap[cookieValue.Value]
 							temp.Error = "Error: Reddit account is not old enough. Please try again once it is one week old."
 							UserCookieMap[cookieValue.Value] = &temp
-							misc.MapMutex.Unlock()
 
 						} else if accOldEnough == true && UserCookieMap[cookieValue.Value].ID != "" &&
 							UserCookieMap[cookieValue.Value].DiscordVerifiedStatus == true && UserCookieMap[cookieValue.Value].RedditName == "" {
 
 							// Saves the reddit username and acc age bool
 							var temp User
-							misc.MapMutex.Lock()
 							temp = *UserCookieMap[cookieValue.Value]
 							temp.RedditName = Name
 							temp.RedditVerifiedStatus = true
 							temp.AccOldEnough = true
 							UserCookieMap[cookieValue.Value] = &temp
-							misc.MapMutex.Unlock()
 
 							// Verifies user
 							Verify(cookieValue, r)
@@ -266,57 +394,51 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 							// Saves the reddit username and acc age bool
 							var temp User
-							misc.MapMutex.Lock()
 							temp = *UserCookieMap[cookieValue.Value]
 							temp.RedditName = Name
 							temp.RedditVerifiedStatus = true
 							temp.AccOldEnough = true
 							UserCookieMap[cookieValue.Value] = &temp
-							misc.MapMutex.Unlock()
 						}
 					}
 				} else {
 
 					var temp User
-					misc.MapMutex.Lock()
 					temp = *UserCookieMap[cookieValue.Value]
 					temp.RedditVerifiedStatus = true
 					temp.DiscordVerifiedStatus = true
 					UserCookieMap[cookieValue.Value] = &temp
-					misc.MapMutex.Unlock()
 				}
 			} else {
 
 				// Sets error message
 				var temp User
-				misc.MapMutex.Lock()
 				temp = *UserCookieMap[cookieValue.Value]
 				temp.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
 				UserCookieMap[cookieValue.Value] = &temp
-				misc.MapMutex.Unlock()
 			}
 		} else {
 
 			// Sets error message
 			var temp User
-			misc.MapMutex.Lock()
 			temp.Error = "Error: Cookie has expired. Please try the bot link again."
 			UserCookieMap[cookieValue.Value] = &temp
-			misc.MapMutex.Unlock()
 		}
+		misc.MapMutex.Unlock()
 	}
 
-	// Loads the html & css index file
-	t, err := template.ParseFiles("verification/web/index.html")
+	// Loads the html & css verification files
+	t, err := template.ParseFiles("web/assets/verification.html")
 	if err != nil {
-
 		fmt.Print(err.Error())
 	}
+	misc.MapMutex.Lock()
 	err = t.Execute(w, UserCookieMap[cookieValue.Value])
 	if err != nil {
-
+		misc.MapMutex.Unlock()
 		fmt.Println(err.Error())
 	}
+	misc.MapMutex.Unlock()
 
 	// Resets assigned Error Message
 	if cookieValue != nil {
@@ -336,7 +458,7 @@ func getRedditUsername(code string) (string, float64) {
 	client := &http.Client{Timeout: time.Second * 2}
 
 	// Sets reddit required post info
-	POSTinfo := "grant_type=authorization_code&code=" + code + "&redirect_uri=http://localhost:3000/"
+	POSTinfo := "grant_type=authorization_code&code=" + code + fmt.Sprintf("&redirect_uri=http://%v/verification", config.Website)
 
 	// Starts request to reddit
 	req, err := http.NewRequest("POST", "https://www.reddit.com/api/v1/access_token", bytes.NewBuffer([]byte(POSTinfo)))
@@ -345,9 +467,8 @@ func getRedditUsername(code string) (string, float64) {
 	}
 
 	// Sets needed request parameters User Agent and Basic Auth
-	req.Header.Set("User-Agent", "Discord-Reddit verification (by /u/thechosenapiks)")
-	req.SetBasicAuth("X", "X")
-	// Move basic auth above to environmental variables
+	req.Header.Set("User-Agent", misc.UserAgent)
+	req.SetBasicAuth(config.RedditAppName, config.RedditAppSecret)
 	resp, err := client.Do(req)
 
 	defer resp.Body.Close()
@@ -373,7 +494,7 @@ func getRedditUsername(code string) (string, float64) {
 
 	// Sets needed reqAPI paraemeters
 	reqAPI.Header.Add("Authorization", "Bearer "+access.RedditAccessToken)
-	reqAPI.Header.Add("User-Agent", "Discord-Reddit verification (by /u/thechosenapiks)")
+	reqAPI.Header.Add("User-Agent", misc.UserAgent)
 
 	// Does the GET request and puts it into the respAPI
 	respAPI, err := client.Do(reqAPI)
@@ -404,17 +525,15 @@ func getRedditUsername(code string) (string, float64) {
 func getDiscordUsernameDiscrim(code string) (string, string, string) {
 
 	discordConf := oauth2.Config{
-		ClientID:     "431328912090464266",
-		ClientSecret: "X",
+		ClientID:     config.BotID,
+		ClientSecret: config.DiscordAppSecret,
 		Scopes:       []string{"identity"},
-		RedirectURL:  "http://localhost:3000/",
+		RedirectURL:  fmt.Sprintf("http://%v/verification", config.Website),
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  "https://discordapp.com/api/oauth2/authorize",
 			TokenURL: "https://discordapp.com/api/oauth2/token",
 		},
 	}
-
-	// Move above to environmental variable
 
 	token, err := discordConf.Exchange(oauth2.NoContext, code)
 	if err != nil {
@@ -456,12 +575,14 @@ func getDiscordUsernameDiscrim(code string) (string, string, string) {
 func Verify(cookieValue *http.Cookie, r *http.Request) {
 
 	// Confirms that the map is not empty
-	if misc.MemberInfoMap == nil {
+	misc.MapMutex.Lock()
+	if len(misc.MemberInfoMap) == 0 {
+		misc.MapMutex.Unlock()
 		return
 	}
+	misc.MapMutex.Unlock()
 	// Checks if cookie has expired while doing this
 	if cookieValue != nil {
-
 		return
 	}
 
@@ -499,31 +620,31 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 	// Checks every 10 seconds if a user in the UserCookieMap needs to be given the role
 	for range time.NewTicker(10 * time.Second).C {
 
-		if UserCookieMap == nil {
+		misc.MapMutex.Lock()
+		if len(UserCookieMap) == 0 {
+			misc.MapMutex.Unlock()
 			return
 		}
 
 		for key := range UserCookieMap {
-
 			if UserCookieMap[key].RedditName != "" && UserCookieMap[key].DiscordVerifiedStatus == true &&
 				UserCookieMap[key].RedditVerifiedStatus == true {
 
 				// Puts all server roles in roles variable
 				roles, err := s.GuildRoles(config.ServerID)
 				if err != nil {
-
 					_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 					if err != nil {
-
+						misc.MapMutex.Unlock()
 						return
 					}
+					misc.MapMutex.Unlock()
 					return
 				}
 
 				// Fetches ID of Verified role
 				for i := 0; i < len(roles); i++ {
 					if roles[i].Name == "Verified" {
-
 						roleID = roles[i].ID
 					}
 				}
@@ -531,25 +652,22 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 				// Assigns role
 				err = s.GuildMemberRoleAdd(config.ServerID, UserCookieMap[key].ID, roleID)
 				if err != nil {
-
 					_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 					if err != nil {
-
+						misc.MapMutex.Unlock()
 						return
 					}
+					misc.MapMutex.Unlock()
 					return
 				}
 
-				if UserCookieMap[key].AltCheck == false {
-
+				if !UserCookieMap[key].AltCheck {
 					CheckAltAccount(s, UserCookieMap[key].ID)
-
-					misc.MapMutex.Lock()
 					UserCookieMap[key].AltCheck = true
-					misc.MapMutex.Unlock()
 				}
 			}
 		}
+		misc.MapMutex.Unlock()
 	}
 }
 
@@ -558,27 +676,27 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	var roleID string
 
+	misc.MapMutex.Lock()
 	// Checks if the user is an already verified one
-	if misc.MemberInfoMap == nil {
-
+	if len(misc.MemberInfoMap) == 0 {
+		misc.MapMutex.Unlock()
 		return
 	}
 	if misc.MemberInfoMap[u.User.ID] == nil {
-
+		misc.MapMutex.Unlock()
 		return
 	}
 	if misc.MemberInfoMap[u.User.ID].RedditUsername == "" {
-
+		misc.MapMutex.Unlock()
 		return
 	}
+	misc.MapMutex.Unlock()
 
 	// Puts all server roles in roles
 	roles, err := s.GuildRoles(config.ServerID)
 	if err != nil {
-
 		_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 		if err != nil {
-
 			return
 		}
 		return
@@ -595,10 +713,8 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	// Assigns role
 	err = s.GuildMemberRoleAdd(config.ServerID, u.User.ID, roleID)
 	if err != nil {
-
 		_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 		if err != nil {
-
 			return
 		}
 		return
@@ -612,31 +728,27 @@ func CheckAltAccount(s *discordgo.Session, id string) {
 
 	var alts []string
 
-	if misc.MemberInfoMap == nil {
-
+	misc.MapMutex.Lock()
+	if len(misc.MemberInfoMap) == 0 {
+		misc.MapMutex.Unlock()
 		return
 	}
 
 	// Iterates through all users in memberInfo.json
 	for userOne := range misc.MemberInfoMap {
-
 		// Checks if the current user has the same reddit username as userCookieMap user
 		if misc.MemberInfoMap[userOne].RedditUsername == misc.MemberInfoMap[id].RedditUsername {
-
 			alts = append(alts, misc.MemberInfoMap[userOne].ID)
 		}
 	}
+	misc.MapMutex.Unlock()
 
 	// If there's more than one account with that reddit username print a message
 	if len(alts) > 1 {
-
-		// Forms the success string
-		success := "**Alternate Account Verified:** \n\n"
+		success := "**Alternate Account Verified:** \n"
 		for i := 0; i < len(alts); i++ {
-
 			success = success + "<@" + alts[i] + "> \n"
 		}
-
 		// Prints the alts in bot-log channel
 		_, _ = s.ChannelMessageSend(config.BotLogID, success)
 	}

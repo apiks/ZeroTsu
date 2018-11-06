@@ -113,16 +113,6 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	)
 	t := time.Now()
 
-	// Saves program from panic and continues running normally without executing the command if it happens
-	defer func() {
-		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
-			if err != nil {
-				return
-			}
-		}
-	}()
-
 	// Fixes channels without ID param
 	misc.MapMutex.Lock()
 	for id := range misc.ChannelStats {

@@ -2,12 +2,15 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/gorilla/mux"
 
 	"github.com/r-anime/ZeroTsu/config"
-	"github.com/r-anime/ZeroTsu/misc"
 	"github.com/r-anime/ZeroTsu/commands"
+	"github.com/r-anime/ZeroTsu/web"
+	"github.com/r-anime/ZeroTsu/misc"
 )
 
 // Initializes and starts Bot and website
@@ -21,12 +24,15 @@ func main() {
 	Start()
 
 	// Web Server
-	//http.HandleFunc("/", verification.IndexHandler)
-	//http.Handle("/verification/", http.StripPrefix("/verification/", http.FileServer(http.Dir("verification"))))
-	//err = http.ListenAndServe(":3000", nil)
-	//if err != nil {
-	//	panic(err)
-	//}
+	r := mux.NewRouter()
+	staticFileHandler := http.StripPrefix("/web/assets", http.FileServer(http.Dir("./web/assets")))
+	r.PathPrefix("/web/assets/").Handler(staticFileHandler)
+	r.HandleFunc("/", web.HomepageHandler)
+	r.HandleFunc("/verification", web.VerificationHandler)
+	r.HandleFunc("/verification/", web.VerificationHandler)
+	r.HandleFunc("/channelstats", web.StatsPageHandler)
+	r.HandleFunc("/channelstats/", web.StatsPageHandler)
+	err = http.ListenAndServe(":8080", r)
 
 	<-make(chan struct{})
 	return
@@ -48,8 +54,8 @@ func Start() {
 	// Reads memberInfo.json from storage at bot start
 	misc.MemberInfoRead()
 
-	// Reads bannedUsers.json from storage at bot start
-	misc.BannedUsersRead()
+	// Reads all banned users from memberInfo on bot start
+	misc.GetBannedUsers()
 
 	// Reads ongoing votes from VoteInfo.json at bot start
 	commands.VoteInfoRead()
@@ -72,7 +78,7 @@ func Start() {
 	// Reads saved channel stats from channelStats.json
 	misc.ChannelStatsRead()
 
-	// Reads user gain stats from UserGainStats.json
+	// Reads user gain stats from userGainStats.json
 	misc.UserChangeStatsRead()
 
 	// Periodic events and status
@@ -93,9 +99,6 @@ func Start() {
 	// Abstraction of a command handler
 	goBot.AddHandler(commands.HandleCommand)
 
-	//Converter
-	//goBot.AddHandler(commands.ConverterHandler)
-
 	// React Channel Join Handler
 	goBot.AddHandler(commands.ReactJoinHandler)
 
@@ -106,14 +109,14 @@ func Start() {
 	goBot.AddHandler(commands.ChannelVoteTimer)
 
 	// MemberInfo
-	//goBot.AddHandler(misc.OnMemberJoinGuild)
-	//goBot.AddHandler(misc.OnMemberUpdate)
+	goBot.AddHandler(misc.OnMemberJoinGuild)
+	goBot.AddHandler(misc.OnMemberUpdate)
 
 	// Verified Role and Cookie Map Expiry Deletion Handler
-	//goBot.AddHandler(verification.VerifiedRoleAdd)
-	//goBot.AddHandler(verification.VerifiedAlready)
+	goBot.AddHandler(web.VerifiedRoleAdd)
+	goBot.AddHandler(web.VerifiedAlready)
 
-	// Emoji Tracker
+	// Emoji Stats
 	goBot.AddHandler(commands.OnMessageEmoji)
 	goBot.AddHandler(commands.OnMessageEmojiReact)
 	goBot.AddHandler(commands.OnMessageEmojiUnreact)
@@ -125,15 +128,21 @@ func Start() {
 	goBot.AddHandler(misc.TwentyMinTimer)
 
 	// Voice Role Event Handler
-	//goBot.AddHandler(misc.VoiceRoleHandler)
+	goBot.AddHandler(misc.VoiceRoleHandler)
 
 	// User stats
 	goBot.AddHandler(commands.OnMemberJoin)
 	goBot.AddHandler(commands.OnMemberRemoval)
 
 	// Spam filter
-	//goBot.AddHandler(commands.SpamFilter)
-	//goBot.AddHandler(commands.SpamFilterTimer)
+	goBot.AddHandler(commands.SpamFilter)
+	goBot.AddHandler(commands.SpamFilterTimer)
+
+	// Bot fluff
+	goBot.AddHandler(misc.OnBotPing)
+
+	// Manual ban handler
+	goBot.AddHandler(misc.OnGuildBan)
 
 	err = goBot.Open()
 	if err != nil {

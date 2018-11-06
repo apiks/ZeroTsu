@@ -21,7 +21,7 @@ import (
 // File for misc. functions, commands and variables.
 
 const (
-	UserAgent  = "windows:apiksTEST:v1.0 (by /u/thechosenapiks)"
+	UserAgent  = "script:github.com/r-anime/zerotsu:v1.0.0 (by /u/thechosenapiks, /u/geo1088)"
 	DateFormat = "2006-01-02"
 )
 
@@ -657,7 +657,7 @@ func ResolveTimeFromString(given string) (ret time.Time, perma bool) {
 // Resolves a userID from a userID or Mention
 func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string) (string, error) {
 
-	var err error
+	var err 	error
 
 	if len(messageSlice) < 2 {
 		err = fmt.Errorf("Error: No @user or userID detected.")
@@ -678,7 +678,6 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 		err = fmt.Errorf("Error: Invalid user.")
 		return userID, err
 	}
-
 	return userID, err
 }
 
@@ -755,4 +754,28 @@ func GetRoleUserAmount(guild *discordgo.Guild, roles []*discordgo.Role, roleName
 		}
 	}
 	return users
+}
+
+// Puts banned users in bannedUsersSlice on bot startup from memberInfo
+func GetBannedUsers() {
+	var bannedUserInfo BannedUsers
+
+	MapMutex.Lock()
+	for _, user := range MemberInfoMap {
+		if len(user.UnbanDate) > 6 {
+			bannedUserInfo.ID = user.ID
+			bannedUserInfo.User = user.Username
+			date, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", user.UnbanDate)
+			if err != nil {
+				date, err = time.Parse("2006-01-02 15:04:05", user.UnbanDate)
+				if err != nil {
+					fmt.Println(err)
+					continue
+				}
+			}
+			bannedUserInfo.UnbanDate = date
+			BannedUsersSlice = append(BannedUsersSlice, bannedUserInfo)
+		}
+	}
+	MapMutex.Unlock()
 }

@@ -1,9 +1,9 @@
 package commands
 
 import (
+	"strconv"
 	"strings"
 	"time"
-	"strconv"
 
 	"github.com/bwmarrin/discordgo"
 
@@ -15,14 +15,14 @@ import (
 func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		userID  string
-		length  string
-		reason  string
-		success string
+		userID  	string
+		length  	string
+		reason  	string
+		success 	string
 
-		validSlice bool
+		validSlice 	bool
 
-		temp misc.BannedUsers
+		temp 		misc.BannedUsers
 	)
 	z, _ := time.Now().Zone()
 
@@ -78,7 +78,8 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if user is in memberInfo and handles them
-	if misc.MemberInfoMap == nil || misc.MemberInfoMap[userID] == nil {
+	misc.MapMutex.Lock()
+	if len(misc.MemberInfoMap) == 0 || misc.MemberInfoMap[userID] == nil {
 		// Pulls info on user if they're in the server
 		userMem, err := s.State.Member(config.ServerID, mem.ID)
 		if err != nil {
@@ -99,17 +100,14 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.InitializeUser(userMem)
 	}
 
-	misc.MapMutex.Lock()
-
 	// Adds unban date to memberInfo and checks if perma
 	misc.MemberInfoMap[userID].Bans = append(misc.MemberInfoMap[userID].Bans, reason)
 	UnbanDate, perma := misc.ResolveTimeFromString(length)
 	if !perma {
-		misc.MemberInfoMap[userID].UnbanDate = UnbanDate.Format("2006-01-02 15:04:05")
+		misc.MemberInfoMap[userID].UnbanDate = UnbanDate.Format("2006-01-02 15:04:05.999999999 -0700 MST")
 	} else {
 		misc.MemberInfoMap[userID].UnbanDate = "_Never_"
 	}
-
 	misc.MapMutex.Unlock()
 
 	// Writes to memberInfo.json
@@ -119,17 +117,15 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	temp.ID = userID
 	temp.User = mem.Username
 
-	if !perma {
-		temp.UnbanDate = UnbanDate
-	} else {
+	if perma {
 		temp.UnbanDate = time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
+		UnbanDate = time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
+	} else {
+		temp.UnbanDate = UnbanDate
 	}
 
 	// Adds the now banned user to BannedUsersSlice
 	misc.BannedUsersSlice = append(misc.BannedUsersSlice, temp)
-
-	// Writes the new bannedUsers.json to file
-	misc.BannedUsersWrite(misc.BannedUsersSlice)
 
 	// Pulls the guild Name
 	guild, err := s.Guild(config.ServerID)
@@ -157,48 +153,41 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sends embed bot-log message
-	err = BanEmbed(s, m, mem, reason, length)
+	err = BanEmbed(s, m, mem, reason, UnbanDate, perma, config.BotLogID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
-	// Sends a message to bot-log regarding ban
-	if !perma {
-		_, err = s.ChannelMessageSend(m.ChannelID, mem.Username + "#" + mem.Discriminator + " has been banned by "+
-			m.Author.Username+ " until _"+ UnbanDate.Format("2006-01-02 15:04:05") + " " + z + "_")
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
-			return
-		}
-		return
-	}
-	_, err = s.ChannelMessageSend(m.ChannelID, mem.Username + "#" + mem.Discriminator + " has been permabanned by "+
-		m.Author.Username)
+	// Sends embed channel message
+	err = BanEmbed(s, m, mem, reason, UnbanDate, perma, m.ChannelID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 }
 
-func BanEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, reason string, length string) error {
+func BanEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, reason string, length time.Time, perma bool, channelID string) error {
 
 	var (
 		embedMess      discordgo.MessageEmbed
 		embedThumbnail discordgo.MessageEmbedThumbnail
+		embedFooter	   discordgo.MessageEmbedFooter
 
 		// Embed slice and its fields
 		embedField         []*discordgo.MessageEmbedField
 		embedFieldUserID   discordgo.MessageEmbedField
 		embedFieldReason   discordgo.MessageEmbedField
-		embedFieldDuration discordgo.MessageEmbedField
 	)
+
+	// Sets timestamp for unban date and footer
+	banDate := length.Format(time.RFC3339)
+	embedMess.Timestamp = banDate
+	embedFooter.Text = "Unban Date"
+	embedMess.Footer = &embedFooter
+
+	// Sets ban embed color
+	embedMess.Color = 0xff0000
 
 	// Saves user avatar as thumbnail
 	embedThumbnail.URL = mem.AvatarURL("128")
@@ -206,41 +195,37 @@ func BanEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, r
 	// Sets field titles
 	embedFieldUserID.Name = "User ID:"
 	embedFieldReason.Name = "Reason:"
-	embedFieldDuration.Name = "Duration:"
 
 	// Sets field content
 	embedFieldUserID.Value = mem.ID
 	embedFieldReason.Value = reason
-	embedFieldDuration.Value = length
-
-	// Sets field inline
-	embedFieldUserID.Inline = true
-	embedFieldReason.Inline = true
-	embedFieldDuration.Inline = true
 
 	// Adds the two fields to embedField slice (because embedMess.Fields requires slice input)
 	embedField = append(embedField, &embedFieldUserID)
-	embedField = append(embedField, &embedFieldDuration)
 	embedField = append(embedField, &embedFieldReason)
 
 	// Sets embed title and its description (which it uses the same way as a field)
-	embedMess.Title = mem.Username + "#" + mem.Discriminator + " was banned by " + m.Author.Username
+	if !perma {
+		embedMess.Title = mem.Username + "#" + mem.Discriminator + " was banned by " + m.Author.Username
+	} else {
+		embedMess.Title = mem.Username + "#" + mem.Discriminator + " was permabanned by " + m.Author.Username
+	}
 
 	// Adds user thumbnail and the two other fields as well
 	embedMess.Thumbnail = &embedThumbnail
 	embedMess.Fields = embedField
 
-	// Sends embed in bot-log channel
-	_, err := s.ChannelMessageSendEmbed(config.BotLogID, &embedMess)
+	// Sends embed in channel
+	_, err := s.ChannelMessageSendEmbed(channelID, &embedMess)
 	return err
 }
 
-//func init() {
-//	add(&command{
-//		execute:  banCommand,
-//		trigger:  "ban",
-//		desc:     "Bans a user for a set period of time.",
-//		elevated: true,
-//		category: "punishment",
-//	})
-//}
+func init() {
+	add(&command{
+		execute:  banCommand,
+		trigger:  "ban",
+		desc:     "Bans a user for a set period of time.",
+		elevated: true,
+		category: "punishment",
+	})
+}
