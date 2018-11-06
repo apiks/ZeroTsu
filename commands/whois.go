@@ -234,13 +234,13 @@ func CheckAltAccountWhois(id string) []string {
 	var alts []string
 
 	// Iterates through all users in memberInfo.json
-	for userOne := range misc.MemberInfoMap {
+	for _, user := range misc.MemberInfoMap {
 
 		// Checks if the current user has the same reddit username as id string user
-		if misc.MemberInfoMap[userOne].RedditUsername == misc.MemberInfoMap[id].RedditUsername &&
-			misc.MemberInfoMap[userOne].RedditUsername != "" &&
+		if user.RedditUsername == misc.MemberInfoMap[id].RedditUsername &&
+			user.RedditUsername != "" &&
 			misc.MemberInfoMap[id].RedditUsername != "" {
-			alts = append(alts, misc.MemberInfoMap[userOne].ID)
+			alts = append(alts, user.ID)
 		}
 	}
 	if len(alts) > 1 {
