@@ -664,7 +664,7 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 	var err 	error
 
 	if len(messageSlice) < 2 {
-		err = fmt.Errorf("Error: No @user or userID detected.")
+		err = fmt.Errorf("Error: No @user, userID or username#discrim detected.")
 		return "", err
 	}
 
@@ -676,19 +676,18 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 		userID = strings.TrimPrefix(userID, "/u/")
 		MapMutex.Lock()
 		for _, user := range MemberInfoMap {
-			if user.RedditUsername == userID {
+			if strings.ToLower(user.RedditUsername) == userID {
 				userID = user.ID
 				break
 			}
 		}
 		MapMutex.Unlock()
-		return userID, err
 	}
 	if strings.Contains(userID, "u/") {
 		userID = strings.TrimPrefix(userID, "u/")
 		MapMutex.Lock()
 		for _, user := range MemberInfoMap {
-			if user.RedditUsername == userID {
+			if strings.ToLower(user.RedditUsername) == userID {
 				userID = user.ID
 				break
 			}
