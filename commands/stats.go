@@ -347,10 +347,9 @@ func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 	misc.UserStats[t.Format(misc.DateFormat)]--
 	if misc.MemberInfoMap[u.User.ID] != nil {
 		misc.MemberInfoMap[u.User.ID].Discrim = ""
-		misc.MemberInfoMap[u.User.ID].OutsideServer = true
-		misc.MemberInfoWrite(misc.MemberInfoMap)
 	}
 	misc.MapMutex.Unlock()
+	misc.MemberInfoWrite(misc.MemberInfoMap)
 }
 
 // Checks if specific channel stat should be printed

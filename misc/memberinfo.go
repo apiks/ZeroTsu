@@ -40,7 +40,6 @@ type UserInfo struct {
 	RedditUsername string   `json:"redditUser,omitempty"`
 	VerifiedDate   string   `json:"verifiedDate,omitempty"`
 	UnbanDate      string   `json:"unbanDate,omitempty"`
-	OutsideServer  bool		`json:"-,omitempty"`
 }
 
 // Creates a struct type in which we'll hold every banned user
@@ -209,7 +208,6 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
 			"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
 	}
-	MapMutex.Unlock()
 
 	// Checks if the user's current username is the same as the one in the database. Otherwise updates
 	if user.User.Username != existingUser.Username {
@@ -253,7 +251,6 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	}
 
 	// Saves the updates to memberInfoMap
-	MapMutex.Lock()
 	MemberInfoMap[e.User.ID] = existingUser
 	MapMutex.Unlock()
 
@@ -286,7 +283,6 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 		MapMutex.Unlock()
 		return
 	}
-	MapMutex.Unlock()
 
 	// Checks usernames and updates if needed
 	if user.Username != e.User.Username {
@@ -330,7 +326,6 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	}
 
 	// Saves the updates to memberInfoMap
-	MapMutex.Lock()
 	MemberInfoMap[e.User.ID] = user
 	MapMutex.Unlock()
 

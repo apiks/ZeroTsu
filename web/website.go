@@ -242,7 +242,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Saves the id in the user map if it exists
 	if id != "" {
-
 		var temp User
 
 		// Decrypts encrypted id from url
@@ -270,7 +269,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		temp.ID = trueid
 		temp.Cookie = cookieValue.Value
 		UserCookieMap[cookieValue.Value] = &temp
-
 		misc.MapMutex.Unlock()
 	}
 
@@ -318,7 +316,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		UserCookieMap[cookieValue.Value] = &temp
 	}
 
-
 	if cookieValue != nil && errorVar == "" {
 		if code == "" && id == "" && state == "" {
 
@@ -343,8 +340,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				UserCookieMap[cookieValue.Value] = &temp
 
 				if UserCookieMap[cookieValue.Value].AccOldEnough && UserCookieMap[cookieValue.Value].ID != "" &&
-					UserCookieMap[cookieValue.Value].RedditVerifiedStatus&& UserCookieMap[cookieValue.Value].RedditName != "" {
-
+					UserCookieMap[cookieValue.Value].RedditVerifiedStatus && UserCookieMap[cookieValue.Value].RedditName != "" {
 					// Verifies user
 					Verify(cookieValue, r)
 				}
@@ -377,7 +373,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				accOldEnough := epochT.Before(prevWeek)
 
 				// If account is old enough continue, else show error message
-				if !accOldEnough {
+				if accOldEnough != true {
 
 					// Sets error message
 					var temp User
@@ -417,8 +413,8 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 			temp.Error = "Error: Cookie has expired. Please try the bot link again."
 			UserCookieMap[cookieValue.Value] = &temp
 		}
-		misc.MapMutex.Unlock()
 	}
+	misc.MapMutex.Unlock()
 
 	// Loads the html & css verification files
 	t, err := template.ParseFiles("web/assets/verification.html")
@@ -608,8 +604,8 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 	// Checks every 2 seconds if a user in the UserCookieMap needs to be given the role
 	for range time.NewTicker(2 * time.Second).C {
 
+		misc.MapMutex.Lock()
 		if len(UserCookieMap) != 0 {
-			misc.MapMutex.Lock()
 			for key := range UserCookieMap {
 				if UserCookieMap[key].RedditName != "" &&
 					UserCookieMap[key].DiscordVerifiedStatus &&
@@ -646,8 +642,8 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 					delete(UserCookieMap, key)
 				}
 			}
-			misc.MapMutex.Unlock()
 		}
+		misc.MapMutex.Unlock()
 	}
 }
 
@@ -685,7 +681,6 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	// Fetches ID of Verified role
 	for i := 0; i < len(roles); i++ {
 		if roles[i].Name == "Verified" {
-
 			roleID = roles[i].ID
 		}
 	}
@@ -700,7 +695,9 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
+	misc.MapMutex.Lock()
 	CheckAltAccount(s, u.User.ID)
+	misc.MapMutex.Unlock()
 }
 
 // Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Verification version
@@ -708,9 +705,7 @@ func CheckAltAccount(s *discordgo.Session, id string) {
 
 	var alts []string
 
-	misc.MapMutex.Lock()
 	if len(misc.MemberInfoMap) == 0 {
-		misc.MapMutex.Unlock()
 		return
 	}
 
@@ -721,7 +716,6 @@ func CheckAltAccount(s *discordgo.Session, id string) {
 			alts = append(alts, misc.MemberInfoMap[userOne].ID)
 		}
 	}
-	misc.MapMutex.Unlock()
 
 	// If there's more than one account with that reddit username print a message
 	if len(alts) > 1 {

@@ -175,9 +175,9 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		message += "\n\n**Unban Date:** " + user.UnbanDate
 	}
 
-	if user.OutsideServer {
-		message += "\n\n**_User is not in the server._**"
-	}
+	//if user.OutsideServer {
+	//	message += "\n\n**_User is not in the server._**"
+	//}
 
 	// Alt check
 	misc.MapMutex.Lock()
