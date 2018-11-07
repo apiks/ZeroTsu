@@ -342,10 +342,8 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					}
 					err = t.Execute(w, UserCookieMap[cookieValue.Value])
 					if err != nil {
-						misc.MapMutex.Unlock()
 						fmt.Println(err.Error())
 					}
-					misc.MapMutex.Unlock()
 
 					// Resets assigned Error Message
 					if cookieValue != nil {
@@ -353,8 +351,8 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 						temp = *UserCookieMap[cookieValue.Value]
 						temp.Error = ""
 						UserCookieMap[cookieValue.Value] = &temp
-						misc.MapMutex.Unlock()
 					}
+					misc.MapMutex.Unlock()
 					return
 				}
 
@@ -409,10 +407,8 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					}
 					err = t.Execute(w, UserCookieMap[cookieValue.Value])
 					if err != nil {
-						misc.MapMutex.Unlock()
 						fmt.Println(err.Error())
 					}
-					misc.MapMutex.Unlock()
 
 					// Resets assigned Error Message
 					if cookieValue != nil {
@@ -420,8 +416,8 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 						temp = *UserCookieMap[cookieValue.Value]
 						temp.Error = ""
 						UserCookieMap[cookieValue.Value] = &temp
-						misc.MapMutex.Unlock()
 					}
+					misc.MapMutex.Unlock()
 					return
 				}
 
@@ -583,7 +579,7 @@ func getDiscordUsernameDiscrim(code string) (string, string, string, error) {
 
 	token, err := discordConf.Exchange(oauth2.NoContext, code)
 	if err != nil {
-		panic(err)
+		return "", "", "", err
 	}
 
 	// Initializes client
@@ -591,18 +587,18 @@ func getDiscordUsernameDiscrim(code string) (string, string, string, error) {
 
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/users/@me", "https://discordapp.com/api"), nil)
 	if err != nil {
-		panic(err)
+		return "", "", "", err
 	}
 	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
 	res, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		return "", "", "", err
 	}
 
 	// Reads the byte respAPI body into bodyAPI
 	bodyAPI, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		panic(err)
+		return "", "", "", err
 	}
 
 	// Initializes user variable of type User to hold reddit json in
@@ -611,7 +607,7 @@ func getDiscordUsernameDiscrim(code string) (string, string, string, error) {
 	// Unmarshals all the required json fields in the above user variable
 	jsonErr := json.Unmarshal(bodyAPI, &user)
 	if jsonErr != nil {
-		panic(err)
+		return "", "", "", err
 	}
 
 	return user.Username, user.Discriminator, user.ID, err
