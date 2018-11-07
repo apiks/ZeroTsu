@@ -1,5 +1,5 @@
 {
-  "BotPrefix": "!",
+  "BotPrefix": ".",
   "BotID": "432579417974374400",
   "ServerID": "267799767843602452",
   "BotLogID": "284412480833191936",
@@ -11,5 +11,5 @@
   "OptInUnder": "-- opt-ins under here --",
   "OptInAbove": "-- opt-ins above here --",
   "VoiceChaID": "292337346806808576",
-   "Website": "142.93.21.75:8080"
+  "Website": "142.93.21.75:8080"
 }
