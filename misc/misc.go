@@ -694,7 +694,6 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 			}
 		}
 		MapMutex.Unlock()
-		return userID, err
 	}
 
 	// Handles userID if it was username#discrim format
