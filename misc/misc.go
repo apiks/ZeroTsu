@@ -712,7 +712,6 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 			}
 		}
 		MapMutex.Unlock()
-		return userID, err
 	}
 
 	// Trims fluff if it was a mention. Otherwise check if it's a correct user ID
