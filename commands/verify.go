@@ -144,11 +144,136 @@ func verifyEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.Memb
 	return err
 }
 
+// Unverifies a user
+func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	var roleID string
+
+	messageLowercase := strings.ToLower(m.Content)
+	commandStrings := strings.Split(messageLowercase, " ")
+
+	// Checks if there's enough parameters (command, user and reddit username.)
+	if len(commandStrings) != 2 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"verify [@user, userID, or username#discrim]`")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
+
+	// Pulls userID from 2nd parameter of commandStrings, else print error
+	userID, err := misc.GetUserID(s, m, commandStrings)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+
+	// Pulls info on user
+	userMem, err := s.State.Member(config.ServerID, userID)
+	if err != nil {
+		userMem, err = s.GuildMember(config.ServerID, userID)
+		if err != nil {
+			_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in the server. Cannot verify user.")
+			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+				if err != nil {
+					return
+				}
+				return
+			}
+			return
+		}
+	}
+
+	// Remove reddit username from map
+	misc.MapMutex.Lock()
+	if misc.MemberInfoMap[userID] != nil {
+
+		// Sets verification variables
+		misc.MemberInfoMap[userID].RedditUsername = ""
+		misc.MemberInfoMap[userID].VerifiedDate = ""
+	} else {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in memberInfo. Cannot unverify user.")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				misc.MapMutex.Unlock()
+				return
+			}
+			misc.MapMutex.Unlock()
+			return
+		}
+		misc.MapMutex.Unlock()
+		return
+	}
+	misc.MapMutex.Unlock()
+
+	// Writes modified memberInfo map to storage
+	misc.MemberInfoWrite(misc.MemberInfoMap)
+
+	// Puts all server roles in roles
+	roles, err := s.GuildRoles(config.ServerID)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+
+	// Fetches ID of Verified role and finds the correct one
+	for i := 0; i < len(roles); i++ {
+		if roles[i].Name == "Verified" {
+			roleID = roles[i].ID
+		}
+	}
+
+	// Assigns verified role to user
+	err = s.GuildMemberRoleRemove(config.ServerID, userID, roleID)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+
+	err = unverifyEmbed(s, m, userMem)
+	if err != nil {
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
+}
+
+func unverifyEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.Member) error {
+
+	var embedMess      discordgo.MessageEmbed
+
+	// Sets punishment embed color
+	embedMess.Color = 0x00ff00
+	embedMess.Title = fmt.Sprintf("Successfuly unverified %v#%v", mem.User.Username, mem.User.Discriminator)
+
+	// Sends embed in channel
+	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
+	return err
+}
+
 func init() {
 	add(&command{
 		execute:  verifyCommand,
 		trigger:  "verify",
 		desc:     "Verifies a user with a reddit username.",
+		elevated: true,
+		category: "misc",
+	})
+	add(&command{
+		execute:  unverifyCommand,
+		trigger:  "unverify",
+		desc:     "Unverifies a user.",
 		elevated: true,
 		category: "misc",
 	})
