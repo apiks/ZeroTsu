@@ -77,17 +77,12 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Puts past usernames into a string
 	if len(user.PastUsernames) != 0 {
 		for i := 0; i < len(user.PastUsernames); i++ {
-			for j := 0; j < len(user.PastUsernames); j++ {
-				if user.PastUsernames[i] == user.PastUsernames[j] {
-					break
-				}
-				if len(pastUsernames) == 0 && user.PastUsernames[i] != user.PastUsernames[j] {
-					pastUsernames = user.PastUsernames[i]
-					break
-				} else if user.PastUsernames[i] != user.PastUsernames[j] {
-					pastUsernames = pastUsernames + ", " + user.PastUsernames[i]
-					break
-				}
+			if len(pastUsernames) == 0 {
+				pastUsernames = user.PastUsernames[i]
+				break
+			} else {
+				pastUsernames = pastUsernames + ", " + user.PastUsernames[i]
+				break
 			}
 		}
 	} else {
@@ -97,17 +92,12 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Puts past nicknames into a string
 	if len(user.PastNicknames) != 0 {
 		for i := 0; i < len(user.PastNicknames); i++ {
-			for j := 0; j < len(user.PastNicknames); j++ {
-				if user.PastNicknames[i] == user.PastNicknames[j] {
-					break
-				}
-				if len(pastNicknames) == 0 {
-					pastNicknames = user.PastNicknames[i]
-					break
-				} else {
-					pastNicknames = pastNicknames + ", " + user.PastNicknames[i]
-					break
-				}
+			if len(pastNicknames) == 0 {
+				pastNicknames = user.PastNicknames[i]
+				break
+			} else {
+				pastNicknames = pastNicknames + ", " + user.PastNicknames[i]
+				break
 			}
 		}
 	} else {

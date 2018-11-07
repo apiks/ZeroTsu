@@ -379,7 +379,34 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				if UserCookieMap[cookieValue.Value].AccOldEnough && UserCookieMap[cookieValue.Value].ID != "" &&
 					UserCookieMap[cookieValue.Value].RedditVerifiedStatus && UserCookieMap[cookieValue.Value].RedditName != "" {
 					// Verifies user
-					Verify(cookieValue, r)
+					check := Verify(cookieValue, r)
+					if !check {
+						// Sets error message
+						var temp User
+						temp = *UserCookieMap[cookieValue.Value]
+						temp.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
+						UserCookieMap[cookieValue.Value] = &temp
+
+						// Loads the html & css verification files
+						t, err := template.ParseFiles("web/assets/verification.html")
+						if err != nil {
+							fmt.Print(err.Error())
+						}
+						err = t.Execute(w, UserCookieMap[cookieValue.Value])
+						if err != nil {
+							fmt.Println(err.Error())
+						}
+
+						// Resets assigned Error Message
+						if cookieValue != nil {
+							var temp User
+							temp = *UserCookieMap[cookieValue.Value]
+							temp.Error = ""
+							UserCookieMap[cookieValue.Value] = &temp
+						}
+						misc.MapMutex.Unlock()
+						return
+					}
 				}
 
 				if misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID] != nil {
@@ -457,7 +484,34 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					UserCookieMap[cookieValue.Value] = &temp
 
 					// Verifies user
-					Verify(cookieValue, r)
+					check := Verify(cookieValue, r)
+					if !check {
+						// Sets error message
+						var temp User
+						temp = *UserCookieMap[cookieValue.Value]
+						temp.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
+						UserCookieMap[cookieValue.Value] = &temp
+
+						// Loads the html & css verification files
+						t, err := template.ParseFiles("web/assets/verification.html")
+						if err != nil {
+							fmt.Print(err.Error())
+						}
+						err = t.Execute(w, UserCookieMap[cookieValue.Value])
+						if err != nil {
+							fmt.Println(err.Error())
+						}
+
+						// Resets assigned Error Message
+						if cookieValue != nil {
+							var temp User
+							temp = *UserCookieMap[cookieValue.Value]
+							temp.Error = ""
+							UserCookieMap[cookieValue.Value] = &temp
+						}
+						misc.MapMutex.Unlock()
+						return
+					}
 
 				} else if accOldEnough == true && UserCookieMap[cookieValue.Value].RedditName == "" {
 
@@ -640,7 +694,7 @@ func getDiscordUsernameDiscrim(code string) (string, string, string, error) {
 }
 
 // Verifies user by assigning the necessary values
-func Verify(cookieValue *http.Cookie, r *http.Request) {
+func Verify(cookieValue *http.Cookie, r *http.Request) bool {
 
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
@@ -652,11 +706,14 @@ func Verify(cookieValue *http.Cookie, r *http.Request) {
 
 	// Confirms that the map is not empty
 	if len(misc.MemberInfoMap) == 0 {
-		return
+		return false
 	}
 	// Checks if cookie has expired while doing this
 	if cookieValue == nil {
-		return
+		return false
+	}
+	if misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID] == nil {
+		return false
 	}
 
 	//Stores time of verification
@@ -673,6 +730,7 @@ func Verify(cookieValue *http.Cookie, r *http.Request) {
 
 	// Writes the username to memberInfo.json
 	misc.MemberInfoWrite(misc.MemberInfoMap)
+	return true
 }
 
 // Checks if a user in the cookie map has the role and if they're verified it gives it to them, also deletes expired map fields
@@ -722,7 +780,14 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 					}
 
 					if !UserCookieMap[key].AltCheck {
-						CheckAltAccount(s, UserCookieMap[key].ID)
+						check := CheckAltAccount(s, UserCookieMap[key].ID)
+						if !check {
+							user, err := s.GuildMember(config.ServerID, UserCookieMap[key].ID)
+							if err != nil {
+								return
+							}
+							misc.InitializeUser(user)
+						}
 						UserCookieMap[key].AltCheck = true
 					}
 
@@ -795,10 +860,8 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	if err != nil {
 		_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 		if err != nil {
-			misc.MapMutex.Unlock()
 			return
 		}
-		misc.MapMutex.Unlock()
 		return
 	}
 
@@ -806,7 +869,7 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 }
 
 // Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Verification version
-func CheckAltAccount(s *discordgo.Session, id string) {
+func CheckAltAccount(s *discordgo.Session, id string) bool {
 
 	var alts []string
 
@@ -819,7 +882,10 @@ func CheckAltAccount(s *discordgo.Session, id string) {
 	}()
 
 	if len(misc.MemberInfoMap) == 0 {
-		return
+		return false
+	}
+	if misc.MemberInfoMap[id] == nil {
+		return false
 	}
 
 	// Iterates through all users in memberInfo.json
@@ -839,4 +905,5 @@ func CheckAltAccount(s *discordgo.Session, id string) {
 		// Prints the alts in bot-log channel
 		_, _ = s.ChannelMessageSend(config.BotLogID, success)
 	}
+	return true
 }
