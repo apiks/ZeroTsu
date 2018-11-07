@@ -780,10 +780,10 @@ func CheckAltAccount(s *discordgo.Session, id string) {
 	}
 
 	// Iterates through all users in memberInfo.json
-	for userOne := range misc.MemberInfoMap {
+	for _, userOne := range misc.MemberInfoMap {
 		// Checks if the current user has the same reddit username as userCookieMap user
-		if misc.MemberInfoMap[userOne].RedditUsername == misc.MemberInfoMap[id].RedditUsername {
-			alts = append(alts, misc.MemberInfoMap[userOne].ID)
+		if userOne.RedditUsername == misc.MemberInfoMap[id].RedditUsername {
+			alts = append(alts, userOne.ID)
 		}
 	}
 
