@@ -80,8 +80,10 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 			for j := 0; j < len(user.PastUsernames); j++ {
 				if len(pastUsernames) == 0 && user.PastUsernames[i] != user.PastUsernames[j] {
 					pastUsernames = user.PastUsernames[i]
+					break
 				} else if user.PastUsernames[i] != user.PastUsernames[j] {
 					pastUsernames = pastUsernames + ", " + user.PastUsernames[i]
+					break
 				}
 			}
 		}
@@ -95,8 +97,10 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 			for j := 0; j < len(user.PastNicknames); j++ {
 				if len(pastNicknames) == 0 && user.PastNicknames[i] != user.PastNicknames[j] {
 					pastNicknames = user.PastNicknames[i]
+					break
 				} else if user.PastNicknames[i] != user.PastNicknames[j] {
 					pastNicknames = pastNicknames + ", " + user.PastNicknames[i]
+					break
 				}
 			}
 		}
