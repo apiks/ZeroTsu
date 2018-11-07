@@ -70,7 +70,6 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.InitializeUser(mem)
 		misc.MemberInfoWrite(misc.MemberInfoMap)
 	}
-	misc.MapMutex.Unlock()
 
 	// Puts past usernames into a string
 	if len(user.PastUsernames) != 0 {
@@ -180,7 +179,6 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	//}
 
 	// Alt check
-	misc.MapMutex.Lock()
 	alts := CheckAltAccountWhois(userID)
 	misc.MapMutex.Unlock()
 

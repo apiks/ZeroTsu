@@ -121,6 +121,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	var (
 		flag        = false
 		initialized = false
+		userID		  string
 	)
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -134,16 +135,14 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	}()
 
 	// Pulls info on user if possible
-	user, err := s.State.Member(config.ServerID, e.User.ID)
+	MapMutex.Lock()
+	user, err := s.GuildMember(config.ServerID, e.User.ID)
 	if err != nil {
-		user, err = s.GuildMember(config.ServerID, e.User.ID)
-		if err != nil {
-			return
-		}
+		return
 	}
+	userID = user.User.ID
 
 	// If memberInfo is empty, it initializes
-	MapMutex.Lock()
 	if len(MemberInfoMap) == 0 {
 
 		// Initializes the first user of memberInfo.
@@ -191,29 +190,29 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 	// Fetches user from memberInfo
 	MapMutex.Lock()
-	existingUser, ok := MemberInfoMap[e.User.ID]
+	existingUser, ok := MemberInfoMap[userID]
 	if !ok {
 		MapMutex.Unlock()
-		fmt.Println("Mutex unlocked")
 		return
 	}
 
 	// If user is already in memberInfo but hasn't verified before tell him to verify now
-	if MemberInfoMap[e.User.ID].RedditUsername == "" && !initialized {
+	if MemberInfoMap[userID].RedditUsername == "" && !initialized {
 
 		// Encrypts id
-		ciphertext := Encrypt(Key, user.User.ID)
+		ciphertext := Encrypt(Key, userID)
 
 		// Sends verification message to user in DMs if possible
-		dm, _ := s.UserChannelCreate(user.User.ID)
+		dm, _ := s.UserChannelCreate(userID)
 		_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
 			"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
 	}
+	MapMutex.Unlock()
 
 	// Checks if the user's current username is the same as the one in the database. Otherwise updates
 	if user.User.Username != existingUser.Username {
 		flag := true
-		lower := strings.ToLower(e.User.Username)
+		lower := strings.ToLower(user.User.Username)
 
 		for _, names := range existingUser.PastUsernames {
 			if strings.ToLower(names) == lower {
@@ -241,7 +240,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		}
 
 		if flag {
-			existingUser.PastNicknames = append(existingUser.PastNicknames, e.Nick)
+			existingUser.PastNicknames = append(existingUser.PastNicknames, user.Nick)
 			existingUser.Nickname = user.Nick
 		}
 	}
@@ -251,9 +250,10 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		existingUser.Discrim = user.User.Discriminator
 	}
 
+	MapMutex.Lock()
 	// Saves the updates to memberInfoMap and writes to disk
-	if MemberInfoMap[user.User.ID] != existingUser {
-		MemberInfoMap[e.User.ID] = existingUser
+	if MemberInfoMap[userID] != existingUser {
+		MemberInfoMap[userID] = existingUser
 		MemberInfoWrite(MemberInfoMap)
 	}
 	MapMutex.Unlock()
@@ -382,4 +382,32 @@ func Decrypt(key []byte, cryptoText string) string {
 	stream.XORKeyStream(ciphertext, ciphertext)
 
 	return fmt.Sprintf("%s", ciphertext)
+}
+
+// Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Verification version
+func checkAltAccount(s *discordgo.Session, id string) {
+
+	var alts []string
+
+	if len(MemberInfoMap) == 0 {
+		return
+	}
+
+	// Iterates through all users in memberInfo.json
+	for userOne := range MemberInfoMap {
+		// Checks if the current user has the same reddit username as userCookieMap user
+		if MemberInfoMap[userOne].RedditUsername == MemberInfoMap[id].RedditUsername {
+			alts = append(alts, MemberInfoMap[userOne].ID)
+		}
+	}
+
+	// If there's more than one account with that reddit username print a message
+	if len(alts) > 1 {
+		success := "**Alternate Account Verified:** \n"
+		for i := 0; i < len(alts); i++ {
+			success = success + "<@" + alts[i] + "> \n"
+		}
+		// Prints the alts in bot-log channel
+		_, _ = s.ChannelMessageSend(config.BotLogID, success)
+	}
 }

@@ -327,7 +327,38 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		} else if _, ok := UserCookieMap[cookieValue.Value]; ok {
 			if state == "overlordconfirmsdiscord" && UserCookieMap[cookieValue.Value].Code != "" {
 
-				uname, udiscrim, uid := getDiscordUsernameDiscrim(UserCookieMap[cookieValue.Value].Code)
+				uname, udiscrim, uid, err := getDiscordUsernameDiscrim(UserCookieMap[cookieValue.Value].Code)
+				if err != nil {
+					// Sets error message
+					var temp User
+					temp = *UserCookieMap[cookieValue.Value]
+					temp.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
+					UserCookieMap[cookieValue.Value] = &temp
+
+					// Loads the html & css verification files
+					t, err := template.ParseFiles("web/assets/verification.html")
+					if err != nil {
+						fmt.Print(err.Error())
+					}
+					misc.MapMutex.Lock()
+					err = t.Execute(w, UserCookieMap[cookieValue.Value])
+					if err != nil {
+						misc.MapMutex.Unlock()
+						fmt.Println(err.Error())
+					}
+					misc.MapMutex.Unlock()
+
+					// Resets assigned Error Message
+					if cookieValue != nil {
+						var temp User
+						misc.MapMutex.Lock()
+						temp = *UserCookieMap[cookieValue.Value]
+						temp.Error = ""
+						UserCookieMap[cookieValue.Value] = &temp
+						misc.MapMutex.Unlock()
+					}
+					return
+				}
 
 				var temp User
 
@@ -355,7 +386,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 						UserCookieMap[cookieValue.Value] = &temp
 					}
 				} else {
-
 					// Sets error message
 					var temp User
 					temp = *UserCookieMap[cookieValue.Value]
@@ -366,7 +396,38 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 			} else if state == "overlordconfirmsstring" && UserCookieMap[cookieValue.Value].Code != "" {
 
 				// Fetches reddit username and checks whether account is at least 1 week old
-				Name, DateUnix = getRedditUsername(UserCookieMap[cookieValue.Value].Code)
+				Name, DateUnix, err = getRedditUsername(UserCookieMap[cookieValue.Value].Code)
+				if err != nil {
+					// Sets error message
+					var temp User
+					temp = *UserCookieMap[cookieValue.Value]
+					temp.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
+					UserCookieMap[cookieValue.Value] = &temp
+
+					// Loads the html & css verification files
+					t, err := template.ParseFiles("web/assets/verification.html")
+					if err != nil {
+						fmt.Print(err.Error())
+					}
+					misc.MapMutex.Lock()
+					err = t.Execute(w, UserCookieMap[cookieValue.Value])
+					if err != nil {
+						misc.MapMutex.Unlock()
+						fmt.Println(err.Error())
+					}
+					misc.MapMutex.Unlock()
+
+					// Resets assigned Error Message
+					if cookieValue != nil {
+						var temp User
+						misc.MapMutex.Lock()
+						temp = *UserCookieMap[cookieValue.Value]
+						temp.Error = ""
+						UserCookieMap[cookieValue.Value] = &temp
+						misc.MapMutex.Unlock()
+					}
+					return
+				}
 
 				epochT := time.Unix(int64(DateUnix), 0)
 				prevWeek := time.Now().AddDate(0, 0, -7)
@@ -441,7 +502,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Verifies user on reddit and returns their reddit username
-func getRedditUsername(code string) (string, float64) {
+func getRedditUsername(code string) (string, float64, error) {
 
 	// Initializes client
 	client := &http.Client{Timeout: time.Second * 2}
@@ -452,7 +513,7 @@ func getRedditUsername(code string) (string, float64) {
 	// Starts request to reddit
 	req, err := http.NewRequest("POST", "https://www.reddit.com/api/v1/access_token", bytes.NewBuffer([]byte(POSTinfo)))
 	if err != nil {
-		panic(err)
+		return "", 0, err
 	}
 
 	// Sets needed request parameters User Agent and Basic Auth
@@ -463,7 +524,7 @@ func getRedditUsername(code string) (string, float64) {
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		panic(err)
+		return "", 0, err
 	}
 
 	// Initializes Access type variable to hold data
@@ -472,13 +533,13 @@ func getRedditUsername(code string) (string, float64) {
 	// Unmarshals json info into the above access variable to hold
 	jsonErr := json.Unmarshal(body, &access)
 	if jsonErr != nil {
-		panic(err)
+		return "", 0, err
 	}
 
 	// Makes a GET request to reddit in reqAPI
 	reqAPI, err := http.NewRequest("GET", "https://oauth.reddit.com/api/v1/me", nil)
 	if err != nil {
-		panic(err)
+		return "", 0, err
 	}
 
 	// Sets needed reqAPI paraemeters
@@ -488,13 +549,13 @@ func getRedditUsername(code string) (string, float64) {
 	// Does the GET request and puts it into the respAPI
 	respAPI, err := client.Do(reqAPI)
 	if err != nil {
-		panic(err)
+		return "", 0, err
 	}
 
 	// Reads the byte respAPI body into bodyAPI
 	bodyAPI, err := ioutil.ReadAll(respAPI.Body)
 	if err != nil {
-		panic(err)
+		return "", 0, err
 	}
 
 	// Initializes user variable of type User to hold reddit json in
@@ -503,15 +564,15 @@ func getRedditUsername(code string) (string, float64) {
 	// Unmarshals all the required json fields in the above user variable
 	jsonErr = json.Unmarshal(bodyAPI, &user)
 	if jsonErr != nil {
-		panic(err)
+		return "", 0, err
 	}
 
 	// Returns user reddit username and date of account creation in epoch time
-	return user.RedditName, user.AccCreation
+	return user.RedditName, user.AccCreation, err
 }
 
 // Verifies user on discord and returns their discord username and discrim
-func getDiscordUsernameDiscrim(code string) (string, string, string) {
+func getDiscordUsernameDiscrim(code string) (string, string, string, error) {
 
 	discordConf := oauth2.Config{
 		ClientID:     config.BotID,
@@ -557,7 +618,7 @@ func getDiscordUsernameDiscrim(code string) (string, string, string) {
 		panic(err)
 	}
 
-	return user.Username, user.Discriminator, user.ID
+	return user.Username, user.Discriminator, user.ID, err
 }
 
 // Verifies user by assigning the necessary values
@@ -649,20 +710,29 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 // Checks if a user is already verified when they join the server and if they are directly assigns them the verified role
 func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
-	var roleID string
+	var (
+		roleID string
+		userID string
+	)
 
+	// Pulls info on user if possible
 	misc.MapMutex.Lock()
-	user := u
+	user, err := s.GuildMember(config.ServerID, u.User.ID)
+	if err != nil {
+		return
+	}
+	userID = user.User.ID
+
 	// Checks if the user is an already verified one
 	if len(misc.MemberInfoMap) == 0 {
 		misc.MapMutex.Unlock()
 		return
 	}
-	if misc.MemberInfoMap[u.User.ID] == nil {
+	if misc.MemberInfoMap[userID] == nil {
 		misc.MapMutex.Unlock()
 		return
 	}
-	if misc.MemberInfoMap[u.User.ID].RedditUsername == "" {
+	if misc.MemberInfoMap[userID].RedditUsername == "" {
 		misc.MapMutex.Unlock()
 		return
 	}
@@ -686,7 +756,7 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 
 	// Assigns role
-	err = s.GuildMemberRoleAdd(config.ServerID, user.User.ID, roleID)
+	err = s.GuildMemberRoleAdd(config.ServerID, userID, roleID)
 	if err != nil {
 		_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 		if err != nil {
@@ -697,7 +767,7 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
-	CheckAltAccount(s, user.User.ID)
+	CheckAltAccount(s, userID)
 }
 
 // Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Verification version
