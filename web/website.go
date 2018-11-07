@@ -649,12 +649,10 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 // Checks if a user is already verified when they join the server and if they are directly assigns them the verified role
 func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
-	var (
-		roleID string
-		userID string
-	)
+	var roleID string
 
 	misc.MapMutex.Lock()
+	user := u
 	// Checks if the user is an already verified one
 	if len(misc.MemberInfoMap) == 0 {
 		misc.MapMutex.Unlock()
@@ -668,7 +666,6 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		misc.MapMutex.Unlock()
 		return
 	}
-	userID = u.User.ID
 	misc.MapMutex.Unlock()
 
 	// Puts all server roles in roles
@@ -689,7 +686,7 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 
 	// Assigns role
-	err = s.GuildMemberRoleAdd(config.ServerID, userID, roleID)
+	err = s.GuildMemberRoleAdd(config.ServerID, user.User.ID, roleID)
 	if err != nil {
 		_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 		if err != nil {
@@ -700,7 +697,7 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
-	CheckAltAccount(s, userID)
+	CheckAltAccount(s, user.User.ID)
 }
 
 // Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Verification version
