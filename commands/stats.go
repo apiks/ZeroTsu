@@ -431,6 +431,7 @@ func dailyStats(s *discordgo.Session) {
 		author.ID = s.State.User.ID
 		message.Author = &author
 		message.Content = config.BotPrefix + "stats"
+		message.ChannelID = config.BotLogID
 		misc.MapMutex.Unlock()
 		showStats(s, &message)
 		dailyFlag = true
