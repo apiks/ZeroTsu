@@ -865,7 +865,9 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
+	misc.MapMutex.Lock()
 	CheckAltAccount(s, userID)
+	misc.MapMutex.Unlock()
 }
 
 // Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Verification version
