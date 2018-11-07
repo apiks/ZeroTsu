@@ -81,7 +81,6 @@ func MemberInfoWrite(info map[string]*UserInfo) {
 	// Turns info slice into byte ready to be pushed to file
 	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
-		MapMutex.Unlock()
 		return
 	}
 
@@ -116,6 +115,7 @@ func InitializeUser(u *discordgo.Member) {
 // Checks if user exists in memberInfo on joining server and adds him if he doesn't
 // Also updates usernames and/or nicknames
 // Also updates discriminator
+// Also verifies them if they're already verified in memberinfo
 func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 	var (
@@ -194,6 +194,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	existingUser, ok := MemberInfoMap[e.User.ID]
 	if !ok {
 		MapMutex.Unlock()
+		fmt.Println("Mutex unlocked")
 		return
 	}
 
@@ -250,12 +251,12 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		existingUser.Discrim = user.User.Discriminator
 	}
 
-	// Saves the updates to memberInfoMap
-	MemberInfoMap[e.User.ID] = existingUser
+	// Saves the updates to memberInfoMap and writes to disk
+	if MemberInfoMap[user.User.ID] != existingUser {
+		MemberInfoMap[e.User.ID] = existingUser
+		MemberInfoWrite(MemberInfoMap)
+	}
 	MapMutex.Unlock()
-
-	// Writes to memberInfo.json
-	MemberInfoWrite(MemberInfoMap)
 }
 
 // OnMemberUpdate listens for member updates to compare nicks/usernames and discrim
@@ -325,12 +326,12 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 		user.Discrim = e.User.Discriminator
 	}
 
-	// Saves the updates to memberInfoMap
-	MemberInfoMap[e.User.ID] = user
+	// Saves the updates to memberInfoMap and writes to disk
+	if user != MemberInfoMap[e.User.ID] {
+		MemberInfoMap[e.User.ID] = user
+		MemberInfoWrite(MemberInfoMap)
+	}
 	MapMutex.Unlock()
-
-	// Writes to memberInfo.json
-	MemberInfoWrite(MemberInfoMap)
 }
 
 // Encrypt string to base64 crypto using AES

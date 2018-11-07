@@ -596,13 +596,12 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-
 			fmt.Println(rec)
 		}
 	}()
 
 	// Checks every 2 seconds if a user in the UserCookieMap needs to be given the role
-	for range time.NewTicker(2 * time.Second).C {
+	for range time.NewTicker(3 * time.Second).C {
 
 		misc.MapMutex.Lock()
 		if len(UserCookieMap) != 0 {
@@ -650,7 +649,10 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 // Checks if a user is already verified when they join the server and if they are directly assigns them the verified role
 func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
-	var roleID string
+	var (
+		roleID string
+		userID string
+	)
 
 	misc.MapMutex.Lock()
 	// Checks if the user is an already verified one
@@ -666,6 +668,7 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		misc.MapMutex.Unlock()
 		return
 	}
+	userID = u.User.ID
 	misc.MapMutex.Unlock()
 
 	// Puts all server roles in roles
@@ -686,18 +689,18 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 
 	// Assigns role
-	err = s.GuildMemberRoleAdd(config.ServerID, u.User.ID, roleID)
+	err = s.GuildMemberRoleAdd(config.ServerID, userID, roleID)
 	if err != nil {
 		_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 		if err != nil {
+			misc.MapMutex.Unlock()
 			return
 		}
+		misc.MapMutex.Unlock()
 		return
 	}
 
-	misc.MapMutex.Lock()
-	CheckAltAccount(s, u.User.ID)
-	misc.MapMutex.Unlock()
+	CheckAltAccount(s, userID)
 }
 
 // Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Verification version

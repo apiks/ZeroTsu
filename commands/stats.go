@@ -11,9 +11,7 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
-var (
-	dailyFlag bool
-)
+var dailyFlag bool
 
 // Adds to message count on every message for that channel
 func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -344,9 +342,10 @@ func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 
 	t := time.Now()
 	misc.MapMutex.Lock()
+	user := u
 	misc.UserStats[t.Format(misc.DateFormat)]--
-	if misc.MemberInfoMap[u.User.ID] != nil {
-		misc.MemberInfoMap[u.User.ID].Discrim = ""
+	if misc.MemberInfoMap[user.User.ID] != nil {
+		misc.MemberInfoMap[user.User.ID].Discrim = ""
 	}
 	misc.MapMutex.Unlock()
 	misc.MemberInfoWrite(misc.MemberInfoMap)

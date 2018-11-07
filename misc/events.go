@@ -34,9 +34,6 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 			t := time.Now()
 			for i := 0; i < len(BannedUsersSlice); i++ {
 				difference := t.Sub(BannedUsersSlice[i].UnbanDate)
-				if BannedUsersSlice[i].ID == "183927122832785408" {
-					fmt.Println(difference)
-				}
 				if difference > 0 {
 
 					// Checks if user is in MemberInfo and assigns to user variable if true
