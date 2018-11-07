@@ -383,31 +383,3 @@ func Decrypt(key []byte, cryptoText string) string {
 
 	return fmt.Sprintf("%s", ciphertext)
 }
-
-// Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Verification version
-func checkAltAccount(s *discordgo.Session, id string) {
-
-	var alts []string
-
-	if len(MemberInfoMap) == 0 {
-		return
-	}
-
-	// Iterates through all users in memberInfo.json
-	for userOne := range MemberInfoMap {
-		// Checks if the current user has the same reddit username as userCookieMap user
-		if MemberInfoMap[userOne].RedditUsername == MemberInfoMap[id].RedditUsername {
-			alts = append(alts, MemberInfoMap[userOne].ID)
-		}
-	}
-
-	// If there's more than one account with that reddit username print a message
-	if len(alts) > 1 {
-		success := "**Alternate Account Verified:** \n"
-		for i := 0; i < len(alts); i++ {
-			success = success + "<@" + alts[i] + "> \n"
-		}
-		// Prints the alts in bot-log channel
-		_, _ = s.ChannelMessageSend(config.BotLogID, success)
-	}
-}

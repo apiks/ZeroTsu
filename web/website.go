@@ -93,6 +93,14 @@ func randString(n int) (string, error) {
 }
 
 func HomepageHandler(w http.ResponseWriter, r *http.Request) {
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			fmt.Println(rec)
+			fmt.Println("Error is in HomepageHandler")
+		}
+	}()
+
 	// Loads the html & css homepage files
 	t, err := template.ParseFiles("./web/assets/index.html")
 	if err != nil {
@@ -119,6 +127,7 @@ func StatsPageHandler(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			fmt.Println(rec)
+			fmt.Println("Error is in StatsPageHandler")
 		}
 	}()
 
@@ -230,6 +239,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			fmt.Println(rec)
+			fmt.Println("Error is in VerificationHandler")
 		}
 	}()
 
@@ -496,6 +506,14 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 // Verifies user on reddit and returns their reddit username
 func getRedditUsername(code string) (string, float64, error) {
 
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			fmt.Println(rec)
+			fmt.Println("getRedditUsername func")
+		}
+	}()
+
 	// Initializes client
 	client := &http.Client{Timeout: time.Second * 2}
 
@@ -566,6 +584,14 @@ func getRedditUsername(code string) (string, float64, error) {
 // Verifies user on discord and returns their discord username and discrim
 func getDiscordUsernameDiscrim(code string) (string, string, string, error) {
 
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			fmt.Println(rec)
+			fmt.Println("Error is in getDiscordUsernameDiscrim func")
+		}
+	}()
+
 	discordConf := oauth2.Config{
 		ClientID:     config.BotID,
 		ClientSecret: config.DiscordAppSecret,
@@ -616,6 +642,14 @@ func getDiscordUsernameDiscrim(code string) (string, string, string, error) {
 // Verifies user by assigning the necessary values
 func Verify(cookieValue *http.Cookie, r *http.Request) {
 
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			fmt.Println(rec)
+			fmt.Println("Error is in Verify func")
+		}
+	}()
+
 	// Confirms that the map is not empty
 	if len(misc.MemberInfoMap) == 0 {
 		return
@@ -650,6 +684,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			fmt.Println(rec)
+			fmt.Println("Error is in VerifiedRoleAdd func")
 		}
 	}()
 
@@ -706,6 +741,14 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		roleID string
 		userID string
 	)
+
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			fmt.Println(rec)
+			fmt.Println("Error is in VerifiedAlready func")
+		}
+	}()
 
 	// Pulls info on user if possible
 	misc.MapMutex.Lock()
@@ -766,6 +809,14 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 func CheckAltAccount(s *discordgo.Session, id string) {
 
 	var alts []string
+
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			fmt.Println(rec)
+			fmt.Println("Error is in CheckAltAccount func")
+		}
+	}()
 
 	if len(misc.MemberInfoMap) == 0 {
 		return
