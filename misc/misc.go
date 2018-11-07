@@ -671,6 +671,10 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 	// Pulls the userID from the second parameter
 	userID := messageSlice[1]
 
+	// Handles "me" string on whois
+	if strings.ToLower(userID) == "me" {
+		userID = m.Author.ID
+	}
 	// Handles userID if it was in reddit username format
 	if strings.Contains(userID, "/u/") {
 		userID = strings.TrimPrefix(userID, "/u/")
