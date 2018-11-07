@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -14,13 +15,15 @@ import (
 func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		pastUsernames string
-		pastNicknames string
-		warnings      string
-		kicks         string
-		bans          string
-		unbanDate     string
-		splitMessage []string
+		pastUsernames 		string
+		pastNicknames 		string
+		warnings      		string
+		kicks         		string
+		bans          		string
+		unbanDate     		string
+		splitMessage 		[]string
+		isInsideGuild = 	true
+		altIsInsideGuild 	bool
 	)
 
 	messageLowercase := strings.ToLower(m.Content)
@@ -44,33 +47,36 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	misc.MapMutex.Lock()
+	// Fetches user from server if possible
+	mem, err := s.State.Member(config.ServerID, userID)
+	if err != nil {
+		mem, err = s.GuildMember(config.ServerID, userID)
+		if err != nil {
+			isInsideGuild = false
+		}
+	}
 	// Checks if user is in MemberInfo and assigns to user variable. Else initializes user.
+	misc.MapMutex.Lock()
 	user, ok := misc.MemberInfoMap[userID]
 	if !ok {
-
-		// Fetches user from server if possible
-		mem, err := s.State.Member(config.ServerID, userID)
-		if err != nil {
-			mem, err = s.GuildMember(config.ServerID, userID)
+		if mem == nil {
+			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot whois until they rejoin server.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot whois until they rejoin server.")
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 				if err != nil {
-					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-					if err != nil {
-						misc.MapMutex.Unlock()
-						return
-					}
 					misc.MapMutex.Unlock()
 					return
 				}
 				misc.MapMutex.Unlock()
 				return
 			}
+			misc.MapMutex.Unlock()
+			return
 		}
 
 		// Initializes user if he doesn't exist and is in server
 		misc.InitializeUser(mem)
+		user = misc.MemberInfoMap[userID]
 		misc.MemberInfoWrite(misc.MemberInfoMap)
 	}
 
@@ -177,29 +183,41 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		message += "\n\n**Unban Date:** " + user.UnbanDate
 	}
 
-	//if user.OutsideServer {
-	//	message += "\n\n**_User is not in the server._**"
-	//}
+	if !isInsideGuild {
+		message += "\n\n**_User is not in the server._**"
+	}
 
 	// Alt check
 	alts := CheckAltAccountWhois(userID)
-	misc.MapMutex.Unlock()
 
 	// If there's more than one account with that reddit username print a message
 	if len(alts) > 1 {
 
-		// Forms the success string
+		// Forms the alts string based on whether alt is in server
 		success := "\n\n**Alts:** \n"
 		for i := 0; i < len(alts); i++ {
-			success = success + "<@" + alts[i] + "> \n"
+			// Fetches alt from server if possible and sets flag
+			altIsInsideGuild = true
+			alt, err := s.State.Member(config.ServerID, alts[i])
+			if err != nil {
+				alt, err = s.GuildMember(config.ServerID, alts[i])
+				if err != nil {
+					altIsInsideGuild = false
+				}
+			}
+
+			if altIsInsideGuild {
+				success +=  alt.User.Mention() + " \n"
+			} else {
+				success += fmt.Sprintf("%v#%v\n", misc.MemberInfoMap[alts[i]].Username, misc.MemberInfoMap[alts[i]].Discrim)
+			}
 		}
 
 		// Adds the alts to the whois message
-		message = message + success
-
-		// Resets alts variable
+		message += success
 		alts = nil
 	}
+	misc.MapMutex.Unlock()
 
 	// Splits the message if it's over 1950 characters
 	if len(message) > 1950 {
