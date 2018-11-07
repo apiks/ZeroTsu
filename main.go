@@ -85,6 +85,9 @@ func Start() {
 	// Reads user gain stats from userGainStats.json
 	misc.UserChangeStatsRead()
 
+	// Cleans up duplicate usernames and nicknames (Run once per cleanup)
+	misc.DuplicateUsernamesAndNicknamesCleanup()
+
 	// Periodic events and status
 	goBot.AddHandler(misc.StatusReady)
 

@@ -383,3 +383,41 @@ func Decrypt(key []byte, cryptoText string) string {
 
 	return fmt.Sprintf("%s", ciphertext)
 }
+
+// Cleans up duplicate nicknames and usernames in memberInfo.json
+func DuplicateUsernamesAndNicknamesCleanup() {
+	MapMutex.Lock()
+	DuplicateRecursion()
+	MapMutex.Unlock()
+
+	MemberInfoWrite(MemberInfoMap)
+
+	fmt.Println("FINISHED WITH DUPLICATES")
+}
+
+// Helper of above
+func DuplicateRecursion() {
+	for _, value := range MemberInfoMap {
+		// Remove duplicate usernames
+		for index, username := range value.PastUsernames {
+			for indexDuplicate, usernameDuplicate := range value.PastUsernames {
+				if index != indexDuplicate && username == usernameDuplicate {
+					value.PastUsernames = append(value.PastUsernames[:indexDuplicate], value.PastUsernames[indexDuplicate+1:]...)
+					DuplicateRecursion()
+					return
+				}
+			}
+		}
+		// Remove duplicate nicknames
+		for index, nickname := range value.PastNicknames {
+			for indexDuplicate, nicknameDuplicate := range value.PastNicknames {
+				if index != indexDuplicate && nickname == nicknameDuplicate {
+					value.PastNicknames = append(value.PastNicknames[:indexDuplicate], value.PastNicknames[indexDuplicate+1:]...)
+					DuplicateRecursion()
+					return
+				}
+			}
+		}
+
+	}
+}
