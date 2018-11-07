@@ -340,7 +340,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					if err != nil {
 						fmt.Print(err.Error())
 					}
-					misc.MapMutex.Lock()
 					err = t.Execute(w, UserCookieMap[cookieValue.Value])
 					if err != nil {
 						misc.MapMutex.Unlock()
@@ -351,7 +350,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					// Resets assigned Error Message
 					if cookieValue != nil {
 						var temp User
-						misc.MapMutex.Lock()
 						temp = *UserCookieMap[cookieValue.Value]
 						temp.Error = ""
 						UserCookieMap[cookieValue.Value] = &temp
@@ -409,7 +407,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					if err != nil {
 						fmt.Print(err.Error())
 					}
-					misc.MapMutex.Lock()
 					err = t.Execute(w, UserCookieMap[cookieValue.Value])
 					if err != nil {
 						misc.MapMutex.Unlock()
@@ -420,7 +417,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					// Resets assigned Error Message
 					if cookieValue != nil {
 						var temp User
-						misc.MapMutex.Lock()
 						temp = *UserCookieMap[cookieValue.Value]
 						temp.Error = ""
 						UserCookieMap[cookieValue.Value] = &temp
