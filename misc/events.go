@@ -112,16 +112,6 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			return
 		}
 
-		// Writes channel stats to disk
-		_, err = ChannelStatsWrite(ChannelStats)
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
-			if err != nil {
-				return
-			}
-			return
-		}
-
 		// Writes user gain stats to disk
 		_, err = UserChangeStatsWrite(UserStats)
 		if err != nil {
@@ -157,11 +147,24 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 		t := time.Now()
 		MapMutex.Lock()
 		for chas := range ChannelStats {
+			if ChannelStats[chas].RoleCount == nil {
+				ChannelStats[chas].RoleCount = make(map[string]int)
+			}
 			if ChannelStats[chas].Optin {
 				ChannelStats[chas].RoleCount[t.Format(DateFormat)] = GetRoleUserAmount(guild, roles, ChannelStats[chas].Name)
 			}
 		}
 		MapMutex.Unlock()
+
+		// Writes channel stats to disk
+		_, err = ChannelStatsWrite(ChannelStats)
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
 	}
 }
 
