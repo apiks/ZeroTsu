@@ -456,6 +456,6 @@ func init() {
 		aliases:  []string{"channelstats", "channels"},
 		desc:     "Prints all channel stats.",
 		elevated: true,
-		category: "normal",
+		category: "stats",
 	})
 }

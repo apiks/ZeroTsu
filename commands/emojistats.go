@@ -300,6 +300,6 @@ func init() {
 		aliases:  []string{"emojistats", "emojis"},
 		desc:     "Prints server emoji usage stats.",
 		elevated: true,
-		category: "normal",
+		category: "stats",
 	})
 }
