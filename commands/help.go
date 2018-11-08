@@ -880,36 +880,42 @@ func init() {
 	add(&command{
 		execute:  helpChannelCommand,
 		trigger:  "hchannel",
+		aliases:  []string{"h[channel]"},
 		desc:     "Print all channel related commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpFiltersCommand,
 		trigger:  "hfilters",
+		aliases:  []string{"h[filters]"},
 		desc:     "Print all commands related to filters.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpMiscCommand,
 		trigger:  "hmisc",
+		aliases:  []string{"h[misc]"},
 		desc:     "Print all miscellaneous mod commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpNormalCommand,
 		trigger:  "hnormal",
+		aliases:  []string{"h[normal]"},
 		desc:     "Print all normal user commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpPunishmentCommand,
 		trigger:  "hpunishment",
+		aliases:  []string{"h[punishment]"},
 		desc:     "Print all mod pusnihment commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpReactsCommand,
 		trigger:  "hreacts",
+		aliases:  []string{"h[reacts]"},
 		desc:     "Print all channel join via react commands.",
 		elevated: true,
 	})
@@ -922,6 +928,7 @@ func init() {
 	add(&command{
 		execute:  helpStatsCommand,
 		trigger:  "hstats",
+		aliases:  []string{"h[stats]"},
 		desc:     "Print all channel and emoji stats commands.",
 		elevated: true,
 	})
