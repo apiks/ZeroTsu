@@ -816,14 +816,17 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}()
 
 	// Pulls info on user if possible
-	misc.MapMutex.Lock()
+	s.State.RWMutex.RLock()
 	user, err := s.GuildMember(config.ServerID, u.User.ID)
 	if err != nil {
+		s.State.RWMutex.RUnlock()
 		return
 	}
 	userID = user.User.ID
+	s.State.RWMutex.RUnlock()
 
 	// Checks if the user is an already verified one
+	misc.MapMutex.Lock()
 	if len(misc.MemberInfoMap) == 0 {
 		misc.MapMutex.Unlock()
 		return

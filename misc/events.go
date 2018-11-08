@@ -356,8 +356,11 @@ func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
 			return
 		}
 	}
+	s.State.RWMutex.RLock()
 	_, err := s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("%v#%v was manually permabanned. ID: %v", e.User.Username, e.User.Discriminator, e.User.ID))
 	if err != nil {
+		s.State.RWMutex.RUnlock()
 		return
 	}
+	s.State.RWMutex.RUnlock()
 }

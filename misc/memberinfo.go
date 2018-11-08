@@ -135,14 +135,17 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	}()
 
 	// Pulls info on user if possible
-	MapMutex.Lock()
+	s.State.RWMutex.RLock()
 	user, err := s.GuildMember(config.ServerID, e.User.ID)
 	if err != nil {
+		s.State.RWMutex.RUnlock()
 		return
 	}
 	userID = user.User.ID
+	s.State.RWMutex.RUnlock()
 
 	// If memberInfo is empty, it initializes
+	MapMutex.Lock()
 	if len(MemberInfoMap) == 0 {
 
 		// Initializes the first user of memberInfo.
@@ -252,10 +255,8 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 	MapMutex.Lock()
 	// Saves the updates to memberInfoMap and writes to disk
-	if MemberInfoMap[userID] != existingUser {
-		MemberInfoMap[userID] = existingUser
-		MemberInfoWrite(MemberInfoMap)
-	}
+	MemberInfoMap[userID] = existingUser
+	MemberInfoWrite(MemberInfoMap)
 	MapMutex.Unlock()
 }
 
@@ -272,6 +273,10 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 		}
 	}()
 
+	s.State.RWMutex.RLock()
+	userMember := e
+	s.State.RWMutex.RUnlock()
+
 	MapMutex.Lock()
 	if len(MemberInfoMap) == 0 {
 		MapMutex.Unlock()
@@ -279,16 +284,16 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	}
 
 	// Fetches user from memberInfo if possible
-	user, ok := MemberInfoMap[e.User.ID]
+	user, ok := MemberInfoMap[userMember.User.ID]
 	if !ok {
 		MapMutex.Unlock()
 		return
 	}
 
 	// Checks usernames and updates if needed
-	if user.Username != e.User.Username {
+	if user.Username != userMember.User.Username {
 		flag := true
-		lower := strings.ToLower(e.User.Username)
+		lower := strings.ToLower(userMember.User.Username)
 
 		for _, names := range user.PastUsernames {
 			if strings.ToLower(names) == lower {
@@ -298,15 +303,15 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 		}
 
 		if flag {
-			user.PastUsernames = append(user.PastUsernames, e.User.Username)
-			user.Username = e.User.Username
+			user.PastUsernames = append(user.PastUsernames, userMember.User.Username)
+			user.Username = userMember.User.Username
 		}
 	}
 
 	// Checks nicknames and updates if needed
-	if user.Nickname != e.Nick && e.Nick != "" {
+	if user.Nickname != userMember.Nick && userMember.Nick != "" {
 		flag := true
-		lower := strings.ToLower(e.Nick)
+		lower := strings.ToLower(userMember.Nick)
 
 		for _, names := range user.PastNicknames {
 			if strings.ToLower(names) == lower {
@@ -316,21 +321,19 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 		}
 
 		if flag {
-			user.PastNicknames = append(user.PastNicknames, e.Nick)
-			user.Nickname = e.Nick
+			user.PastNicknames = append(user.PastNicknames, userMember.Nick)
+			user.Nickname = userMember.Nick
 		}
 	}
 
 	// Checks if the discrim in database is the same as the discrim used by the user. If not it changes it
-	if user.Discrim != e.User.Discriminator {
-		user.Discrim = e.User.Discriminator
+	if user.Discrim != userMember.User.Discriminator {
+		user.Discrim = userMember.User.Discriminator
 	}
 
 	// Saves the updates to memberInfoMap and writes to disk
-	if user != MemberInfoMap[e.User.ID] {
-		MemberInfoMap[e.User.ID] = user
-		MemberInfoWrite(MemberInfoMap)
-	}
+	MemberInfoMap[userMember.User.ID] = user
+	MemberInfoWrite(MemberInfoMap)
 	MapMutex.Unlock()
 }
 

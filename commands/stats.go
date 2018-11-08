@@ -341,8 +341,10 @@ func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 	}()
 
 	t := time.Now()
-	misc.MapMutex.Lock()
+	s.State.RWMutex.RLock()
 	user := u
+	s.State.RWMutex.RUnlock()
+	misc.MapMutex.Lock()
 	misc.UserStats[t.Format(misc.DateFormat)]--
 	if misc.MemberInfoMap[user.User.ID] != nil {
 		misc.MemberInfoMap[user.User.ID].Discrim = ""
