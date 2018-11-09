@@ -158,10 +158,10 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		voteChannel.Name = strings.Replace(messageLowercase, config.BotPrefix+"startvote ", "", -1)
-		voteChannel.Category = "436795861876342786"
+		voteChannel.Category = "363756332920340481"
 		voteChannel.Type = "temp"
 		voteChannel.Description = fmt.Sprintf("Temporary channel for %v. Will be deleted 3 hours after no message has been sent.", voteChannel.Name)
-		peopleNum = 1
+		peopleNum = 3
 	}
 
 	// Pulls up all current server channels and checks if it exists in UserTempCha.json. If not it deletes it from storage
