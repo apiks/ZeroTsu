@@ -145,6 +145,22 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
+	// Adds the role to the SpoilerMap and writes to storage
+	tempRole := discordgo.Role{
+		ID:   newRole.ID,
+		Name: command,
+	}
+
+	if m.Author.ID == s.State.User.ID {
+		misc.SpoilerMap[newRole.ID] = &tempRole
+		misc.SpoilerRolesWrite(misc.SpoilerMap)
+	} else {
+		misc.MapMutex.Lock()
+		misc.SpoilerMap[newRole.ID] = &tempRole
+		misc.SpoilerRolesWrite(misc.SpoilerMap)
+		misc.MapMutex.Unlock()
+	}
+
 	// Pulls info on server roles
 	deb, err := s.GuildRoles(config.ServerID)
 	if err != nil {
@@ -231,6 +247,16 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 					break
 				}
 			}
+		}
+
+		if m.Author.ID == s.State.User.ID {
+			TempChaMap[newRole.ID] = &temp
+			TempChaWrite(TempChaMap)
+		} else {
+			misc.MapMutex.Lock()
+			TempChaMap[newRole.ID] = &temp
+			TempChaWrite(TempChaMap)
+			misc.MapMutex.Unlock()
 		}
 
 		time.Sleep(100 * time.Millisecond)

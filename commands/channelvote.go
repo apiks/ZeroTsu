@@ -145,7 +145,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 	} else {
-		if len(commandStrings) != 2 {
+		if len(commandStrings) == 1 {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"startvote [name]`")
 			if err != nil {
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
