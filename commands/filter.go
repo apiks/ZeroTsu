@@ -202,6 +202,17 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string){
 				userID = strings.TrimPrefix(userID, "!")
 				userID = strings.TrimSuffix(userID, ">")
 
+				// Checks first in memberInfo. Only checks serverside if it doesn't exist. Saves performance
+				misc.MapMutex.Lock()
+				if len(misc.MemberInfoMap) != 0 {
+					if misc.MemberInfoMap[userID] != nil {
+						mentions += " " + strings.ToLower(misc.MemberInfoMap[userID].Nickname)
+						misc.MapMutex.Unlock()
+						continue
+					}
+				}
+				misc.MapMutex.Unlock()
+
 				user, err := s.State.Member(config.ServerID, userID)
 				if err != nil {
 					user, _ := s.GuildMember(config.ServerID, userID)
@@ -407,6 +418,17 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID
 				userID := strings.TrimPrefix(mentionCheck[index], "<@!")
 				userID = strings.TrimPrefix(userID, "!")
 				userID = strings.TrimSuffix(userID, ">")
+
+				// Checks first in memberInfo. Only checks serverside if it doesn't exist. Saves performance
+				misc.MapMutex.Lock()
+				if len(misc.MemberInfoMap) != 0 {
+					if misc.MemberInfoMap[userID] != nil {
+						m.Content = strings.Replace(m.Content, mentionCheck[index], fmt.Sprintf("@%v", misc.MemberInfoMap[userID].Nickname), -1)
+						misc.MapMutex.Unlock()
+						continue
+					}
+				}
+				misc.MapMutex.Unlock()
 
 				user, err := s.State.Member(config.ServerID, userID)
 				if err != nil {
