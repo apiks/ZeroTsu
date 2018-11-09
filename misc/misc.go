@@ -678,7 +678,7 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 		userID = strings.TrimPrefix(userID, "/u/")
 		MapMutex.Lock()
 		for _, user := range MemberInfoMap {
-			if user.RedditUsername == userID {
+			if strings.ToLower(user.RedditUsername) == userID {
 				userID = user.ID
 				break
 			}
@@ -689,13 +689,14 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 		userID = strings.TrimPrefix(userID, "u/")
 		MapMutex.Lock()
 		for _, user := range MemberInfoMap {
-			if user.RedditUsername == userID {
+			if strings.ToLower(user.RedditUsername) == userID {
 				userID = user.ID
 				break
 			}
 		}
 		MapMutex.Unlock()
 	}
+	fmt.Println(userID)
 	// Handles userID if it was username#discrim format
 	if strings.Contains(userID, "#") {
 		splitUser := strings.SplitN(userID, "#", 2)
