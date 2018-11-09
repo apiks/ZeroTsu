@@ -79,12 +79,15 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func hasElevatedPermissions(s *discordgo.Session, u *discordgo.User) bool {
+	s.State.RWMutex.RLock()
 	mem, err := s.State.Member(config.ServerID, u.ID)
 	if err != nil {
 		mem, err = s.GuildMember(config.ServerID, u.ID)
 		if err != nil {
+			s.State.RWMutex.RUnlock()
 			l.Panic(err)
 		}
 	}
+	s.State.RWMutex.RUnlock()
 	return misc.HasPermissions(mem)
 }

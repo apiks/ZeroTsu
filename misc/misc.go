@@ -262,7 +262,7 @@ func FiltersRead() {
 }
 
 // Writes spoilerRoles map to spoilerRoles.json
-func SpoilerRolesWrite(SpoilerMap map[string]*discordgo.Role) {
+func SpoilerRolesWrite(SpoilerMapWrite map[string]*discordgo.Role) {
 
 	var (
 		roleExists  bool
@@ -271,13 +271,13 @@ func SpoilerRolesWrite(SpoilerMap map[string]*discordgo.Role) {
 	// Appends the new spoiler role to a slice of all of the old ones if it doesn't exist
 	MapMutex.Lock()
 	if len(ReadSpoilerRoles) == 0 {
-		for k := range SpoilerMap {
-			ReadSpoilerRoles = append(ReadSpoilerRoles, *SpoilerMap[k])
+		for k := range SpoilerMapWrite {
+			ReadSpoilerRoles = append(ReadSpoilerRoles, *SpoilerMapWrite[k])
 		}
 	} else {
-		for k := range SpoilerMap {
+		for k := range SpoilerMapWrite {
 			for i := 0; i < len(ReadSpoilerRoles); i++ {
-				if ReadSpoilerRoles[i].ID == SpoilerMap[k].ID {
+				if ReadSpoilerRoles[i].ID == SpoilerMapWrite[k].ID {
 					roleExists = true
 					break
 
@@ -287,7 +287,7 @@ func SpoilerRolesWrite(SpoilerMap map[string]*discordgo.Role) {
 			}
 
 			if roleExists == false {
-				ReadSpoilerRoles = append(ReadSpoilerRoles, *SpoilerMap[k])
+				ReadSpoilerRoles = append(ReadSpoilerRoles, *SpoilerMapWrite[k])
 			}
 		}
 	}
@@ -680,7 +680,7 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 		userID = strings.TrimPrefix(userID, "/u/")
 		MapMutex.Lock()
 		for _, user := range MemberInfoMap {
-			if strings.ToLower(user.RedditUsername) == userID {
+			if user.RedditUsername == userID {
 				userID = user.ID
 				break
 			}
@@ -691,14 +691,13 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 		userID = strings.TrimPrefix(userID, "u/")
 		MapMutex.Lock()
 		for _, user := range MemberInfoMap {
-			if strings.ToLower(user.RedditUsername) == userID {
+			if user.RedditUsername == userID {
 				userID = user.ID
 				break
 			}
 		}
 		MapMutex.Unlock()
 	}
-
 	// Handles userID if it was username#discrim format
 	if strings.Contains(userID, "#") {
 		splitUser := strings.SplitN(userID, "#", 2)

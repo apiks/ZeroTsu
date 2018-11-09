@@ -51,9 +51,12 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 	// Checks if user is mod or bot before checking the message
+	s.State.RWMutex.RLock()
 	if misc.HasPermissions(mem) {
+		s.State.RWMutex.RUnlock()
 		return
 	}
+	s.State.RWMutex.RUnlock()
 
 	var (
 		removals      string
@@ -145,9 +148,12 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 		}
 	}
 	// Checks if user is mod or bot before checking the message
+	s.State.RWMutex.RLock()
 	if misc.HasPermissions(mem) {
+		s.State.RWMutex.RUnlock()
 		return
 	}
+	s.State.RWMutex.RUnlock()
 
 	// Iterates through all the filters to see if the message contained a filtered word
 	for i := 0; i < len(misc.ReadFilters); i++ {
@@ -511,14 +517,18 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 	// Checks if user is mod or bot before checking the message
+	s.State.RWMutex.RLock()
 	if misc.HasPermissions(mem) {
+		s.State.RWMutex.RUnlock()
 		return
 	}
+	s.State.RWMutex.RUnlock()
 
 	// Removes message if there were over 4 rapidly sent messages
 	misc.MapMutex.Lock()
 	if spamFilterMap[m.Author.ID] < 4 {
 		spamFilterMap[m.Author.ID]++
+		misc.MapMutex.Unlock()
 	} else {
 		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {
@@ -530,7 +540,6 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		misc.MapMutex.Unlock()
 	}
-	misc.MapMutex.Unlock()
 }
 
 // Handles expiring user spam map

@@ -41,9 +41,11 @@ func helpEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	// Checks for mod perms and handles accordingly
+	s.State.RWMutex.RLock()
 	if misc.HasPermissions(mem) {
 		admin = true
 	}
+	s.State.RWMutex.RUnlock()
 
 	err = helpEmbed(s, m, admin)
 	if err != nil {
@@ -789,6 +791,7 @@ func helpPlaintextCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks for mod perms
+	s.State.RWMutex.RLock()
 	if misc.HasPermissions(mem) {
 
 		// Help message 1 if user is a mod
@@ -813,8 +816,10 @@ func helpPlaintextCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
+				s.State.RWMutex.RUnlock()
 				return
 			}
+			s.State.RWMutex.RUnlock()
 			return
 		}
 
@@ -837,8 +842,10 @@ func helpPlaintextCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
+				s.State.RWMutex.RUnlock()
 				return
 			}
+			s.State.RWMutex.RUnlock()
 			return
 		}
 	} else {
@@ -856,11 +863,14 @@ func helpPlaintextCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
+				s.State.RWMutex.RUnlock()
 				return
 			}
+			s.State.RWMutex.RUnlock()
 			return
 		}
 	}
+	s.State.RWMutex.RUnlock()
 }
 
 func init() {

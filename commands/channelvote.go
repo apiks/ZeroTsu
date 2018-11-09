@@ -231,7 +231,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	peopleNum = peopleNum + 1
 	peopleNumStr := strconv.Itoa(peopleNum)
-	messageReact, err := s.ChannelMessageSend(m.ChannelID, 	fmt.Sprintf("%v thumbs up reacts on this message will create `%v`. Time limit is 30 hours.", peopleNumStr, voteChannel.Name))
+	messageReact, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v thumbs up reacts on this message will create `%v`. Time limit is 30 hours.", peopleNumStr, voteChannel.Name))
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -279,7 +279,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	VoteInfoWrite(VoteInfoMap)
 }
 
-// Checks if the message has enough reacts every 15 seconds, and stops if it's over the time limit
+// Checks if the message has enough reacts every 10 seconds, and stops if it's over the time limit
 func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 	var (
@@ -296,7 +296,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 		}
 	}()
 
-	for range time.NewTicker(15 * time.Second).C {
+	for range time.NewTicker(10 * time.Second).C {
 		misc.MapMutex.Lock()
 		for k := range VoteInfoMap {
 

@@ -145,25 +145,12 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Adds the role to the SpoilerMap and writes to storage
-	tempRole := discordgo.Role{
-		ID:   newRole.ID,
-		Name: command,
-	}
-
-	misc.MapMutex.Lock()
-	misc.SpoilerMap[newRole.ID] = &tempRole
-	misc.MapMutex.Unlock()
-	misc.SpoilerRolesWrite(misc.SpoilerMap)
-
-
 	// Pulls info on server roles
 	deb, err := s.GuildRoles(config.ServerID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
-
 	// Finds ID of Muted role and Airing role
 	for i := 0; i < len(deb); i++ {
 		if deb[i].Name == "Muted" {
@@ -245,10 +232,6 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 				}
 			}
 		}
-		misc.MapMutex.Lock()
-		TempChaMap[newRole.ID] = &temp
-		misc.MapMutex.Unlock()
-		TempChaWrite(TempChaMap)
 
 		time.Sleep(100 * time.Millisecond)
 	}
