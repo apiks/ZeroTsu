@@ -269,7 +269,6 @@ func SpoilerRolesWrite(SpoilerMapWrite map[string]*discordgo.Role) {
 	)
 
 	// Appends the new spoiler role to a slice of all of the old ones if it doesn't exist
-	MapMutex.Lock()
 	if len(ReadSpoilerRoles) == 0 {
 		for k := range SpoilerMapWrite {
 			ReadSpoilerRoles = append(ReadSpoilerRoles, *SpoilerMapWrite[k])
@@ -291,7 +290,6 @@ func SpoilerRolesWrite(SpoilerMapWrite map[string]*discordgo.Role) {
 			}
 		}
 	}
-	MapMutex.Unlock()
 
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(ReadSpoilerRoles, "", "    ")
