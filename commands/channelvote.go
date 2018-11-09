@@ -17,6 +17,7 @@ import (
 var (
 	VoteInfoMap = make(map[string]*VoteInfo)
 	TempChaMap  = make(map[string]*TempChaInfo)
+	inChanCreation bool
 )
 
 // VoteInfo is the in memory storage of each vote channel's info
@@ -158,10 +159,23 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		voteChannel.Name = strings.Replace(messageLowercase, config.BotPrefix+"startvote ", "", -1)
-		voteChannel.Category = "363756332920340481"
+		voteChannel.Category = "436795861876342786"
 		voteChannel.Type = "temp"
 		voteChannel.Description = fmt.Sprintf("Temporary channel for %v. Will be deleted 3 hours after no message has been sent.", voteChannel.Name)
-		peopleNum = 3
+		peopleNum = 1
+	}
+
+	// Checks if a channel is in the process of being created before moving on (prevention against spam)
+	if inChanCreation {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: A channel is in the process of being created. Please try again in 10 seconds.")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
 	}
 
 	// Pulls up all current server channels and checks if it exists in UserTempCha.json. If not it deletes it from storage
@@ -350,6 +364,9 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				continue
 			}
 
+			// Tell the startvote command to wait for this command to finish before moving on
+			inChanCreation = true
+
 			var (
 				message discordgo.Message
 				author  discordgo.User
@@ -402,8 +419,10 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				if err != nil {
 					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 					if err != nil {
+						inChanCreation = false
 						continue
 					}
+					inChanCreation = false
 					continue
 				}
 			} else {
@@ -412,8 +431,10 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				if err != nil {
 					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 					if err != nil {
+						inChanCreation = false
 						continue
 					}
+					inChanCreation = false
 					continue
 				}
 			}
@@ -424,8 +445,10 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 			if err != nil {
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 				if err != nil {
+					inChanCreation = false
 					continue
 				}
+				inChanCreation = false
 				continue
 			}
 			for i := 0; i < len(roles); i++ {
@@ -440,8 +463,10 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 			if err != nil {
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 				if err != nil {
+					inChanCreation = false
 					continue
 				}
+				inChanCreation = false
 				continue
 			}
 
@@ -459,6 +484,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					continue
 				}
 			}
+			inChanCreation = false
 		}
 		misc.MapMutex.Unlock()
 
