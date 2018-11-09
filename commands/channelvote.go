@@ -168,7 +168,9 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	cha, err := s.GuildChannels(config.ServerID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
+		return
 	}
+
 	misc.MapMutex.Lock()
 	for k, v := range TempChaMap {
 		exists := false
