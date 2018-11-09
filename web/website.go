@@ -180,7 +180,9 @@ func StatsPageHandler(w http.ResponseWriter, r *http.Request) {
 		misc.MapMutex.Unlock()
 		return
 	} else {
+		misc.MapMutex.Lock()
 		pick.Flag = true
+		misc.MapMutex.Unlock()
 	}
 
 	// Save dates, sort them and then assign messages in order of the dates
@@ -194,8 +196,7 @@ func StatsPageHandler(w http.ResponseWriter, r *http.Request) {
 		totalMessages += misc.ChannelStats[id].Messages[dateLabels[i]]
 	}
 
-	stats.Name = misc.ChannelStats["267799767843602452"].Name
-	misc.MapMutex.Unlock()
+	stats.Name = misc.ChannelStats[id].Name
 	stats.Dates = dateLabels
 	stats.Messages = messageCount
 	stats.TotalMessages = totalMessages
@@ -206,13 +207,16 @@ func StatsPageHandler(w http.ResponseWriter, r *http.Request) {
 	// Loads the html & css stats files
 	t, err := template.ParseFiles("./web/assets/channelstats.html")
 	if err != nil {
+		misc.MapMutex.Unlock()
 		fmt.Print(err.Error())
 		return
 	}
 	err = t.Execute(w, pick)
 	if err != nil {
+		misc.MapMutex.Unlock()
 		fmt.Println(err.Error())
 	}
+	misc.MapMutex.Unlock()
 }
 
 // Handles the verification
@@ -761,6 +765,8 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 					if err != nil {
 						_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 						if err != nil {
+							misc.MapMutex.Unlock()
+							return
 						}
 					}
 
@@ -776,6 +782,8 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 					if err != nil {
 						_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 						if err != nil {
+							misc.MapMutex.Unlock()
+							return
 						}
 					}
 
@@ -784,6 +792,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 						if !check {
 							user, err := s.GuildMember(config.ServerID, UserCookieMap[key].ID)
 							if err != nil {
+								misc.MapMutex.Unlock()
 								return
 							}
 							misc.InitializeUser(user)
@@ -869,7 +878,7 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 
 	misc.MapMutex.Lock()
-	CheckAltAccount(s, userID)
+	_ = CheckAltAccount(s, userID)
 	misc.MapMutex.Unlock()
 }
 
