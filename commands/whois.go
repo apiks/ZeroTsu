@@ -79,6 +79,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		user = misc.MemberInfoMap[userID]
 		misc.MemberInfoWrite(misc.MemberInfoMap)
 	}
+	misc.MapMutex.Unlock()
 
 	// Puts past usernames into a string
 	if len(user.PastUsernames) != 0 {
@@ -188,6 +189,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Alt check
+	misc.MapMutex.Lock()
 	alts := CheckAltAccountWhois(userID)
 
 	// If there's more than one account with that reddit username print a message

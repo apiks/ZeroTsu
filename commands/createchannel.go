@@ -240,20 +240,29 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		temp.RoleName = roleName
 		temp.CreationDate = t
 		temp.Elevated = true
-		for _, v := range VoteInfoMap {
-			if roleName == v.Channel {
-				if !hasElevatedPermissions(s, v.User) {
-					temp.Elevated = false
-					break
+
+		// Locks mutex based on whether the bot called the command or not
+		if m.Author.ID == s.State.User.ID {
+			for _, v := range VoteInfoMap {
+				if roleName == v.Channel {
+					if !hasElevatedPermissions(s, v.User) {
+						temp.Elevated = false
+						break
+					}
 				}
 			}
-		}
-
-		if m.Author.ID == s.State.User.ID {
 			TempChaMap[newRole.ID] = &temp
 			TempChaWrite(TempChaMap)
 		} else {
 			misc.MapMutex.Lock()
+			for _, v := range VoteInfoMap {
+				if roleName == v.Channel {
+					if !hasElevatedPermissions(s, v.User) {
+						temp.Elevated = false
+						break
+					}
+				}
+			}
 			TempChaMap[newRole.ID] = &temp
 			TempChaWrite(TempChaMap)
 			misc.MapMutex.Unlock()

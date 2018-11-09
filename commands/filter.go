@@ -535,8 +535,10 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
+				return
 			}
 			misc.MapMutex.Unlock()
+			return
 		}
 		misc.MapMutex.Unlock()
 	}

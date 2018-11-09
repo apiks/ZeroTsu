@@ -146,11 +146,9 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 			i++
 		}
 	}
-	misc.MapMutex.Unlock()
 	sort.Sort(byFrequencyChannel(channels))
 
 	// Calculates normal channels and optin channels message totals
-	misc.MapMutex.Lock()
 	for chas := range misc.ChannelStats {
 		if !misc.ChannelStats[chas].Optin {
 			for date := range misc.ChannelStats[chas].Messages {
@@ -428,12 +426,11 @@ func dailyStats(s *discordgo.Session) {
 			return
 		}
 
-		misc.MapMutex.Lock()
+
 		author.ID = s.State.User.ID
 		message.Author = &author
 		message.Content = config.BotPrefix + "stats"
 		message.ChannelID = config.BotLogID
-		misc.MapMutex.Unlock()
 		showStats(s, &message)
 		dailyFlag = true
 	}

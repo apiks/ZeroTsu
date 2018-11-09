@@ -289,6 +289,8 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 		MapMutex.Unlock()
 		return
 	}
+	MapMutex.Unlock()
+
 
 	// Checks usernames and updates if needed
 	if user.Username != userMember.User.Username {
@@ -332,6 +334,7 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	}
 
 	// Saves the updates to memberInfoMap and writes to disk
+	MapMutex.Lock()
 	MemberInfoMap[userMember.User.ID] = user
 	MemberInfoWrite(MemberInfoMap)
 	MapMutex.Unlock()

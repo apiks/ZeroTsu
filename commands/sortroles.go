@@ -65,6 +65,9 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Adds all spoiler roles in SpoilerMap in the spoilerRoles slice
 	// Adds all non-spoiler roles under opt-in-above (including it) in the underSpoilerRoles slice
+	if m.Author.ID != s.State.User.ID {
+		misc.MapMutex.Lock()
+	}
 	for i := 0; i < len(deb); i++ {
 		_, ok := misc.SpoilerMap[deb[i].ID]
 		if ok {
@@ -77,6 +80,9 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 			deb[i].ID != config.ServerID {
 			underSpoilerRoles = append(underSpoilerRoles, deb[i])
 		}
+	}
+	if m.Author.ID != s.State.User.ID {
+		misc.MapMutex.Unlock()
 	}
 
 	// If there are spoiler roles under opt-in-above it goes in to move and sort
@@ -129,9 +135,15 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 		}
 
+		if m.Author.ID != s.State.User.ID {
+			misc.MapMutex.Lock()
+		}
 		for i := 0; i < len(spoilerRoles); i++ {
 			spoilerRoles[i].Position = misc.OptinAbovePosition + len(spoilerRoles) - i
 			misc.SpoilerMap[spoilerRoles[i].ID].Position = spoilerRoles[i].Position
+		}
+		if m.Author.ID != s.State.User.ID {
+			misc.MapMutex.Unlock()
 		}
 
 		// Pushes the sorted list to the server

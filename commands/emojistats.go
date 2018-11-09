@@ -199,8 +199,8 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 			i++
 		}
 	}
-	misc.MapMutex.Unlock()
 	sort.Sort(byEmojiFrequency(emojis))
+	misc.MapMutex.Unlock()
 
 	// Pull guild info
 	guild, err := s.State.Guild(config.ServerID)

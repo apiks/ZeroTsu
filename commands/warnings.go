@@ -132,16 +132,17 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.MapMutex.Unlock()
 		return
 	}
+	misc.MapMutex.Unlock()
 
 	// Pulls info on user
 	userMem, err := s.User(userID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
-		misc.MapMutex.Unlock()
 		return
 	}
 
 	// Appends warning to user in memberInfo
+	misc.MapMutex.Lock()
 	misc.MemberInfoMap[userID].Warnings = append(misc.MemberInfoMap[userID].Warnings, warning)
 	misc.MapMutex.Unlock()
 
