@@ -28,17 +28,22 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// If channel is already locked then notify user
-	if cha.PermissionOverwrites[0].Deny == discordgo.PermissionSendMessages {
-		_, err = s.ChannelMessageSend(m.ChannelID, "🔒 Channel already locked.")
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
+	for index, permission := range cha.PermissionOverwrites {
+		if permission.ID == config.ServerID {
+			if cha.PermissionOverwrites[index].Deny == discordgo.PermissionSendMessages {
+				_, err = s.ChannelMessageSend(m.ChannelID, "🔒 Channel already locked.")
+				if err != nil {
+					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+					if err != nil {
+						return
+					}
+					return
+				}
 				return
 			}
-			return
 		}
-		return
 	}
+
 
 	// Error if lock used in moderator category
 	if cha.ParentID == "360994750796529665" {
@@ -161,16 +166,20 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// If channel is already unlocked then notify user
-	if cha.PermissionOverwrites[0].Deny != discordgo.PermissionSendMessages {
-		_, err = s.ChannelMessageSend(m.ChannelID, "🔓 Channel already unlocked.")
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
+	for index, permission := range cha.PermissionOverwrites {
+		if permission.ID == config.ServerID {
+			if cha.PermissionOverwrites[index].Deny != discordgo.PermissionSendMessages {
+				_, err = s.ChannelMessageSend(m.ChannelID, "🔓 Channel already unlocked.")
+				if err != nil {
+					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+					if err != nil {
+						return
+					}
+					return
+				}
 				return
 			}
-			return
 		}
-		return
 	}
 
 	// Sets permission variable to be neutral for send messages

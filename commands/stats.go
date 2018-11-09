@@ -77,8 +77,10 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 
+		s.State.RWMutex.RLock()
 		channelStatsVar.ChannelID = channel.ID
 		channelStatsVar.Name = channel.Name
+		s.State.RWMutex.RUnlock()
 		misc.MapMutex.Lock()
 		channelStatsVar.RoleCount = make(map[string]int)
 		misc.MapMutex.Unlock()

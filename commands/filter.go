@@ -35,13 +35,17 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 	}
+	s.State.RWMutex.RLock()
 	if ch.GuildID != config.ServerID {
+		s.State.RWMutex.RUnlock()
 		return
 	}
 	// Checks if it's the bot that sent the message
 	if m.Author.ID == s.State.User.ID {
+		s.State.RWMutex.RUnlock()
 		return
 	}
+	s.State.RWMutex.RUnlock()
 	// Pulls info on message author
 	mem, err := s.State.Member(config.ServerID, m.Author.ID)
 	if err != nil {
