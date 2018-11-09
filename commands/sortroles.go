@@ -155,6 +155,15 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 			return
 		}
+	} else {
+		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Spoiler roles already sorted.")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
 	}
 }
 
