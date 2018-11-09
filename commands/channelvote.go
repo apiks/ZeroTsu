@@ -158,10 +158,10 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		voteChannel.Name = strings.Replace(messageLowercase, config.BotPrefix+"startvote ", "", -1)
-		voteChannel.Category = "363756332920340481"
+		voteChannel.Category = "436795861876342786"
 		voteChannel.Type = "temp"
 		voteChannel.Description = fmt.Sprintf("Temporary channel for %v. Will be deleted 3 hours after no message has been sent.", voteChannel.Name)
-		peopleNum = 3
+		peopleNum = 1
 	}
 
 	// Pulls up all current server channels and checks if it exists in UserTempCha.json. If not it deletes it from storage
@@ -458,6 +458,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				}
 			}
 		}
+		misc.MapMutex.Unlock()
 
 		cha, err := s.GuildChannels(config.ServerID)
 		if err != nil {
@@ -468,6 +469,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 			continue
 		}
 
+		misc.MapMutex.Lock()
 		for k, v := range TempChaMap {
 			for i := 0; i < len(cha); i++ {
 				if cha[i].Name == v.RoleName {
