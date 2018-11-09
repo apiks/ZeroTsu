@@ -696,7 +696,6 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 		}
 		MapMutex.Unlock()
 	}
-	fmt.Println(userID)
 	// Handles userID if it was username#discrim format
 	if strings.Contains(userID, "#") {
 		splitUser := strings.SplitN(userID, "#", 2)
