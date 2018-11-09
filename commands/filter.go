@@ -64,7 +64,7 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	messageLowercase := strings.ToLower(m.Content)
 
 	// Checks if message should be filtered
-	badWordExists, badWordsSlice = isFiltered(m.Message)
+	badWordExists, badWordsSlice = isFiltered(s, m.Message)
 
 	// If function returns true handle the filtered message
 	if badWordExists {
@@ -183,32 +183,58 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 }
 
 // Checks if the message is supposed to be filtered
-func isFiltered(m *discordgo.Message) (bool, []string){
+func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string){
 
 	var (
-		filtered bool
-		badWordsSlice []string
+		badWordsSlice   []string
+		mentions		string
 	)
 
 	messageLowercase := strings.ToLower(m.Content)
+
+	// Checks if the message contains a mention and finds the actual name instead of ID and put it in mentions
+	if strings.Contains(messageLowercase, "<@!") {
+		mentionRegex := regexp.MustCompile("(?i)(<@!+[0-9]+>)")
+		mentionCheck := mentionRegex.FindAllString(messageLowercase, -1)
+		if mentionCheck != nil {
+			for index := range mentionCheck {
+				userID := strings.TrimPrefix(mentionCheck[index], "<@!")
+				userID = strings.TrimPrefix(userID, "!")
+				userID = strings.TrimSuffix(userID, ">")
+
+				user, err := s.State.Member(config.ServerID, userID)
+				if err != nil {
+					user, _ := s.GuildMember(config.ServerID, userID)
+					if user != nil {
+						mentions += " " + strings.ToLower(user.Nick)
+						continue
+					}
+				}
+				if user != nil {
+					mentions += " " + strings.ToLower(user.Nick)
+				}
+			}
+		}
+	}
 
 	// Iterates through all the filters to see if the message contained a filtered word
 	for i := 0; i < len(misc.ReadFilters); i++ {
 
 		re := regexp.MustCompile(misc.ReadFilters[i].Filter)
 		badWordCheck := re.FindAllString(messageLowercase, -1)
+		badWordCheckMentions := re.FindAllString(mentions, -1)
 
 		if badWordCheck != nil {
 			badWordsSlice = append(badWordsSlice, badWordCheck[0])
-			filtered = true
+			return true, badWordsSlice
+		}
+		if badWordCheckMentions != nil {
+			badWordsSlice = append(badWordsSlice, badWordCheckMentions[0])
+			return true, badWordsSlice
 		}
 	}
 
-	if filtered {
-		return true, badWordsSlice
-	} else {
-		return false, nil
-	}
+	return false, nil
 }
 
 // Adds a filter to storage and memory
@@ -371,6 +397,31 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID
 		embedFieldMessage discordgo.MessageEmbedField
 		embedFieldChannel discordgo.MessageEmbedField
 	)
+
+	// Checks if the message contains a mention and finds the actual name instead of ID
+	if strings.Contains(m.Content, "<@!") {
+		mentionRegex := regexp.MustCompile("(?i)(<@!+[0-9]+>)")
+		mentionCheck := mentionRegex.FindAllString(m.Content, -1)
+		if mentionCheck != nil {
+			for index := range mentionCheck {
+				userID := strings.TrimPrefix(mentionCheck[index], "<@!")
+				userID = strings.TrimPrefix(userID, "!")
+				userID = strings.TrimSuffix(userID, ">")
+
+				user, err := s.State.Member(config.ServerID, userID)
+				if err != nil {
+					user, _ := s.GuildMember(config.ServerID, userID)
+					if user != nil {
+						m.Content = strings.Replace(m.Content, mentionCheck[index], fmt.Sprintf("@%v", user.Nick), -1)
+						continue
+					}
+				}
+				if user != nil {
+					m.Content = strings.Replace(m.Content, mentionCheck[index], fmt.Sprintf("@%v", user.Nick), -1)
+				}
+			}
+		}
+	}
 
 	// Sets timestamp for removal
 	t := time.Now()
