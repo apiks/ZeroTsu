@@ -374,9 +374,7 @@ func isChannelUsable(channel misc.Channel, guild *discordgo.Guild) (misc.Channel
 			channel.Exists = false
 		}
 	}
-	misc.MapMutex.Lock()
 	misc.ChannelStats[channel.ChannelID] = &channel
-	misc.MapMutex.Unlock()
 
 	if channel.Exists {
 		return channel, true
