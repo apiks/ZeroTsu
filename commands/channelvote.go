@@ -293,6 +293,13 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Writes to storage
 	VoteInfoWrite(VoteInfoMap)
+
+	if !hasElevatedPermissions(s, m.Author) {
+		_, err = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Vote for temp channel `%v` has been started by user %v#%v in %v.", temp.Channel, temp.User.Username, temp.User.Discriminator, misc.ChMentionID(m.ChannelID)))
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
 }
 
 // Checks if the message has enough reacts every 10 seconds, and stops if it's over the time limit
@@ -485,6 +492,11 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				}
 			}
 			inChanCreation = false
+
+			_, err = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Temp channel `%v` has been created from a vote by user %v#%v.", temp.Channel, temp.User.Username, temp.User.Discriminator))
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
 		misc.MapMutex.Unlock()
 
@@ -531,6 +543,11 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					// Calculates if it's time to remove
 					difference := t.Sub(timestamp)
 					if difference > 0 {
+						_, err = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Temp channel `%v` has been deleted due to being inactive for 3 hours.", cha[i].Name))
+						if err != nil {
+							fmt.Println(err)
+						}
+
 						// Deletes channel and role
 						_, err := s.ChannelDelete(cha[i].ID)
 						if err != nil {
