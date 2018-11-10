@@ -261,9 +261,8 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		// Decrypts encrypted id from url
 		trueid := misc.Decrypt(misc.Key, id)
 
-		misc.MapMutex.Lock()
-
 		// Make it copy the current cookie map if it exists, otherwise make a new one
+		misc.MapMutex.Lock()
 		if UserCookieMap[cookieValue.Value] != nil {
 			temp = *UserCookieMap[cookieValue.Value]
 
@@ -283,8 +282,8 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		temp.ID = trueid
 		temp.Cookie = cookieValue.Value
 		UserCookieMap[cookieValue.Value] = &temp
-		misc.MapMutex.Unlock()
 	}
+	misc.MapMutex.Unlock()
 
 	if code != "" {
 		misc.MapMutex.Lock()
@@ -750,7 +749,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 		}
 	}()
 
-	// Checks every 2 seconds if a user in the UserCookieMap needs to be given the role
+	// Checks every 3 seconds if a user in the UserCookieMap needs to be given the role
 	for range time.NewTicker(3 * time.Second).C {
 
 		misc.MapMutex.Lock()
