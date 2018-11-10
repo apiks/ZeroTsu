@@ -302,7 +302,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-// Checks if the message has enough reacts every 10 seconds, and stops if it's over the time limit
+// Checks if the message has enough reacts every 15 seconds, and stops if it's over the time limit
 func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 	var (
@@ -319,7 +319,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 		}
 	}()
 
-	for range time.NewTicker(10 * time.Second).C {
+	for range time.NewTicker(15 * time.Second).C {
 		misc.MapMutex.Lock()
 		for k := range VoteInfoMap {
 
