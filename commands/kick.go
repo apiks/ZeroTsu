@@ -2,6 +2,7 @@ package commands
 
 import (
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 
@@ -13,8 +14,9 @@ import (
 func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		userID string
-		reason string
+		userID 			string
+		reason 			string
+		kickTimestamp 	misc.Punishment
 	)
 
 	commandStrings := strings.SplitN(m.Content, " ", 3)
@@ -84,6 +86,17 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	// Adds kick reason to user memberInfo info
 	misc.MemberInfoMap[userID].Kicks = append(misc.MemberInfoMap[userID].Kicks, reason)
+
+	// Adds timestamp for that kick
+	t, err := m.Timestamp.Parse()
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+	kickTimestamp.Timestamp = t
+	kickTimestamp.Punishment = reason
+	kickTimestamp.Type = "Kick"
+	misc.MemberInfoMap[userID].Timestamps = append(misc.MemberInfoMap[userID].Timestamps, kickTimestamp)
 	misc.MapMutex.Unlock()
 
 	// Writes memberInfo.json
@@ -132,6 +145,10 @@ func KickEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, 
 		embedFieldUserID discordgo.MessageEmbedField
 		embedFieldReason discordgo.MessageEmbedField
 	)
+	t := time.Now()
+
+	// Sets timestamp for warning
+	embedMess.Timestamp = t.Format(time.RFC3339)
 
 	// Sets warning embed color
 	embedMess.Color = 0xff0000

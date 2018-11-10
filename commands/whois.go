@@ -274,11 +274,121 @@ func CheckAltAccountWhois(id string) []string {
 	}
 }
 
+// Displays all punishments for that user with timestamps and type of punishment
+func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	var message string
+
+	messageLowercase := strings.ToLower(m.Content)
+	commandStrings := strings.Split(messageLowercase, " ")
+
+	if len(commandStrings) != 2 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"timestamps [@user, userID, or username#discrim]`")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
+
+	userID, err := misc.GetUserID(s, m, commandStrings)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+
+	// Fetches user from server if possible
+	mem, err := s.State.Member(config.ServerID, userID)
+	if err != nil {
+		mem, err = s.GuildMember(config.ServerID, userID)
+		if err != nil {
+		}
+	}
+	// Checks if user is in MemberInfo and assigns to user variable. Else initializes user.
+	misc.MapMutex.Lock()
+	user, ok := misc.MemberInfoMap[userID]
+	if !ok {
+		if mem == nil {
+			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot timestamp until they rejoin server.")
+			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+				if err != nil {
+					misc.MapMutex.Unlock()
+					return
+				}
+				misc.MapMutex.Unlock()
+				return
+			}
+			misc.MapMutex.Unlock()
+			return
+		}
+
+		// Initializes user if he doesn't exist and is in server
+		misc.InitializeUser(mem)
+		user = misc.MemberInfoMap[userID]
+		misc.MemberInfoWrite(misc.MemberInfoMap)
+	}
+
+	// Check if timestamps exist
+	if len(user.Timestamps) == 0 {
+		_, err = s.ChannelMessageSend(m.ChannelID, "Error: No saved timestamps for that user.")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				misc.MapMutex.Unlock()
+				return
+			}
+			misc.MapMutex.Unlock()
+			return
+		}
+		misc.MapMutex.Unlock()
+		return
+	}
+
+	// Formats message
+	for _, timestamp := range user.Timestamps {
+		timezone, displacement := timestamp.Timestamp.Zone()
+		message += fmt.Sprintf("**%v:** `%v` - _%v %v %v, %v:%v:%v %v+%v_\n", timestamp.Type, timestamp.Punishment, timestamp.Timestamp.Day(),
+			timestamp.Timestamp.Month(), timestamp.Timestamp.Year(), timestamp.Timestamp.Hour(), timestamp.Timestamp.Minute(), timestamp.Timestamp.Second(), timezone, displacement)
+	}
+
+	// Splits messsage if too long
+	msgs := misc.SplitLongMessage(message)
+
+	// Prints timestamps
+	for index := range msgs {
+		_, err = s.ChannelMessageSend(m.ChannelID, msgs[index])
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				misc.MapMutex.Unlock()
+				return
+			}
+			misc.MapMutex.Unlock()
+			return
+		}
+	}
+
+
+	misc.MapMutex.Unlock()
+}
+
 func init() {
 	add(&command{
 		execute:  whoisCommand,
 		trigger:  "whois",
 		desc:     "Pulls mod information about a user.",
+		elevated: true,
+		category: "misc",
+	})
+	add(&command{
+		execute:  showTimestampsCommand,
+		trigger:  "timestamp",
+		aliases:  []string{"timestamps"},
+		desc:     "Shows all punishments for a user and their timestamps.",
 		elevated: true,
 		category: "misc",
 	})

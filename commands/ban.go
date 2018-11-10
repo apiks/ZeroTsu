@@ -15,14 +15,16 @@ import (
 func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		userID  	string
-		length  	string
-		reason  	string
-		success 	string
+		userID  		string
+		length  		string
+		reason  		string
+		success 		string
 
-		validSlice 	bool
+		validSlice 		bool
 
-		temp 		misc.BannedUsers
+		temp 			misc.BannedUsers
+
+		banTimestamp 	misc.Punishment
 	)
 	z, _ := time.Now().Zone()
 
@@ -111,6 +113,17 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	} else {
 		misc.MemberInfoMap[userID].UnbanDate = "_Never_"
 	}
+
+	// Adds timestamp for that ban
+	t, err := m.Timestamp.Parse()
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+	banTimestamp.Timestamp = t
+	banTimestamp.Punishment = reason
+	banTimestamp.Type = "Ban"
+	misc.MemberInfoMap[userID].Timestamps = append(misc.MemberInfoMap[userID].Timestamps, banTimestamp)
 	misc.MapMutex.Unlock()
 
 	// Writes to memberInfo.json

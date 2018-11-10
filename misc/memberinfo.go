@@ -27,19 +27,20 @@ var (
 
 // UserInfo is the in memory storage of each user's information
 type UserInfo struct {
-	ID             string   `json:"id"`
-	Discrim        string   `json:"discrim"`
-	Username       string   `json:"username"`
-	Nickname       string   `json:"nickname,omitempty"`
-	PastUsernames  []string `json:"pastUsernames,omitempty"`
-	PastNicknames  []string `json:"pastNicknames,omitempty"`
-	Warnings       []string `json:"warnings,omitempty"`
-	Kicks          []string `json:"kicks,omitempty"`
-	Bans           []string `json:"bans,omitempty"`
-	JoinDate       string   `json:"joinDate"`
-	RedditUsername string   `json:"redditUser,omitempty"`
-	VerifiedDate   string   `json:"verifiedDate,omitempty"`
-	UnbanDate      string   `json:"unbanDate,omitempty"`
+	ID             string   			`json:"id"`
+	Discrim        string   			`json:"discrim"`
+	Username       string   			`json:"username"`
+	Nickname       string   			`json:"nickname,omitempty"`
+	PastUsernames  []string 			`json:"pastUsernames,omitempty"`
+	PastNicknames  []string 			`json:"pastNicknames,omitempty"`
+	Warnings       []string 			`json:"warnings,omitempty"`
+	Kicks          []string 			`json:"kicks,omitempty"`
+	Bans           []string 			`json:"bans,omitempty"`
+	JoinDate       string   			`json:"joinDate"`
+	RedditUsername string   			`json:"redditUser,omitempty"`
+	VerifiedDate   string   			`json:"verifiedDate,omitempty"`
+	UnbanDate      string   			`json:"unbanDate,omitempty"`
+	Timestamps 	   []Punishment			`json:"timestamps,omitempty"`
 }
 
 // Creates a struct type in which we'll hold every banned user
@@ -47,6 +48,13 @@ type BannedUsers struct {
 	ID        string    `json:"id"`
 	User      string    `json:"user"`
 	UnbanDate time.Time `json:"unbanDate"`
+}
+
+// Struct where we'll hold punishment timestamps
+type Punishment struct {
+	Punishment string 				`json:"punishment"`
+	Type	   string					`json:"type"`
+	Timestamp  time.Time				`json:"timestamp"`
 }
 
 // Reads member info from memberInfo.json

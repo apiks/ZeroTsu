@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 
@@ -13,7 +14,10 @@ import (
 // Adds a warning to a specific user in memberInfo.json without telling them
 func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	var warning string
+	var (
+		warning 		 string
+		warningTimestamp misc.Punishment
+	)
 
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
@@ -54,6 +58,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.MapMutex.Unlock()
 		return
 	}
+	misc.MapMutex.Unlock()
 
 	// Pulls info on user
 	userMem, err := s.User(userID)
@@ -64,7 +69,19 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Appends warning to user in memberInfo
+	misc.MapMutex.Lock()
 	misc.MemberInfoMap[userID].Warnings = append(misc.MemberInfoMap[userID].Warnings, warning)
+
+	// Adds timestamp for that warning
+	t, err := m.Timestamp.Parse()
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+	warningTimestamp.Timestamp = t
+	warningTimestamp.Punishment = warning
+	warningTimestamp.Type = "Warning"
+	misc.MemberInfoMap[userID].Timestamps = append(misc.MemberInfoMap[userID].Timestamps, warningTimestamp)
 	misc.MapMutex.Unlock()
 
 	// Writes to memberInfo.json
@@ -84,7 +101,10 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 // Issues a warning to a specific user in memberInfo.json wand tells them
 func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	var warning string
+	var (
+		warning string
+		warningTimestamp misc.Punishment
+	)
 
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
@@ -144,6 +164,17 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Appends warning to user in memberInfo
 	misc.MapMutex.Lock()
 	misc.MemberInfoMap[userID].Warnings = append(misc.MemberInfoMap[userID].Warnings, warning)
+
+	// Adds timestamp for that warning
+	t, err := m.Timestamp.Parse()
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+	warningTimestamp.Timestamp = t
+	warningTimestamp.Punishment = warning
+	warningTimestamp.Type = "Warning"
+	misc.MemberInfoMap[userID].Timestamps = append(misc.MemberInfoMap[userID].Timestamps, warningTimestamp)
 	misc.MapMutex.Unlock()
 
 	// Writes to memberInfo.json
@@ -178,6 +209,10 @@ func WarningEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.Use
 		embedFieldUserID   discordgo.MessageEmbedField
 		embedFieldReason   discordgo.MessageEmbedField
 	)
+	t := time.Now()
+
+	// Sets timestamp for warning
+	embedMess.Timestamp = t.Format(time.RFC3339)
 
 	// Sets warning embed color
 	embedMess.Color = 0xff0000
