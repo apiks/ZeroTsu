@@ -30,16 +30,20 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}()
 
 	// Checks if it's within the config server and whether it's the bot
+	s.State.RWMutex.RLock()
 	ch, err := s.State.Channel(m.ChannelID)
 	if err != nil {
 		ch, err = s.Channel(m.ChannelID)
 		if err != nil {
+			s.State.RWMutex.RUnlock()
 			return
 		}
 	}
 	if ch.GuildID != config.ServerID {
+		s.State.RWMutex.RUnlock()
 		return
 	}
+	s.State.RWMutex.RUnlock()
 
 	// Pull channel info
 	channel, err := s.State.Channel(m.ChannelID)
@@ -81,9 +85,7 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 		channelStatsVar.ChannelID = channel.ID
 		channelStatsVar.Name = channel.Name
 		s.State.RWMutex.RUnlock()
-		misc.MapMutex.Lock()
 		channelStatsVar.RoleCount = make(map[string]int)
-		misc.MapMutex.Unlock()
 		channelStatsVar.RoleCount[channel.Name] = misc.GetRoleUserAmount(guild, roles, channel.Name)
 
 		// Removes role stat for channels without associated roles. Else turns bool to true
@@ -192,6 +194,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 
 	// Adds the channels and their stats to message and formats it
 	message := "```CSS\nName:                            ([Daily Messages] | [Total Messages]) \n\n"
+	misc.MapMutex.Lock()
 	for _, channel := range channels {
 
 		// Checks if channel exists and sets optin status
@@ -201,9 +204,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		}
 		// Formats  and splits message
 		if !channel.Optin {
-			misc.MapMutex.Lock()
 			message += lineSpaceFormatChannel(channel.ChannelID, false, *s)
-			misc.MapMutex.Unlock()
 			message += "\n"
 		}
 		msgs, message = splitStatMessages(msgs, message)
@@ -221,16 +222,13 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 				continue
 			}
 			// Formats  and splits message
-			misc.MapMutex.Lock()
 			message += lineSpaceFormatChannel(channel.ChannelID, true, *s)
-			misc.MapMutex.Unlock()
 			msgs, message = splitStatMessages(msgs, message)
 		}
 	}
 
 	message += fmt.Sprintf("\nOpt-in Total: %d\n\n------\n", optinChannelTotal)
 	message += fmt.Sprintf("\nGrand Total Messages: %d\n\n", optinChannelTotal+normalChannelTotal)
-	misc.MapMutex.Lock()
 	message += fmt.Sprintf("\nDaily User Change: %d\n\n", misc.UserStats[t.Format(misc.DateFormat)])
 	misc.MapMutex.Unlock()
 

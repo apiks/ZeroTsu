@@ -214,15 +214,14 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 
 	// Add every emoji and its stats to message and format it
 	message := "```CSS\nName:                         ([Message Usage] | [Unique Usage] | [Reactions]) \n\n"
+	misc.MapMutex.Lock()
 	for _, emoji := range emojis {
 		// Fixes emojis without ID
 		if emoji.ID == "" {
 			for index := range guild.Emojis {
 				if guild.Emojis[index].Name == emoji.Name {
 					emoji.ID = guild.Emojis[index].ID
-					misc.MapMutex.Lock()
 					misc.EmojiStats[emoji.ID] = emoji
-					misc.MapMutex.Unlock()
 					break
 				}
 			}
@@ -233,6 +232,7 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 			msgs, message = splitStatMessages(msgs, message)
 		}
 	}
+	misc.MapMutex.Unlock()
 
 	msgs, message = splitStatMessages(msgs, message)
 	if message != "" {
@@ -257,7 +257,6 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 
 // Formats the line space length for the above to keep level spacing
 func lineSpaceFormatEmoji(id string) string {
-	misc.MapMutex.Lock()
 	line := fmt.Sprintf("%v", misc.EmojiStats[id].Name)
 	spacesRequired := 30 - len(misc.EmojiStats[id].Name)
 	for i := 0; i < spacesRequired; i++ {
@@ -274,7 +273,6 @@ func lineSpaceFormatEmoji(id string) string {
 		line += " "
 	}
 	line += fmt.Sprintf("| ([%d])\n", misc.EmojiStats[id].Reactions)
-	misc.MapMutex.Unlock()
 
 	return line
 }

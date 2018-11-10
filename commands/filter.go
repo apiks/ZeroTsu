@@ -45,7 +45,6 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		s.State.RWMutex.RUnlock()
 		return
 	}
-	s.State.RWMutex.RUnlock()
 	// Pulls info on message author
 	mem, err := s.State.Member(config.ServerID, m.Author.ID)
 	if err != nil {
@@ -55,7 +54,6 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 	// Checks if user is mod or bot before checking the message
-	s.State.RWMutex.RLock()
 	if misc.HasPermissions(mem) {
 		s.State.RWMutex.RUnlock()
 		return

@@ -253,8 +253,8 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		existingUser.Discrim = user.User.Discriminator
 	}
 
-	MapMutex.Lock()
 	// Saves the updates to memberInfoMap and writes to disk
+	MapMutex.Lock()
 	MemberInfoMap[userID] = existingUser
 	MemberInfoWrite(MemberInfoMap)
 	MapMutex.Unlock()
