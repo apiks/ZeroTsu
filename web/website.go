@@ -282,8 +282,8 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		temp.ID = trueid
 		temp.Cookie = cookieValue.Value
 		UserCookieMap[cookieValue.Value] = &temp
+		misc.MapMutex.Unlock()
 	}
-	misc.MapMutex.Unlock()
 
 	if code != "" {
 		misc.MapMutex.Lock()
