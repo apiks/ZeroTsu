@@ -500,6 +500,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 		}
 		misc.MapMutex.Unlock()
 
+		s.Client.Timeout = 40
 		cha, err := s.GuildChannels(config.ServerID)
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
@@ -508,6 +509,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 			}
 			continue
 		}
+		s.Client.Timeout = 20
 
 		misc.MapMutex.Lock()
 		for k, v := range TempChaMap {
