@@ -49,6 +49,9 @@ func Start() {
 		panic(err)
 	}
 
+	// Increase default timeout from 20 to 60
+	goBot.Client.Timeout = 60
+
 	// Reads all spoiler roles created with create command from spoilerRoles.json
 	misc.SpoilerRolesRead()
 
