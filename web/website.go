@@ -764,8 +764,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 					if err != nil {
 						_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 						if err != nil {
-							misc.MapMutex.Unlock()
-							return
+							continue
 						}
 					}
 
@@ -781,8 +780,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 					if err != nil {
 						_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 						if err != nil {
-							misc.MapMutex.Unlock()
-							return
+							continue
 						}
 					}
 
@@ -791,8 +789,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 						if !check {
 							user, err := s.GuildMember(config.ServerID, UserCookieMap[key].ID)
 							if err != nil {
-								misc.MapMutex.Unlock()
-								return
+								continue
 							}
 							misc.InitializeUser(user)
 						}
