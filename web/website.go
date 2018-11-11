@@ -762,7 +762,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 					// Puts all server roles in roles variable
 					roles, err := s.GuildRoles(config.ServerID)
 					if err != nil {
-						_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+						_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 						if err != nil {
 							continue
 						}
@@ -778,10 +778,8 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 					// Assigns role
 					err = s.GuildMemberRoleAdd(config.ServerID, UserCookieMap[key].ID, roleID)
 					if err != nil {
-						_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
-						if err != nil {
-							continue
-						}
+						delete(UserCookieMap, key)
+						continue
 					}
 
 					if !UserCookieMap[key].AltCheck {
@@ -789,13 +787,13 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 						if !check {
 							user, err := s.GuildMember(config.ServerID, UserCookieMap[key].ID)
 							if err != nil {
+								delete(UserCookieMap, key)
 								continue
 							}
 							misc.InitializeUser(user)
 						}
 						UserCookieMap[key].AltCheck = true
 					}
-
 					delete(UserCookieMap, key)
 				}
 			}
@@ -849,7 +847,7 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	// Puts all server roles in roles
 	roles, err := s.GuildRoles(config.ServerID)
 	if err != nil {
-		_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -866,7 +864,7 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	// Assigns role
 	err = s.GuildMemberRoleAdd(config.ServerID, userID, roleID)
 	if err != nil {
-		_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
