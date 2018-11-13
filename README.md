@@ -59,10 +59,18 @@ How to install:
 
        VoteChannelCategoryID is the category ID of the category in which the channel created from a user channel creation vote is put
 
-3. Set your "ZeroTsuToken" environment variable to the BOT token (either hidden on the system env or in config.go ReadConfig func with os.Setenv("ZeroTsuToken", "TOKEN"))
-4. Compile in your favorite IDE or compiler with "go build" (or type "set GOOS=linux" to change OS first and then "go build".)
-5. Invite BOT to server and give it an admin role
-6. Start the BOT and use
+3. Make a file called configsecrets.json in the foldder config.json is in and set this up the following way. It's for verification:
+```
+{
+  "RedditName": "redditAppName",
+  "RedditSecret": "RedditAppSecret",
+  "DiscordSecret": "DiscordBOTSecret"
+}
+```
+4. Set your "ZeroTsuToken" environment variable to the BOT token (either hidden on the system env or in config.go ReadConfig func with os.Setenv("ZeroTsuToken", "TOKEN"))
+5. Compile in your favorite IDE or compiler with "go build" (or type "set GOOS=linux" to change OS first and then "go build".)
+6. Invite BOT to server and give it an admin role
+7. Start the BOT and use
 
 <br/>
 
