@@ -1,6 +1,9 @@
 ZeroTsu is a Discord all-purpose BOT. Its functionalities are the following list:
 
-Channel lock for non-mods via permission change/n
+
+
+Channel lock for non-mods via permission change
+
 Show avatar for a target user. Works for people not in the server
 
 Extensive member system that tracks past member usernames, nicknames, mod-issued warnings, kicks, bans, reddit verification, verification date, whether in the server, timestamps for punishments, server join date
@@ -27,6 +30,7 @@ Subreddit RSS system that will post a thread if it sees it containing specific p
 BOT say/edit commands that any mod can use to send or edit important messages with the BOT, or pretend they're a ROBOT
 
 Automatically give a channel to a user when they join a voice channel, and remove it when they leave using a role named "voice"
+
 
 
 How to install:
