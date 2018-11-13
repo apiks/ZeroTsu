@@ -60,7 +60,7 @@ How to install:
        VoteChannelCategoryID is the category ID of the category in which the channel created from a user channel creation vote is put
 
 3. Make a file called configsecrets.json in the foldder config.json is in and set this up the following way. It's for verification:
-```
+```javascript
 {
   "RedditName": "redditAppName",
   "RedditSecret": "RedditAppSecret",
