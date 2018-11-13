@@ -1,4 +1,4 @@
-ZeroTsu is a Discord all-purpose BOT. Its functionalities are the following list:
+### ZeroTsu is a Discord all-purpose BOT. Its functionalities are the following list:
 
 
 
