@@ -38,27 +38,27 @@ How to install:
 1. Download in a folder.
 2. Edit config.json with your own values. Use only one for each, except for CommandRoles. Everything is required unless stated otherwise:
 
-⋅⋅1.BotPrefix is the character that needs to be used before every command
+  .BotPrefix is the character that needs to be used before every command
 
-⋅⋅2.BotID is the ID of the BOT you are using
+  .BotID is the ID of the BOT you are using
 
-⋅⋅3.ServerID is the ID of the server the BOT is going to be managing
+  .ServerID is the ID of the server the BOT is going to be managing
 
-  4.BotLogID is the ID of the channel in which the bot will dump errors, timed events, punishments and other things
+  .BotLogID is the ID of the channel in which the bot will dump errors, timed events, punishments and other things
 
-  5.CommandRoles are the admin/mod/bot role IDs
+  .CommandRoles are the admin/mod/bot role IDs
 
-  6.OptInUnder is the name of the top dummy role for spoiler/opt-in/hidden channels
+  .OptInUnder is the name of the top dummy role for spoiler/opt-in/hidden channels
 
-  7.OptInAbove is the name of the bottom dummy role for spoiler/opt-in/hidden channels
+  .OptInAbove is the name of the bottom dummy role for spoiler/opt-in/hidden channels
 
-  8.VoiceChaID is the ID of the voice channel you want the bot to track and give the "voice" role to. Leave empty if not using it
+  .VoiceChaID is the ID of the voice channel you want the bot to track and give the "voice" role to. Leave empty if not using it
 
-  9.Website is the address/ip+:8080 of the website or server
+  .Website is the address/ip+:8080 of the website or server
 
-  10.ModCategoryID is the ID of a mod category if it exists. Leave empty if it doesn't exist
+  .ModCategoryID is the ID of a mod category if it exists. Leave empty if it doesn't exist
 
-  11.VoteChannelCategoryID is the category ID of the category in which the channel created from a user channel creation vote is put
+  .VoteChannelCategoryID is the category ID of the category in which the channel created from a user channel creation vote is put
 
 3. Set your "ZeroTsuToken" environment variable to the BOT token (either hidden on the system or in config.go ReadConfig func with os.Setenv("ZeroTsuToken", "TOKEN"))
 4. Compile in your favorite IDE or compiler with "go build" (or type "set GOOS=linux" to change OS first and then "go build".)
