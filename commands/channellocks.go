@@ -46,7 +46,7 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 
 
 	// Error if lock used in moderator category
-	if cha.ParentID == "360994750796529665" {
+	if cha.ParentID == config.ModCategoryID {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot lock a mod channel due to permission reasons.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + misc.ErrorLocation(err))
@@ -186,7 +186,7 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	def &= ^discordgo.PermissionSendMessages
 
 	// Error if lock used in moderator category
-	if cha.ParentID == "360994750796529665" {
+	if cha.ParentID == config.ModCategoryID {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot lock a mod channel due to permission reasons.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + misc.ErrorLocation(err))
