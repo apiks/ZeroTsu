@@ -2,6 +2,8 @@
 
 
 
+
+
 Channel lock for non-mods via permission change
 
 Show avatar for a target user. Works for people not in the server
@@ -32,16 +34,15 @@ BOT say/edit commands that any mod can use to send or edit important messages wi
 Automatically give a channel to a user when they join a voice channel, and remove it when they leave using a role named "voice"
 
 
-
 How to install:
 1. Download in a folder.
 2. Edit config.json with your own values. Use only one for each, except for CommandRoles. Everything is required unless stated otherwise:
 
-  1.BotPrefix is the character that needs to be used before every command
+⋅⋅1.BotPrefix is the character that needs to be used before every command
 
-  2.BotID is the ID of the BOT you are using
+⋅⋅2.BotID is the ID of the BOT you are using
 
-  3.ServerID is the ID of the server the BOT is going to be managing
+⋅⋅3.ServerID is the ID of the server the BOT is going to be managing
 
   4.BotLogID is the ID of the channel in which the bot will dump errors, timed events, punishments and other things
 
