@@ -16,6 +16,7 @@ var darlingTrigger int
 
 // Periodic events such as Unbanning and RSS timer every 15 sec
 func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
+
 	err := s.UpdateStatus(0, "with her darling")
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
@@ -26,8 +27,10 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
 	for range time.NewTicker(15 * time.Second).C {
 
-		// Checks whether it has to post rss thread every 15 seconds
+		// Checks whether it has to post rss thread
+		MapMutex.Lock()
 		RSSParser(s)
+		MapMutex.Unlock()
 
 		// Goes through bannedUsers.json if it's not empty and unbans if needed
 		if len(BannedUsersSlice) != 0 {
@@ -220,10 +223,26 @@ func RSSParser(s *discordgo.Session) {
 					}
 				}
 				if !exists {
-					// Writes to storage that the thread has been posted and posts rss in channel if no error via valid bool
+					// Posts latest sub episode thread and pins/unpins
 					valid := RssThreadsTimerWrite(ReadRssThreads[j].Thread, t)
 					if valid {
-						_, err = s.ChannelMessageSend(ReadRssThreads[j].Channel, feed.Items[i].Link)
+						message, err := s.ChannelMessageSend(ReadRssThreads[j].Channel, feed.Items[i].Link)
+						if err != nil {
+							_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+						}
+						pins, err := s.ChannelMessagesPinned(message.ChannelID)
+						if err != nil {
+							_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+						}
+						if len(pins) != 0 {
+							if strings.Contains(strings.ToLower(pins[0].Content), "episode") {
+								err = s.ChannelMessageUnpin(pins[0].ChannelID, pins[0].ID)
+								if err != nil {
+									_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+								}
+							}
+						}
+						err = s.ChannelMessagePin(message.ChannelID, message.ID)
 						if err != nil {
 							_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 						}

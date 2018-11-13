@@ -47,11 +47,14 @@ func setRssCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func setRssThread(s *discordgo.Session, m *discordgo.Message, thread string, author string) {
 
+	misc.MapMutex.Lock()
 	threadExists, err := misc.RssThreadsWrite(thread, m.ChannelID, author)
 	if err != nil {
+		misc.MapMutex.Unlock()
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
+	misc.MapMutex.Unlock()
 
 	if threadExists == false {
 		_, err := s.ChannelMessageSend(m.ChannelID, "`" + thread + "` has been added to the rss thread list.")
@@ -120,11 +123,14 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Calls the function to remove the threads from rssThreads.json
+	misc.MapMutex.Lock()
 	threadExists, err := misc.RssThreadsRemove(thread, m.ChannelID, author)
 	if err != nil {
+		misc.MapMutex.Unlock()
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
+	misc.MapMutex.Unlock()
 
 	if threadExists {
 		_, err := s.ChannelMessageSend(m.ChannelID, "`" + thread + "` has been removed from the rss thread list.")

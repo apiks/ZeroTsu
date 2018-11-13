@@ -247,6 +247,8 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
+	fmt.Println("A person is in the verification page at post-cookie assignment")
+
 	// Blurb fetches query from link
 	queryValues := r.URL.Query()
 	id = queryValues.Get("reqvalue")
