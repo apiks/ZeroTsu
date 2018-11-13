@@ -17,7 +17,7 @@
 * Automated channel creation via non-mod started vote for a temp (auto deleted) channel with a minimum requirement of votes and hard cap of 3 at a time
 
 * Tracks server emoji stats as well as message stats for general and opt-in channels. Also tracks user gain/loss per day
-Regex-facilitated filter for phrases
+Regex-facilitated filter for phrases. Channel stats graph visualization by day also available in the website
 
 * Full spoiler/opt-in/hidden channel support with reaction based role-giving or just join/leave commands. Tracks hidden channels between two dummy roles
 
