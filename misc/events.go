@@ -268,6 +268,10 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 		}
 	}()
 
+	if config.VoiceChaID == "" {
+		return
+	}
+
 	m, err := s.State.Member(v.GuildID, v.UserID)
 	if err != nil {
 		m, err = s.GuildMember(v.GuildID, v.UserID)
