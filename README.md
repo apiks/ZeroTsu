@@ -1,38 +1,37 @@
-### ZeroTsu is a Discord all-purpose BOT. Its functionalities are the following list:
+### ZeroTsu is a Discord all-purpose BOT. Its functionalities are the following:
 
+<br/>
 
+* Channel lock for non-mods via permission change
 
+* Show avatar for a target user. Works for people not in the server
 
+* Extensive member system that tracks past member usernames, nicknames, mod-issued warnings, kicks, bans, reddit verification, verification date, whether in the server, timestamps for punishments, server join date
 
-Channel lock for non-mods via permission change
+* Punishment system where you can issue warnings, kick or ban people for a set period of time with the bot and log that using the member system, or remove those punishments and unban
 
-Show avatar for a target user. Works for people not in the server
+* Website verification system for reddit account linking and confirmation before being able to use the server
 
-Extensive member system that tracks past member usernames, nicknames, mod-issued warnings, kicks, bans, reddit verification, verification date, whether in the server, timestamps for punishments, server join date
+* Automated channel creator with various parameters you can give it to make them hidden (opt-in), temporary (auto deletes after a set period of time) and other
 
-Punishment system where you can issue warnings, kick or ban people for a set period of time with the bot and log that using the member system, or remove those punishments and unban
+* Automated channel creation via non-mod started vote for a temp (auto deleted) channel with a minimum requirement of votes and hard cap of 3 at a time
 
-Website verification system for reddit account linking and confirmation before being able to use the server
-
-Automated channel creator with various parameters you can give it to make them hidden (opt-in), temporary (auto deletes after a set period of time) and other
-
-Automated channel creation via non-mod started vote for a temp (auto deleted) channel with a minimum requirement of votes and hard cap of 3 at a time
-
-Tracks server emoji stats as well as message stats for general and opt-in channels. Also tracks user gain/loss per day
+* Tracks server emoji stats as well as message stats for general and opt-in channels. Also tracks user gain/loss per day
 Regex-facilitated filter for phrases
 
-Full spoiler/opt-in/hidden channel support with reaction based role-giving or just join/leave commands. Tracks hidden channels between two dummy roles
+* Full spoiler/opt-in/hidden channel support with reaction based role-giving or just join/leave commands. Tracks hidden channels between two dummy roles
 
-Sort all BOT created optin/spoiler roles between the two dummy roles alphabetically
+* Sort all BOT created optin/spoiler roles between the two dummy roles alphabetically
 
-Sort a category's channels alphabetically
+* Sort a category's channels alphabetically
 
-Subreddit RSS system that will post a thread if it sees it containing specific phrases and is of a set author. Set for /r/anime but can be changed in the rss.go file
+* Subreddit RSS system that will post a thread if it sees it containing specific phrases and is of a set author. Set for /r/anime but can be changed in the rss.go file
 
-BOT say/edit commands that any mod can use to send or edit important messages with the BOT, or pretend they're a ROBOT
+* BOT say/edit commands that any mod can use to send or edit important messages with the BOT, or pretend they're a ROBOT
 
-Automatically give a channel to a user when they join a voice channel, and remove it when they leave using a role named "voice"
+* Automatically give a channel to a user when they join a voice channel, and remove it when they leave using a role named "voice"
 
+<br/>
 
 How to install:
 1. Download in a folder.
@@ -64,6 +63,8 @@ How to install:
 4. Compile in your favorite IDE or compiler with "go build" (or type "set GOOS=linux" to change OS first and then "go build".)
 5. Invite BOT to server and give it an admin role
 6. Start the BOT and use
+
+<br/>
 
 If you have discovered any bugs or have questions, please message Apiks or raise an issue
 If you use the BOT successfuly, please also let Apiks know
