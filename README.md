@@ -37,7 +37,7 @@ Automatically give a channel to a user when they join a voice channel, and remov
 How to install:
 1. Download in a folder.
 2. Edit config.json with your own values. Use only one for each, except for CommandRoles. Everything is required unless stated otherwise:
-
+```
   .BotPrefix is the character that needs to be used before every command
 
   .BotID is the ID of the BOT you are using
@@ -59,7 +59,7 @@ How to install:
   .ModCategoryID is the ID of a mod category if it exists. Leave empty if it doesn't exist
 
   .VoteChannelCategoryID is the category ID of the category in which the channel created from a user channel creation vote is put
-
+```
 3. Set your "ZeroTsuToken" environment variable to the BOT token (either hidden on the system or in config.go ReadConfig func with os.Setenv("ZeroTsuToken", "TOKEN"))
 4. Compile in your favorite IDE or compiler with "go build" (or type "set GOOS=linux" to change OS first and then "go build".)
 5. Invite BOT to server and give it an admin role
