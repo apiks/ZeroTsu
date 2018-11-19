@@ -108,6 +108,9 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Adds unban date to memberInfo and checks if perma
 	misc.MemberInfoMap[userID].Bans = append(misc.MemberInfoMap[userID].Bans, reason)
 	UnbanDate, perma := misc.ResolveTimeFromString(length)
+	if commandStrings[2] == "∞" {
+		perma = true
+	}
 	if !perma {
 		misc.MemberInfoMap[userID].UnbanDate = UnbanDate.Format("2006-01-02 15:04:05.999999999 -0700 MST")
 	} else {
