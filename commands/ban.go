@@ -54,7 +54,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if a number is contained in length var. Fixes some cases of invalid length
 	lengthSlice := strings.Split(length, "")
 	for i := 0; i < len(lengthSlice); i++ {
-		if _, err := strconv.ParseInt(lengthSlice[i], 10, 64); err == nil {
+		if _, err := strconv.ParseInt(lengthSlice[i], 10, 64); err == nil || lengthSlice[i] == "∞" {
 			validSlice = true
 			break
 		}
