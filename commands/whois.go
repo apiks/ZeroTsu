@@ -166,7 +166,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sets whois message
-	message := "**User:** " + user.Username + "#" + user.Discrim + " | " + user.ID +
+	message := "**User:** " + user.Username + "#" + user.Discrim + " | **ID:** " + user.ID +
 		"\n\n**Past Usernames:** " + pastUsernames +
 		"\n\n**Past Nicknames:** " + pastNicknames + "\n\n**Warnings:** " + warnings +
 		"\n\n**Kicks:** " + kicks + "\n\n**Bans:** " + bans +
