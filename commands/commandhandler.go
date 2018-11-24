@@ -58,9 +58,8 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Message.Content[0:len(config.BotPrefix)] != config.BotPrefix {
 		return
 	}
-	//cmdTrigger := strings.Split(m.Content, " ")[0][len(config.BotPrefix):]
-	cmdTrigger := strings.SplitN(m.Content, "", 2)
-	cmdTrigger[1] = strings.ToLower(cmdTrigger[1])
+	cmdSplit := strings.SplitN(m.Content, "", 2)
+	cmdTrigger = strings.ToLower(cmdSplit[1])
 	cmd, ok := commandMap[cmdTrigger[1]]
 	if !ok {
 		cmd, ok = commandMap[aliasMap[cmdTrigger[1]]]
