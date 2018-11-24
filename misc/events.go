@@ -347,6 +347,67 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		return
 	}
+	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) && m.Author.ID == "66207186417627136" {
+		randomNum := rand.Intn(5)
+		if randomNum == 1 {
+			_, err := s.ChannelMessageSend(m.ChannelID, "Bug hunter!")
+			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+				if err != nil {
+					return
+				}
+				return
+			}
+			return
+		}
+		if randomNum == 2 {
+			_, err := s.ChannelMessageSend(m.ChannelID, "Player!")
+			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+				if err != nil {
+					return
+				}
+				return
+			}
+			return
+		}
+		if randomNum == 3 {
+			_, err := s.ChannelMessageSend(m.ChannelID, "Big brain!")
+			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+				if err != nil {
+					return
+				}
+				return
+			}
+			return
+		}
+		if randomNum == 4 {
+			_, err := s.ChannelMessageSend(m.ChannelID, "Poster expert!")
+			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+				if err != nil {
+					return
+				}
+				return
+			}
+			return
+		}
+		if randomNum == 5 {
+			if randomNum == 2 {
+				_, err := s.ChannelMessageSend(m.ChannelID, "Idiot!")
+				if err != nil {
+					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+					if err != nil {
+						return
+					}
+					return
+				}
+				return
+			}
+		}
+		return
+	}
 	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) && darlingTrigger > 10 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Daaarling~")
 		if err != nil {
