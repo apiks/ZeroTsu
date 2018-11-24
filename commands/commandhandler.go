@@ -16,6 +16,7 @@ var (
 	commandMap = make(map[string]*command)
 	aliasMap   = make(map[string]string)
 	l          = log.New(os.Stderr, "cmds: ", log.LstdFlags|log.Lshortfile)
+	cmdTrigger string
 )
 
 type command struct {
