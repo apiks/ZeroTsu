@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/config"
@@ -23,8 +24,11 @@ func pingCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 	for _, role := range roles {
-		if role.Name == "Administratrator" {
-			s.ChannelMessageSend(m.ChannelID, role.Name + " role ID is: " + role.ID)
+		if role.Name == "Administrator" {
+			_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v role ID is %v", role.Name, role.ID))
+			if err != nil {
+				return
+			}
 		}
 	}
 }
