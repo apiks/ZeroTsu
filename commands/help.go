@@ -92,7 +92,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
 	// Sets usage field if admin
 	if admin {
 		// Sets footer field
-		embedFooter.Text = fmt.Sprintf("Usage: Pick a category with %vh category", config.BotPrefix)
+		embedFooter.Text = fmt.Sprintf("Usage: Pick a category with %vhcategory", config.BotPrefix)
 		embedMess.Footer = &embedFooter
 	}
 
