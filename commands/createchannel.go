@@ -59,6 +59,8 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err := strconv.Atoi(commandStrings[i])
 		if len(commandStrings[i]) >= 17 && err == nil {
 			channel.Category = commandStrings[i]
+			commandStrings = append(commandStrings[:i], commandStrings[i+1:]...)
+			command = strings.Join(commandStrings, " ")
 			categoryNum = i
 		}
 	}
@@ -73,7 +75,6 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 				i == categoryNum-1 {
 
 				channel.Type = commandStrings[i]
-				commandStrings = append(commandStrings[:i], commandStrings[i+1:]...)
 				commandStrings = append(commandStrings[:i], commandStrings[i+1:]...)
 				command = strings.Join(commandStrings, " ")
 				fixed = true

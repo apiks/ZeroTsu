@@ -17,6 +17,16 @@ func pingCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
+
+	roles, err := s.GuildRoles(config.ServerID)
+	if err != nil {
+		return
+	}
+	for _, role := range roles {
+		if role.Name == "Administratrator" {
+			s.ChannelMessageSend(m.ChannelID, role.Name + " role ID is: " + role.ID)
+		}
+	}
 }
 
 func init() {

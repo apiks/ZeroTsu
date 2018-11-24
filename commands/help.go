@@ -92,7 +92,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
 	// Sets usage field if admin
 	if admin {
 		// Sets footer field
-		embedFooter.Text = fmt.Sprintf("Usage: Pick a category with %vh[category]", config.BotPrefix)
+		embedFooter.Text = fmt.Sprintf("Usage: Pick a category with %vh category", config.BotPrefix)
 		embedMess.Footer = &embedFooter
 	}
 
@@ -115,7 +115,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
 		misc.MapMutex.Unlock()
 
 		// Sets footer field
-		embedFooter.Text = fmt.Sprintf("Tip: Type %v[command] to see a detailed description.", config.BotPrefix)
+		embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", config.BotPrefix)
 		embedMess.Footer = &embedFooter
 	} else {
 		// Sets user commands field
@@ -194,7 +194,7 @@ func helpChannelEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 0x00ff00
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %v[command] to see a detailed description.", config.BotPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", config.BotPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -272,7 +272,7 @@ func helpFiltersEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 0x00ff00
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %v[command] to see a detailed description.", config.BotPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", config.BotPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -350,7 +350,7 @@ func helpMiscEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 0x00ff00
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %v[command] to see a detailed description.", config.BotPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", config.BotPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -428,7 +428,7 @@ func helpNormalEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 0x00ff00
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %v[command] to see a detailed description.", config.BotPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", config.BotPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -506,7 +506,7 @@ func helpPunishmentEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 0x00ff00
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %v[command] to see a detailed description.", config.BotPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", config.BotPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -584,7 +584,7 @@ func helpReactsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 0x00ff00
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %v[command] to see a detailed description.", config.BotPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", config.BotPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -662,7 +662,7 @@ func helpRssEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 0x00ff00
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %v[command] to see a detailed description.", config.BotPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", config.BotPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -740,7 +740,7 @@ func helpStatsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 0x00ff00
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %v[command] to see a detailed description.", config.BotPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", config.BotPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -890,55 +890,56 @@ func init() {
 	add(&command{
 		execute:  helpChannelCommand,
 		trigger:  "hchannel",
-		aliases:  []string{"h[channel]"},
+		aliases:  []string{"h[channel]", "h channel", "hchannels", "h[channels]", "h channels", "h [channel]", "h [channels]"},
 		desc:     "Print all channel related commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpFiltersCommand,
 		trigger:  "hfilters",
-		aliases:  []string{"h[filters]"},
+		aliases:  []string{"h[filters]", "h filters", "hfilter", "h[filters]", "h filter", "h [filter]", "h [filters]"},
 		desc:     "Print all commands related to filters.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpMiscCommand,
 		trigger:  "hmisc",
-		aliases:  []string{"h[misc]"},
+		aliases:  []string{"h[misc]", "h misc", "hmiscellaneous", "h[miscellaneous]", "h miscellaneous", "h [misc]", "h [miscellaneous]"},
 		desc:     "Print all miscellaneous mod commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpNormalCommand,
 		trigger:  "hnormal",
-		aliases:  []string{"h[normal]"},
+		aliases:  []string{"h[normal]", "h normal", "h [normal]"},
 		desc:     "Print all normal user commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpPunishmentCommand,
 		trigger:  "hpunishment",
-		aliases:  []string{"h[punishment]"},
+		aliases:  []string{"h[punishment]", "h punishment", "help punishment", "hpunishments", "h[punishments]", "h punishments", "h [punishment]", "h [punishments]"},
 		desc:     "Print all mod pusnihment commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpReactsCommand,
 		trigger:  "hreacts",
-		aliases:  []string{"h[reacts]"},
+		aliases:  []string{"h[reacts]", "h reacts", "help reacts", "hreact", "h[react]", "help react", "h react", "h [react]", "h [reacts]"},
 		desc:     "Print all channel join via react commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpRssCommand,
 		trigger:  "hrss",
+		aliases:  []string{"h[rss]", "h rss", "help rss", "h [rss]"},
 		desc:     "Print all RSS feed from sub commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpStatsCommand,
 		trigger:  "hstats",
-		aliases:  []string{"h[stats]"},
+		aliases:  []string{"h[stats]", "h stats", "help stats", "hstat", "h[stat]", "h stat", "help stat", "h [stat]", "h [stats]"},
 		desc:     "Print all channel and emoji stats commands.",
 		elevated: true,
 	})
