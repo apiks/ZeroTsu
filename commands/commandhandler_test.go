@@ -137,7 +137,6 @@ func setupTest(t *testing.T) func(t *testing.T) {
 }
 
 func init() {
-	config.BotPrefix = "!"
 	session.State = discordgo.NewState()
 	config.CommandRoles = append(config.CommandRoles, fakeElevatedRole)
 	add(commandMetadata)

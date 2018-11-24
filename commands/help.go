@@ -890,56 +890,56 @@ func init() {
 	add(&command{
 		execute:  helpChannelCommand,
 		trigger:  "hchannel",
-		aliases:  []string{"h[channel]", "h channel", "hchannels", "h[channels]", "h channels", "h [channel]", "h [channels]"},
+		aliases:  []string{"h[channel]", "hchannels", "h[channels]"},
 		desc:     "Print all channel related commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpFiltersCommand,
 		trigger:  "hfilters",
-		aliases:  []string{"h[filters]", "h filters", "hfilter", "h[filters]", "h filter", "h [filter]", "h [filters]"},
+		aliases:  []string{"h[filters]", "hfilter", "h[filters]"},
 		desc:     "Print all commands related to filters.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpMiscCommand,
 		trigger:  "hmisc",
-		aliases:  []string{"h[misc]", "h misc", "hmiscellaneous", "h[miscellaneous]", "h miscellaneous", "h [misc]", "h [miscellaneous]"},
+		aliases:  []string{"h[misc]", "hmiscellaneous", "h[miscellaneous]"},
 		desc:     "Print all miscellaneous mod commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpNormalCommand,
 		trigger:  "hnormal",
-		aliases:  []string{"h[normal]", "h normal", "h [normal]"},
+		aliases:  []string{"h[normal]"},
 		desc:     "Print all normal user commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpPunishmentCommand,
 		trigger:  "hpunishment",
-		aliases:  []string{"h[punishment]", "h punishment", "help punishment", "hpunishments", "h[punishments]", "h punishments", "h [punishment]", "h [punishments]"},
+		aliases:  []string{"h[punishment]", "hpunishments", "h[punishments]"},
 		desc:     "Print all mod pusnihment commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpReactsCommand,
 		trigger:  "hreacts",
-		aliases:  []string{"h[reacts]", "h reacts", "help reacts", "hreact", "h[react]", "help react", "h react", "h [react]", "h [reacts]"},
+		aliases:  []string{"h[reacts]", "hreact", "h[react]"},
 		desc:     "Print all channel join via react commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpRssCommand,
 		trigger:  "hrss",
-		aliases:  []string{"h[rss]", "h rss", "help rss", "h [rss]"},
+		aliases:  []string{"h[rss]"},
 		desc:     "Print all RSS feed from sub commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpStatsCommand,
 		trigger:  "hstats",
-		aliases:  []string{"h[stats]", "h stats", "help stats", "hstat", "h[stat]", "h stat", "help stat", "h [stat]", "h [stats]"},
+		aliases:  []string{"h[stats]", "hstat", "h[stat]"},
 		desc:     "Print all channel and emoji stats commands.",
 		elevated: true,
 	})

@@ -16,7 +16,6 @@ var (
 	commandMap = make(map[string]*command)
 	aliasMap   = make(map[string]string)
 	l          = log.New(os.Stderr, "cmds: ", log.LstdFlags|log.Lshortfile)
-	cmdTrigger string
 )
 
 type command struct {
@@ -60,8 +59,8 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	cmdSplit := strings.SplitN(m.Content, "", 2)
-	cmdTrigger = strings.ToLower(cmdSplit[1])
+	cmdTrigger := strings.Split(m.Content, " ")[0][len(config.BotPrefix):]
+	cmdTrigger = strings.ToLower(cmdTrigger)
 	cmd, ok := commandMap[cmdTrigger]
 	if !ok {
 		cmd, ok = commandMap[aliasMap[cmdTrigger]]
