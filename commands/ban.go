@@ -165,7 +165,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	_, _ = s.ChannelMessageSend(dm.ID, success)
 
 	// Bans the user
-	err = s.GuildBanCreateWithReason(config.ServerID, mem.ID, reason, 0)
+	err = s.GuildBanCreateWithReason(config.ServerID, userID, reason, 0)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return

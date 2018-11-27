@@ -54,7 +54,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 					// Unbans user
 					err := s.GuildBanDelete(config.ServerID, BannedUsersSlice[i].ID)
 					if err != nil {
-						_, _ = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+						return
 					}
 
 					// Removes the user ban from bannedUsers.json
@@ -277,10 +277,6 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 	if err != nil {
 		m, err = s.GuildMember(v.GuildID, v.UserID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
-			if err != nil {
-				return
-			}
 			return
 		}
 		return
