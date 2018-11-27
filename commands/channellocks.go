@@ -17,6 +17,9 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		spoilerRole 	 = false
 	)
 
+	// Set variable for spoiler channels to be able to view history
+	allowed := discordgo.PermissionReadMessages + discordgo.PermissionReadMessageHistory
+
 	// Pulls info on the channel the message is in
 	cha, err := s.Channel(m.ChannelID)
 	if err != nil {
@@ -70,7 +73,7 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	if spoilerRole {
 		// Removes send permissions only from the channel role if it's a spoiler channel
-		err = s.ChannelPermissionSet(m.ChannelID, roleID, "role", discordgo.PermissionReadMessages, discordgo.PermissionSendMessages)
+		err = s.ChannelPermissionSet(m.ChannelID, roleID, "role", allowed, discordgo.PermissionSendMessages)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err)
 			return
