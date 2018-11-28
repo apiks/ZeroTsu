@@ -296,8 +296,8 @@ func lineSpaceFormatChannel(id string, optin bool, s discordgo.Session) string {
 	for i := 0; i < spacesRequired; i++ {
 		line += " "
 	}
-	line += fmt.Sprintf("| ([%d])", totalMessages)
-	spacesRequired = 59 - len(line)
+	line += fmt.Sprintf("| ([%d]) ", totalMessages)
+	spacesRequired = 70 - len(line)
 	for i := 0; i < spacesRequired; i++ {
 		line += " "
 	}

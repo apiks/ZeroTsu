@@ -11,6 +11,7 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
+const jokeURL = "https://safe-falls-22549.herokuapp.com/random_joke"
 var myClient = &http.Client{Timeout: 10 * time.Second}
 
 type Joke struct {
@@ -34,9 +35,20 @@ func getJson(url string, target interface{}) error {
 // Prints a random joke in chat
 func jokeCommand(s *discordgo.Session, m *discordgo.Message) {
 	joke := new(Joke)
-	getJson("https://08ad1pao69.execute-api.us-east-1.amazonaws.com/dev/random_joke", joke)
+	err := getJson(jokeURL, joke)
+	if err != nil {
+		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Joke website is not working properly. Please tell Apiks about it.")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
 
-	_, err := s.ChannelMessageSend(m.ChannelID, joke.Setup + "\n\n" + joke.Punchline)
+	_, err = s.ChannelMessageSend(m.ChannelID, joke.Setup + "\n\n" + joke.Punchline)
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
