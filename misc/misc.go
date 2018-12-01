@@ -698,7 +698,6 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 	}
 	// Handles userID if it was username#discrim format
 	if strings.Contains(userID, "#") {
-		fmt.Println(userID)
 		splitUser := strings.SplitN(userID, "#", 2)
 		if len(splitUser) < 2 {
 			err = fmt.Errorf("Error: Invalid user.")
@@ -713,8 +712,6 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 		}
 		MapMutex.Unlock()
 	}
-
-	fmt.Println(userID)
 
 	// Trims fluff if it was a mention. Otherwise check if it's a correct user ID
 	if strings.Contains(messageSlice[1], "<@") {

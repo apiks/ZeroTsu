@@ -435,3 +435,25 @@ func DuplicateRecursion() {
 
 	}
 }
+
+// Updates user usernames to the current ones they're using in memberInfo.json
+func UsernameCleanup(s *discordgo.Session, e *discordgo.Ready) {
+	MapMutex.Lock()
+	for _, mapUser := range MemberInfoMap {
+		user, err := s.User(mapUser.ID)
+		if err != nil {
+			continue
+		}
+		if mapUser.Username != user.Username {
+			mapUser.Username = user.Username
+		}
+		if mapUser.Discrim != user.Discriminator {
+			mapUser.Discrim = user.Discriminator
+		}
+	}
+	MapMutex.Unlock()
+
+	MemberInfoWrite(MemberInfoMap)
+
+	fmt.Println("FINISHED WITH USERNAMES")
+}
