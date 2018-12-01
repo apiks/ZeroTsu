@@ -715,6 +715,8 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 		MapMutex.Unlock()
 	}
 
+	fmt.Println("Pre prefix trim")
+
 	// Trims fluff if it was a mention. Otherwise check if it's a correct user ID
 	if strings.Contains(messageSlice[1], "<@") {
 		userID = strings.TrimPrefix(userID, "<@")
