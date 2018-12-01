@@ -26,7 +26,8 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		}
 	}
 
-	UsernameCleanup(s, e)
+	// Fixes users whose usernames/discrims are different from the ones in memberinfo.json. Keep off unless needed
+	UsernameCleanup(s)
 
 	for range time.NewTicker(15 * time.Second).C {
 

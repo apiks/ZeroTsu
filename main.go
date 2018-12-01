@@ -85,7 +85,7 @@ func Start() {
 	// Reads user gain stats from userGainStats.json
 	misc.UserChangeStatsRead()
 
-	// Cleans up duplicate usernames and nicknames (Run once per cleanup)
+	// Cleans up duplicate usernames and nicknames (Run once per cleanup, keep off unless needed)
 	//misc.DuplicateUsernamesAndNicknamesCleanup()
 
 	// Periodic events and status
