@@ -699,7 +699,7 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 	// Handles userID if it was username#discrim format
 	if strings.Contains(userID, "#") {
 		splitUser := strings.SplitN(userID, "#", 2)
-		if len(splitUser) != 2 {
+		if len(splitUser) < 2 {
 			err = fmt.Errorf("Error: Invalid user.")
 			return userID, err
 		}

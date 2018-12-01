@@ -29,7 +29,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(messageLowercase, " ", 2)
 
-	if len(commandStrings) == 1 {
+	if len(commandStrings) < 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"whois [@user, userID, or username#discrim]`")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
