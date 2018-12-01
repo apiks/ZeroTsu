@@ -438,12 +438,10 @@ func DuplicateRecursion() {
 
 // Updates user usernames to the current ones they're using in memberInfo.json
 func UsernameCleanup(s *discordgo.Session) {
-	var progress int
 	MapMutex.Lock()
 	for _, mapUser := range MemberInfoMap {
 		user, err := s.User(mapUser.ID)
 		if err != nil {
-			progress++
 			continue
 		}
 		if mapUser.Username != user.Username {
@@ -452,8 +450,6 @@ func UsernameCleanup(s *discordgo.Session) {
 		if mapUser.Discrim != user.Discriminator {
 			mapUser.Discrim = user.Discriminator
 		}
-		progress++
-		fmt.Printf("%v out of %v users parsed.", progress, len(MemberInfoMap))
 	}
 	MapMutex.Unlock()
 
