@@ -88,9 +88,6 @@ func Start() {
 	// Cleans up duplicate usernames and nicknames (Run once per cleanup)
 	//misc.DuplicateUsernamesAndNicknamesCleanup()
 
-	// Updates memberinfo user usernames (Run once per cleanup)
-	goBot.AddHandler(misc.UsernameCleanup)
-
 	// Periodic events and status
 	goBot.AddHandler(misc.StatusReady)
 

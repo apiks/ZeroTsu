@@ -26,6 +26,8 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		}
 	}
 
+	UsernameCleanup(s, e)
+
 	for range time.NewTicker(15 * time.Second).C {
 
 		// Checks whether it has to post rss thread
