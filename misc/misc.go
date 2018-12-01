@@ -701,7 +701,6 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 		fmt.Println(userID)
 		splitUser := strings.SplitN(userID, "#", 2)
 		if len(splitUser) < 2 {
-			fmt.Println(splitUser)
 			err = fmt.Errorf("Error: Invalid user.")
 			return userID, err
 		}
@@ -715,7 +714,7 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 		MapMutex.Unlock()
 	}
 
-	fmt.Println("Pre prefix trim")
+	fmt.Println(userID)
 
 	// Trims fluff if it was a mention. Otherwise check if it's a correct user ID
 	if strings.Contains(messageSlice[1], "<@") {
