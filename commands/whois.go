@@ -30,7 +30,8 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(messageLowercase, " ", 2)
 
 	if len(commandStrings) < 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"whois [@user, userID, or username#discrim]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"whois [@user, userID, or username#discrim]`\n\n" +
+			"Note: this command supports username#discrim where username contains spaces.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -60,7 +61,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	user, ok := misc.MemberInfoMap[userID]
 	if !ok {
 		if mem == nil {
-			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot whois until they rejoin server.")
+			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot whois until user joins the server.")
 			if err != nil {
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 				if err != nil {

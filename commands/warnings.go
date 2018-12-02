@@ -22,8 +22,9 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
 
-	if len(commandStrings) < 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"addwarning [@user, userID, or username#discrim] [warning]`")
+	if len(commandStrings) != 3 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"addwarning [@user, userID, or username#discrim] [warning]`\n\n" +
+			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -45,7 +46,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// If memberInfo.json file is empty or user is not there, print error
 	misc.MapMutex.Lock()
 	if len(misc.MemberInfoMap) == 0 || misc.MemberInfoMap[userID] == nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot warn until user joins the server.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + misc.ErrorLocation(err) + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -109,8 +110,9 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
 
-	if len(commandStrings) < 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"issuewarning [@user, userID, or username#discrim] [warning]`")
+	if len(commandStrings) != 3 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"issuewarning [@user, userID, or username#discrim] [warning]`\n" +
+			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -139,7 +141,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// If memberInfo.json file is empty or user is not there, print error
 	misc.MapMutex.Lock()
 	if len(misc.MemberInfoMap) == 0 || misc.MemberInfoMap[userID] == nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot warn until user joins the server.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {

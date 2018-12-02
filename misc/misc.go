@@ -656,7 +656,7 @@ func ResolveTimeFromString(given string) (ret time.Time, perma bool) {
 	return
 }
 
-// Resolves a userID from a userID or Mention
+// Resolves a userID from a userID, Mention or username#discrim
 func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string) (string, error) {
 
 	var err 	error
@@ -700,7 +700,8 @@ func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string
 	if strings.Contains(userID, "#") {
 		splitUser := strings.SplitN(userID, "#", 2)
 		if len(splitUser) < 2 {
-			err = fmt.Errorf("Error: Invalid user.")
+			err = fmt.Errorf("Error: Invalid user. You're trying to username#discrim with spaces in the username." +
+				" This command does not support that. Please use an ID.")
 			return userID, err
 		}
 		MapMutex.Lock()

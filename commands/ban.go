@@ -19,6 +19,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		length  		string
 		reason  		string
 		success 		string
+		remaining		string
 
 		validSlice 		bool
 
@@ -30,9 +31,10 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	commandStrings := strings.SplitN(m.Content, " ", 4)
 
-	if len(commandStrings) < 4 {
+	if len(commandStrings) != 4 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "ban [@user, userID, or username#discrim] [time] [reason]` format. \n\n"+
-			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes. Use 0d for permanent.")
+			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes. Use 0d for permanent.\n" +
+			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -61,7 +63,8 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	if !validSlice {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid length. \n Usage: `" + config.BotPrefix + "ban [@user or userID] [time] [reason]` format. \n\n"+
-			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes. Use 0d for permanent.")
+			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes. Use 0d for permanent.\n" +
+			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -153,9 +156,21 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
+	// Parses how long is left of the ban
+	now := time.Now()
+	remainingUnformatted := temp.UnbanDate.Sub(now)
+	if remainingUnformatted.Hours() < 1 {
+		remaining = strconv.FormatFloat(remainingUnformatted.Minutes(), 'f', 0, 64) + " minutes"
+	} else if remainingUnformatted.Hours() < 24 {
+		remaining = strconv.FormatFloat(remainingUnformatted.Hours(), 'f', 0, 64) + " hours"
+	} else {
+		remaining = strconv.FormatFloat(remainingUnformatted.Hours()/24, 'f', 0, 64) + " days"
+	}
+
 	// Assigns success ban print string for user
 	if !perma {
-		success = "You have been banned from " + guild.Name + ": **" + reason + "**\n\nUntil: _" + UnbanDate.Format("2006-01-02 15:04:05") + " " + z + "_"
+		success = "You have been banned from " + guild.Name + ": **" + reason + "**\n\nUntil: _" + UnbanDate.Format("2006-01-02 15:04:05") + " " + z + "_\n" +
+			"Remaining: " + remaining
 	} else {
 		success = "You have been banned from " + guild.Name + ": **" + reason + "**\n\nUntil: _Forever_ \n\nIf you would like to appeal, use modmail at <https://reddit.com/r/anime>"
 	}

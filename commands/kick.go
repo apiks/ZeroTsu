@@ -21,8 +21,9 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	commandStrings := strings.SplitN(m.Content, " ", 3)
 
-	if len(commandStrings) < 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Please use `"+config.BotPrefix+"kick [@user, userID, or username#discrim] [reason]` format.")
+	if len(commandStrings) != 3 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Please use `"+config.BotPrefix+"kick [@user, userID, or username#discrim] [reason]` format.\n\n" +
+			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -43,7 +44,8 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Fetches user from server
 	mem, err := s.User(userID)
 	if err != nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid user. Please use `"+config.BotPrefix+"kick [@user, userID, or username#discrim] [reason]` format.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid user. Please use `"+config.BotPrefix+"kick [@user, userID, or username#discrim] [reason]` format.\n\n" +
+			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -59,7 +61,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		userMem, err = s.GuildMember(config.ServerID, mem.ID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server. Cannot kick user until they rejoin the server.")
+			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server. Cannot kick user until user joins the server.")
 			if err != nil {
 				_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 				if err != nil {

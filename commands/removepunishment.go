@@ -18,8 +18,9 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	// Checks if there's enough parameters
-	if len(commandStrings) < 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removewarning [@user, userID, or username#discrim] [warning index]`")
+	if len(commandStrings) != 3 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removewarning [@user, userID, or username#discrim] [warning index]`\n\n" +
+			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -40,7 +41,7 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if user is in memberInfo
 	misc.MapMutex.Lock()
 	if misc.MemberInfoMap[userID] == nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo. Cannot remove nonexisting warning.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -125,8 +126,9 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	// Checks if there's enough parameters (command, user and index.) Else prints error message
-	if len(commandStrings) < 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removekick [@user, userID, or username#discrim] [kick index]`")
+	if len(commandStrings) != 3 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removekick [@user, userID, or username#discrim] [kick index]`\n\n" +
+			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -147,7 +149,7 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if user is in memberInfo
 	misc.MapMutex.Lock()
 	if misc.MemberInfoMap[userID] == nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo. Cannot remove nonexisting kick.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -233,7 +235,8 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if there's enough parameters (command, user and index. Else prints error message
 	if len(commandStrings) < 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removeban [@user, userID, or username#discrim] [ban index]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removeban [@user, userID, or username#discrim] [ban index]`\n\n" +
+			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -254,7 +257,7 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if user is in memberInfo
 	misc.MapMutex.Lock()
 	if misc.MemberInfoMap[userID] == nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo. Cannot remove nonexisting ban.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {

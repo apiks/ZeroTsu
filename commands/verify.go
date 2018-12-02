@@ -20,8 +20,9 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	// Checks if there's enough parameters (command, user and reddit username.)
-	if len(commandStrings) < 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"verify [@user, userID, or username#discrim] [redditUsername]`")
+	if len(commandStrings) != 3 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"verify [@user, userID, or username#discrim] [redditUsername]`\n\n" +
+			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -54,7 +55,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		userMem, err = s.GuildMember(config.ServerID, userID)
 		if err != nil {
-			_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in the server. Cannot verify user.")
+			_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in the server. Cannot verify user until they rejoin the server.")
 			if err != nil {
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 				if err != nil {
@@ -154,7 +155,8 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if there's enough parameters (command, user and reddit username.)
 	if len(commandStrings) < 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"unverify [@user, userID, or username#discrim]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"unverify [@user, userID, or username#discrim]`\n\n" +
+			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -177,7 +179,7 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		userMem, err = s.GuildMember(config.ServerID, userID)
 		if err != nil {
-			_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in the server. Cannot unverify user.")
+			_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in the server. Cannot unverify user until they join the server.")
 			if err != nil {
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 				if err != nil {
@@ -197,7 +199,7 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.MemberInfoMap[userID].RedditUsername = ""
 		misc.MemberInfoMap[userID].VerifiedDate = ""
 	} else {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in memberInfo. Cannot unverify user.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in memberInfo. Cannot unverify user until they join the server.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
