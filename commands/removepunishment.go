@@ -18,7 +18,7 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	// Checks if there's enough parameters
-	if len(commandStrings) != 3 {
+	if len(commandStrings) < 3 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removewarning [@user, userID, or username#discrim] [warning index]`")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -125,7 +125,7 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	// Checks if there's enough parameters (command, user and index.) Else prints error message
-	if len(commandStrings) != 3 {
+	if len(commandStrings) < 3 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removekick [@user, userID, or username#discrim] [kick index]`")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -232,7 +232,7 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	// Checks if there's enough parameters (command, user and index. Else prints error message
-	if len(commandStrings) != 3 {
+	if len(commandStrings) < 3 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removeban [@user, userID, or username#discrim] [ban index]`")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))

@@ -30,7 +30,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	commandStrings := strings.SplitN(m.Content, " ", 4)
 
-	if len(commandStrings) != 4 {
+	if len(commandStrings) < 4 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "ban [@user, userID, or username#discrim] [time] [reason]` format. \n\n"+
 			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes. Use 0d for permanent.")
 		if err != nil {

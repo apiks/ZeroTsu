@@ -21,7 +21,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	commandStrings := strings.SplitN(m.Content, " ", 3)
 
-	if len(commandStrings) != 3 {
+	if len(commandStrings) < 3 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Please use `"+config.BotPrefix+"kick [@user, userID, or username#discrim] [reason]` format.")
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
