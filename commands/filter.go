@@ -12,7 +12,10 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
-var spamFilterMap = make(map[string]int)
+var (
+	spamFilterMap = make(map[string]int)
+	spamFilterIsBroken = false
+)
 
 // Handles filter in an onMessage basis
 func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -495,6 +498,11 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID
 
 // Removes user message if sent too quickly in succession
 func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
+
+	// Checks if the bot had thrown an error before and stops it if so. Helps with massive backlog or delays but disables spam filter
+	if spamFilterIsBroken {
+		return
+	}
 	// Checks if it's within the /r/anime server
 	ch, err := s.State.Channel(m.ChannelID)
 	if err != nil {
@@ -534,9 +542,11 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 	} else {
 		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err := s.ChannelMessageSend(config.BotLogID, "Error: Spam filter has been disabled due to massive overflow of requests.\n" +
+				err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
+				spamFilterIsBroken = true
 				return
 			}
 			misc.MapMutex.Unlock()
