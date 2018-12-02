@@ -89,7 +89,7 @@ func Start() {
 	//misc.DuplicateUsernamesAndNicknamesCleanup()
 
 	// Fixes users whose usernames/discrims are different from the ones in memberinfo.json. Keep off unless needed
-	goBot.AddHandlerOnce(misc.UsernameCleanup)
+	//goBot.AddHandlerOnce(misc.UsernameCleanup)
 
 	// Periodic events and status
 	goBot.AddHandler(misc.StatusReady)
