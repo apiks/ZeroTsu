@@ -539,21 +539,19 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if spamFilterMap[m.Author.ID] < 4 {
 		spamFilterMap[m.Author.ID]++
 		misc.MapMutex.Unlock()
-	} else if spamFilterMap[m.Author.ID] < 15 {
+	} else {
 		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
-		if err != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, "Error: Spam filter has been disabled due to massive overflow of requests.\n" +
-				err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil && spamFilterMap[m.Author.ID] > 15 {
+			_, err := s.ChannelMessageSend(config.BotLogID, "Error: Spam filter has been disabled due to massive overflow of requests.\n"+
+				err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
-				spamFilterIsBroken = true
 				return
 			}
+			spamFilterIsBroken = true
 			misc.MapMutex.Unlock()
 			return
 		}
-		misc.MapMutex.Unlock()
-	} else {
 		misc.MapMutex.Unlock()
 	}
 }
