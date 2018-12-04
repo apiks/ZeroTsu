@@ -495,9 +495,11 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 			}
 			inChanCreation = false
 
-			_, err = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Temp channel `%v` has been created from a vote by user %v#%v.", temp.Channel, temp.User.Username, temp.User.Discriminator))
-			if err != nil {
-				fmt.Println(err)
+			if temp.ChannelType == "temp" || temp.ChannelType == "temporary" {
+				_, err = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Temp channel `%v` has been created from a vote by user %v#%v.", temp.Channel, temp.User.Username, temp.User.Discriminator))
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 		}
 		misc.MapMutex.Unlock()
