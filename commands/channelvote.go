@@ -506,10 +506,6 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 		cha, err := s.GuildChannels(config.ServerID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				continue
-			}
 			continue
 		}
 
