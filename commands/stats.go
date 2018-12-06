@@ -349,7 +349,7 @@ func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 func isChannelUsable(channel misc.Channel, guild *discordgo.Guild) (misc.Channel, bool) {
 
 	// Checks if channel exists and if it's optin
-	for guildIndex := range guild.Channels {
+	for guildIndex, guildChannel := range guild.Channels {
 		if guildChannel.ParentID == config.ModCategoryID && guildChannel.ID == channel.ChannelID {
 			return channel, false
 		}
