@@ -350,6 +350,9 @@ func isChannelUsable(channel misc.Channel, guild *discordgo.Guild) (misc.Channel
 
 	// Checks if channel exists and if it's optin
 	for guildIndex := range guild.Channels {
+		if guildChannel.ParentID == config.ModCategoryID && guildChannel.ID == channel.ChannelID {
+			return channel, false
+		}
 		for roleIndex := range guild.Roles {
 			if guild.Roles[roleIndex].Position < misc.OptinUnderPosition &&
 				guild.Roles[roleIndex].Position > misc.OptinAbovePosition &&
