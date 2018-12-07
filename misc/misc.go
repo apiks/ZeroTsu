@@ -826,3 +826,69 @@ func GetBannedUsers() {
 	}
 	MapMutex.Unlock()
 }
+
+// Checks if a message contains a channel or user mention and fixes it to a non-mention if that if true
+func MentionParser(s *discordgo.Session, m string) string {
+
+	// Checks for user and replaces mention with user name
+	if strings.Contains(m, "<@") {
+		userMentionRegex := regexp.MustCompile("(?i)(<!@+[0-9]+>)")
+		userMentionCheck := userMentionRegex.FindAllString(m, -1)
+		if userMentionCheck == nil {
+			userMentionRegex = regexp.MustCompile("(?i)(<@+[0-9]+>)")
+			userMentionCheck = userMentionRegex.FindAllString(m, -1)
+		}
+		if userMentionCheck != nil {
+			for index := range userMentionCheck {
+				userID := strings.TrimPrefix(userMentionCheck[index], "<@")
+				userID = strings.TrimPrefix(userID, "!")
+				userID = strings.TrimSuffix(userID, ">")
+
+				// Checks first in memberInfo. Only checks serverside if it doesn't exist. Saves performance
+				MapMutex.Lock()
+				if len(MemberInfoMap) != 0 {
+					if MemberInfoMap[userID] != nil {
+						m = strings.Replace(m, userMentionCheck[index], fmt.Sprintf("@%v", MemberInfoMap[userID].Nickname), -1)
+						MapMutex.Unlock()
+						continue
+					}
+				}
+				MapMutex.Unlock()
+
+				user, err := s.State.Member(config.ServerID, userID)
+				if err != nil {
+					user, _ := s.GuildMember(config.ServerID, userID)
+					if user != nil {
+						m = strings.Replace(m, userMentionCheck[index], fmt.Sprintf("@%v", user.Nick), -1)
+						continue
+					}
+				}
+				if user != nil {
+					m = strings.Replace(m, userMentionCheck[index], fmt.Sprintf("@%v", user.Nick), -1)
+				}
+			}
+		}
+	}
+
+	// Checks for channel and replaces mention with channel name
+	if strings.Contains(m, "#") {
+		channelMentionRegex := regexp.MustCompile("(?i)(<#+[0-9]+>)")
+		channelMentionCheck := channelMentionRegex.FindAllString(m, -1)
+		if channelMentionCheck != nil {
+			for index := range channelMentionCheck {
+				channelID := strings.TrimPrefix(channelMentionCheck[index], "<#")
+				channelID = strings.TrimSuffix(channelID, ">")
+
+				cha, err := s.Channel(channelID)
+				if err != nil {
+					continue
+				}
+				if cha != nil {
+					m = strings.Replace(m, channelMentionCheck[index], fmt.Sprintf("#%v", cha.Name), -1)
+				}
+			}
+		}
+	}
+
+	return m
+}

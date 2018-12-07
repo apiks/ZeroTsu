@@ -79,10 +79,6 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Deletes the message that was sent if it has a filtered word.
 		err = s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
 			return
 		}
 
@@ -111,8 +107,8 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if err != nil {
 			return
 		}
-		_, _ = s.ChannelMessageSend(dm.ID, "Your message `" + messageLowercase + "` was removed for using: _" + removals + "_ \n" +
-			"Using such words makes me disappointed in you, darling.\nFor a list of banned phrases and words please check https://pastebin.com/GgkD4pT9.")
+		_, _ = s.ChannelMessageSend(dm.ID, "Your message `" + messageLowercase + "` was removed for using: _" + removals + "_ \n\n" +
+			"Using such words makes me disappointed in you, darling.\n\nFor a list of banned phrases and words please check <https://pastebin.com/GgkD4pT9>")
 	}
 }
 
@@ -421,40 +417,8 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID
 	)
 
 	// Checks if the message contains a mention and finds the actual name instead of ID
-	if strings.Contains(m.Content, "<@!") {
-		mentionRegex := regexp.MustCompile("(?i)(<@!+[0-9]+>)")
-		mentionCheck := mentionRegex.FindAllString(m.Content, -1)
-		if mentionCheck != nil {
-			for index := range mentionCheck {
-				userID := strings.TrimPrefix(mentionCheck[index], "<@!")
-				userID = strings.TrimPrefix(userID, "!")
-				userID = strings.TrimSuffix(userID, ">")
-
-				// Checks first in memberInfo. Only checks serverside if it doesn't exist. Saves performance
-				misc.MapMutex.Lock()
-				if len(misc.MemberInfoMap) != 0 {
-					if misc.MemberInfoMap[userID] != nil {
-						m.Content = strings.Replace(m.Content, mentionCheck[index], fmt.Sprintf("@%v", misc.MemberInfoMap[userID].Nickname), -1)
-						misc.MapMutex.Unlock()
-						continue
-					}
-				}
-				misc.MapMutex.Unlock()
-
-				user, err := s.State.Member(config.ServerID, userID)
-				if err != nil {
-					user, _ := s.GuildMember(config.ServerID, userID)
-					if user != nil {
-						m.Content = strings.Replace(m.Content, mentionCheck[index], fmt.Sprintf("@%v", user.Nick), -1)
-						continue
-					}
-				}
-				if user != nil {
-					m.Content = strings.Replace(m.Content, mentionCheck[index], fmt.Sprintf("@%v", user.Nick), -1)
-				}
-			}
-		}
-	}
+	content := m.Content
+	content = misc.MentionParser(s, content)
 
 	// Sets timestamp for removal
 	t := time.Now()
@@ -471,7 +435,7 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID
 
 	// Sets field content
 	embedFieldFilter.Value = "**__" + removals + "__**"
-	embedFieldMessage.Value = "`" + m.Content + "`"
+	embedFieldMessage.Value = "`" + content + "`"
 	embedFieldChannel.Value = misc.ChMentionID(channelID)
 
 	// Sets field inline
@@ -504,16 +468,20 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	// Checks if it's within the /r/anime server
+	s.RWMutex.Lock()
 	ch, err := s.State.Channel(m.ChannelID)
 	if err != nil {
 		ch, err = s.Channel(m.ChannelID)
 		if err != nil {
+			s.RWMutex.Unlock()
 			return
 		}
 	}
 	if ch.GuildID != config.ServerID {
+		s.RWMutex.Unlock()
 		return
 	}
+	s.RWMutex.Unlock()
 	// Checks if it's the bot that sent the message
 	if m.Author.ID == s.State.User.ID {
 		return

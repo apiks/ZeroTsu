@@ -49,13 +49,17 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}()
 
+	s.State.RWMutex.RLock()
 	if m.Author.ID == s.State.User.ID {
+		s.State.RWMutex.RUnlock()
 		return
 	}
 	if len(m.Message.Content) == 0 {
+		s.State.RWMutex.RUnlock()
 		return
 	}
 	if m.Message.Content[0:len(config.BotPrefix)] != config.BotPrefix {
+		s.State.RWMutex.RUnlock()
 		return
 	}
 
@@ -65,10 +69,10 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if !ok {
 		cmd, ok = commandMap[aliasMap[cmdTrigger]]
 		if !ok {
+			s.State.RWMutex.RUnlock()
 			return
 		}
 	}
-	s.State.RWMutex.RLock()
 	if cmd.elevated && !hasElevatedPermissions(s, m.Author) {
 		s.State.RWMutex.RUnlock()
 		return
@@ -79,7 +83,10 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	cmd.commandCount++
 	misc.MapMutex.Unlock()
 	if cmd.deleteAfter {
-		s.ChannelMessageDelete(m.ChannelID, m.ID)
+		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
+		if err != nil {
+			return
+		}
 	}
 }
 

@@ -40,6 +40,8 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 	reason = commandStrings[2]
+	// Checks if the reason contains a mention and finds the actual name instead of ID
+	reason = misc.MentionParser(s, reason)
 
 	// Fetches user from server
 	mem, err := s.User(userID)

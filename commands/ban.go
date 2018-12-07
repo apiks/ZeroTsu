@@ -52,6 +52,8 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	length = commandStrings[2]
 	reason = commandStrings[3]
+	// Checks if the reason contains a mention and finds the actual name instead of ID
+	reason = misc.MentionParser(s, reason)
 
 	// Checks if a number is contained in length var. Fixes some cases of invalid length
 	lengthSlice := strings.Split(length, "")
@@ -147,7 +149,9 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Adds the now banned user to BannedUsersSlice
+	misc.MapMutex.Lock()
 	misc.BannedUsersSlice = append(misc.BannedUsersSlice, temp)
+	misc.MapMutex.Unlock()
 
 	// Pulls the guild Name
 	guild, err := s.Guild(config.ServerID)

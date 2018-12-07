@@ -31,7 +31,6 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		// Checks whether it has to post rss thread
 		MapMutex.Lock()
 		RSSParser(s)
-		MapMutex.Unlock()
 
 		// Goes through bannedUsers.json if it's not empty and unbans if needed
 		if len(BannedUsersSlice) != 0 {
@@ -54,7 +53,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 					// Unbans user
 					err := s.GuildBanDelete(config.ServerID, BannedUsersSlice[i].ID)
 					if err != nil {
-						return
+						continue
 					}
 
 					// Removes the user ban from bannedUsers.json
@@ -68,6 +67,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 				}
 			}
 		}
+		MapMutex.Unlock()
 	}
 }
 

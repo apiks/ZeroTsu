@@ -223,6 +223,9 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	misc.MapMutex.Unlock()
 
+	// Checks if the message contains a mention and finds the actual name instead of ID
+	message = misc.MentionParser(s, message)
+
 	// Splits the message if it's over 1950 characters
 	if len(message) > 1950 {
 		splitMessage = misc.SplitLongMessage(message)

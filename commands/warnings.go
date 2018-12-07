@@ -42,6 +42,8 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	warning = commandStrings[2]
+	// Checks if the warning contains a mention and finds the actual name instead of ID
+	warning = misc.MentionParser(s, warning)
 
 	// If memberInfo.json file is empty or user is not there, print error
 	misc.MapMutex.Lock()
@@ -137,6 +139,8 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	warning = commandStrings[2]
+	// Checks if the warning contains a mention and finds the actual name instead of ID
+	warning = misc.MentionParser(s, warning)
 
 	// If memberInfo.json file is empty or user is not there, print error
 	misc.MapMutex.Lock()
