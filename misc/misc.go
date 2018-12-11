@@ -376,7 +376,7 @@ func RssThreadsWrite(thread string, channel string, author string) (bool, error)
 
 	// Appends the new thread to a slice of all of the old ones if it doesn't exist
 	for i := 0; i < len(ReadRssThreads); i++ {
-		if ReadRssThreads[i].Thread == threadStruct.Thread {
+		if ReadRssThreads[i].Thread == threadStruct.Thread && ReadRssThreads[i].Channel == threadStruct.Channel {
 			return true, err
 		}
 	}
