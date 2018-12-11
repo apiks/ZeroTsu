@@ -56,6 +56,7 @@ type RssThreadStruct struct {
 type RssThreadCheckStruct struct {
 	Thread string    `json:"Thread"`
 	Date   time.Time `json:"Date"`
+	ChannelID string `json:"ChannelID"`
 }
 
 type Emoji struct {
@@ -453,16 +454,22 @@ func RssThreadsRead() {
 }
 
 // Writes string "thread" to rssThreadCheck.json. Returns bool depending on success or not
-func RssThreadsTimerWrite(thread string, date time.Time) bool {
+func RssThreadsTimerWrite(thread string, date time.Time, channelID string) bool {
 
 	thread = strings.ToLower(thread)
 
-	var threadCheckStruct= RssThreadCheckStruct{thread, date}
+	var threadCheckStruct= RssThreadCheckStruct{thread, date, channelID}
 
 	// Appends the new thread to a slice of all of the old ones if it doesn't exist
 	for p := 0; p < len(ReadRssThreadsCheck); p++ {
 		if ReadRssThreadsCheck[p].Thread == threadCheckStruct.Thread {
-			return false
+			if threadCheckStruct.ChannelID != "" {
+				if ReadRssThreadsCheck[p].ChannelID == threadCheckStruct.ChannelID {
+					return false
+				}
+			} else {
+				return false
+			}
 		}
 	}
 
@@ -484,18 +491,23 @@ func RssThreadsTimerWrite(thread string, date time.Time) bool {
 }
 
 // Removes string "thread" to rssThreadCheck.json
-func RssThreadsTimerRemove(thread string, date time.Time) {
+func RssThreadsTimerRemove(thread string, date time.Time, channelID string) {
 
 	thread = strings.ToLower(thread)
 
 	var (
 		threadExists= false
-		threadCheckStruct= RssThreadCheckStruct{thread, date}
+		threadCheckStruct= RssThreadCheckStruct{thread, date, channelID}
 	)
 
 	// Deletes the thread if it finds it exists
 	for i := 0; i < len(ReadRssThreadsCheck); i++ {
 		if ReadRssThreadsCheck[i].Thread == threadCheckStruct.Thread {
+			if threadCheckStruct.ChannelID != "" {
+				if ReadRssThreadsCheck[i].ChannelID != threadCheckStruct.ChannelID {
+					return
+				}
+			}
 			threadExists = true
 			ReadRssThreadsCheck = append(ReadRssThreadsCheck[:i], ReadRssThreadsCheck[i+1:]...)
 			break

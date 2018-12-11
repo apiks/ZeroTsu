@@ -201,7 +201,7 @@ func RSSParser(s *discordgo.Session) {
 
 		if difference > 0 {
 			// Removes the fact that the thread had been posted already
-			RssThreadsTimerRemove(ReadRssThreadsCheck[p].Thread, ReadRssThreadsCheck[p].Date)
+			RssThreadsTimerRemove(ReadRssThreadsCheck[p].Thread, ReadRssThreadsCheck[p].Date, ReadRssThreads[p].Channel)
 		}
 	}
 
@@ -219,13 +219,20 @@ func RSSParser(s *discordgo.Session) {
 
 				for k := 0; k < len(ReadRssThreadsCheck); k++ {
 					if ReadRssThreadsCheck[k].Thread == ReadRssThreads[j].Thread {
-						exists = true
-						break
+						if ReadRssThreadsCheck[k].ChannelID != "" {
+							if ReadRssThreadsCheck[k].ChannelID == ReadRssThreads[j].Channel {
+								exists = true
+								break
+							}
+						} else {
+							exists = true
+							break
+						}
 					}
 				}
 				if !exists {
 					// Posts latest sub episode thread and pins/unpins
-					valid := RssThreadsTimerWrite(ReadRssThreads[j].Thread, t)
+					valid := RssThreadsTimerWrite(ReadRssThreads[j].Thread, t, ReadRssThreads[j].Channel)
 					if valid {
 						message, err := s.ChannelMessageSend(ReadRssThreads[j].Channel, feed.Items[i].Link)
 						if err != nil {
@@ -297,10 +304,12 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 		}
 	}
 
+	s.RWMutex.Lock()
 	if v.ChannelID == config.VoiceChaID {
 		// Adds role
 		for _, role := range m.Roles {
 			if role == roleIDString {
+				s.RWMutex.Unlock()
 				return
 			}
 		}
@@ -308,10 +317,13 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 			if err != nil {
+				s.RWMutex.Unlock()
 				return
 			}
+			s.RWMutex.Unlock()
 			return
 		}
+		s.RWMutex.Unlock()
 		return
 	}
 
@@ -322,13 +334,16 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 			if err != nil {
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 				if err != nil {
+					s.RWMutex.Unlock()
 					return
 				}
+				s.RWMutex.Unlock()
 				return
 			}
 			break
 		}
 	}
+	s.RWMutex.Unlock()
 }
 
 // Print fluff message on bot ping
