@@ -462,14 +462,9 @@ func RssThreadsTimerWrite(thread string, date time.Time, channelID string) bool 
 
 	// Appends the new thread to a slice of all of the old ones if it doesn't exist
 	for p := 0; p < len(ReadRssThreadsCheck); p++ {
-		if ReadRssThreadsCheck[p].Thread == threadCheckStruct.Thread {
-			if threadCheckStruct.ChannelID != "" {
-				if ReadRssThreadsCheck[p].ChannelID == threadCheckStruct.ChannelID {
-					return false
-				}
-			} else {
-				return false
-			}
+		if ReadRssThreadsCheck[p].Thread == threadCheckStruct.Thread &&
+			ReadRssThreadsCheck[p].ChannelID == threadCheckStruct.ChannelID {
+			return false
 		}
 	}
 
@@ -502,18 +497,14 @@ func RssThreadsTimerRemove(thread string, date time.Time, channelID string) {
 
 	// Deletes the thread if it finds it exists
 	for i := 0; i < len(ReadRssThreadsCheck); i++ {
-		if ReadRssThreadsCheck[i].Thread == threadCheckStruct.Thread {
-			if threadCheckStruct.ChannelID != "" {
-				if ReadRssThreadsCheck[i].ChannelID != threadCheckStruct.ChannelID {
-					return
-				}
-			}
+		if ReadRssThreadsCheck[i].Thread == threadCheckStruct.Thread &&
+			ReadRssThreadsCheck[i].ChannelID == threadCheckStruct.ChannelID {
 			threadExists = true
 			ReadRssThreadsCheck = append(ReadRssThreadsCheck[:i], ReadRssThreadsCheck[i+1:]...)
 			break
 		}
 	}
-	if threadExists == false {
+	if !threadExists {
 		return
 	}
 
