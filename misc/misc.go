@@ -505,6 +505,7 @@ func RssThreadsTimerRemove(thread string, date time.Time, channelID string) {
 		}
 	}
 	if !threadExists {
+		fmt.Println("thread doesn't exist")
 		return
 	}
 

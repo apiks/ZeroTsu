@@ -26,7 +26,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		}
 	}
 
-	for range time.NewTicker(15 * time.Second).C {
+	for range time.NewTicker(5 * time.Second).C {
 
 		// Checks whether it has to post rss thread
 		MapMutex.Lock()
@@ -201,7 +201,8 @@ func RSSParser(s *discordgo.Session) {
 
 		if difference > 0 {
 			// Removes the fact that the thread had been posted already
-			RssThreadsTimerRemove(ReadRssThreadsCheck[p].Thread, ReadRssThreadsCheck[p].Date, ReadRssThreads[p].Channel)
+			fmt.Println("in removal")
+			RssThreadsTimerRemove(ReadRssThreadsCheck[p].Thread, ReadRssThreadsCheck[p].Date, ReadRssThreadsCheck[p].ChannelID)
 		}
 	}
 
