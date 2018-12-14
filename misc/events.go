@@ -201,7 +201,6 @@ func RSSParser(s *discordgo.Session) {
 
 		if difference > 0 {
 			// Removes the fact that the thread had been posted already
-			fmt.Println("in removal")
 			RssThreadsTimerRemove(ReadRssThreadsCheck[p].Thread, ReadRssThreadsCheck[p].Date, ReadRssThreadsCheck[p].ChannelID)
 		}
 	}

@@ -51,6 +51,16 @@ type User struct {
 	AltCheck              bool      `json:"altcheck"`
 }
 
+type UserBan struct {
+	IsBanned	bool	`json:"user_is_banned"`
+}
+
+type RAnimeJson struct {
+	Data struct {
+		UserIsBanned              bool          `json:"user_is_banned"`
+	} `json:"data"`
+}
+
 type Stats struct {
 	Name string
 	Dates []string
@@ -439,7 +449,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					// Sets error message
 					var temp User
 					temp = *UserCookieMap[cookieValue.Value]
-					temp.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
+					temp.Error = err.Error()
 					UserCookieMap[cookieValue.Value] = &temp
 
 					// Loads the html & css verification files
@@ -611,7 +621,7 @@ func getRedditUsername(code string) (string, float64, error) {
 		return "", 0, err
 	}
 
-	// Sets needed reqAPI paraemeters
+	// Sets needed reqAPI parameters
 	reqAPI.Header.Add("Authorization", "Bearer "+access.RedditAccessToken)
 	reqAPI.Header.Add("User-Agent", misc.UserAgent)
 
@@ -634,6 +644,42 @@ func getRedditUsername(code string) (string, float64, error) {
 	jsonErr = json.Unmarshal(bodyAPI, &user)
 	if jsonErr != nil {
 		return "", 0, err
+	}
+
+	// Makes a GET request to reddit in reqAPIBan
+	reqAPIBan, err := http.NewRequest("GET", "https://oauth.reddit.com/r/anime/about.json", nil)
+	if err != nil {
+		return "", 0, err
+	}
+
+	// Sets needed reqAPIBan parameters
+	reqAPIBan.Header.Add("Authorization", "Bearer "+access.RedditAccessToken)
+	reqAPIBan.Header.Add("User-Agent", misc.UserAgent)
+
+	// Does the GET request and puts it into the respAPI
+	respAPIBan, err := client.Do(reqAPIBan)
+	if err != nil {
+		return "", 0, err
+	}
+
+	// Reads the byte respAPIBan body into bodyAPIBan
+	bodyAPIBan, err := ioutil.ReadAll(respAPIBan.Body)
+	if err != nil {
+		return "", 0, err
+	}
+
+	// Initializes user variable of type UserBan to hold /r/anime reddit json in
+	userBan := RAnimeJson{}
+
+	// Unmarshals all the required json fields in the above user variable
+	jsonErr = json.Unmarshal(bodyAPIBan, &userBan)
+	if jsonErr != nil {
+		return "", 0, err
+	}
+
+	// Gives an error if the user is banned on the sub
+	if userBan.Data.UserIsBanned {
+		return "", 0, fmt.Errorf("Error: Banned users from the subreddit are not allowed on the Discord server.")
 	}
 
 	// Returns user reddit username and date of account creation in epoch time
