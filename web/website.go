@@ -154,14 +154,14 @@ func StatsPageHandler(w http.ResponseWriter, r *http.Request) {
 			// Loads the html & css stats files
 			t, err := template.ParseFiles("./web/assets/channelstats.html")
 			if err != nil {
-				fmt.Print(err.Error())
 				misc.MapMutex.Unlock()
+				fmt.Print(err.Error())
 				return
 			}
 			err = t.Execute(w, pick)
 			if err != nil {
-				fmt.Println(err.Error())
 				misc.MapMutex.Unlock()
+				fmt.Println(err.Error())
 				return
 			}
 			misc.MapMutex.Unlock()
@@ -177,14 +177,14 @@ func StatsPageHandler(w http.ResponseWriter, r *http.Request) {
 		// Loads the html & css stats files
 		t, err := template.ParseFiles("./web/assets/channelstats.html")
 		if err != nil {
-			fmt.Print(err.Error())
 			misc.MapMutex.Unlock()
+			fmt.Print(err.Error())
 			return
 		}
 		err = t.Execute(w, pick)
 		if err != nil {
-			fmt.Println(err.Error())
 			misc.MapMutex.Unlock()
+			fmt.Println(err.Error())
 			return
 		}
 		misc.MapMutex.Unlock()
@@ -225,6 +225,7 @@ func StatsPageHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		misc.MapMutex.Unlock()
 		fmt.Println(err.Error())
+		return
 	}
 	misc.MapMutex.Unlock()
 }
@@ -256,8 +257,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("Error is in VerificationHandler")
 		}
 	}()
-
-	fmt.Println("A person is in the verification page at post-cookie assignment")
 
 	// Blurb fetches query from link
 	queryValues := r.URL.Query()
@@ -546,30 +545,28 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 			UserCookieMap[cookieValue.Value] = &temp
 		}
 	}
-	misc.MapMutex.Unlock()
 
 	// Loads the html & css verification files
 	t, err := template.ParseFiles("web/assets/verification.html")
 	if err != nil {
 		fmt.Print(err.Error())
 	}
-	misc.MapMutex.Lock()
+
 	err = t.Execute(w, UserCookieMap[cookieValue.Value])
 	if err != nil {
-		misc.MapMutex.Unlock()
 		fmt.Println(err.Error())
 	}
-	misc.MapMutex.Unlock()
 
 	// Resets assigned Error Message
 	if cookieValue != nil {
 		var temp User
-		misc.MapMutex.Lock()
 		temp = *UserCookieMap[cookieValue.Value]
 		temp.Error = ""
 		UserCookieMap[cookieValue.Value] = &temp
 		misc.MapMutex.Unlock()
+		return
 	}
+	misc.MapMutex.Unlock()
 }
 
 // Verifies user on reddit and returns their reddit username
