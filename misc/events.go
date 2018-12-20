@@ -40,15 +40,12 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 				if difference > 0 {
 
 					// Checks if user is in MemberInfo and assigns to user variable if true
-					MapMutex.Lock()
 					user, ok := MemberInfoMap[BannedUsersSlice[i].ID]
 					if !ok {
-						MapMutex.Unlock()
 						continue
 					}
 					// Sets unban date to now
 					MemberInfoMap[BannedUsersSlice[i].ID].UnbanDate = "No ban"
-					MapMutex.Unlock()
 
 					// Unbans user
 					err := s.GuildBanDelete(config.ServerID, BannedUsersSlice[i].ID)

@@ -49,9 +49,6 @@ func Start() {
 		panic(err)
 	}
 
-	// Set API REST retries for discord API latency spikes
-	goBot.MaxRestRetries = 3
-
 	// Reads all spoiler roles created with create command from spoilerRoles.json
 	misc.SpoilerRolesRead()
 
