@@ -35,26 +35,26 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		MapMutex.Lock()
 		if len(BannedUsersSlice) != 0 {
 			t := time.Now()
-			for i := 0; i < len(BannedUsersSlice); i++ {
-				difference := t.Sub(BannedUsersSlice[i].UnbanDate)
+			for index, user := range BannedUsersSlice {
+				difference := t.Sub(user.UnbanDate)
 				if difference > 0 {
 
 					// Checks if user is in MemberInfo and assigns to user variable if true
-					user, ok := MemberInfoMap[BannedUsersSlice[i].ID]
+					user, ok := MemberInfoMap[user.ID]
 					if !ok {
 						continue
 					}
 					// Sets unban date to now
-					MemberInfoMap[BannedUsersSlice[i].ID].UnbanDate = t.Format("2006-01-02 15:04:05")
+					MemberInfoMap[user.ID].UnbanDate = t.Format("2006-01-02 15:04:05")
 
 					// Unbans user
-					err := s.GuildBanDelete(config.ServerID, BannedUsersSlice[i].ID)
+					err := s.GuildBanDelete(config.ServerID, user.ID)
 					if err != nil {
 						continue
 					}
 
-					// Removes the user ban from bannedUsers.json and writes to disk
-					BannedUsersSlice = append(BannedUsersSlice[:i], BannedUsersSlice[i+1:]...)
+					// Removes the user ban from bannedUsers.json
+					BannedUsersSlice = append(BannedUsersSlice[:index], BannedUsersSlice[index+1:]...)
 
 					// Writes to memberInfo.json and bannedUsers.json
 					MemberInfoWrite(MemberInfoMap)
