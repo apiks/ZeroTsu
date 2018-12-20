@@ -1,6 +1,7 @@
 package misc
 
 import (
+	"Nadeko/misc"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -44,8 +45,8 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 					if !ok {
 						continue
 					}
-					// Sets unban date to none
-					MemberInfoMap[BannedUsersSlice[i].ID].UnbanDate = "No ban"
+					// Sets unban date to now
+					MemberInfoMap[BannedUsersSlice[i].ID].UnbanDate = t.Format("2006-01-02 15:04:05")
 
 					// Unbans user
 					err := s.GuildBanDelete(config.ServerID, BannedUsersSlice[i].ID)

@@ -11,7 +11,7 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
-const jokeURL = "https://safe-falls-22549.herokuapp.com/random_joke"
+const jokeURL = "https://official-joke-api.herokuapp.com/random_joke"
 var myClient = &http.Client{Timeout: 10 * time.Second}
 
 type Joke struct {
