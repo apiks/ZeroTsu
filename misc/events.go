@@ -1,7 +1,6 @@
 package misc
 
 import (
-	"Nadeko/misc"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -27,7 +26,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		}
 	}
 
-	for range time.NewTicker(15 * time.Second).C {
+	for range time.NewTicker(30 * time.Second).C {
 
 		// Checks whether it has to post rss thread
 		MapMutex.Lock()
@@ -182,7 +181,7 @@ func RSSParser(s *discordgo.Session) {
 
 	// Pulls the feed from /r/anime and puts it in feed variable
 	fp := gofeed.NewParser()
-	fp.Client = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport}, Timeout: time.Minute * 1}
+	fp.Client = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport}, Timeout: time.Second * 30}
 	feed, err := fp.ParseURL("http://www.reddit.com/r/anime/new/.rss")
 	if err != nil {
 		return
