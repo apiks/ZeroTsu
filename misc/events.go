@@ -44,7 +44,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 					if !ok {
 						continue
 					}
-					// Sets unban date to none
+					// Sets unban date to now
 					MemberInfoMap[BannedUsersSlice[i].ID].UnbanDate = t.Format("2006-01-02 15:04:05")
 
 					// Unbans user
@@ -250,7 +250,7 @@ func RSSParser(s *discordgo.Session) {
 							_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 						}
 					}
-				}
+				}0
 			}
 		}
 	}

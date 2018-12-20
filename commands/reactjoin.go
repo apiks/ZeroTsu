@@ -50,6 +50,18 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 		return
 	}
 
+	// Pulls all of the server roles
+	roles, err := s.GuildRoles(config.ServerID)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			misc.MapMutex.Unlock()
+			return
+		}
+		misc.MapMutex.Unlock()
+		return
+	}
+
 	// Puts the react API name to lowercase so it is valid with the storage emoji name
 	reactLowercase := strings.ToLower(r.Emoji.APIName())
 
@@ -78,22 +90,9 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 					}
 				}
 
-				// Pulls all of the server roles
-				roles, err := s.GuildRoles(config.ServerID)
-				if err != nil {
-					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-					if err != nil {
-						misc.MapMutex.Unlock()
-						return
-					}
-					misc.MapMutex.Unlock()
-					return
-				}
-
 				// Iterates through all of the server roles and gives the role to the user if the set role exists
 				for i := 0; i < len(roles); i++ {
 					if roles[i].Name == role {
-
 						// Gives the role
 						err := s.GuildMemberRoleAdd(config.ServerID, r.UserID, roles[i].ID)
 						if err != nil {
@@ -138,6 +137,18 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 		return
 	}
 
+	// Pulls all of the server roles
+	roles, err := s.GuildRoles(config.ServerID)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			misc.MapMutex.Unlock()
+			return
+		}
+		misc.MapMutex.Unlock()
+		return
+	}
+
 	// Puts the react API name to lowercase so it is valid with the storage emoji name
 	reactLowercase := strings.ToLower(r.Emoji.APIName())
 
@@ -164,18 +175,6 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 						misc.MapMutex.Unlock()
 						return
 					}
-				}
-
-				// Pulls all of the server roles
-				roles, err := s.GuildRoles(config.ServerID)
-				if err != nil {
-					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-					if err != nil {
-						misc.MapMutex.Unlock()
-						return
-					}
-					misc.MapMutex.Unlock()
-					return
 				}
 
 				// Iterates through all of the server roles and removes the role from the user if the set role exists
