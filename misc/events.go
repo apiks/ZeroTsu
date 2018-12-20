@@ -250,7 +250,7 @@ func RSSParser(s *discordgo.Session) {
 							_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 						}
 					}
-				}0
+				}
 			}
 		}
 	}
