@@ -92,11 +92,11 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Updates unban date in memberInfo.json entry
 	misc.MapMutex.Lock()
 	misc.MemberInfoMap[userID].UnbanDate = t.Format("2006-01-02 15:04:05")
-	misc.MapMutex.Unlock()
 
 	// Writes to memberInfo.json and bannedUsers.json
 	misc.MemberInfoWrite(misc.MemberInfoMap)
 	misc.BannedUsersWrite(misc.BannedUsersSlice)
+	misc.MapMutex.Unlock()
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%v#%v__ has been unbanned.", user.Username, user.Discriminator))
 	if err != nil {
