@@ -44,7 +44,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 					if !ok {
 						continue
 					}
-					// Sets unban date to now
+					// Sets unban date to none
 					MemberInfoMap[BannedUsersSlice[i].ID].UnbanDate = "No ban"
 
 					// Unbans user
@@ -53,8 +53,9 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 						continue
 					}
 
-					// Removes the user ban from bannedUsers.json
+					// Removes the user ban from bannedUsers.json and writes to disk
 					BannedUsersSlice = append(BannedUsersSlice[:i], BannedUsersSlice[i+1:]...)
+					BannedUsersWrite(BannedUsersSlice)
 
 					// Writes to memberInfo.json
 					MemberInfoWrite(MemberInfoMap)

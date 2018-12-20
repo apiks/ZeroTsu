@@ -44,7 +44,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Goes through every banned user from BannedUsersSlice and if the user is in it, confirms that user is a banned one
+	// Goes through every banned user from BannedUsersSlice and if the user is in it, confirms that user is a temp ban
 	if len(misc.BannedUsersSlice) == 0 {
 		_, err = s.ChannelMessageSend(m.ChannelID, "No bans found.")
 		if err != nil {
@@ -94,8 +94,9 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.MemberInfoMap[userID].UnbanDate = t.Format("2006-01-02 15:04:05")
 	misc.MapMutex.Unlock()
 
-	// Writes to memberInfo.json
+	// Writes to memberInfo.json and bannedUsers.json
 	misc.MemberInfoWrite(misc.MemberInfoMap)
+	misc.BannedUsersWrite(misc.BannedUsersSlice)
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%v#%v__ has been unbanned.", user.Username, user.Discriminator))
 	if err != nil {

@@ -831,6 +831,24 @@ func GetBannedUsers() {
 	MapMutex.Unlock()
 }
 
+// Writes to bannedUsers.json from bannedUsersSlice
+func BannedUsersWrite(bannedUsers []BannedUsers) {
+
+	// Turns that slice into bytes to be ready to written to file
+	marshaledStruct, err := json.MarshalIndent(bannedUsers, "", "    ")
+	if err != nil {
+		return
+	}
+
+	// Writes to file
+	err = ioutil.WriteFile("database/bannedUsers.json", marshaledStruct, 0644)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 // Checks if a message contains a channel or user mention and fixes it to a non-mention if that if true
 func MentionParser(s *discordgo.Session, m string) string {
 

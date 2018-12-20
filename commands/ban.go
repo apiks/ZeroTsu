@@ -148,9 +148,10 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		temp.UnbanDate = UnbanDate
 	}
 
-	// Adds the now banned user to BannedUsersSlice
+	// Adds the now banned user to BannedUsersSlice and writes to disk
 	misc.MapMutex.Lock()
 	misc.BannedUsersSlice = append(misc.BannedUsersSlice, temp)
+	misc.BannedUsersWrite(misc.BannedUsersSlice)
 	misc.MapMutex.Unlock()
 
 	// Pulls the guild Name
