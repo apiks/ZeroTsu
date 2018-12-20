@@ -29,10 +29,10 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(30 * time.Second).C {
 
 		// Checks whether it has to post rss thread
-		MapMutex.Lock()
 		RSSParser(s)
 
 		// Goes through bannedUsers.json if it's not empty and unbans if needed
+		MapMutex.Lock()
 		if len(BannedUsersSlice) != 0 {
 			t := time.Now()
 			for i := 0; i < len(BannedUsersSlice); i++ {
@@ -44,7 +44,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 					if !ok {
 						continue
 					}
-					// Sets unban date to now
+					// Sets unban date to none
 					MemberInfoMap[BannedUsersSlice[i].ID].UnbanDate = t.Format("2006-01-02 15:04:05")
 
 					// Unbans user
@@ -55,10 +55,10 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
 					// Removes the user ban from bannedUsers.json and writes to disk
 					BannedUsersSlice = append(BannedUsersSlice[:i], BannedUsersSlice[i+1:]...)
-					BannedUsersWrite(BannedUsersSlice)
 
-					// Writes to memberInfo.json
+					// Writes to memberInfo.json and bannedUsers.json
 					MemberInfoWrite(MemberInfoMap)
+					BannedUsersWrite(BannedUsersSlice)
 
 					// Sends an embed message to bot-log
 					err = UnbanEmbed(s, user, "")
@@ -192,6 +192,7 @@ func RSSParser(s *discordgo.Session) {
 	hours := time.Hour * 16
 
 	// Removes a thread if more than 16 hours have passed
+	MapMutex.Lock()
 	for p := 0; p < len(ReadRssThreadsCheck); p++ {
 		// Calculates if it's time to remove
 		dateRemoval := ReadRssThreadsCheck[p].Date.Add(hours)
@@ -204,10 +205,9 @@ func RSSParser(s *discordgo.Session) {
 	}
 
 	// Iterates through each feed item to see if it finds something from storage
-	for i := 0; i < len(feed.Items); i++ {
-		itemTitleLowercase := strings.ToLower(feed.Items[i].Title)
-		itemAuthorLowercase := strings.ToLower(feed.Items[i].Author.Name)
-
+	for _, item := range feed.Items {
+		itemTitleLowercase := strings.ToLower(item.Title)
+		itemAuthorLowercase := strings.ToLower(item.Author.Name)
 		for j := 0; j < len(ReadRssThreads); j++ {
 			exists = false
 			storageAuthorLowercase := strings.ToLower(ReadRssThreads[j].Author)
@@ -227,7 +227,7 @@ func RSSParser(s *discordgo.Session) {
 					// Posts latest sub episode thread and pins/unpins
 					valid := RssThreadsTimerWrite(ReadRssThreads[j].Thread, t, ReadRssThreads[j].Channel)
 					if valid {
-						message, err := s.ChannelMessageSend(ReadRssThreads[j].Channel, feed.Items[i].Link)
+						message, err := s.ChannelMessageSend(ReadRssThreads[j].Channel, item.Link)
 						if err != nil {
 							_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 						}
@@ -254,6 +254,7 @@ func RSSParser(s *discordgo.Session) {
 			}
 		}
 	}
+	MapMutex.Unlock()
 }
 
 // Adds the voice role whenever a user joins the config voice chat
