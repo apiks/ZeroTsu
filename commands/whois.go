@@ -194,17 +194,15 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.MapMutex.Lock()
 	alts := CheckAltAccountWhois(userID)
 
-	// If there's more than one account with that reddit username print a message
+	// If there's more than one account with the same reddit username print a message
 	if len(alts) > 1 {
 
 		// Forms the alts string based on whether alt is in server
 		success := "\n\n**Alts:** \n"
-		for i := 0; i < len(alts); i++ {
-			// Fetches alt from server if possible and sets flag
-			altIsInsideGuild = true
-			alt, err := s.State.Member(config.ServerID, alts[i])
+		for _, altID := range alts {
+			alt, err := s.State.Member(config.ServerID, altID)
 			if err != nil {
-				alt, err = s.GuildMember(config.ServerID, alts[i])
+				alt, err = s.GuildMember(config.ServerID, altID)
 				if err != nil {
 					altIsInsideGuild = false
 				}
@@ -213,7 +211,9 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 			if altIsInsideGuild {
 				success +=  alt.User.Mention() + " \n"
 			} else {
-				success += fmt.Sprintf("%v#%v\n", misc.MemberInfoMap[alts[i]].Username, misc.MemberInfoMap[alts[i]].Discrim)
+				success += fmt.Sprintf("%v#%v\n", misc.MemberInfoMap[altID].Username, misc.MemberInfoMap[altID].Discrim)
+				// Reset bool for future iterations
+				altIsInsideGuild = true
 			}
 		}
 
@@ -263,12 +263,19 @@ func CheckAltAccountWhois(id string) []string {
 
 	var alts []string
 
+	// Stops func if target reddit username is nil
+	if misc.MemberInfoMap[id].RedditUsername == "" {
+		return nil
+	}
+
 	// Iterates through all users in memberInfo.json
 	for _, user := range misc.MemberInfoMap {
-		// Checks if the current user has the same reddit username as id string user
-		if user.RedditUsername == misc.MemberInfoMap[id].RedditUsername &&
-			user.RedditUsername != "" &&
-			misc.MemberInfoMap[id].RedditUsername != "" {
+		// Skips iteration if iteration reddit username is nil
+		if user.RedditUsername == "" {
+			continue
+		}
+		// Checks if the current user has the same reddit username as the entry parameter and adds to alts string slice if so
+		if user.RedditUsername == misc.MemberInfoMap[id].RedditUsername {
 			alts = append(alts, user.ID)
 		}
 	}
