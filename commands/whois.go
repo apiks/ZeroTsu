@@ -198,7 +198,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(alts) > 1 {
 
 		// Forms the alts string based on whether alt is in server
-		success := "\n\n**Alts:** \n"
+		success := "\n\n**Alts:**\n"
 		for _, altID := range alts {
 			alt, err := s.State.Member(config.ServerID, altID)
 			if err != nil {
@@ -209,7 +209,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 
 			if altIsInsideGuild {
-				success +=  alt.User.Mention() + " \n"
+				success += alt.User.Mention() + "\n"
 			} else {
 				success += fmt.Sprintf("%v#%v\n", misc.MemberInfoMap[altID].Username, misc.MemberInfoMap[altID].Discrim)
 				// Reset bool for future iterations
