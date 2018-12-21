@@ -23,7 +23,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		unbanDate     		string
 		splitMessage 		[]string
 		isInsideGuild = 	true
-		altIsInsideGuild 	bool
+		altIsInsideGuild =	true
 	)
 
 	messageLowercase := strings.ToLower(m.Content)
@@ -197,7 +197,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	// If there's more than one account with the same reddit username print a message
 	if len(alts) > 1 {
 
-		// Forms the alts string based on whether alt is in server
+		// Forms the alts string
 		success := "\n\n**Alts:**\n"
 		for _, altID := range alts {
 			alt, err := s.State.Member(config.ServerID, altID)
@@ -211,7 +211,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 			if altIsInsideGuild {
 				success += alt.User.Mention() + "\n"
 			} else {
-				success += fmt.Sprintf("%v#%v\n", misc.MemberInfoMap[altID].Username, misc.MemberInfoMap[altID].Discrim)
+				success += fmt.Sprintf("%v#%v | %v\n", misc.MemberInfoMap[altID].Username, misc.MemberInfoMap[altID].Discrim, altID)
 				// Reset bool for future iterations
 				altIsInsideGuild = true
 			}
