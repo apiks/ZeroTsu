@@ -11,7 +11,7 @@ import (
 
 // Command categories in sorted form and map form(map for descriptions)
 var (
-	categoriesSorted = [8]string{"Channel", "Filters", "Misc", "Normal", "Punishment", "Reacts", "Rss", "Stats"}
+	categoriesSorted = [8]string{"Channel", "Filters", "Misc", "Normal", "Punishment", "Rss", "Stats"}
 	categoriesMap = make(map[string]string)
 )
 
@@ -923,13 +923,6 @@ func init() {
 		elevated: true,
 	})
 	add(&command{
-		execute:  helpReactsCommand,
-		trigger:  "hreacts",
-		aliases:  []string{"h[reacts]", "hreact", "h[react]"},
-		desc:     "Print all channel join via react commands.",
-		elevated: true,
-	})
-	add(&command{
 		execute:  helpRssCommand,
 		trigger:  "hrss",
 		aliases:  []string{"h[rss]"},
@@ -950,7 +943,6 @@ func init() {
 	categoriesMap["Misc"] = "Miscellaneous mod commands."
 	categoriesMap["Normal"] = "Normal user commands."
 	categoriesMap["Punishment"] = "Warnings, kicks and bans."
-	categoriesMap["Reacts"] = "Channel join via react commands."
 	categoriesMap["Rss"] = "RSS feed from sub commands."
 	categoriesMap["Stats"] = "Channel and emoji stats."
 	misc.MapMutex.Unlock()

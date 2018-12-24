@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"strconv"
-	"sync"
 
 	"github.com/bwmarrin/discordgo"
 
