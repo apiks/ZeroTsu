@@ -289,9 +289,9 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	temp.MessageReact = messageReact
 	temp.User = m.Author
 
-	MapMutex.Lock()
+	misc.MapMutex.Lock()
 	VoteInfoMap[m.ID] = &temp
-	MapMutex.Unlock()
+	misc.MapMutex.Unlock()
 
 	// Writes to storage
 	VoteInfoWrite(VoteInfoMap)
@@ -587,13 +587,13 @@ func VoteInfoRead() {
 	}
 
 	// Takes all of the vote channels from voteInfo.json from byte and puts them into the VoteInfo map
-	MapMutex.Lock()
+	misc.MapMutex.Lock()
 	err = json.Unmarshal(voteInfoByte, &VoteInfoMap)
 	if err != nil {
-		MapMutex.Unlock()
+		misc.MapMutex.Unlock()
 		return
 	}
-	MapMutex.Unlock()
+	misc.MapMutex.Unlock()
 }
 
 // Writes vote info to voteInfo.json
@@ -622,13 +622,13 @@ func TempChaRead() {
 	}
 
 	// Takes all of the user temp channels from tempCha.json from byte and puts them into the tempChaMap map
-	MapMutex.Lock()
+	misc.MapMutex.Lock()
 	err = json.Unmarshal(tempChaByte, &TempChaMap)
 	if err != nil {
-		MapMutex.Unlock()
+		misc.MapMutex.Unlock()
 		return
 	}
-	MapMutex.Unlock()
+	misc.MapMutex.Unlock()
 }
 
 // Writes temp cha info to tempCha.json
