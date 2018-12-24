@@ -647,24 +647,24 @@ func SaveReactJoin(messageID string, role string, emoji string) {
 //func init() {
 //	add(&command{
 //		execute:  setReactJoinCommand,
-//		trigger:  "setreactjoin",
-//		aliases:  []string{"setreact"},
+//		trigger:  "setreact",
+//		aliases:  []string{"setreactjoin"},
 //		desc:     "Sets a react join on a specific message, role and emote.",
 //		elevated: true,
 //		category: "reacts",
 //	})
 //	add(&command{
 //		execute:  removeReactJoinCommand,
-//		trigger:  "removereactjoin",
-//		aliases:  []string{"removereact"},
+//		trigger:  "removereact",
+//		aliases:  []string{"removereactjoin"},
 //		desc:     "Removes a set react join.",
 //		elevated: true,
 //		category: "reacts",
 //	})
 //	add(&command{
 //		execute:  viewReactJoinsCommand,
-//		trigger:  "viewreactjoins",
-//		aliases:  []string{"viewreacts", "viewreact", "reacts"},
+//		trigger:  "viewreacts",
+//		aliases:  []string{"viewreactjoins", "viewreact", "reacts"},
 //		desc:     "Views all set react joins.",
 //		elevated: true,
 //		category: "reacts",
