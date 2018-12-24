@@ -118,7 +118,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
 		embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", config.BotPrefix)
 		embedMess.Footer = &embedFooter
 	} else {
-		// Sets user commands field
+		// Sets admin commands field
 		adminCategories.Name = "Categories:"
 		adminCategories.Inline = true
 

@@ -20,6 +20,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	err = config.ReadConfigSecrets()
+	if err != nil {
+		panic(err)
+	}
 
 	Start()
 
@@ -38,13 +42,9 @@ func main() {
 	return
 }
 
-// Starts Bot and its Handlers
+// Starts BOT and its Handlers
 func Start() {
 	goBot, err := discordgo.New("Bot " + config.Token)
-	if err != nil {
-		panic(err)
-	}
-	err = config.ReadConfigSecrets()
 	if err != nil {
 		panic(err)
 	}

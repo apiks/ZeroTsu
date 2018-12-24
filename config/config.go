@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-// File for Bot, server, channel and role info
+// File for BOT, server, channel and role info
 
 var (
 	Token        			string

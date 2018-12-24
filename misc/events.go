@@ -402,17 +402,15 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		if randomNum == 5 {
-			if randomNum == 2 {
-				_, err := s.ChannelMessageSend(m.ChannelID, "Idiot!")
+			_, err := s.ChannelMessageSend(m.ChannelID, "Idiot!")
+			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
-					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
-					if err != nil {
-						return
-					}
 					return
 				}
 				return
 			}
+			return
 		}
 		return
 	}

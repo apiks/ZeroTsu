@@ -94,6 +94,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 			roleID = deb[i].ID
 			if strings.Contains(deb[i].ID, roleID) {
 				roleExists = true
+				break
 			}
 		}
 	}
@@ -119,6 +120,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	for i := 0; i < len(mem.Roles); i++ {
 		if strings.Contains(mem.Roles[i], roleID) {
 			hasRoleAlready = true
+			break
 		}
 	}
 	if !hasRoleAlready {
@@ -127,6 +129,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 		for j := 0; j < len(cha); j++ {
 			if cha[j].Name == name {
 				chanMention = misc.ChMention(cha[j])
+				break
 			}
 		}
 
@@ -173,6 +176,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 			if cha[j].Name == name {
 				// Sets the channel mention to the variable chanMention
 				chanMention = misc.ChMention(cha[j])
+				break
 			}
 		}
 

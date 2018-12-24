@@ -12,14 +12,14 @@
 
 * Website verification system for reddit account linking and confirmation before being able to use the server
 
-* Automated channel creator with various parameters you can give it to make them hidden (opt-in), temporary (auto deletes after a set period of time) and other
+* Automated channel creation with various parameters you can give it to make them hidden (opt-in), temporary (auto deletes after a set period of time) and other
 
 * Automated channel creation via non-mod started vote for a temp (auto deleted) channel with a minimum requirement of votes and hard cap of 3 at a time
 
 * Tracks server emoji stats as well as message stats for general and opt-in channels. Also tracks user gain/loss per day
 Regex-facilitated filter for phrases. Channel stats graph visualization by day also available in the website
 
-* Full spoiler/opt-in/hidden channel support with reaction based role-giving or just join/leave commands. Tracks hidden channels between two dummy roles
+* Full spoiler/opt-in/hidden channel support with reaction based role-giving or just join/leave commands. Tracks hidden channels between two dummy roles (disabled by default in favor of Kaguya BOT)
 
 * Sort all BOT created optin/spoiler roles between the two dummy roles alphabetically
 
@@ -41,7 +41,7 @@ How to install:
 
        BotID is the ID of the BOT you are using
 
-        ServerID is the ID of the server the BOT is going to be managing
+       ServerID is the ID of the server the BOT is going to be managing
 
        BotLogID is the ID of the channel in which the bot will dump errors, timed events, punishments and other things
 

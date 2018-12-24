@@ -52,7 +52,7 @@ type BannedUsers struct {
 
 // Struct where we'll hold punishment timestamps
 type Punishment struct {
-	Punishment string 				`json:"punishment"`
+	Punishment string 					`json:"punishment"`
 	Type	   string					`json:"type"`
 	Timestamp  time.Time				`json:"timestamp"`
 }

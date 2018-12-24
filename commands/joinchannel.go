@@ -95,6 +95,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 			roleID = deb[i].ID
 			if strings.Contains(deb[i].ID, roleID) {
 				roleExists = true
+				break
 			}
 		}
 	}
@@ -121,6 +122,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	for i := 0; i < len(mem.Roles); i++ {
 		if strings.Contains(mem.Roles[i], roleID) {
 			hasRoleAlready = true
+			break
 		}
 	}
 	if hasRoleAlready {
@@ -128,6 +130,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 		for j := 0; j < len(cha); j++ {
 			if cha[j].Name == name {
 				chanMention = misc.ChMention(cha[j])
+				break
 			}
 		}
 
@@ -170,6 +173,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 				topic = cha[j].Topic
 				// Sets the channel mention to the variable chanMention
 				chanMention = misc.ChMention(cha[j])
+				break
 			}
 		}
 
