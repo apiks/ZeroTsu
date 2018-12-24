@@ -64,8 +64,8 @@ func Start() {
 	// Reads ongoing votes from VoteInfo.json at bot start
 	commands.VoteInfoRead()
 
-	// Reads set react joins from reactChannelJoin.json
-	commands.ReactInfoRead()
+	// Reads set react joins from reactChannelJoin.json. Disabled in favor of Kaguya by default. Uncomment if not using Kaguya
+	//commands.ReactInfoRead()
 
 	// Reads all the rss threads from rssThreads.json
 	misc.RssThreadsRead()
@@ -109,11 +109,11 @@ func Start() {
 	// Abstraction of a command handler
 	goBot.AddHandler(commands.HandleCommand)
 
-	// React Channel Join Handler
-	goBot.AddHandler(commands.ReactJoinHandler)
+	// React Channel Join Handler. Disabled in favor of Kaguya by default. Uncomment if not using Kaguya
+	//goBot.AddHandler(commands.ReactJoinHandler)
 
-	// React Channel Remove Handler
-	goBot.AddHandler(commands.ReactRemoveHandler)
+	// React Channel Remove Handler. Disabled in favor of Kaguya by default. Uncomment if not using Kaguya
+	//goBot.AddHandler(commands.ReactRemoveHandler)
 
 	// Channel Vote Timer
 	goBot.AddHandler(commands.ChannelVoteTimer)

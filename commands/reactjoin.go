@@ -644,29 +644,29 @@ func SaveReactJoin(messageID string, role string, emoji string) {
 	misc.MapMutex.Unlock()
 }
 
-func init() {
-	add(&command{
-		execute:  setReactJoinCommand,
-		trigger:  "setreactjoin",
-		aliases:  []string{"setreact"},
-		desc:     "Sets a react join on a specific message, role and emote.",
-		elevated: true,
-		category: "reacts",
-	})
-	add(&command{
-		execute:  removeReactJoinCommand,
-		trigger:  "removereactjoin",
-		aliases:  []string{"removereact"},
-		desc:     "Removes a set react join.",
-		elevated: true,
-		category: "reacts",
-	})
-	add(&command{
-		execute:  viewReactJoinsCommand,
-		trigger:  "viewreactjoins",
-		aliases:  []string{"viewreacts", "viewreact", "reacts"},
-		desc:     "Views all set react joins.",
-		elevated: true,
-		category: "reacts",
-	})
-}
+//func init() {
+//	add(&command{
+//		execute:  setReactJoinCommand,
+//		trigger:  "setreactjoin",
+//		aliases:  []string{"setreact"},
+//		desc:     "Sets a react join on a specific message, role and emote.",
+//		elevated: true,
+//		category: "reacts",
+//	})
+//	add(&command{
+//		execute:  removeReactJoinCommand,
+//		trigger:  "removereactjoin",
+//		aliases:  []string{"removereact"},
+//		desc:     "Removes a set react join.",
+//		elevated: true,
+//		category: "reacts",
+//	})
+//	add(&command{
+//		execute:  viewReactJoinsCommand,
+//		trigger:  "viewreactjoins",
+//		aliases:  []string{"viewreacts", "viewreact", "reacts"},
+//		desc:     "Views all set react joins.",
+//		elevated: true,
+//		category: "reacts",
+//	})
+//}
