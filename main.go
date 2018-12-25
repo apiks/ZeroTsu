@@ -46,7 +46,7 @@ func main() {
 func Start() {
 	goBot, err := discordgo.New("Bot " + config.Token)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 
 	// Reads all spoiler roles created with create command from spoilerRoles.json
@@ -157,7 +157,7 @@ func Start() {
 
 	err = goBot.Open()
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 
 	fmt.Println("Bot is running!")
