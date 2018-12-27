@@ -95,6 +95,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	t, err := m.Timestamp.Parse()
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
+		misc.MapMutex.Unlock()
 		return
 	}
 	kickTimestamp.Timestamp = t

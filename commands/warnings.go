@@ -67,7 +67,6 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	userMem, err := s.User(userID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
-		misc.MapMutex.Unlock()
 		return
 	}
 
@@ -79,6 +78,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	t, err := m.Timestamp.Parse()
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
+		misc.MapMutex.Unlock()
 		return
 	}
 	warningTimestamp.Timestamp = t
@@ -175,6 +175,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	t, err := m.Timestamp.Parse()
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
+		misc.MapMutex.Unlock()
 		return
 	}
 	warningTimestamp.Timestamp = t
