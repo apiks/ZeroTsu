@@ -417,7 +417,10 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 			time.Sleep(500 * time.Millisecond)
 
 			// Sortcategory command if category exists and it's not temp
-			if temp.Category != "" && temp.ChannelType != "temp" || temp.ChannelType != "temporary" {
+			if temp.Category != "" && temp.ChannelType != "temp" && temp.ChannelType != "temporary" {
+				fmt.Println("dab")
+				fmt.Println(temp.Category)
+				fmt.Println("dab")
 				message.Content = config.BotPrefix + "sortcategory " + temp.Category
 				sortCategoryCommand(s, &message)
 			}

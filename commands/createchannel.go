@@ -152,13 +152,13 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		Name: command,
 	}
 
-	if m.Author.ID == s.State.User.ID {
-		misc.SpoilerMap[newRole.ID] = &tempRole
-		misc.SpoilerRolesWrite(misc.SpoilerMap)
-	} else {
+	// Locks mutex based on whether the bot called the command or not because it's already being locked in channelvote
+	if m.Author.ID != s.State.User.ID {
 		misc.MapMutex.Lock()
-		misc.SpoilerMap[newRole.ID] = &tempRole
-		misc.SpoilerRolesWrite(misc.SpoilerMap)
+	}
+	misc.SpoilerMap[newRole.ID] = &tempRole
+	misc.SpoilerRolesWrite(misc.SpoilerMap)
+	if m.Author.ID != s.State.User.ID {
 		misc.MapMutex.Unlock()
 	}
 
@@ -242,30 +242,21 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		temp.CreationDate = t
 		temp.Elevated = true
 
-		// Locks mutex based on whether the bot called the command or not
-		if m.Author.ID == s.State.User.ID {
-			for _, v := range VoteInfoMap {
-				if roleName == v.Channel {
-					if !hasElevatedPermissions(s, v.User) {
-						temp.Elevated = false
-						break
-					}
-				}
-			}
-			TempChaMap[newRole.ID] = &temp
-			TempChaWrite(TempChaMap)
-		} else {
+		// Locks mutex based on whether the bot called the command or not because it's already being locked in channelvote
+		if m.Author.ID != s.State.User.ID {
 			misc.MapMutex.Lock()
-			for _, v := range VoteInfoMap {
-				if roleName == v.Channel {
-					if !hasElevatedPermissions(s, v.User) {
-						temp.Elevated = false
-						break
-					}
+		}
+		for _, v := range VoteInfoMap {
+			if roleName == v.Channel {
+				if !hasElevatedPermissions(s, v.User) {
+					temp.Elevated = false
+					break
 				}
 			}
-			TempChaMap[newRole.ID] = &temp
-			TempChaWrite(TempChaMap)
+		}
+		TempChaMap[newRole.ID] = &temp
+		TempChaWrite(TempChaMap)
+		if m.Author.ID != s.State.User.ID {
 			misc.MapMutex.Unlock()
 		}
 
