@@ -230,10 +230,12 @@ func RSSParser(s *discordgo.Session) {
 						message, err := s.ChannelMessageSend(ReadRssThreads[j].Channel, item.Link)
 						if err != nil {
 							_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+							continue
 						}
 						pins, err := s.ChannelMessagesPinned(message.ChannelID)
 						if err != nil {
 							_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+							continue
 						}
 						if len(pins) != 0 {
 							if strings.Contains(strings.ToLower(pins[0].Content), "episode") ||
@@ -242,6 +244,7 @@ func RSSParser(s *discordgo.Session) {
 								err = s.ChannelMessageUnpin(pins[0].ChannelID, pins[0].ID)
 								if err != nil {
 									_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+									continue
 								}
 							}
 						}
