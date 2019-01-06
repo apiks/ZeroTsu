@@ -49,6 +49,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 		controlNumUser= 0
 		controlNum= 0
 		typeFlag		 bool
+		admin			 bool
 	)
 
 	// Checks if it's within the /r/anime server
@@ -66,7 +67,12 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.Split(messageLowercase, " ")
 
+	// Checks if the message author is an admin or not and saves it, to save operations down the line
 	if hasElevatedPermissions(s, m.Author) {
+		admin = true
+	}
+
+	if admin {
 		if len(commandStrings) == 1 {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"startvote OPTIONAL[votes required] [name] OPTIONAL[type] OPTIONAL[categoryID] + OPTIONAL[description]`\n\n"+
 				"Votes required is how many thumbs up to require to create a channel. Default is 7.\nTypes are temp (deleted after 3 hours of inactivity), optin, airing and general. They are optional and default is optin. Do _not_ use types in the channel name\n"+
@@ -164,7 +170,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 		voteChannel.Description = fmt.Sprintf("Temporary channel for %v. Will be deleted 3 hours after no message has been sent.", voteChannel.Name)
 
 		// Required minimum number of people for a vote to pass
-		peopleNum = 3
+		peopleNum = 1
 	}
 
 	// Checks if a channel is in the process of being created before moving on (prevention against spam)
@@ -187,59 +193,62 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	misc.MapMutex.Lock()
-	for k, v := range TempChaMap {
-		exists := false
-		for i := 0; i < len(cha); i++ {
-			if cha[i].Name == v.RoleName {
-				exists = true
-				break
+	// Checks ongoing non-mod tmep channels
+	if !admin {
+		misc.MapMutex.Lock()
+		for k, v := range TempChaMap {
+			exists := false
+			for i := 0; i < len(cha); i++ {
+				if cha[i].Name == v.RoleName {
+					exists = true
+					break
+				}
+			}
+			if !exists {
+				delete(TempChaMap, k)
+				TempChaWrite(TempChaMap)
+			}
+			if !v.Elevated {
+				controlNumUser++
 			}
 		}
-		if !exists {
-			delete(TempChaMap, k)
-			TempChaWrite(TempChaMap)
-		}
-		if !v.Elevated {
-			controlNumUser++
-		}
-	}
-	misc.MapMutex.Unlock()
+		misc.MapMutex.Unlock()
 
-	// Prints error if the user temp channel cap (3) has been reached
-	if controlNumUser > 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Maximum number of user made temp channels(3) has been reached."+
-			" Please contact a mod for a new temp channel or wait for the other three to run out.")
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		// Prints error if the user temp channel cap (3) has been reached
+		if controlNumUser > 2 {
+			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Maximum number of user made temp channels(3) has been reached."+
+				" Please contact a mod for a new temp channel or wait for the other three to run out.")
 			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+				if err != nil {
+					return
+				}
 				return
 			}
 			return
 		}
-		return
-	}
 
-	// Checks if there are any current temp channel votes made by users and already created channels that have reached the cap and prints error if there are
-	misc.MapMutex.Lock()
-	for _, v := range VoteInfoMap {
-		if !hasElevatedPermissions(s, v.User) {
-			controlNumVote++
+		// Checks if there are any current temp channel votes made by users and already created channels that have reached the cap and prints error if there are
+		misc.MapMutex.Lock()
+		for _, v := range VoteInfoMap {
+			if !hasElevatedPermissions(s, v.User) {
+				controlNumVote++
+			}
 		}
-	}
-	misc.MapMutex.Unlock()
-	controlNum = controlNumVote + controlNumUser
-	if controlNum > 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are already ongoing user temp votes that breach the cap(3) together with already created temp channels. "+
-			"Please contact a mod for a new temp channel or wait for the votes or temp channels to run out.")
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		misc.MapMutex.Unlock()
+		controlNum = controlNumVote + controlNumUser
+		if controlNum > 2 {
+			_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are already ongoing user temp votes that breach the cap(3) together with already created temp channels. "+
+				"Please contact a mod for a new temp channel or wait for the votes or temp channels to run out.")
 			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+				if err != nil {
+					return
+				}
 				return
 			}
 			return
 		}
-		return
 	}
 
 	// Fixes role name bug
@@ -296,7 +305,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Writes to storage
 	VoteInfoWrite(VoteInfoMap)
 
-	if !hasElevatedPermissions(s, m.Author) {
+	if !admin {
 		_, err = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Vote for temp channel `%v` has been started by user %v#%v in %v.", temp.Channel, temp.User.Username, temp.User.Discriminator, misc.ChMentionID(m.ChannelID)))
 		if err != nil {
 			fmt.Println(err)
@@ -330,6 +339,11 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 			// Updates message
 			messageReact, err := s.ChannelMessage(VoteInfoMap[k].MessageReact.ChannelID, VoteInfoMap[k].MessageReact.ID)
 			if err != nil {
+				//If message doesn't exist (was deleted or otherwise not found)
+				// Deletes the vote from memory
+				delete(VoteInfoMap, k)
+				// Writes to storage
+				VoteInfoWrite(VoteInfoMap)
 				continue
 			}
 
