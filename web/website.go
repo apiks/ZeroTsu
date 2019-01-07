@@ -302,6 +302,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 			// Sets code
 			var temp User
 			temp = *UserCookieMap[cookieValue.Value]
+			temp.UsernameDiscrim = ""
 			temp.Code = code
 			UserCookieMap[cookieValue.Value] = &temp
 		}
@@ -314,6 +315,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 			// Sets error message
 			var temp User
 			temp = *UserCookieMap[cookieValue.Value]
+			temp.UsernameDiscrim = ""
 			temp.Error = "Error: Permission not given in verification. If this was a mistake please try to verify again."
 			UserCookieMap[cookieValue.Value] = &temp
 		}
@@ -325,6 +327,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	if UserCookieMap[cookieValue.Value] != nil {
 		var temp User
 		temp = *UserCookieMap[cookieValue.Value]
+		temp.UsernameDiscrim = ""
 
 		// Sets the username + discrim combo if it exists, also sorts out the verified status
 		if misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID] != nil {
