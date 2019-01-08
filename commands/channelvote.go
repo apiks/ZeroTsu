@@ -256,7 +256,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	role = strings.Replace(role, "--", "-", -1)
 	voteChannel.Name = role
 
-	peopleNum = peopleNum + 1
+	peopleNum = peopleNum + 3
 	peopleNumStr := strconv.Itoa(peopleNum)
 	messageReact, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v thumbs up reacts on this message will create `%v`. Time limit is 30 hours.", peopleNumStr, voteChannel.Name))
 	if err != nil {
