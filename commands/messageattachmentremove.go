@@ -2,8 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"log"
-	"os"
 	"strings"
 	"time"
 
