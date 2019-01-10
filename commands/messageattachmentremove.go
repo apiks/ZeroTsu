@@ -2,6 +2,8 @@ package commands
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -55,12 +57,12 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		}
 	}
 	// Checks if user is mod before checking the message
-	s.State.RWMutex.RLock()
+	s.RWMutex.RLock()
 	if misc.HasPermissions(mem) {
-		s.State.RWMutex.RUnlock()
+		s.RWMutex.RUnlock()
 		return
 	}
-	s.State.RWMutex.RUnlock()
+	s.RWMutex.RUnlock()
 
 	// Iterates through all the attachments (since more than one can be posted in one go)
 	// and checks if it's an allowed file type. If it isn't sends error message for each file

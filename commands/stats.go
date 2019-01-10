@@ -30,20 +30,20 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}()
 
 	// Checks if it's within the config server and whether it's the bot
-	s.State.RWMutex.RLock()
+	s.RWMutex.RLock()
 	ch, err := s.State.Channel(m.ChannelID)
 	if err != nil {
 		ch, err = s.Channel(m.ChannelID)
 		if err != nil {
-			s.State.RWMutex.RUnlock()
+			s.RWMutex.RUnlock()
 			return
 		}
 	}
 	if ch.GuildID != config.ServerID {
-		s.State.RWMutex.RUnlock()
+		s.RWMutex.RUnlock()
 		return
 	}
-	s.State.RWMutex.RUnlock()
+	s.RWMutex.RUnlock()
 
 	// Pull channel info
 	channel, err := s.State.Channel(m.ChannelID)

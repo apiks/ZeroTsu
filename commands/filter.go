@@ -38,14 +38,14 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 	}
-	s.State.RWMutex.RLock()
+	s.RWMutex.RLock()
 	if ch.GuildID != config.ServerID {
-		s.State.RWMutex.RUnlock()
+		s.RWMutex.RUnlock()
 		return
 	}
 	// Checks if it's the bot that sent the message
 	if m.Author.ID == s.State.User.ID {
-		s.State.RWMutex.RUnlock()
+		s.RWMutex.RUnlock()
 		return
 	}
 	// Pulls info on message author
@@ -58,10 +58,10 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	// Checks if user is mod or bot before checking the message
 	if misc.HasPermissions(mem) {
-		s.State.RWMutex.RUnlock()
+		s.RWMutex.RUnlock()
 		return
 	}
-	s.State.RWMutex.RUnlock()
+	s.RWMutex.RUnlock()
 
 	var (
 		removals      string
@@ -149,12 +149,12 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 		}
 	}
 	// Checks if user is mod or bot before checking the message
-	s.State.RWMutex.RLock()
+	s.RWMutex.RLock()
 	if misc.HasPermissions(mem) {
-		s.State.RWMutex.RUnlock()
+		s.RWMutex.RUnlock()
 		return
 	}
-	s.State.RWMutex.RUnlock()
+	s.RWMutex.RUnlock()
 
 	// Iterates through all the filters to see if the message contained a filtered word
 	for i := 0; i < len(misc.ReadFilters); i++ {
@@ -476,16 +476,19 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.RWMutex.Unlock()
 			return
 		}
+		s.RWMutex.Unlock()
+		return
 	}
 	if ch.GuildID != config.ServerID {
 		s.RWMutex.Unlock()
 		return
 	}
-	s.RWMutex.Unlock()
 	// Checks if it's the bot that sent the message
 	if m.Author.ID == s.State.User.ID {
+		s.RWMutex.Unlock()
 		return
 	}
+	s.RWMutex.Unlock()
 	// Pulls info on message author
 	mem, err := s.State.Member(config.ServerID, m.Author.ID)
 	if err != nil {
@@ -495,12 +498,12 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 	// Checks if user is mod or bot before checking the message
-	s.State.RWMutex.RLock()
+	s.RWMutex.RLock()
 	if misc.HasPermissions(mem) {
-		s.State.RWMutex.RUnlock()
+		s.RWMutex.RUnlock()
 		return
 	}
-	s.State.RWMutex.RUnlock()
+	s.RWMutex.RUnlock()
 
 	// Removes message if there were over 4 rapidly sent messages
 	misc.MapMutex.Lock()

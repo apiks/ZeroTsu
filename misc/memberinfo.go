@@ -143,14 +143,14 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	}()
 
 	// Pulls info on user if possible
-	s.State.RWMutex.RLock()
+	s.RWMutex.RLock()
 	user, err := s.GuildMember(config.ServerID, e.User.ID)
 	if err != nil {
-		s.State.RWMutex.RUnlock()
+		s.RWMutex.RUnlock()
 		return
 	}
 	userID = user.User.ID
-	s.State.RWMutex.RUnlock()
+	s.RWMutex.RUnlock()
 
 	// If memberInfo is empty, it initializes
 	MapMutex.Lock()
@@ -281,9 +281,9 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 		}
 	}()
 
-	s.State.RWMutex.RLock()
+	s.RWMutex.RLock()
 	userMember := e
-	s.State.RWMutex.RUnlock()
+	s.RWMutex.RUnlock()
 
 	MapMutex.Lock()
 	if len(MemberInfoMap) == 0 {

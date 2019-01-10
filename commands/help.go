@@ -11,7 +11,7 @@ import (
 
 // Command categories in sorted form and map form(map for descriptions)
 var (
-	categoriesSorted = [8]string{"Channel", "Filters", "Misc", "Normal", "Punishment", "Rss", "Stats"}
+	categoriesSorted = [8]string{"Channel", "Filters", "Misc", "Normal", "Punishment", "Reacts", "Rss", "Stats"}
 	categoriesMap = make(map[string]string)
 )
 
@@ -97,7 +97,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
 	}
 
 	if !admin {
-		// Sets user commands field
+		// Sets commands field
 		userCommands.Name = "Command:"
 		userCommands.Inline = true
 
@@ -713,7 +713,7 @@ func helpPlaintextCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks for mod perms
-	s.State.RWMutex.RLock()
+	s.RWMutex.RLock()
 	if misc.HasPermissions(mem) {
 
 		// Help message 1 if user is a mod
@@ -738,10 +738,10 @@ func helpPlaintextCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
-				s.State.RWMutex.RUnlock()
+				s.RWMutex.RUnlock()
 				return
 			}
-			s.State.RWMutex.RUnlock()
+			s.RWMutex.RUnlock()
 			return
 		}
 
@@ -764,10 +764,10 @@ func helpPlaintextCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
-				s.State.RWMutex.RUnlock()
+				s.RWMutex.RUnlock()
 				return
 			}
-			s.State.RWMutex.RUnlock()
+			s.RWMutex.RUnlock()
 			return
 		}
 	} else {
@@ -785,14 +785,14 @@ func helpPlaintextCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
-				s.State.RWMutex.RUnlock()
+				s.RWMutex.RUnlock()
 				return
 			}
-			s.State.RWMutex.RUnlock()
+			s.RWMutex.RUnlock()
 			return
 		}
 	}
-	s.State.RWMutex.RUnlock()
+	s.RWMutex.RUnlock()
 }
 
 func init() {
@@ -865,6 +865,7 @@ func init() {
 	categoriesMap["Misc"] = "Miscellaneous mod commands."
 	categoriesMap["Normal"] = "Normal user commands."
 	categoriesMap["Punishment"] = "Warnings, kicks and bans."
+	categoriesMap["Reacts"] = "Channel join via react commands."
 	categoriesMap["Rss"] = "RSS feed from sub commands."
 	categoriesMap["Stats"] = "Channel and emoji stats."
 	misc.MapMutex.Unlock()
