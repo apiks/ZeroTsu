@@ -359,6 +359,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					// Sets error message
 					var temp User
 					temp = *UserCookieMap[cookieValue.Value]
+					temp.UsernameDiscrim = ""
 					temp.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
 					UserCookieMap[cookieValue.Value] = &temp
 
@@ -401,6 +402,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 						// Sets error message
 						var temp User
 						temp = *UserCookieMap[cookieValue.Value]
+						temp.UsernameDiscrim = ""
 						temp.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
 						UserCookieMap[cookieValue.Value] = &temp
 
@@ -451,6 +453,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					// Sets error message
 					var temp User
 					temp = *UserCookieMap[cookieValue.Value]
+					temp.UsernameDiscrim = ""
 					temp.Error = err.Error()
 					UserCookieMap[cookieValue.Value] = &temp
 
@@ -506,6 +509,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 						// Sets error message
 						var temp User
 						temp = *UserCookieMap[cookieValue.Value]
+						temp.UsernameDiscrim = ""
 						temp.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
 						UserCookieMap[cookieValue.Value] = &temp
 
