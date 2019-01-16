@@ -45,15 +45,19 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Goes through every banned user from BannedUsersSlice and if the user is in it, confirms that user is a temp ban
+	misc.MapMutex.Lock()
 	if len(misc.BannedUsersSlice) == 0 {
 		_, err = s.ChannelMessageSend(m.ChannelID, "No bans found.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
+				misc.MapMutex.Unlock()
 				return
 			}
+			misc.MapMutex.Unlock()
 			return
 		}
+		misc.MapMutex.Unlock()
 		return
 	}
 
@@ -63,9 +67,9 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 			// Removes the ban from BannedUsersSlice
 			misc.BannedUsersSlice = append(misc.BannedUsersSlice[:i], misc.BannedUsersSlice[i+1:]...)
-			break
 		}
 	}
+	misc.MapMutex.Unlock()
 
 	if !banFlag {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%v#%v__ is not banned.", user.Username, user.Discriminator))

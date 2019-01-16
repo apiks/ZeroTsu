@@ -44,14 +44,14 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 					if !ok {
 						continue
 					}
-					// Sets unban date to now
-					MemberInfoMap[user.ID].UnbanDate = t.Format("2006-01-02 15:04:05")
-
 					// Unbans user
 					err := s.GuildBanDelete(config.ServerID, user.ID)
 					if err != nil {
 						continue
 					}
+
+					// Sets unban date to now in memberInfo
+					MemberInfoMap[user.ID].UnbanDate = t.Format("2006-01-02 15:04:05")
 
 					// Removes the user ban from bannedUsers.json
 					BannedUsersSlice = append(BannedUsersSlice[:index], BannedUsersSlice[index+1:]...)
