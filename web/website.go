@@ -279,7 +279,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 			// If the user is verifying to another account with this cookie reset the old cookie values
 			if temp.ID != trueid {
-
 				temp.RedditVerifiedStatus = false
 				temp.DiscordVerifiedStatus = false
 				temp.RedditName = ""
@@ -302,7 +301,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 			// Sets code
 			var temp User
 			temp = *UserCookieMap[cookieValue.Value]
-			temp.UsernameDiscrim = ""
+			temp.UsernameDiscrim = "N/A"
 			temp.Code = code
 			UserCookieMap[cookieValue.Value] = &temp
 		}
@@ -315,7 +314,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 			// Sets error message
 			var temp User
 			temp = *UserCookieMap[cookieValue.Value]
-			temp.UsernameDiscrim = ""
+			temp.UsernameDiscrim = "N/A"
 			temp.Error = "Error: Permission not given in verification. If this was a mistake please try to verify again."
 			UserCookieMap[cookieValue.Value] = &temp
 		}
@@ -327,7 +326,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	if UserCookieMap[cookieValue.Value] != nil {
 		var temp User
 		temp = *UserCookieMap[cookieValue.Value]
-		temp.UsernameDiscrim = ""
+		temp.UsernameDiscrim = "N/A"
 
 		// Sets the username + discrim combo if it exists, also sorts out the verified status
 		if misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID] != nil {
@@ -348,7 +347,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 			// Sets default state
 			var temp User
-			temp.UsernameDiscrim = ""
+			temp.UsernameDiscrim = "N/A"
 			UserCookieMap[cookieValue.Value] = &temp
 
 		} else if _, ok := UserCookieMap[cookieValue.Value]; ok {
@@ -359,7 +358,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					// Sets error message
 					var temp User
 					temp = *UserCookieMap[cookieValue.Value]
-					temp.UsernameDiscrim = ""
+					temp.UsernameDiscrim = "N/A"
 					temp.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
 					UserCookieMap[cookieValue.Value] = &temp
 
@@ -402,7 +401,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 						// Sets error message
 						var temp User
 						temp = *UserCookieMap[cookieValue.Value]
-						temp.UsernameDiscrim = ""
+						temp.UsernameDiscrim = "N/A"
 						temp.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
 						UserCookieMap[cookieValue.Value] = &temp
 
@@ -441,6 +440,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					// Sets error message
 					var temp User
 					temp = *UserCookieMap[cookieValue.Value]
+					temp.UsernameDiscrim = "N/A"
 					temp.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
 					UserCookieMap[cookieValue.Value] = &temp
 				}
@@ -453,7 +453,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					// Sets error message
 					var temp User
 					temp = *UserCookieMap[cookieValue.Value]
-					temp.UsernameDiscrim = ""
+					temp.UsernameDiscrim = "N/A"
 					temp.Error = err.Error()
 					UserCookieMap[cookieValue.Value] = &temp
 
@@ -488,6 +488,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					// Sets error message
 					var temp User
 					temp = *UserCookieMap[cookieValue.Value]
+					temp.UsernameDiscrim = "N/A"
 					temp.Error = "Error: Reddit account is not old enough. Please try again once it is one week old."
 					UserCookieMap[cookieValue.Value] = &temp
 
@@ -509,7 +510,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 						// Sets error message
 						var temp User
 						temp = *UserCookieMap[cookieValue.Value]
-						temp.UsernameDiscrim = ""
+						temp.UsernameDiscrim = "N/A"
 						temp.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
 						UserCookieMap[cookieValue.Value] = &temp
 
@@ -548,6 +549,8 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			// Sets error message
 			var temp User
+			temp = *UserCookieMap[cookieValue.Value]
+			temp.UsernameDiscrim = "N/A"
 			temp.Error = "Error: Cookie has expired. Please try the bot link again."
 			UserCookieMap[cookieValue.Value] = &temp
 		}
