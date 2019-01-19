@@ -344,12 +344,19 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 	if cookieValue != nil && errorVar == "" {
 		if code == "" && id == "" && state == "" {
-
-			// Sets default state
-			var temp User
-			temp.UsernameDiscrim = "N/A"
-			UserCookieMap[cookieValue.Value] = &temp
-
+			if _, ok := UserCookieMap[cookieValue.Value]; ok {
+				// Sets default state
+				var temp User
+				temp.UsernameDiscrim = "N/A"
+				UserCookieMap[cookieValue.Value] = &temp
+			} else {
+				// Sets error message
+				var temp User
+				temp = *UserCookieMap[cookieValue.Value]
+				temp.UsernameDiscrim = "N/A"
+				temp.Error = "Error: Cookie has expired. Please try the bot link again."
+				UserCookieMap[cookieValue.Value] = &temp
+			}
 		} else if _, ok := UserCookieMap[cookieValue.Value]; ok {
 			if state == "overlordconfirmsdiscord" && UserCookieMap[cookieValue.Value].Code != "" {
 
