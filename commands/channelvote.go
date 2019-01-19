@@ -170,7 +170,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 		voteChannel.Description = fmt.Sprintf("Temporary channel for %v. Will be deleted 3 hours after no message has been sent.", voteChannel.Name)
 
 		// Required minimum number of people for a vote to pass
-		peopleNum = 1
+		peopleNum = 3
 	}
 
 	// Checks if a channel is in the process of being created before moving on (prevention against spam)
@@ -256,7 +256,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	role = strings.Replace(role, "--", "-", -1)
 	voteChannel.Name = role
 
-	peopleNum = peopleNum + 3
+	peopleNum = peopleNum + 1
 	peopleNumStr := strconv.Itoa(peopleNum)
 	messageReact, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v thumbs up reacts on this message will create `%v`. Time limit is 30 hours.", peopleNumStr, voteChannel.Name))
 	if err != nil {
