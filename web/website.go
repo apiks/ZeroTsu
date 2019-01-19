@@ -352,7 +352,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 			} else {
 				// Sets error message
 				var temp User
-				temp = *UserCookieMap[cookieValue.Value]
 				temp.UsernameDiscrim = "N/A"
 				temp.Error = "Error: Cookie has expired. Please try the bot link again."
 				UserCookieMap[cookieValue.Value] = &temp
@@ -556,7 +555,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			// Sets error message
 			var temp User
-			temp = *UserCookieMap[cookieValue.Value]
 			temp.UsernameDiscrim = "N/A"
 			temp.Error = "Error: Cookie has expired. Please try the bot link again."
 			UserCookieMap[cookieValue.Value] = &temp
