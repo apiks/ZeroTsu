@@ -238,13 +238,18 @@ func RSSParser(s *discordgo.Session) {
 							continue
 						}
 						if len(pins) != 0 {
-							if strings.Contains(strings.ToLower(pins[0].Content), "episode") ||
-								strings.Contains(strings.ToLower(pins[0].Content), "[spoilers]") ||
-								strings.Contains(strings.ToLower(pins[0].Content), "[rewatch]") {
-								err = s.ChannelMessageUnpin(pins[0].ChannelID, pins[0].ID)
-								if err != nil {
-									_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
-									continue
+							for _, pin := range pins {
+								if pin.Author.ID == s.State.User.ID {
+									if strings.HasPrefix(strings.ToLower(pin.Content), "https://www.reddit.com/r/anime/comments/") {
+										if strings.Contains(strings.ToLower(pin.Content), "episode") ||
+											strings.Contains(strings.ToLower(pin.Content), "[spoilers]") ||
+											strings.Contains(strings.ToLower(pin.Content), "[rewatch]") {
+											if err != nil {
+												_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+												continue
+											}
+										}
+									}
 								}
 							}
 						}
