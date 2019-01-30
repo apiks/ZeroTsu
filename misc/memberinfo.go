@@ -143,14 +143,14 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	}()
 
 	// Pulls info on user if possible
-	s.RWMutex.RLock()
+	s.RWMutex.Lock()
 	user, err := s.GuildMember(config.ServerID, e.User.ID)
 	if err != nil {
-		s.RWMutex.RUnlock()
+		s.RWMutex.Unlock()
 		return
 	}
 	userID = user.User.ID
-	s.RWMutex.RUnlock()
+	s.RWMutex.Unlock()
 
 	// If memberInfo is empty, it initializes
 	MapMutex.Lock()
@@ -355,7 +355,8 @@ func Encrypt(key []byte, text string) string {
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return ""
 	}
 
 	// The IV needs to be unique, but not secure. Therefore it's common to
@@ -363,7 +364,8 @@ func Encrypt(key []byte, text string) string {
 	ciphertext := make([]byte, aes.BlockSize+len(plaintext))
 	iv := ciphertext[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		panic(err)
+		fmt.Println(err)
+		return ""
 	}
 
 	stream := cipher.NewCFBEncrypter(block, iv)
@@ -374,18 +376,20 @@ func Encrypt(key []byte, text string) string {
 }
 
 // Decrypt from base64 to decrypted string
-func Decrypt(key []byte, cryptoText string) string {
+func Decrypt(key []byte, cryptoText string) (string, bool) {
 	ciphertext, _ := base64.URLEncoding.DecodeString(cryptoText)
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return "", false
 	}
 
 	// The IV needs to be unique, but not secure. Therefore it's common to
 	// include it at the beginning of the ciphertext.
 	if len(ciphertext) < aes.BlockSize {
-		panic("ciphertext too short")
+		fmt.Println("ciphertext too short")
+		return "", false
 	}
 	iv := ciphertext[:aes.BlockSize]
 	ciphertext = ciphertext[aes.BlockSize:]
@@ -395,7 +399,7 @@ func Decrypt(key []byte, cryptoText string) string {
 	// XORKeyStream can work in-place if the two arguments are the same.
 	stream.XORKeyStream(ciphertext, ciphertext)
 
-	return fmt.Sprintf("%s", ciphertext)
+	return fmt.Sprintf("%s", ciphertext), true
 }
 
 // Cleans up duplicate nicknames and usernames in memberInfo.json
