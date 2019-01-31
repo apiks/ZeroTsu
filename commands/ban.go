@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -120,6 +121,10 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.MemberInfoMap[userID].UnbanDate = UnbanDate.Format("2006-01-02 15:04:05.999999999 -0700 MST")
 	} else {
 		misc.MemberInfoMap[userID].UnbanDate = "_Never_"
+	}
+
+	if userID == "359415219895664641" {
+		fmt.Sprintf("User Afraaz's unban date is: %v", UnbanDate)
 	}
 
 	// Adds timestamp for that ban
