@@ -40,6 +40,8 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 				if difference > 0 {
 
 					if user.ID == "359415219895664641" {
+						fmt.Println(user.User)
+						fmt.Println(user.UnbanDate)
 						fmt.Println(difference)
 					}
 
