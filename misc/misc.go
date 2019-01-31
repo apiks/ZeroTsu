@@ -813,20 +813,26 @@ func GetBannedUsers() {
 
 	MapMutex.Lock()
 	for _, user := range MemberInfoMap {
-		if len(user.UnbanDate) > 6 {
-			bannedUserInfo.ID = user.ID
-			bannedUserInfo.User = user.Username
-			date, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", user.UnbanDate)
-			if err != nil {
-				date, err = time.Parse("2006-01-02 15:04:05", user.UnbanDate)
-				if err != nil {
-					fmt.Println(err)
-					continue
-				}
+		for _, ban := range BannedUsersSlice {
+			if user.ID == ban.ID {
+				continue
 			}
-			bannedUserInfo.UnbanDate = date
-			BannedUsersSlice = append(BannedUsersSlice, bannedUserInfo)
 		}
+		if len(user.UnbanDate) < 7 {
+			continue
+		}
+		bannedUserInfo.ID = user.ID
+		bannedUserInfo.User = user.Username
+		date, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", user.UnbanDate)
+		if err != nil {
+			date, err = time.Parse("2006-01-02 15:04:05", user.UnbanDate)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+		}
+		bannedUserInfo.UnbanDate = date
+		BannedUsersSlice = append(BannedUsersSlice, bannedUserInfo)
 	}
 	MapMutex.Unlock()
 }
