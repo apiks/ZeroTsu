@@ -823,7 +823,7 @@ func GetBannedUsers() {
 		}
 		bannedUserInfo.ID = user.ID
 		bannedUserInfo.User = user.Username
-		date, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", user.UnbanDate)
+		date, err := time.Parse(time.RFC3339, user.UnbanDate)
 		if err != nil {
 			date, err = time.Parse("2006-01-02 15:04:05", user.UnbanDate)
 			if err != nil {
