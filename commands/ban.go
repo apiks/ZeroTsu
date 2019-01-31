@@ -146,7 +146,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		temp.UnbanDate = time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
 		UnbanDate = time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
 	} else {
-		temp.UnbanDate = UnbanDate
+		temp.UnbanDate = UnbanDate.Local()
 	}
 
 	// Adds the now banned user to BannedUsersSlice and writes to disk
