@@ -149,16 +149,17 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		temp.UnbanDate = UnbanDate
 	}
 
-	fmt.Println("----")
-	fmt.Println(UnbanDate)
-	fmt.Println("----")
-	fmt.Println(temp.UnbanDate)
-	fmt.Println("----")
-
 	// Adds the now banned user to BannedUsersSlice and writes to disk
 	misc.MapMutex.Lock()
 	misc.BannedUsersSlice = append(misc.BannedUsersSlice, temp)
 	misc.BannedUsersWrite(misc.BannedUsersSlice)
+
+	for _, val := range misc.BannedUsersSlice {
+		if val.ID == "359415219895664641" {
+			fmt.Println(UnbanDate)
+			fmt.Println("----")
+		}
+	}
 	misc.MapMutex.Unlock()
 
 	// Pulls the guild Name
