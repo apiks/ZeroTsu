@@ -24,7 +24,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		validSlice 		bool
 
-		temp 			misc.BannedUsers
+		temp 			*misc.BannedUsers
 
 		banTimestamp 	misc.Punishment
 	)
@@ -151,7 +151,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Adds the now banned user to BannedUsersSlice and writes to disk
 	misc.MapMutex.Lock()
-	misc.BannedUsersSlice = append(misc.BannedUsersSlice, temp)
+	misc.BannedUsersSlice = append(misc.BannedUsersSlice, *temp)
 	misc.BannedUsersWrite(misc.BannedUsersSlice)
 
 	for _, val := range misc.BannedUsersSlice {
