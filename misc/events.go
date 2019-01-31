@@ -39,12 +39,6 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 				difference := t.Sub(user.UnbanDate)
 				if difference > 0 {
 
-					if user.ID == "359415219895664641" {
-						fmt.Println(user.User)
-						fmt.Println(user.UnbanDate)
-						fmt.Println(difference)
-					}
-
 					// Checks if user is in MemberInfo and assigns to user variable if true
 					user, ok := MemberInfoMap[user.ID]
 					if !ok {
