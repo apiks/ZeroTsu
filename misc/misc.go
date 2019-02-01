@@ -823,6 +823,7 @@ func GetBannedUsers() {
 			}
 		}
 		if flag {
+			flag = false
 			continue
 		}
 		if len(user.UnbanDate) < 7 {
