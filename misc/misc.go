@@ -809,14 +809,21 @@ func GetRoleUserAmount(guild *discordgo.Guild, roles []*discordgo.Role, roleName
 
 // Puts banned users in bannedUsersSlice on bot startup from memberInfo
 func GetBannedUsers() {
-	var bannedUserInfo BannedUsers
+	var (
+		bannedUserInfo BannedUsers
+		flag bool
+	)
 
 	MapMutex.Lock()
 	for _, user := range MemberInfoMap {
 		for _, ban := range BannedUsersSlice {
 			if user.ID == ban.ID {
-				continue
+				flag = true
+				break
 			}
+		}
+		if flag {
+			continue
 		}
 		if len(user.UnbanDate) < 7 {
 			continue
