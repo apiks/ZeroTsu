@@ -722,7 +722,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					if err != nil {
 						fmt.Println(err.Error())
 					}
-					fmt.Println(UserCookieMap[cookieValue.Value].UsernameDiscrim)
 					err = t.Execute(w, UserCookieMap[cookieValue.Value])
 					if err != nil {
 						fmt.Println(err.Error())
@@ -779,7 +778,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					fmt.Println(err.Error())
 				}
-				fmt.Println(UserCookieMap[cookieValue.Value].UsernameDiscrim)
 				err = t.Execute(w, UserCookieMap[cookieValue.Value])
 				if err != nil {
 					fmt.Println(err.Error())
@@ -797,7 +795,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		// Reddit verification
 		if state == "overlordconfirmsreddit" {
 			// Fetches reddit username and checks whether account is at least 1 week old
-			Name, DateUnix, err = getRedditUsername(tempUser.Code)
+			Name, DateUnix, err = getRedditUsername(UserCookieMap[cookieValue.Value].Code)
 			if err != nil {
 				// Sets error message
 				tempUser.Error = err.Error()
@@ -893,6 +891,9 @@ func getRedditUsername(code string) (string, float64, error) {
 	req.Header.Set("User-Agent", misc.UserAgent)
 	req.SetBasicAuth(config.RedditAppName, config.RedditAppSecret)
 	resp, err := client.Do(req)
+	if err != nil {
+		return "", 0, err
+	}
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
@@ -962,7 +963,7 @@ func getRedditUsername(code string) (string, float64, error) {
 		return "", 0, err
 	}
 
-	// Initializes user variable of type UserBan to hold /r/anime reddit json in
+	// Initializes user variable of type UserBan to hold /r/anime reddit ban json in
 	userBan := RAnimeJson{}
 
 	// Unmarshals all the required json fields in the above user variable
