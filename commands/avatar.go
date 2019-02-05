@@ -23,6 +23,7 @@ func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 			return
 		}
+		return
 	}
 	if len(commandStrings) == 1 {
 		// Fetches user

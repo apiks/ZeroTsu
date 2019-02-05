@@ -41,6 +41,8 @@ var (
 	EmojiStats = make(map[string]*Emoji)
 	ChannelStats = make(map[string]*Channel)
 	UserStats = make(map[string]int)
+
+	RemindMeMap = make(map[string]*RemindMeSlice)
 )
 
 type FilterStruct struct {
@@ -74,6 +76,17 @@ type Channel struct {
 	RoleCount 	  map[string]int `json:",omitempty"`
 	Optin     	  bool
 	Exists    	  bool
+}
+
+type RemindMeSlice struct {
+	RemindMeSlice []RemindMe
+}
+
+type RemindMe struct {
+	Message			string
+	Date			time.Time
+	CommandChannel	string
+	RemindID		int
 }
 
 // HasPermissions sees if a user has elevated permissions. By Kagumi
@@ -602,7 +615,7 @@ func ChannelStatsRead() {
 func UserChangeStatsWrite(userStats map[string]int) (bool, error) {
 
 	// Turns that map into bytes to be ready to written to file
-	marshaledStruct, err := json.MarshalIndent(UserStats, "", "    ")
+	marshaledStruct, err := json.MarshalIndent(userStats, "", "    ")
 	if err != nil {
 		return false, err
 	}
@@ -616,16 +629,46 @@ func UserChangeStatsWrite(userStats map[string]int) (bool, error) {
 	return false, err
 }
 
-// Reads User Change stats from userChangeStats.json
+// Reads userChange stats from userChangeStats.json
 func UserChangeStatsRead() {
 
-	// Reads the channel stats and puts them in userChangeStatsByte as bytes
+	// Reads the RemindMe notes and puts them in userChangeStatsByte as bytes
 	userChangeStatsByte, _ := ioutil.ReadFile("database/userChangeStats.json")
 
 	// Takes the bytes and puts them into the userStats map
 	MapMutex.Lock()
 	_ = json.Unmarshal(userChangeStatsByte, &UserStats)
 	MapMutex.Unlock()
+}
+
+// Reads RemindMe notes from remindMe.json
+func RemindMeRead() {
+
+	// Reads the RemindMe notes and puts them in remindMeByte as bytes
+	remindMeByte, _ := ioutil.ReadFile("database/remindme.json")
+
+	// Takes the bytes and puts them into the RemindMemap map
+	MapMutex.Lock()
+	_ = json.Unmarshal(remindMeByte, &RemindMeMap)
+	MapMutex.Unlock()
+}
+
+// Writes RemindMe notes to remindMe.json
+func RemindMeWrite(remindMe map[string]*RemindMeSlice) (bool, error) {
+
+	// Turns that slice into bytes to be ready to written to file
+	marshaledStruct, err := json.MarshalIndent(remindMe, "", "    ")
+	if err != nil {
+		return false, err
+	}
+
+	// Writes to file
+	err = ioutil.WriteFile("database/remindme.json", marshaledStruct, 0644)
+	if err != nil {
+		return false, err
+	}
+
+	return false, err
 }
 
 // ResolveTimeFromString resolves a time (usually for unbanning) from a given string formatted #w#d#h#m.

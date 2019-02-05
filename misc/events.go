@@ -31,6 +31,9 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		// Checks whether it has to post rss thread
 		RSSParser(s)
 
+		// RemindMe handler for checks and execution
+		remindMeHandler(s)
+
 		// Goes through bannedUsers.json if it's not empty and unbans if needed
 		MapMutex.Lock()
 		if len(BannedUsersSlice) != 0 {
@@ -462,4 +465,71 @@ func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
 		return
 	}
 	s.RWMutex.RUnlock()
+}
+
+// Sends remindMe message if it is time, either as a DM or ping
+func remindMeHandler(s *discordgo.Session) {
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string) + "\n" + ErrorLocation(rec.(error)))
+			if err != nil {
+				return
+			}
+		}
+	}()
+
+	t := time.Now()
+	MapMutex.Lock()
+	for userID, remindMeSlice := range RemindMeMap {
+		for index, remindMeObject := range remindMeSlice.RemindMeSlice {
+
+			// Checks if it's time to send message/ping the user
+			difference := t.Sub(remindMeObject.Date)
+			if difference > 0 {
+
+				// Sends message to user DMs if possible
+				dm, err := s.UserChannelCreate(userID)
+				_, err = s.ChannelMessageSend(dm.ID, "RemindMe: "+remindMeObject.Message)
+				// Else sends the message in the channel the command was made in with a ping
+				if err != nil {
+					// Checks if the user is in the server before pinging him
+					_, err := s.GuildMember(config.ServerID, userID)
+					if err == nil {
+						pingMessage := fmt.Sprintf("<@%v> Remindme: %v", userID, remindMeObject.Message)
+						_, err = s.ChannelMessageSend(remindMeObject.CommandChannel, pingMessage)
+						if err != nil {
+							_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+							if err != nil {
+								MapMutex.Unlock()
+								return
+							}
+							MapMutex.Unlock()
+							return
+						}
+					}
+				}
+
+				// Removes the RemindMe object from the RemindMe slice and writes to disk
+				if len(remindMeSlice.RemindMeSlice) == 1 {
+					delete(RemindMeMap, userID)
+				} else {
+					remindMeSlice.RemindMeSlice = append(remindMeSlice.RemindMeSlice[:index], remindMeSlice.RemindMeSlice[index+1:]...)
+					RemindMeMap[userID].RemindMeSlice = remindMeSlice.RemindMeSlice
+				}
+				_, err = RemindMeWrite(RemindMeMap)
+				if err != nil {
+					_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+					if err != nil {
+						MapMutex.Unlock()
+						return
+					}
+					MapMutex.Unlock()
+					return
+				}
+				break
+			}
+		}
+		MapMutex.Unlock()
+	}
 }
