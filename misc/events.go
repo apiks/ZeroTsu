@@ -530,6 +530,6 @@ func remindMeHandler(s *discordgo.Session) {
 				break
 			}
 		}
-		MapMutex.Unlock()
 	}
+	MapMutex.Unlock()
 }
