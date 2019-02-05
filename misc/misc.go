@@ -682,7 +682,7 @@ func ResolveTimeFromString(given string) (ret time.Time, perma bool, err error) 
 	matcher, _ := regexp.Compile(`\d+|[wdhmWDHM]+`)
 	groups := matcher.FindAllString(given, -1)
 	if len(groups)%2 != 0 {
-		err = fmt.Errorf("Error: invalid date given.", err)
+		err = fmt.Errorf("Error: invalid date given.")
 		return
 	}
 	for i, v := range groups {
