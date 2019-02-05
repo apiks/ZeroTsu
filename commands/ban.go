@@ -112,7 +112,18 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Adds unban date to memberInfo and checks if perma
 	misc.MemberInfoMap[userID].Bans = append(misc.MemberInfoMap[userID].Bans, reason)
-	UnbanDate, perma := misc.ResolveTimeFromString(length)
+	UnbanDate, perma, err := misc.ResolveTimeFromString(length)
+	if err != nil {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid time given.")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
 	if commandStrings[2] == "∞" {
 		perma = true
 	}

@@ -20,6 +20,20 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 		dummySlice misc.RemindMeSlice
 	)
 
+	// Checks if message contains filtered words, which would not be allowed as a remind
+	badWordExists, _ := isFiltered(s, m)
+	if badWordExists {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Usage of server filtered words in the remind command is not allowed.")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
+
 	commandStrings := strings.SplitN(m.Content, " ", 3)
 
 	if len(commandStrings) < 3 {
@@ -36,9 +50,20 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Figures out the date to show the message
-	Date, perma := misc.ResolveTimeFromString(commandStrings[1])
+	Date, perma, err := misc.ResolveTimeFromString(commandStrings[1])
+	if err != nil {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid time given.")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
 	if perma {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot use 0d for a target date. Please use another")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot use that time. Please use another.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -76,7 +101,7 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.RemindMeMap[userID] = &dummySlice
 	}
 	misc.RemindMeMap[userID].RemindMeSlice = append(misc.RemindMeMap[userID].RemindMeSlice, remindMeObject)
-	_, err := misc.RemindMeWrite(misc.RemindMeMap)
+	_, err = misc.RemindMeWrite(misc.RemindMeMap)
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {

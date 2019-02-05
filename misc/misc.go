@@ -674,13 +674,17 @@ func RemindMeWrite(remindMe map[string]*RemindMeSlice) (bool, error) {
 // ResolveTimeFromString resolves a time (usually for unbanning) from a given string formatted #w#d#h#m.
 // This returns current time + delay.
 // If no time is added to the offset, then this returns true for permanent.
-// By Kagumi.
-func ResolveTimeFromString(given string) (ret time.Time, perma bool) {
+// By Kagumi. Modified by Apiks
+func ResolveTimeFromString(given string) (ret time.Time, perma bool, err error) {
 
 	ret = time.Now()
 	comp := ret
 	matcher, _ := regexp.Compile(`\d+|[wdhmWDHM]+`)
 	groups := matcher.FindAllString(given, -1)
+	if len(groups)%2 != 0 {
+		err = fmt.Errorf("Error: invalid date given.", err)
+		return
+	}
 	for i, v := range groups {
 		val, err := strconv.Atoi(v)
 		if err != nil {

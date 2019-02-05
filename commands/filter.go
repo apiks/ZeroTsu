@@ -545,7 +545,7 @@ func init() {
 	add(&command{
 		execute:  viewFiltersCommand,
 		trigger:  "filters",
-		aliases:  []string{"filter"},
+		aliases:  []string{"filter", "viewfilters", "viewfilter"},
 		desc:     "Prints all current filters.",
 		elevated: true,
 		category: "filters",
@@ -560,6 +560,7 @@ func init() {
 	add(&command{
 		execute:  removeFilterCommand,
 		trigger:  "removefilter",
+		aliases:  []string{"deletefilter"},
 		desc:     "Removes a phrase from the filters list.",
 		elevated: true,
 		category: "filters",
