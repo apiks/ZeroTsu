@@ -320,7 +320,7 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(messageLowercase, " ", 2)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removefilter [phrase]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "unfilter [phrase]`")
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
