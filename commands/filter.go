@@ -553,6 +553,7 @@ func init() {
 	add(&command{
 		execute:  addFilterCommand,
 		trigger:  "addfilter",
+		aliases:  []string{"filter"},
 		desc:     "Adds a phrase to the filters list.",
 		elevated: true,
 		category: "filters",
@@ -560,7 +561,7 @@ func init() {
 	add(&command{
 		execute:  removeFilterCommand,
 		trigger:  "removefilter",
-		aliases:  []string{"deletefilter"},
+		aliases:  []string{"deletefilter", "unfilter"},
 		desc:     "Removes a phrase from the filters list.",
 		elevated: true,
 		category: "filters",
