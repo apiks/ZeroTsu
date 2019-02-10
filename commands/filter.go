@@ -539,13 +539,12 @@ func SpamFilterTimer(s *discordgo.Session, e *discordgo.Ready) {
 		misc.MapMutex.Unlock()
 	}
 }
-
 // Adds filter commands to the commandHandler
 func init() {
 	add(&command{
 		execute:  viewFiltersCommand,
 		trigger:  "filters",
-		aliases:  []string{"filter", "viewfilters", "viewfilter"},
+		aliases:  []string{"viewfilters", "viewfilter"},
 		desc:     "Prints all current filters.",
 		elevated: true,
 		category: "filters",
