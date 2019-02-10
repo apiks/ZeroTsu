@@ -259,10 +259,10 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string){
 func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.Split(messageLowercase, " ")
+	commandStrings := strings.SplitN(messageLowercase, " ", 2)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "addfilter [phrase]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "filter [phrase]`")
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -273,18 +273,15 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Parses the filtered phrase
-	phrase := strings.Replace(messageLowercase, config.BotPrefix+"addfilter ", "", -1)
-
 	// Writes to filters.json
-	filterExists, err := misc.FiltersWrite(phrase)
+	filterExists, err := misc.FiltersWrite(commandStrings[1])
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
 	if filterExists == false {
-		_, err := s.ChannelMessageSend(m.ChannelID, "`" + phrase + "` has been added to the filter list.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "`" + commandStrings[1] + "` has been added to the filter list.")
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -293,7 +290,7 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 	} else {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: `" + phrase + "` is already on the filter list.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: `" + commandStrings[1] + "` is already on the filter list.")
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
@@ -320,7 +317,7 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.Split(messageLowercase, " ")
+	commandStrings := strings.SplitN(messageLowercase, " ", 2)
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removefilter [phrase]`")
@@ -334,18 +331,15 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Parses the filtered phrase
-	phrase := strings.Replace(messageLowercase, config.BotPrefix+"removefilter ", "", -1)
-
 	// Removes phrase from storage and memory
-	filterExists, err := misc.FiltersRemove(phrase)
+	filterExists, err := misc.FiltersRemove(commandStrings[1])
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
 	if filterExists {
-		_, err := s.ChannelMessageSend(m.ChannelID, "`" + phrase + "` has been removed from the filter list.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "`" + commandStrings[1] + "` has been removed from the filter list.")
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -356,7 +350,7 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	_, err = s.ChannelMessageSend(m.ChannelID, "Error: `" + phrase + "` is not in the filter list.")
+	_, err = s.ChannelMessageSend(m.ChannelID, "Error: `" + commandStrings[1] + "` is not in the filter list.")
 	if err != nil {
 		_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
@@ -539,6 +533,7 @@ func SpamFilterTimer(s *discordgo.Session, e *discordgo.Ready) {
 		misc.MapMutex.Unlock()
 	}
 }
+
 // Adds filter commands to the commandHandler
 func init() {
 	add(&command{
