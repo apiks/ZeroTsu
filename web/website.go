@@ -823,7 +823,8 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 					// Verifies user if Discord was verified already
 					if UserCookieMap[cookieValue.Value].ID != "" &&
-						UserCookieMap[cookieValue.Value].DiscordVerifiedStatus {
+						UserCookieMap[cookieValue.Value].DiscordVerifiedStatus &&
+						UserCookieMap[cookieValue.Value].RedditName != "" {
 						// Verifies user
 						check := Verify(cookieValue, r)
 						if !check {
