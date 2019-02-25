@@ -39,7 +39,7 @@ func main() {
 	err = http.ListenAndServe(":8080", r)
 
 	// Establish SQL connection
-	database.EstablishConnection()
+	config.EstablishConnection()
 
 	<-make(chan struct{})
 	return
