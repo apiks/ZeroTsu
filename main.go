@@ -25,6 +25,9 @@ func main() {
 		panic(err)
 	}
 
+	// Establish SQL connection
+	config.EstablishConnection()
+
 	Start()
 
 	// Web Server
@@ -37,9 +40,6 @@ func main() {
 	r.HandleFunc("/channelstats", web.StatsPageHandler)
 	r.HandleFunc("/channelstats/", web.StatsPageHandler)
 	err = http.ListenAndServe(":8080", r)
-
-	// Establish SQL connection
-	config.EstablishConnection()
 
 	<-make(chan struct{})
 	return
