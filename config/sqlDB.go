@@ -12,9 +12,11 @@ func EstablishConnection() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("Pre DB ping")
 	err = db.Ping()
 	if err != nil {
 		fmt.Println(err)
 	}
+	fmt.Println("Finished DB ping")
 	defer db.Close()
 }
