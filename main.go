@@ -38,6 +38,9 @@ func main() {
 	r.HandleFunc("/channelstats/", web.StatsPageHandler)
 	err = http.ListenAndServe(":8080", r)
 
+	// TEST establish SQL connection
+	database.EstablishConnection()
+
 	<-make(chan struct{})
 	return
 }
