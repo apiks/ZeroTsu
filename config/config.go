@@ -26,6 +26,9 @@ var (
 	RedditAppName			string
 	RedditAppSecret			string
 	DiscordAppSecret		string
+	DBUser					string
+	DBPass					string
+	DBName					string
 
 	config 					*configStruct
 	configsecrets 			*configSecrets
@@ -43,13 +46,18 @@ type configStruct struct {
 	VoiceChaID   			string   		`json:"VoiceChaID"`
 	Website		 			string	 		`json:"Website"`
 	ModCategoryID			string	 		`json:"ModCategoryID"`
-	VoteChannelCategoryID 	string 	`json:"VoteChannelCategoryID"`
+	VoteChannelCategoryID 	string 			`json:"VoteChannelCategoryID"`
 }
 
 type configSecrets struct {
-	RedditAppName			string	`json:"RedditName"`
-	RedditAppSecret			string	`json:"RedditSecret"`
-	DiscordAppSecret		string	`json:"DiscordSecret"`
+	RedditAppName			string			`json:"RedditName"`
+	RedditAppSecret			string			`json:"RedditSecret"`
+	DiscordAppSecret		string			`json:"DiscordSecret"`
+
+	// /r/anime specific DB
+	DBUser					string			`json:"DBUser"`
+	DBPass					string			`json:"DBPass"`
+	DBName					string			`json:"DBName"`
 }
 
 // Loads config.json values
@@ -106,6 +114,9 @@ func ReadConfigSecrets() error {
 	RedditAppName = configsecrets.RedditAppName
 	RedditAppSecret = configsecrets.RedditAppSecret
 	DiscordAppSecret = configsecrets.DiscordAppSecret
+	DBUser = configsecrets.DBUser
+	DBPass = configsecrets.DBPass
+	DBName = configsecrets.DBName
 
 	fmt.Println("Successfuly read configsecrets file.")
 
