@@ -26,7 +26,7 @@ func main() {
 	}
 
 	// Establish SQL connection
-	config.EstablishConnection()
+	//config.EstablishConnection()
 
 	Start()
 
