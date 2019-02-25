@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	_ "github.com/go-sql-driver/mysql"
+	"time"
 )
 
 func EstablishConnection() {
@@ -12,6 +13,7 @@ func EstablishConnection() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	db.SetConnMaxLifetime(1 * time.Minute)
 	fmt.Println("Pre DB ping")
 	err = db.Ping()
 	if err != nil {
