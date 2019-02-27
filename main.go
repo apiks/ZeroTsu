@@ -164,6 +164,10 @@ func Start() {
 	// Manual ban handler
 	goBot.AddHandler(misc.OnGuildBan)
 
+	// Raffle react handler
+	goBot.AddHandler(commands.RaffleReactJoin)
+	goBot.AddHandler(commands.RaffleReactLeave)
+
 	err = goBot.Open()
 	if err != nil {
 		fmt.Println(err)

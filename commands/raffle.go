@@ -84,6 +84,92 @@ func raffleParticipateCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
+// Enters a user in a raffle if they react
+func RaffleReactJoin(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
+				return
+			}
+		}
+	}()
+
+	// Checks if it's the slot machine emoji or the bot itself
+	if r.Emoji.APIName() != "🎰" {
+		return
+	}
+	if r.UserID == config.BotID {
+		return
+	}
+
+	// Checks if that message has a raffle react set for it
+	misc.MapMutex.Lock()
+	for i, raffle := range misc.RafflesSlice {
+		if raffle.ReactMessageID == r.MessageID {
+			misc.RafflesSlice[i].ParticipantIDs = append(misc.RafflesSlice[i].ParticipantIDs, r.UserID)
+			err := misc.RafflesWrite(misc.RafflesSlice)
+			if err != nil {
+				_, err := s.ChannelMessageSend(config.BotLogID, err.Error() +"\n" + misc.ErrorLocation(err))
+				if err != nil {
+					misc.MapMutex.Unlock()
+					return
+				}
+				misc.MapMutex.Unlock()
+				return
+			}
+			misc.MapMutex.Unlock()
+			return
+		}
+	}
+	misc.MapMutex.Unlock()
+}
+
+// Removes a user from a raffle if they unreact
+func RaffleReactLeave(s *discordgo.Session, r *discordgo.MessageReactionRemove) {
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
+				return
+			}
+		}
+	}()
+
+	// Checks if it's the slot machine emoji or the bot
+	if r.Emoji.APIName() != "🎰" {
+		return
+	}
+	if r.UserID == s.State.SessionID {
+		return
+	}
+
+	// Checks if that message has a raffle react set for it
+	misc.MapMutex.Lock()
+	for index, raffle := range misc.RafflesSlice {
+		if raffle.ReactMessageID == r.MessageID {
+			for i := range misc.RafflesSlice[index].ParticipantIDs {
+				misc.RafflesSlice[i].ParticipantIDs = misc.RafflesSlice[i].ParticipantIDs[:i+copy(misc.RafflesSlice[i].ParticipantIDs[i:], misc.RafflesSlice[i].ParticipantIDs[i+1:])]
+			}
+			err := misc.RafflesWrite(misc.RafflesSlice)
+			if err != nil {
+				_, err := s.ChannelMessageSend(config.BotLogID, err.Error() +"\n" + misc.ErrorLocation(err))
+				if err != nil {
+					misc.MapMutex.Unlock()
+					return
+				}
+				misc.MapMutex.Unlock()
+				return
+			}
+			misc.MapMutex.Unlock()
+			return
+		}
+	}
+	misc.MapMutex.Unlock()
+}
+
 // Removes a user from a raffle
 func raffleLeaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	var (
@@ -161,10 +247,13 @@ func raffleLeaveCommand(s *discordgo.Session, m *discordgo.Message) {
 func craffleCommand(s *discordgo.Session, m *discordgo.Message) {
 	var temp misc.Raffle
 
-	commandStrings := strings.SplitN(m.Content, " ", 2)
+	commandStrings := strings.SplitN(m.Content, " ", 3)
 
-	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "craffle [raffle name]`")
+	if len(commandStrings) != 3 ||
+		(commandStrings[1] != "true" &&
+			commandStrings[1] != "false") {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "craffle [react bool] [raffle name] `\n\n" +
+			"Type `true` or `false` in `[react bool]` parameter to indicate whether you want users to be able to react to join the raffle. (default react emoji is slot machine.)")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -175,7 +264,7 @@ func craffleCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	temp.Name = commandStrings[1]
+	temp.Name = commandStrings[2]
 	temp.ParticipantIDs = nil
 
 	// Checks if that raffle already exists in the raffles slice
@@ -196,19 +285,43 @@ func craffleCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 	}
-
-	// Adds the raffle object to the raffle slice
-	misc.RafflesSlice = append(misc.RafflesSlice, temp)
-
-	err := misc.RafflesWrite(misc.RafflesSlice)
-	if err != nil {
-		misc.MapMutex.Unlock()
-		misc.CommandErrorHandler(s, m, err)
-		return
-	}
 	misc.MapMutex.Unlock()
 
-	_, err = s.ChannelMessageSend(m.ChannelID, "Success! Created raffle with name `" + temp.Name + "`")
+	if commandStrings[1] == "true" {
+		message, err := s.ChannelMessageSend(m.ChannelID, "Raffle `" + temp.Name + "` is now active. ")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		err = s.MessageReactionAdd(message.ChannelID, message.ID, "🎰")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		temp.ReactMessageID = message.ID
+
+		// Adds the raffle object to the raffle slice
+		misc.MapMutex.Lock()
+		misc.RafflesSlice = append(misc.RafflesSlice, temp)
+
+		// Writes the raffle object to storage
+		err = misc.RafflesWrite(misc.RafflesSlice)
+		if err != nil {
+			misc.MapMutex.Unlock()
+			misc.CommandErrorHandler(s, m, err)
+			return
+		}
+		misc.MapMutex.Unlock()
+		return
+	}
+
+	_, err := s.ChannelMessageSend(m.ChannelID, "Raffle `" + temp.Name + "` is now active. Please use `" + config.BotPrefix + "jraffle " + temp.Name + "` to join the raffle.")
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
@@ -242,6 +355,10 @@ func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 	for raffleIndex, raffle := range misc.RafflesSlice {
 		if raffle.Name == commandStrings[1] {
 			participantLen := len(misc.RafflesSlice[raffleIndex].ParticipantIDs)
+			if participantLen == 0 {
+				winnerID = "none"
+				break
+			}
 			winnerIndex = rand.Intn(participantLen)
 			winnerID = misc.RafflesSlice[raffleIndex].ParticipantIDs[winnerIndex]
 			break
@@ -250,6 +367,17 @@ func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.MapMutex.Unlock()
 
 	if winnerID == "" {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such raffle exists.")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
+	if winnerID == "none" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There is nobody to pick from to win in that raffle.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
