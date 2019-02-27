@@ -217,7 +217,6 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Assigns verified role to user
 	err = s.GuildMemberRoleRemove(config.ServerID, userID, roleID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
