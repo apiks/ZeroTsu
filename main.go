@@ -91,6 +91,9 @@ func Start() {
 	// Reads remindMes from remindMe.json
 	misc.RemindMeRead()
 
+	// Reads raffles from raffles.json
+	misc.RafflesRead()
+
 	// Cleans up duplicate usernames and nicknames (Run once per cleanup, keep off unless needed)
 	//misc.DuplicateUsernamesAndNicknamesCleanup()
 

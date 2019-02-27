@@ -43,6 +43,8 @@ var (
 	UserStats = make(map[string]int)
 
 	RemindMeMap = make(map[string]*RemindMeSlice)
+
+	RafflesSlice	[]Raffle
 )
 
 type FilterStruct struct {
@@ -87,6 +89,11 @@ type RemindMe struct {
 	Date			time.Time
 	CommandChannel	string
 	RemindID		int
+}
+
+type Raffle struct {
+	Name			string		`json:"Name"`
+	ParticipantIDs	[]string	`json:"ParticipantIDs"`
 }
 
 // HasPermissions sees if a user has elevated permissions. By Kagumi
@@ -669,6 +676,74 @@ func RemindMeWrite(remindMe map[string]*RemindMeSlice) (bool, error) {
 	}
 
 	return false, err
+}
+
+// Reads Raffles from raffles.json
+func RafflesRead() {
+
+	// Reads the raffle objects and puts them in raffleByte as bytes
+	raffleByte, _ := ioutil.ReadFile("database/raffles.json")
+
+	// Takes the bytes and puts them into the raffle slice
+	MapMutex.Lock()
+	_ = json.Unmarshal(raffleByte, &RafflesSlice)
+	MapMutex.Unlock()
+}
+
+// Writes Raffles to raffles.json
+func RafflesWrite(raffle []Raffle) error {
+
+	// Turns that slice into bytes to be ready to written to file
+	marshaledStruct, err := json.MarshalIndent(raffle, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	// Writes to file
+	err = ioutil.WriteFile("database/raffles.json", marshaledStruct, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Removes raffle with name string "raffle" from raffles.json
+func RaffleRemove(raffle string) error {
+
+	var (
+		raffleExists = false
+	)
+
+	raffle = strings.ToLower(raffle)
+
+	// Checks if that raffle already exists in the raffles slice
+	MapMutex.Lock()
+	for i, sliceRaffle := range RafflesSlice {
+		if strings.ToLower(sliceRaffle.Name) == raffle {
+			raffleExists = true
+			RafflesSlice = append(RafflesSlice[:i], RafflesSlice[i+1:]...)
+			break
+		}
+	}
+	MapMutex.Unlock()
+	if !raffleExists {
+		return fmt.Errorf("Error: No such raffle exists")
+	}
+
+	// Turns that struct slice into bytes again to be ready to written to file
+	marshaledStruct, err := json.Marshal(RafflesSlice)
+	if err != nil {
+		return err
+	}
+
+	// Writes to file
+	err = ioutil.WriteFile("database/raffles.json", marshaledStruct, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // ResolveTimeFromString resolves a time (usually for unbanning) from a given string formatted #w#d#h#m.
