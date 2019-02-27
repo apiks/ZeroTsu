@@ -94,6 +94,7 @@ type RemindMe struct {
 type Raffle struct {
 	Name			string		`json:"Name"`
 	ParticipantIDs	[]string	`json:"ParticipantIDs"`
+	ReactMessageID	string		`json:"ReactMessageID"`
 }
 
 // HasPermissions sees if a user has elevated permissions. By Kagumi
