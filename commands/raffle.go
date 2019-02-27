@@ -475,7 +475,7 @@ func viewRafflesCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Iterates through all the raffles if they exist and adds them to the message string
 	for _, raffle := range misc.RafflesSlice {
 		if message == "" {
-			message = "`" + raffle.Name + "`"
+			message = "Raffles:\n\n`" + raffle.Name + "`"
 		} else {
 			message += "\n `" + raffle.Name + "`"
 		}
@@ -498,14 +498,14 @@ func init() {
 		aliases: []string{"joinraffle", "enterraffle"},
 		trigger: "jraffle",
 		desc:    "Allows you to participate in a raffle.",
-		category:"misc",
+		category:"raffles",
 	})
 	add(&command{
 		execute: raffleLeaveCommand,
 		aliases: []string{"leaveraffle"},
 		trigger: "lraffle",
 		desc:    "Removes you from a raffle.",
-		category:"misc",
+		category:"raffles",
 	})
 	add(&command{
 		execute: craffleCommand,
@@ -513,7 +513,7 @@ func init() {
 		trigger: "craffle",
 		desc:    "Create a raffle.",
 		elevated: true,
-		category:"misc",
+		category:"raffles",
 	})
 	add(&command{
 		execute: raffleWinnerCommand,
@@ -521,7 +521,7 @@ func init() {
 		trigger: "rafflewinner",
 		desc:    "Picks a random winner from those participating in a raffle.",
 		elevated: true,
-		category:"misc",
+		category:"raffles",
 	})
 	add(&command{
 		execute: removeRaffleCommand,
@@ -529,7 +529,7 @@ func init() {
 		trigger: "removeraffle",
 		desc:    "Removes a previously set raffle.",
 		elevated: true,
-		category:"misc",
+		category:"raffles",
 	})
 	add(&command{
 		execute: viewRafflesCommand,
@@ -537,6 +537,6 @@ func init() {
 		trigger: "viewraffles",
 		desc:    "Shows existing raffles.",
 		elevated: true,
-		category:"misc",
+		category:"raffles",
 	})
 }

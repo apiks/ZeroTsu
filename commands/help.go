@@ -11,7 +11,7 @@ import (
 
 // Command categories in sorted form and map form(map for descriptions)
 var (
-	categoriesSorted = [8]string{"Channel", "Filters", "Misc", "Normal", "Punishment", "Reacts", "Rss", "Stats"}
+	categoriesSorted = [9]string{"Channel", "Filters", "Misc", "Normal", "Punishment", "Reacts", "Rss", "Stats", "Raffles"}
 	categoriesMap = make(map[string]string)
 )
 
@@ -700,6 +700,84 @@ func helpStatsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	return err
 }
 
+// Mod command help page
+func helpRaffleCommand(s *discordgo.Session, m *discordgo.Message) {
+	// Checks if it's within the config server
+	ch, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		ch, err = s.Channel(m.ChannelID)
+		if err != nil {
+			return
+		}
+	}
+	if ch.GuildID != config.ServerID {
+		return
+	}
+
+	err = helpRaffleEmbed(s, m)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+}
+
+// Mod command help page embed
+func helpRaffleEmbed(s *discordgo.Session, m *discordgo.Message) error {
+
+	var (
+		embedMess          discordgo.MessageEmbed
+		embedFooter	   	   discordgo.MessageEmbedFooter
+
+		// Embed slice and its fields
+		embed    		   []*discordgo.MessageEmbedField
+		commandsField  	   discordgo.MessageEmbedField
+
+		// Slice for sorting
+		commands		   []string
+	)
+
+	// Set embed color
+	embedMess.Color = 0x00ff00
+
+	// Sets footer field
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", config.BotPrefix)
+	embedMess.Footer = &embedFooter
+
+	// Sets command field
+	commandsField.Name = "Command:"
+	commandsField.Inline = true
+
+	// Iterates through commands in the filter category
+	misc.MapMutex.Lock()
+	for command := range commandMap {
+		commands = append(commands, command)
+	}
+	sort.Strings(commands)
+	for i := 0; i < len(commands); i++ {
+		if commandMap[commands[i]].category == "raffles" {
+			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], commandMap[commands[i]].desc)
+		}
+	}
+	misc.MapMutex.Unlock()
+
+	// Adds the field to embed slice (because embedMess.Fields requires slice input)
+	embed = append(embed, &commandsField)
+
+	// Adds everything together
+	embedMess.Fields = embed
+
+	// Sends embed in channel
+	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return err
+		}
+		return err
+	}
+	return err
+}
+
 // Prints two versions of help depending on whether the user is a mod or not in plain text
 func helpPlaintextCommand(s *discordgo.Session, m *discordgo.Message) {
 
@@ -858,6 +936,13 @@ func init() {
 		desc:     "Print all channel and emoji stats commands.",
 		elevated: true,
 	})
+	add(&command{
+		execute:  helpRaffleCommand,
+		trigger:  "hraffle",
+		aliases:  []string{"h[raffle]", "hraffles", "h[raffles]"},
+		desc:     "Print all raffle commands.",
+		elevated: true,
+	})
 
 	misc.MapMutex.Lock()
 	categoriesMap["Channel"] = "Mod channel-related commands."
@@ -868,5 +953,6 @@ func init() {
 	categoriesMap["Reacts"] = "Channel join via react commands."
 	categoriesMap["Rss"] = "RSS feed from sub commands."
 	categoriesMap["Stats"] = "Channel and emoji stats."
+	categoriesMap["Raffles"] = "Raffle commands."
 	misc.MapMutex.Unlock()
 }
