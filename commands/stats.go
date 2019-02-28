@@ -381,7 +381,7 @@ func isChannelUsable(channel misc.Channel, guild *discordgo.Guild) (misc.Channel
 
 // Splits the stat messages into blocks
 func splitStatMessages (msgs []string, message string) ([]string, string) {
-	const maxMsgLength = 1900
+	const maxMsgLength = 1800
 	if len(message) > maxMsgLength {
 		msgs = append(msgs, message)
 		message = ""
