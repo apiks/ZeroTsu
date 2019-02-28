@@ -711,10 +711,10 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
 			if misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID].RedditUsername != "" {
 				// Verifies user
-				check := Verify(cookieValue, r)
-				if !check {
+				err := Verify(cookieValue, r)
+				if err != nil {
 					// Sets error message
-					tempUser.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
+					tempUser.Error = err.Error()
 					UserCookieMap[cookieValue.Value] = &tempUser
 
 					// Loads the html & css verification files
@@ -747,7 +747,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 			uname, udiscrim, uid, err := getDiscordUsernameDiscrim(UserCookieMap[cookieValue.Value].Code)
 			if err != nil {
 				// Sets error message
-				tempUser.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
+				tempUser.Error = err.Error()
 				UserCookieMap[cookieValue.Value] = &tempUser
 			} else {
 				// Sets username#discrim for website use
@@ -763,10 +763,10 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				if UserCookieMap[cookieValue.Value].AccOldEnough && UserCookieMap[cookieValue.Value].ID != "" &&
 					UserCookieMap[cookieValue.Value].RedditVerifiedStatus && UserCookieMap[cookieValue.Value].RedditName != "" {
 					// Verifies user
-					check := Verify(cookieValue, r)
-					if !check {
+					err := Verify(cookieValue, r)
+					if err != nil {
 						// Sets error message
-						tempUser.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
+						tempUser.Error = err.Error()
 						UserCookieMap[cookieValue.Value] = &tempUser
 					}
 				}
@@ -826,11 +826,11 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 						UserCookieMap[cookieValue.Value].DiscordVerifiedStatus &&
 						UserCookieMap[cookieValue.Value].RedditName != "" {
 						// Verifies user
-						check := Verify(cookieValue, r)
-						if !check {
+						err := Verify(cookieValue, r)
+						if err != nil {
 
 							// Sets error message
-							tempUser.Error = "Error: User is not in memberInfo or cookie has expired. Please rejoin the server and try again."
+							tempUser.Error = err.Error()
 							UserCookieMap[cookieValue.Value] = &tempUser
 						}
 					}
@@ -1037,11 +1037,13 @@ func getDiscordUsernameDiscrim(code string) (string, string, string, error) {
 		return "", "", "", err
 	}
 
-	return user.Username, user.Discriminator, user.ID, err
+	return user.Username, user.Discriminator, user.ID, nil
 }
 
 // Verifies user by assigning the necessary values
-func Verify(cookieValue *http.Cookie, r *http.Request) bool {
+func Verify(cookieValue *http.Cookie, r *http.Request) error {
+
+	var temp misc.UserInfo
 
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
@@ -1053,17 +1055,17 @@ func Verify(cookieValue *http.Cookie, r *http.Request) bool {
 
 	// Confirms that the map is not empty
 	if len(misc.MemberInfoMap) == 0 {
-		return false
+		return fmt.Errorf("Error: MemberInfo is empty. Please notify a mod.")
 	}
 	// Checks if cookie has expired while doing this
 	if cookieValue == nil {
-		return false
+		return fmt.Errorf("Error: Cookie has expired. Please try again.")
 	}
 	if _, ok := UserCookieMap[cookieValue.Value]; !ok {
-		return false
+		return fmt.Errorf("Error: CookieValue is not in UserCookieMap. Please notify a mod.")
 	}
 	if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; !ok {
-		return false
+		return fmt.Errorf("Error: Either user does not exist in MemberInfo or the user ID does not exist. Please notify a mod.")
 	}
 
 	//Stores time of verification
@@ -1072,7 +1074,6 @@ func Verify(cookieValue *http.Cookie, r *http.Request) bool {
 	joinDate := t.Format("2006-01-02 15:04:05") + " " + z
 
 	// Assigns needed values to temp
-	var temp misc.UserInfo
 	temp = *misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]
 	temp.RedditUsername = UserCookieMap[cookieValue.Value].RedditName
 	temp.VerifiedDate = joinDate
@@ -1080,7 +1081,7 @@ func Verify(cookieValue *http.Cookie, r *http.Request) bool {
 
 	// Writes the username to memberInfo.json
 	misc.MemberInfoWrite(misc.MemberInfoMap)
-	return true
+	return nil
 }
 
 // Checks if a user in the cookie map has the role and if they're verified it gives it to them, also deletes expired map fields
