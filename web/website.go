@@ -1059,7 +1059,7 @@ func Verify(cookieValue *http.Cookie, r *http.Request) error {
 	}
 	// Checks if cookie has expired while doing this
 	if cookieValue == nil {
-		return fmt.Errorf("Error: Cookie has expired. Please try again.")
+		return fmt.Errorf("Error: Cookie has expired. Please refresh and try again.")
 	}
 	if _, ok := UserCookieMap[cookieValue.Value]; !ok {
 		return fmt.Errorf("Error: CookieValue is not in UserCookieMap. Please notify a mod.")
@@ -1120,14 +1120,17 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 					for i := 0; i < len(roles); i++ {
 						if roles[i].Name == "Verified" {
 							roleID = roles[i].ID
+							break
 						}
 					}
 
 					// Assigns role
 					err = s.GuildMemberRoleAdd(config.ServerID, UserCookieMap[key].ID, roleID)
 					if err != nil {
-						delete(UserCookieMap, key)
-						continue
+						_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+						if err != nil {
+							continue
+						}
 					}
 
 					if !UserCookieMap[key].AltCheck {
@@ -1135,8 +1138,10 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 						if !check {
 							user, err := s.GuildMember(config.ServerID, UserCookieMap[key].ID)
 							if err != nil {
-								delete(UserCookieMap, key)
-								continue
+								_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+								if err != nil {
+									continue
+								}
 							}
 							misc.InitializeUser(user)
 						}
