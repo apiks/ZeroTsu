@@ -74,12 +74,12 @@ func MemberInfoRead() {
 		return
 	}
 
-	// Fixes empty IDs
-	for ID, user := range MemberInfoMap {
-		if user.ID == "" {
-			user.ID = ID
-		}
-	}
+	// Fixes empty IDs. Unneeded unless they show up again. If so uncomment the below
+	//for ID, user := range MemberInfoMap {
+	//	if user.ID == "" {
+	//		user.ID = ID
+	//	}
+	//}
 	MapMutex.Unlock()
 }
 
@@ -163,26 +163,23 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		initialized = true
 
 		// Encrypts id
-		ciphertext := Encrypt(Key, user.User.ID)
+		ciphertext := Encrypt(Key, userID)
 
 		// Sends verification message to user in DMs if possible
-		dm, _ := s.UserChannelCreate(user.User.ID)
+		dm, _ := s.UserChannelCreate(userID)
 		_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
 			"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
 
 	} else {
 		// Checks if user exists in memberInfo.json. If yes it changes flag to true
-		for id := range MemberInfoMap {
-			if MemberInfoMap[id].ID == user.User.ID {
-				flag = true
-				break
-			}
+		if _, ok := MemberInfoMap[userID]; ok {
+			flag = true
 		}
 	}
 	MapMutex.Unlock()
 
 	// If user still doesn't exist after check above, it initializes user
-	if !flag  {
+	if !flag {
 
 		// Initializes the new user
 		MapMutex.Lock()
@@ -191,10 +188,10 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		initialized = true
 
 		// Encrypts id
-		ciphertext := Encrypt(Key, user.User.ID)
+		ciphertext := Encrypt(Key, userID)
 
 		// Sends verification message to user in DMs if possible
-		dm, _ := s.UserChannelCreate(user.User.ID)
+		dm, _ := s.UserChannelCreate(userID)
 		_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
 			"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
 	}
