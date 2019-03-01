@@ -1114,6 +1114,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 						if err != nil {
 							continue
 						}
+						continue
 					}
 
 					// Fetches ID of Verified role
@@ -1131,6 +1132,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 						if err != nil {
 							continue
 						}
+						continue
 					}
 
 					if !UserCookieMap[key].AltCheck {
@@ -1142,6 +1144,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 								if err != nil {
 									continue
 								}
+								continue
 							}
 							misc.InitializeUser(user)
 						}
