@@ -61,11 +61,14 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 							break
 						}
 					}
-					if !banFlag {
+					if banFlag {
 						// Unbans user if possible
 						err = s.GuildBanDelete(config.ServerID, user.ID)
 						if err != nil {
-							continue
+							// Removes the user ban from bannedUsers.json
+							BannedUsersSlice = append(BannedUsersSlice[:index], BannedUsersSlice[index+1:]...)
+							BannedUsersWrite(BannedUsersSlice)
+							break
 						}
 					}
 
@@ -80,7 +83,8 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 					BannedUsersWrite(BannedUsersSlice)
 
 					// Sends an embed message to bot-log
-					err = UnbanEmbed(s, user, "")
+					_ = UnbanEmbed(s, user, "")
+					break
 				}
 			}
 		}
