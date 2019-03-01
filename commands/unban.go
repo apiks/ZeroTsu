@@ -67,6 +67,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 			// Removes the ban from BannedUsersSlice
 			misc.BannedUsersSlice = append(misc.BannedUsersSlice[:i], misc.BannedUsersSlice[i+1:]...)
+			break
 		}
 	}
 	misc.MapMutex.Unlock()

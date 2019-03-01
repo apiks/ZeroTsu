@@ -18,6 +18,8 @@ var darlingTrigger int
 // Periodic events such as Unbanning and RSS timer every 30 sec
 func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
+	var banFlag bool
+
 	err := s.UpdateStatus(0, "with her darling")
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
@@ -41,16 +43,30 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 			for index, user := range BannedUsersSlice {
 				difference := t.Sub(user.UnbanDate)
 				if difference > 0 {
+					banFlag = false
 
 					// Checks if user is in MemberInfo and assigns to user variable if true
 					user, ok := MemberInfoMap[user.ID]
 					if !ok {
 						continue
 					}
-					// Unbans user
-					err := s.GuildBanDelete(config.ServerID, user.ID)
+					// Fetches all server bans so it can check if the user is banned there (whether he's been manually unbanned for example)
+					bans, err := s.GuildBans(config.ServerID)
 					if err != nil {
 						continue
+					}
+					for _, ban := range bans {
+						if ban.User.ID == user.ID {
+							banFlag = true
+							break
+						}
+					}
+					if !banFlag {
+						// Unbans user if possible
+						err = s.GuildBanDelete(config.ServerID, user.ID)
+						if err != nil {
+							continue
+						}
 					}
 
 					// Sets unban date to now in memberInfo
