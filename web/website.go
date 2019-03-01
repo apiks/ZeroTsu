@@ -1105,7 +1105,8 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 			for key := range UserCookieMap {
 				if UserCookieMap[key].RedditName != "" &&
 					UserCookieMap[key].DiscordVerifiedStatus &&
-					UserCookieMap[key].RedditVerifiedStatus {
+					UserCookieMap[key].RedditVerifiedStatus &&
+					UserCookieMap[key].ID != "" {
 
 					// Puts all server roles in roles variable
 					roles, err := s.GuildRoles(config.ServerID)
@@ -1130,8 +1131,10 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 					if err != nil {
 						_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 						if err != nil {
+							delete(UserCookieMap, key)
 							continue
 						}
+						delete(UserCookieMap, key)
 						continue
 					}
 
@@ -1144,6 +1147,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 								if err != nil {
 									continue
 								}
+								delete(UserCookieMap, key)
 								continue
 							}
 							misc.InitializeUser(user)
