@@ -289,12 +289,14 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		t, err := template.ParseFiles("web/assets/verification.html")
 		if err != nil {
 			fmt.Println(err.Error())
+			misc.MapMutex.Unlock()
 			return
 		}
 		misc.MapMutex.Lock()
 		err = t.Execute(w, UserCookieMap[cookieValue.Value])
 		if err != nil {
 			fmt.Println(err.Error())
+			misc.MapMutex.Unlock()
 			return
 		}
 		// Resets assigned Error Message
@@ -372,11 +374,13 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					t, err := template.ParseFiles("web/assets/verification.html")
 					if err != nil {
 						fmt.Println(err.Error())
+						misc.MapMutex.Unlock()
 						return
 					}
 					err = t.Execute(w, UserCookieMap[cookieValue.Value])
 					if err != nil {
 						fmt.Println(err.Error())
+						misc.MapMutex.Unlock()
 						return
 					}
 					// Resets assigned Error Message
@@ -432,11 +436,13 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				t, err := template.ParseFiles("web/assets/verification.html")
 				if err != nil {
 					fmt.Println(err.Error())
+					misc.MapMutex.Unlock()
 					return
 				}
 				err = t.Execute(w, UserCookieMap[cookieValue.Value])
 				if err != nil {
 					fmt.Println(err.Error())
+					misc.MapMutex.Unlock()
 					return
 				}
 				// Resets assigned Error Message
@@ -515,6 +521,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	err = t.Execute(w, UserCookieMap[cookieValue.Value])
 	if err != nil {
 		fmt.Println(err.Error())
+		misc.MapMutex.Unlock()
 		return
 	}
 	// Resets assigned Error Message
