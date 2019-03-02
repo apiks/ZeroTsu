@@ -289,11 +289,13 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		t, err := template.ParseFiles("web/assets/verification.html")
 		if err != nil {
 			fmt.Println(err.Error())
+			return
 		}
 		misc.MapMutex.Lock()
 		err = t.Execute(w, UserCookieMap[cookieValue.Value])
 		if err != nil {
 			fmt.Println(err.Error())
+			return
 		}
 		// Resets assigned Error Message
 		if cookieValue != nil {
@@ -356,6 +358,9 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	if UserCookieMap[cookieValue.Value].ID != "" {
 		if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
 			if misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID].RedditUsername != "" {
+				if UserCookieMap[cookieValue.Value].RedditName != "" {
+					UserCookieMap[cookieValue.Value].RedditName = misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID].RedditUsername
+				}
 				// Verifies user
 				err := Verify(cookieValue, r)
 				if err != nil {
@@ -367,10 +372,12 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					t, err := template.ParseFiles("web/assets/verification.html")
 					if err != nil {
 						fmt.Println(err.Error())
+						return
 					}
 					err = t.Execute(w, UserCookieMap[cookieValue.Value])
 					if err != nil {
 						fmt.Println(err.Error())
+						return
 					}
 					// Resets assigned Error Message
 					if cookieValue != nil {
@@ -425,10 +432,12 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				t, err := template.ParseFiles("web/assets/verification.html")
 				if err != nil {
 					fmt.Println(err.Error())
+					return
 				}
 				err = t.Execute(w, UserCookieMap[cookieValue.Value])
 				if err != nil {
 					fmt.Println(err.Error())
+					return
 				}
 				// Resets assigned Error Message
 				if cookieValue != nil {
@@ -506,6 +515,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	err = t.Execute(w, UserCookieMap[cookieValue.Value])
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 	// Resets assigned Error Message
 	if cookieValue != nil {

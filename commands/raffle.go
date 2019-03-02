@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"math/rand"
 	"strings"
 
@@ -334,8 +335,9 @@ func craffleCommand(s *discordgo.Session, m *discordgo.Message) {
 // Picks a random winner from those participating in the raffle
 func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 	var (
-		winnerIndex int
-		winnerID	string
+		winnerIndex 	int
+		winnerID		string
+		winnerMention 	string
 	)
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
@@ -389,7 +391,11 @@ func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	_, err := s.ChannelMessageSend(m.ChannelID, "**" + commandStrings[1] + "** winner is <@" + winnerID + ">! Congratulations!")
+	// Parses mention if user is in the server or not
+	winnerMention = fmt.Sprintf("<@%v>", winnerID)
+	winnerMention = misc.MentionParser(s, winnerMention)
+
+	_, err := s.ChannelMessageSend(m.ChannelID, "**" + commandStrings[1] + "** winner is " + winnerMention + "! Congratulations!")
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
