@@ -61,7 +61,7 @@ func Start() {
 	// Reads memberInfo.json from storage at bot start
 	misc.MemberInfoRead()
 
-	// Reads all banned users from memberInfo on bot start
+	// Reads all banned users from memberInfo on bot start. Depreciated
 	//misc.GetBannedUsers()
 
 	// Reads ongoing votes from VoteInfo.json at bot start
