@@ -345,9 +345,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	if UserCookieMap[cookieValue.Value].ID != "" {
 		if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
 			if misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID].RedditUsername != "" {
-				if UserCookieMap[cookieValue.Value].ID == "161992668702834688" {
-					fmt.Println("2kol4u is in pre verify 1")
-				}
 				if UserCookieMap[cookieValue.Value].RedditName != "" {
 					UserCookieMap[cookieValue.Value].RedditName = misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID].RedditUsername
 				}
@@ -399,20 +396,10 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				tempUser.DiscordVerifiedStatus = true
 
 				UserCookieMap[cookieValue.Value] = &tempUser
-				if uid == "161992668702834688" {
-					fmt.Println("2kol4u is in discord verification start with proper uid")
-					fmt.Println(UserCookieMap[cookieValue.Value].AccOldEnough)
-					fmt.Println(UserCookieMap[cookieValue.Value].RedditVerifiedStatus)
-					fmt.Println(UserCookieMap[cookieValue.Value].RedditName)
-					fmt.Println(UserCookieMap[cookieValue.Value].ID)
-				}
 
 				// Verifies user if reddit verification was completed succesfully
 				if UserCookieMap[cookieValue.Value].AccOldEnough && UserCookieMap[cookieValue.Value].ID != "" &&
 					UserCookieMap[cookieValue.Value].RedditVerifiedStatus && UserCookieMap[cookieValue.Value].RedditName != "" {
-					if UserCookieMap[cookieValue.Value].ID == "161992668702834688" {
-						fmt.Println("2kol4u is in pre verify 2")
-					}
 					if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
 						// Verifies user
 						err := Verify(cookieValue, r)
@@ -459,10 +446,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				prevWeek := time.Now().AddDate(0, 0, -7)
 				accOldEnough := epochT.Before(prevWeek)
 
-				if Name == "2kol4u" {
-					fmt.Println("2kol4u is in reddit verification start")
-				}
-
 				// Print error if acc is not old enough
 				if !accOldEnough {
 					// Sets error message
@@ -482,9 +465,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					if UserCookieMap[cookieValue.Value].ID != "" &&
 						UserCookieMap[cookieValue.Value].DiscordVerifiedStatus &&
 						UserCookieMap[cookieValue.Value].RedditName != "" {
-						if UserCookieMap[cookieValue.Value].ID == "161992668702834688" {
-							fmt.Println("2kol4u is in pre verify 3")
-						}
 						if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
 							// Verifies user
 							err := Verify(cookieValue, r)
@@ -736,10 +716,6 @@ func Verify(cookieValue *http.Cookie, r *http.Request) error {
 		return fmt.Errorf("Critical Error: Either user does not exist in MemberInfo or the user ID does not exist. Please notify a mod.")
 	}
 
-	if userID == "161992668702834688" {
-		fmt.Println("It's in verify func for 2kol4u")
-	}
-
 	// Stores time of verification
 	t := time.Now()
 	z, _ := t.Zone()
@@ -786,18 +762,11 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 		misc.MapMutex.Lock()
 		if len(verifyMap) != 0 {
 			for userID := range verifyMap {
-				if userID == "161992668702834688" {
-					fmt.Println("2kol4u is in verifymap loop")
-				}
 
 				// Checks if the user is in the server before continuing. Very important to avoid bugs
 				userInGuild = isUserInGuild(s, userID)
 				if !userInGuild {
 					continue
-				}
-
-				if userID == "161992668702834688" {
-					fmt.Println("2kol4u is in post isUserInGuild verifymap check")
 				}
 
 				// Puts all server roles in roles
@@ -818,10 +787,6 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 					}
 				}
 
-				if userID == "161992668702834688" {
-					fmt.Println("2kol4u is in verifymap pre verified role")
-				}
-
 				// Assigns Verified role to user
 				err = s.GuildMemberRoleAdd(config.ServerID, userID, roleID)
 				if err != nil {
@@ -830,10 +795,6 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 						continue
 					}
 					continue
-				}
-
-				if userID == "161992668702834688" {
-					fmt.Println("2kol4u is in verifymap post verified role")
 				}
 
 				// Alt check
