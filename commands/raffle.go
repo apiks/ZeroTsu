@@ -393,9 +393,12 @@ func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Parses mention if user is in the server or not
 	winnerMention = fmt.Sprintf("<@%v>", winnerID)
-	winnerMention = misc.MentionParser(s, winnerMention)
+	_, err := s.GuildMember(config.ServerID, winnerID)
+	if err != nil {
+		winnerMention = misc.MentionParser(s, winnerMention)
+	}
 
-	_, err := s.ChannelMessageSend(m.ChannelID, "**" + commandStrings[1] + "** winner is " + winnerMention + "! Congratulations!")
+	_, err = s.ChannelMessageSend(m.ChannelID, "**" + commandStrings[1] + "** winner is " + winnerMention + "! Congratulations!")
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
