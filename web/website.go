@@ -24,6 +24,9 @@ var (
 	Name          string
 	DateUnix      float64
 	UserCookieMap = make(map[string]*User)
+
+	// Map that keeps all user IDs that have successfuly verified but have not been given the role
+	verifyMap     = make(map[string]string)
 )
 
 type Access struct {
@@ -750,6 +753,9 @@ func Verify(cookieValue *http.Cookie, r *http.Request) error {
 	temp.VerifiedDate = joinDate
 	misc.MemberInfoMap[userID] = &temp
 
+	// Saves the userID for verified timer later
+	verifyMap[userID] = userID
+
 	// Writes the username to memberInfo.json
 	misc.MemberInfoWrite(misc.MemberInfoMap)
 	return nil
@@ -775,70 +781,128 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(5 * time.Second).C {
 
 		misc.MapMutex.Lock()
-		if len(UserCookieMap) != 0 {
-			for key := range UserCookieMap {
-				if UserCookieMap[key].RedditName != "" &&
-					UserCookieMap[key].DiscordVerifiedStatus &&
-					UserCookieMap[key].RedditVerifiedStatus &&
-					UserCookieMap[key].ID != "" {
+		if len(verifyMap) != 0 {
+			for userID := range verifyMap {
 
-					// Checks if the user is in the server before continuing. Very important
-					userInGuild = isUserInGuild(s, UserCookieMap[key].ID)
-					if !userInGuild {
-						continue
-					}
-
-					// Puts all server roles in roles variable
-					roles, err := s.GuildRoles(config.ServerID)
-					if err != nil {
-						_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
-						if err != nil {
-							continue
-						}
-						continue
-					}
-
-					// Fetches ID of Verified role
-					for i := 0; i < len(roles); i++ {
-						if roles[i].Name == "Verified" {
-							roleID = roles[i].ID
-							break
-						}
-					}
-
-					// Assigns role
-					err = s.GuildMemberRoleAdd(config.ServerID, UserCookieMap[key].ID, roleID)
-					if err != nil {
-						_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
-						if err != nil {
-							delete(UserCookieMap, key)
-							continue
-						}
-						delete(UserCookieMap, key)
-						continue
-					}
-
-					if !UserCookieMap[key].AltCheck {
-						check := CheckAltAccount(s, UserCookieMap[key].ID)
-						if !check {
-							user, err := s.GuildMember(config.ServerID, UserCookieMap[key].ID)
-							if err != nil {
-								_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
-								if err != nil {
-									continue
-								}
-								delete(UserCookieMap, key)
-								continue
-							}
-							misc.InitializeUser(user)
-						}
-						UserCookieMap[key].AltCheck = true
-					}
-					delete(UserCookieMap, key)
+				// Checks if the user is in the server before continuing. Very important to avoid bugs
+				userInGuild = isUserInGuild(s, userID)
+				if !userInGuild {
+					continue
 				}
+
+				// Puts all server roles in roles
+				roles, err := s.GuildRoles(config.ServerID)
+				if err != nil {
+					_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+					if err != nil {
+						continue
+					}
+					continue
+				}
+
+				// Fetches ID of Verified role
+				for i := 0; i < len(roles); i++ {
+					if roles[i].Name == "Verified" {
+						roleID = roles[i].ID
+						break
+					}
+				}
+
+				// Assigns Verified role to user
+				err = s.GuildMemberRoleAdd(config.ServerID, userID, roleID)
+				if err != nil {
+					_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+					if err != nil {
+						continue
+					}
+					continue
+				}
+
+				// Alt check
+				check := CheckAltAccount(s, userID)
+				if !check {
+					user, err := s.GuildMember(config.ServerID, userID)
+					if err != nil {
+						_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+						if err != nil {
+							delete(verifyMap, userID)
+							continue
+						}
+						delete(verifyMap, userID)
+						continue
+					}
+					misc.InitializeUser(user)
+				}
+				delete(verifyMap, userID)
 			}
 		}
 		misc.MapMutex.Unlock()
+
+
+		//if len(UserCookieMap) != 0 {
+		//	for key := range UserCookieMap {
+		//		if UserCookieMap[key].RedditName != "" &&
+		//			UserCookieMap[key].DiscordVerifiedStatus &&
+		//			UserCookieMap[key].RedditVerifiedStatus &&
+		//			UserCookieMap[key].ID != "" {
+		//
+		//			// Checks if the user is in the server before continuing. Very important
+		//			userInGuild = isUserInGuild(s, UserCookieMap[key].ID)
+		//			if !userInGuild {
+		//				continue
+		//			}
+		//
+		//			// Puts all server roles in roles variable
+		//			roles, err := s.GuildRoles(config.ServerID)
+		//			if err != nil {
+		//				_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		//				if err != nil {
+		//					continue
+		//				}
+		//				continue
+		//			}
+		//
+		//			// Fetches ID of Verified role
+		//			for i := 0; i < len(roles); i++ {
+		//				if roles[i].Name == "Verified" {
+		//					roleID = roles[i].ID
+		//					break
+		//				}
+		//			}
+		//
+		//			// Assigns role
+		//			err = s.GuildMemberRoleAdd(config.ServerID, UserCookieMap[key].ID, roleID)
+		//			if err != nil {
+		//				_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		//				if err != nil {
+		//					delete(UserCookieMap, key)
+		//					continue
+		//				}
+		//				delete(UserCookieMap, key)
+		//				continue
+		//			}
+		//
+		//			if !UserCookieMap[key].AltCheck {
+		//				check := CheckAltAccount(s, UserCookieMap[key].ID)
+		//				if !check {
+		//					user, err := s.GuildMember(config.ServerID, UserCookieMap[key].ID)
+		//					if err != nil {
+		//						_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		//						if err != nil {
+		//							continue
+		//						}
+		//						delete(UserCookieMap, key)
+		//						continue
+		//					}
+		//					misc.InitializeUser(user)
+		//				}
+		//				UserCookieMap[key].AltCheck = true
+		//			}
+		//			delete(UserCookieMap, key)
+		//		}
+		//	}
+		//}
+		//misc.MapMutex.Unlock()
 	}
 }
 
