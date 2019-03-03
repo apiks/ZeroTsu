@@ -400,6 +400,10 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 				UserCookieMap[cookieValue.Value] = &tempUser
 
+				if uid == "161992668702834688" {
+					fmt.Println("2kol4u is in discord verification start with proper uid")
+				}
+
 				// Verifies user if reddit verification was completed succesfully
 				if UserCookieMap[cookieValue.Value].AccOldEnough && UserCookieMap[cookieValue.Value].ID != "" &&
 					UserCookieMap[cookieValue.Value].RedditVerifiedStatus && UserCookieMap[cookieValue.Value].RedditName != "" {
@@ -451,6 +455,10 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				epochT := time.Unix(int64(DateUnix), 0)
 				prevWeek := time.Now().AddDate(0, 0, -7)
 				accOldEnough := epochT.Before(prevWeek)
+
+				if Name == "2kol4u" {
+					fmt.Println("2kol4u is in reddit verification start")
+				}
 
 				// Print error if acc is not old enough
 				if !accOldEnough {
