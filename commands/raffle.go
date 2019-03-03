@@ -338,6 +338,7 @@ func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 		winnerIndex 	int
 		winnerID		string
 		winnerMention 	string
+		flag			bool
 	)
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
@@ -356,6 +357,33 @@ func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.MapMutex.Lock()
 	for raffleIndex, raffle := range misc.RafflesSlice {
 		if raffle.Name == commandStrings[1] {
+
+			// Quick temp bugfix
+			users, err := s.MessageReactions("550409250489499658", raffle.ReactMessageID, "🎰", 100)
+			if err != nil {
+				fmt.Println(err)
+				misc.MapMutex.Unlock()
+				return
+			}
+			for i, raffleUserID := range raffle.ParticipantIDs {
+				for _, reactUser := range users {
+					if raffleUserID == reactUser.ID {
+						flag = true
+					}
+				}
+				if !flag {
+					misc.RafflesSlice[raffleIndex].ParticipantIDs = append(misc.RafflesSlice[raffleIndex].ParticipantIDs[:i], misc.RafflesSlice[raffleIndex].ParticipantIDs[i+1:]...)
+				}
+				flag = false
+			}
+			err = misc.RafflesWrite(misc.RafflesSlice)
+			if err != nil {
+				fmt.Println(err)
+				misc.MapMutex.Unlock()
+				return
+			}
+
+
 			participantLen := len(misc.RafflesSlice[raffleIndex].ParticipantIDs)
 			if participantLen == 0 {
 				winnerID = "none"
