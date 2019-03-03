@@ -51,7 +51,6 @@ type User struct {
 	Discriminator         string    `json:"discriminator"`
 	AccOldEnough          bool      `json:"accoldenough"`
 	Code                  string    `json:"code"`
-	AltCheck              bool      `json:"altcheck"`
 }
 
 type UserBan struct {
@@ -157,15 +156,11 @@ func StatsPageHandler(w http.ResponseWriter, r *http.Request) {
 			// Loads the html & css stats files
 			t, err := template.ParseFiles("./web/assets/channelstats.html")
 			if err != nil {
-				misc.MapMutex.Unlock()
 				fmt.Print(err.Error())
-				return
 			}
 			err = t.Execute(w, pick)
 			if err != nil {
-				misc.MapMutex.Unlock()
 				fmt.Println(err.Error())
-				return
 			}
 			misc.MapMutex.Unlock()
 			return
@@ -180,15 +175,11 @@ func StatsPageHandler(w http.ResponseWriter, r *http.Request) {
 		// Loads the html & css stats files
 		t, err := template.ParseFiles("./web/assets/channelstats.html")
 		if err != nil {
-			misc.MapMutex.Unlock()
 			fmt.Print(err.Error())
-			return
 		}
 		err = t.Execute(w, pick)
 		if err != nil {
-			misc.MapMutex.Unlock()
 			fmt.Println(err.Error())
-			return
 		}
 		misc.MapMutex.Unlock()
 		return
@@ -220,15 +211,11 @@ func StatsPageHandler(w http.ResponseWriter, r *http.Request) {
 	// Loads the html & css stats files
 	t, err := template.ParseFiles("./web/assets/channelstats.html")
 	if err != nil {
-		misc.MapMutex.Unlock()
 		fmt.Print(err.Error())
-		return
 	}
 	err = t.Execute(w, pick)
 	if err != nil {
-		misc.MapMutex.Unlock()
 		fmt.Println(err.Error())
-		return
 	}
 	misc.MapMutex.Unlock()
 }
@@ -292,15 +279,11 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		t, err := template.ParseFiles("web/assets/verification.html")
 		if err != nil {
 			fmt.Println(err.Error())
-			misc.MapMutex.Unlock()
-			return
 		}
 		misc.MapMutex.Lock()
 		err = t.Execute(w, UserCookieMap[cookieValue.Value])
 		if err != nil {
 			fmt.Println(err.Error())
-			misc.MapMutex.Unlock()
-			return
 		}
 		// Resets assigned Error Message
 		if cookieValue != nil {
@@ -325,7 +308,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				tempUser.AccOldEnough = false
 				tempUser.UsernameDiscrim = ""
 				tempUser.Username = ""
-				tempUser.AltCheck = false
 			}
 
 			// Set new decrypted user ID to verify
@@ -377,14 +359,10 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					t, err := template.ParseFiles("web/assets/verification.html")
 					if err != nil {
 						fmt.Println(err.Error())
-						misc.MapMutex.Unlock()
-						return
 					}
 					err = t.Execute(w, UserCookieMap[cookieValue.Value])
 					if err != nil {
 						fmt.Println(err.Error())
-						misc.MapMutex.Unlock()
-						return
 					}
 					// Resets assigned Error Message
 					if cookieValue != nil {
@@ -439,14 +417,10 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				t, err := template.ParseFiles("web/assets/verification.html")
 				if err != nil {
 					fmt.Println(err.Error())
-					misc.MapMutex.Unlock()
-					return
 				}
 				err = t.Execute(w, UserCookieMap[cookieValue.Value])
 				if err != nil {
 					fmt.Println(err.Error())
-					misc.MapMutex.Unlock()
-					return
 				}
 				// Resets assigned Error Message
 				if cookieValue != nil {
@@ -495,7 +469,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 							// Verifies user
 							err := Verify(cookieValue, r)
 							if err != nil {
-
 								// Sets error message
 								tempUser.Error = err.Error()
 								UserCookieMap[cookieValue.Value] = &tempUser
@@ -513,19 +486,20 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+
 	misc.MapMutex.Lock()
 	if _, ok := UserCookieMap[cookieValue.Value]; !ok {
-		tempUser.Cookie = cookieValue.Value
-		tempUser.RedditVerifiedStatus = true
-		tempUser.DiscordVerifiedStatus = true
-		UserCookieMap[cookieValue.Value] = &tempUser
+		if tempUser.Error == "" {
+			tempUser.Cookie = cookieValue.Value
+			tempUser.RedditVerifiedStatus = true
+			tempUser.DiscordVerifiedStatus = true
+			UserCookieMap[cookieValue.Value] = &tempUser
+		}
 	}
 
 	err = t.Execute(w, UserCookieMap[cookieValue.Value])
 	if err != nil {
 		fmt.Println(err.Error())
-		misc.MapMutex.Unlock()
-		return
 	}
 	// Resets assigned Error Message
 	if cookieValue != nil {
@@ -728,18 +702,18 @@ func Verify(cookieValue *http.Cookie, r *http.Request) error {
 
 	// Confirms that the map is not empty
 	if len(misc.MemberInfoMap) == 0 {
-		return fmt.Errorf("Error: MemberInfo is empty. Please notify a mod.")
+		return fmt.Errorf("Critical Error: MemberInfo is empty. Please notify a mod.")
 	}
 	// Checks if cookie has expired while doing this
 	if cookieValue == nil {
-		return fmt.Errorf("Error: Cookie has expired. Please refresh and try again.")
+		return fmt.Errorf("Minor Error: Cookie has expired. Please refresh and try again.")
 	}
 	if _, ok := UserCookieMap[cookieValue.Value]; !ok {
-		return fmt.Errorf("Error: CookieValue is not in UserCookieMap. Please notify a mod.")
+		return fmt.Errorf("Rare Error: CookieValue is not in UserCookieMap. Please notify a mod.")
 	}
 	userID = UserCookieMap[cookieValue.Value].ID
 	if _, ok := misc.MemberInfoMap[userID]; !ok {
-		return fmt.Errorf("Error: Either user does not exist in MemberInfo or the user ID does not exist. Please notify a mod.")
+		return fmt.Errorf("Critical Error: Either user does not exist in MemberInfo or the user ID does not exist. Please notify a mod.")
 	}
 
 	// Stores time of verification
@@ -756,12 +730,17 @@ func Verify(cookieValue *http.Cookie, r *http.Request) error {
 	// Saves the userID for verified timer later
 	verifyMap[userID] = userID
 
+	// Confirms that the above happened (possible bug safety net)
+	if _, ok := verifyMap[userID]; !ok {
+		return fmt.Errorf("Critical Error: User is not in verifyMap. Please notify a mod.")
+	}
+
 	// Writes the username to memberInfo.json
 	misc.MemberInfoWrite(misc.MemberInfoMap)
 	return nil
 }
 
-// Checks if a user in the cookie map has the role and if they're verified it gives it to them, also deletes expired map fields
+// Checks if a user in the verify map has the role and if they're verified it gives it to them
 func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 
 	var (
