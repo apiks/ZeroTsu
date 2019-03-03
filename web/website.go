@@ -385,6 +385,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Discord verification
 		if state == "overlordconfirmsdiscord" {
+			fmt.Println("in discord verification")
 			uname, udiscrim, uid, err := getDiscordUsernameDiscrim(UserCookieMap[cookieValue.Value].Code)
 			if err != nil {
 				// Sets error message
@@ -400,6 +401,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 				UserCookieMap[cookieValue.Value] = &tempUser
 
+				fmt.Println(uid)
 				if uid == "161992668702834688" {
 					fmt.Println("2kol4u is in discord verification start with proper uid")
 				}
@@ -695,7 +697,7 @@ func getDiscordUsernameDiscrim(code string) (string, string, string, error) {
 	// Unmarshals all the required json fields in the above user variable
 	jsonErr := json.Unmarshal(bodyAPI, &user)
 	if jsonErr != nil {
-		return "", "", "", err
+		return "", "", "", jsonErr
 	}
 
 	return user.Username, user.Discriminator, user.ID, nil
