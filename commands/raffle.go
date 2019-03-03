@@ -147,12 +147,12 @@ func RaffleReactLeave(s *discordgo.Session, r *discordgo.MessageReactionRemove) 
 		return
 	}
 
-	// Checks if that message has a raffle react set for it
+	// Checks if that message has a raffle react set for it and removes it
 	misc.MapMutex.Lock()
 	for index, raffle := range misc.RafflesSlice {
 		if raffle.ReactMessageID == r.MessageID {
 			for i := range misc.RafflesSlice[index].ParticipantIDs {
-				misc.RafflesSlice[i].ParticipantIDs = misc.RafflesSlice[i].ParticipantIDs[:i+copy(misc.RafflesSlice[i].ParticipantIDs[i:], misc.RafflesSlice[i].ParticipantIDs[i+1:])]
+				misc.RafflesSlice[index].ParticipantIDs = append(misc.RafflesSlice[index].ParticipantIDs[:i], misc.RafflesSlice[index].ParticipantIDs[i+1:]...)
 			}
 			err := misc.RafflesWrite(misc.RafflesSlice)
 			if err != nil {
