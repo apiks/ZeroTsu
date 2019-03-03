@@ -338,7 +338,6 @@ func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 		winnerIndex 	int
 		winnerID		string
 		winnerMention 	string
-		flag			bool
 	)
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
