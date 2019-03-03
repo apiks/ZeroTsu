@@ -358,30 +358,30 @@ func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 	for raffleIndex, raffle := range misc.RafflesSlice {
 		if raffle.Name == commandStrings[1] {
 
-			// Quick temp bugfix
-			users, err := s.MessageReactions("550409250489499658", raffle.ReactMessageID, "🎰", 100)
-			if err != nil {
-				fmt.Println(err)
-				misc.MapMutex.Unlock()
-				return
-			}
-			for i, raffleUserID := range raffle.ParticipantIDs {
-				for _, reactUser := range users {
-					if raffleUserID == reactUser.ID {
-						flag = true
-					}
-				}
-				if !flag {
-					misc.RafflesSlice[raffleIndex].ParticipantIDs = append(misc.RafflesSlice[raffleIndex].ParticipantIDs[:i], misc.RafflesSlice[raffleIndex].ParticipantIDs[i+1:]...)
-				}
-				flag = false
-			}
-			err = misc.RafflesWrite(misc.RafflesSlice)
-			if err != nil {
-				fmt.Println(err)
-				misc.MapMutex.Unlock()
-				return
-			}
+			//// Quick temp bugfix for sticker raffle. Will be removed
+			//users, err := s.MessageReactions("550409250489499658", raffle.ReactMessageID, "🎰", 100)
+			//if err != nil {
+			//	fmt.Println(err)
+			//	misc.MapMutex.Unlock()
+			//	return
+			//}
+			//for i, raffleUserID := range raffle.ParticipantIDs {
+			//	for _, reactUser := range users {
+			//		if raffleUserID == reactUser.ID {
+			//			flag = true
+			//		}
+			//	}
+			//	if !flag {
+			//		misc.RafflesSlice[raffleIndex].ParticipantIDs = append(misc.RafflesSlice[raffleIndex].ParticipantIDs[:i], misc.RafflesSlice[raffleIndex].ParticipantIDs[i+1:]...)
+			//	}
+			//	flag = false
+			//}
+			//err = misc.RafflesWrite(misc.RafflesSlice)
+			//if err != nil {
+			//	fmt.Println(err)
+			//	misc.MapMutex.Unlock()
+			//	return
+			//}
 
 
 			participantLen := len(misc.RafflesSlice[raffleIndex].ParticipantIDs)
