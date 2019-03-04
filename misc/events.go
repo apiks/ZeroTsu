@@ -477,19 +477,18 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 // If there's a manual ban handle it correctly
 func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
-	s.RWMutex.RLock()
+	MapMutex.Lock()
 	for i := 0; i < len(BannedUsersSlice); i++ {
 		if BannedUsersSlice[i].ID == e.User.ID {
-			s.RWMutex.RUnlock()
+			MapMutex.Unlock()
 			return
 		}
 	}
+	MapMutex.Unlock()
 	_, err := s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("%v#%v was manually permabanned. ID: %v", e.User.Username, e.User.Discriminator, e.User.ID))
 	if err != nil {
-		s.RWMutex.RUnlock()
 		return
 	}
-	s.RWMutex.RUnlock()
 }
 
 // Sends remindMe message if it is time, either as a DM or ping

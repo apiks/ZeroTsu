@@ -950,7 +950,8 @@ func GetBannedUsers() {
 			continue
 		}
 		if user.UnbanDate == "_Never_" ||
-			user.UnbanDate == "" {
+			user.UnbanDate == "" ||
+			user.UnbanDate == "No ban" {
 			continue
 		}
 		date, err := time.Parse(time.RFC3339, user.UnbanDate)
@@ -959,7 +960,7 @@ func GetBannedUsers() {
 			if err != nil {
 				date, err = time.Parse("2006-01-02 15:04:05", user.UnbanDate)
 				if err != nil {
-					fmt.Println("in getBannedUsers err")
+					fmt.Println("in getBannedUsers date err")
 					fmt.Println(err)
 					continue
 				}
@@ -976,19 +977,16 @@ func GetBannedUsers() {
 
 // Writes to bannedUsers.json from bannedUsersSlice
 func BannedUsersWrite(bannedUsers []BannedUsers) {
-
 	// Turns that slice into bytes to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(bannedUsers, "", "    ")
 	if err != nil {
 		return
 	}
-
 	// Writes to file
 	err = ioutil.WriteFile("database/bannedUsers.json", marshaledStruct, 0644)
 	if err != nil {
 		return
 	}
-
 	return
 }
 
