@@ -28,7 +28,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		}
 	}
 
-	for range time.NewTicker(30 * time.Second).C {
+	for range time.NewTicker(5 * time.Second).C {
 
 		// Checks whether it has to post rss thread
 		RSSParser(s)
@@ -41,6 +41,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		if len(BannedUsersSlice) != 0 {
 			t := time.Now()
 			for index, user := range BannedUsersSlice {
+				fmt.Println(user)
 				difference := t.Sub(user.UnbanDate)
 				if difference > 0 {
 					banFlag = false
@@ -53,6 +54,10 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 					// Fetches all server bans so it can check if the user is banned there (whether he's been manually unbanned for example)
 					bans, err := s.GuildBans(config.ServerID)
 					if err != nil {
+						_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+						if err != nil {
+							continue
+						}
 						continue
 					}
 					for _, ban := range bans {
@@ -65,15 +70,16 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 						// Unbans user if possible
 						err = s.GuildBanDelete(config.ServerID, user.ID)
 						if err != nil {
-							// Removes the user ban from bannedUsers.json
-							BannedUsersSlice = append(BannedUsersSlice[:index], BannedUsersSlice[index+1:]...)
-							BannedUsersWrite(BannedUsersSlice)
-							break
+							_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+							if err != nil {
+								continue
+							}
+							continue
 						}
 					}
 
-					// Sets unban date to now in memberInfo
-					MemberInfoMap[user.ID].UnbanDate = t.Format("2006-01-02 15:04:05")
+					// Removes unban date entirely
+					MemberInfoMap[user.ID].UnbanDate = ""
 
 					// Removes the user ban from bannedUsers.json
 					BannedUsersSlice = append(BannedUsersSlice[:index], BannedUsersSlice[index+1:]...)

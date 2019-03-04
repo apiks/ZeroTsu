@@ -949,22 +949,28 @@ func GetBannedUsers() {
 			flag = false
 			continue
 		}
-		if len(user.UnbanDate) < 7 {
+		if user.UnbanDate == "_Never_" ||
+			user.UnbanDate == "" {
 			continue
+		}
+		date, err := time.Parse(time.RFC3339, user.UnbanDate)
+		if err != nil {
+			date, err = time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", user.UnbanDate)
+			if err != nil {
+				date, err = time.Parse("2006-01-02 15:04:05", user.UnbanDate)
+				if err != nil {
+					fmt.Println("in getBannedUsers err")
+					fmt.Println(err)
+					continue
+				}
+			}
 		}
 		bannedUserInfo.ID = user.ID
 		bannedUserInfo.User = user.Username
-		date, err := time.Parse(time.RFC3339, user.UnbanDate)
-		if err != nil {
-			date, err = time.Parse("2006-01-02 15:04:05", user.UnbanDate)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-		}
 		bannedUserInfo.UnbanDate = date
 		BannedUsersSlice = append(BannedUsersSlice, bannedUserInfo)
 	}
+	BannedUsersWrite(BannedUsersSlice)
 	MapMutex.Unlock()
 }
 
