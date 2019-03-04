@@ -28,7 +28,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		}
 	}
 
-	for range time.NewTicker(5 * time.Second).C {
+	for range time.NewTicker(30 * time.Second).C {
 
 		// Checks whether it has to post rss thread
 		RSSParser(s)
