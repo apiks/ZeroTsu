@@ -41,7 +41,6 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		if len(BannedUsersSlice) != 0 {
 			t := time.Now()
 			for index, user := range BannedUsersSlice {
-				fmt.Println(user)
 				difference := t.Sub(user.UnbanDate)
 				if difference > 0 {
 					banFlag = false
