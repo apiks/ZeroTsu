@@ -45,9 +45,9 @@ type UserInfo struct {
 
 // Creates a struct type in which we'll hold every banned user
 type BannedUsers struct {
-	ID        string    				`json:"id"`
-	User      string    				`json:"user"`
-	UnbanDate time.Time 				`json:"unbanDate"`
+	ID        string    `json:"id"`
+	User      string    `json:"user"`
+	UnbanDate time.Time `json:"unbanDate"`
 }
 
 // Struct where we'll hold punishment timestamps
@@ -268,6 +268,8 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 // OnMemberUpdate listens for member updates to compare nicks
 func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 
+	var writeFlag bool
+
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -296,24 +298,6 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	}
 	MapMutex.Unlock()
 
-	// Checks usernames and updates if needed
-	if user.Username != userMember.User.Username && userMember.User.Username != "" {
-		flag := true
-		lower := strings.ToLower(userMember.User.Username)
-
-		for _, names := range user.PastUsernames {
-			if strings.ToLower(names) == lower {
-				flag = false
-				break
-			}
-		}
-
-		if flag {
-			user.PastUsernames = append(user.PastUsernames, userMember.User.Username)
-			user.Username = userMember.User.Username
-		}
-	}
-
 	// Checks nicknames and updates if needed
 	if user.Nickname != userMember.Nick && userMember.Nick != "" {
 		flag := true
@@ -330,11 +314,13 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 			user.PastNicknames = append(user.PastNicknames, userMember.Nick)
 			user.Nickname = userMember.Nick
 		}
+
+		writeFlag = true
 	}
 
-	// Checks if the discrim in database is the same as the discrim used by the user. If not it changes it
-	if user.Discrim != userMember.User.Discriminator {
-		user.Discrim = userMember.User.Discriminator
+	// Checks if username or discrim were changed, else do NOT write to disk
+	if !writeFlag {
+		return
 	}
 
 	// Saves the updates to memberInfoMap and writes to disk
@@ -346,6 +332,8 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 
 // OnUserUpdate listens for user updates to compare usernames and discrim
 func OnUserUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
+
+	var writeFlag bool
 
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
@@ -391,11 +379,18 @@ func OnUserUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 			user.PastUsernames = append(user.PastUsernames, userMember.Username)
 			user.Username = userMember.Username
 		}
+		writeFlag = true
 	}
 
 	// Checks if the discrim in database is the same as the discrim used by the user. If not it changes it
 	if user.Discrim != userMember.Discriminator {
 		user.Discrim = userMember.Discriminator
+		writeFlag = true
+	}
+
+	// Checks if username or discrim were changed, else do NOT write to disk
+	if !writeFlag {
+		return
 	}
 
 	// Saves the updates to memberInfoMap and writes to disk
