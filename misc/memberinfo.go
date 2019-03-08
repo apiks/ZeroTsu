@@ -23,7 +23,6 @@ var (
 	BannedUsersSlice []BannedUsers
 	MapMutex         sync.Mutex
 	Key              = []byte("VfBhgLzmD4QH3W94pjgdbH8Tyv2HPRzq")
-	presenceCounter		int
 )
 
 // UserInfo is the in memory storage of each user's information
@@ -46,9 +45,9 @@ type UserInfo struct {
 
 // Creates a struct type in which we'll hold every banned user
 type BannedUsers struct {
-	ID        string    `json:"id"`
-	User      string    `json:"user"`
-	UnbanDate time.Time `json:"unbanDate"`
+	ID        string    				`json:"id"`
+	User      string    				`json:"user"`
+	UnbanDate time.Time 				`json:"unbanDate"`
 }
 
 // Struct where we'll hold punishment timestamps
@@ -361,9 +360,6 @@ func OnUserUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 	s.RWMutex.RLock()
 	userMember := e.User
 	s.RWMutex.RUnlock()
-
-	presenceCounter++
-	fmt.Println(fmt.Sprintf("in presence update %v", presenceCounter))
 
 	MapMutex.Lock()
 	if len(MemberInfoMap) == 0 {
