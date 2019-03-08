@@ -41,7 +41,6 @@ type UserInfo struct {
 	VerifiedDate   string   			`json:"verifiedDate,omitempty"`
 	UnbanDate      string   			`json:"unbanDate,omitempty"`
 	Timestamps 	   []Punishment			`json:"timestamps,omitempty"`
-	Waifu		   Waifu				`json:"waifu,omitempty"`
 }
 
 // Creates a struct type in which we'll hold every banned user
