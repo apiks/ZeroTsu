@@ -330,8 +330,8 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	MapMutex.Unlock()
 }
 
-// OnUserUpdate listens for user updates to compare usernames and discrim
-func OnUserUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
+// OnPresenceUpdate listens for user updates to compare usernames and discrim
+func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 
 	var writeFlag bool
 
