@@ -41,6 +41,7 @@ type UserInfo struct {
 	VerifiedDate   string   			`json:"verifiedDate,omitempty"`
 	UnbanDate      string   			`json:"unbanDate,omitempty"`
 	Timestamps 	   []Punishment			`json:"timestamps,omitempty"`
+	Waifu		   Waifu				`json:"waifu,omitempty"`
 }
 
 // Creates a struct type in which we'll hold every banned user
@@ -265,7 +266,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	MapMutex.Unlock()
 }
 
-// OnMemberUpdate listens for member updates to compare nicks/usernames and discrim
+// OnMemberUpdate listens for member updates to compare nicks
 func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -296,9 +297,8 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	}
 	MapMutex.Unlock()
 
-
 	// Checks usernames and updates if needed
-	if user.Username != userMember.User.Username {
+	if user.Username != userMember.User.Username && userMember.User.Username != "" {
 		flag := true
 		lower := strings.ToLower(userMember.User.Username)
 
@@ -341,6 +341,67 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	// Saves the updates to memberInfoMap and writes to disk
 	MapMutex.Lock()
 	MemberInfoMap[userMember.User.ID] = user
+	MemberInfoWrite(MemberInfoMap)
+	MapMutex.Unlock()
+}
+
+// OnUserUpdate listens for user updates to compare usernames and discrim
+func OnUserUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
+
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string) + "\n" + ErrorLocation(rec.(error)))
+			if err != nil {
+				fmt.Println(rec)
+			}
+		}
+	}()
+
+	s.RWMutex.RLock()
+	userMember := e.User
+	s.RWMutex.RUnlock()
+
+	MapMutex.Lock()
+	if len(MemberInfoMap) == 0 {
+		MapMutex.Unlock()
+		return
+	}
+
+	// Fetches user from memberInfo if possible
+	user, ok := MemberInfoMap[userMember.ID]
+	if !ok {
+		MapMutex.Unlock()
+		return
+	}
+	MapMutex.Unlock()
+
+	// Checks usernames and updates if needed
+	if user.Username != userMember.Username && userMember.Username != "" {
+		flag := true
+		lower := strings.ToLower(userMember.Username)
+
+		for _, names := range user.PastUsernames {
+			if strings.ToLower(names) == lower {
+				flag = false
+				break
+			}
+		}
+
+		if flag {
+			user.PastUsernames = append(user.PastUsernames, userMember.Username)
+			user.Username = userMember.Username
+		}
+	}
+
+	// Checks if the discrim in database is the same as the discrim used by the user. If not it changes it
+	if user.Discrim != userMember.Discriminator {
+		user.Discrim = userMember.Discriminator
+	}
+
+	// Saves the updates to memberInfoMap and writes to disk
+	MapMutex.Lock()
+	MemberInfoMap[userMember.ID] = user
 	MemberInfoWrite(MemberInfoMap)
 	MapMutex.Unlock()
 }

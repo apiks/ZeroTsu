@@ -130,6 +130,7 @@ func Start() {
 	// MemberInfo
 	goBot.AddHandler(misc.OnMemberJoinGuild)
 	goBot.AddHandler(misc.OnMemberUpdate)
+	goBot.AddHandler(misc.OnUserUpdate)
 
 	// Verified Role and Cookie Map Expiry Deletion Handler
 	goBot.AddHandler(web.VerifiedRoleAdd)
