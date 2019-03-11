@@ -240,8 +240,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		id       			string
 		tempUser 			User
 		verified 			bool
-		discordVerifyFlag 	bool
-		redditVerifyFlag 	bool
 	)
 
 	defer func() {
