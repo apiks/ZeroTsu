@@ -234,13 +234,14 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var (
-		errorVar 	string
-		state    	string
-		code     	string
-		id       	string
-		tempUser 	User
-		verified 	bool
-		verifyFlag 	bool
+		errorVar 			string
+		state    			string
+		code     			string
+		id       			string
+		tempUser 			User
+		verified 			bool
+		discordVerifyFlag 	bool
+		redditVerifyFlag 	bool
 	)
 
 	defer func() {
@@ -394,6 +395,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				tempUser.Username = uname
 				tempUser.Discriminator = udiscrim
 				tempUser.UsernameDiscrim = uname + "#" + udiscrim
+				tempUser.DiscordVerifiedStatus = true
 				UserCookieMap[cookieValue.Value] = &tempUser
 
 				// Verifies user if reddit verification was completed succesfully
@@ -406,18 +408,14 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 							// Sets error message
 							tempUser.Error = err.Error()
 							UserCookieMap[cookieValue.Value] = &tempUser
-						} else {
-							verifyFlag = true
 						}
+					} else {
+						tempUser.Error = "Error: User not found in memberInfo with the UserCookieMap UserID. Please notify a mod."
+						UserCookieMap[cookieValue.Value] = &tempUser
 					}
 				}
-
-				// Verifies only if no error above
-				if verifyFlag {
-					tempUser.DiscordVerifiedStatus = true
-					UserCookieMap[cookieValue.Value] = &tempUser
-				}
 			}
+
 			// Prints error if it exists
 			if tempUser.Error != "" {
 				// Loads the html & css verification files
@@ -464,6 +462,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					// Saves the reddit username and acc age bool
 					tempUser.RedditName = Name
 					tempUser.AccOldEnough = true
+					tempUser.RedditVerifiedStatus = true
 					UserCookieMap[cookieValue.Value] = &tempUser
 
 					// Verifies user if Discord was verified already
@@ -477,16 +476,11 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 								// Sets error message
 								tempUser.Error = err.Error()
 								UserCookieMap[cookieValue.Value] = &tempUser
-							} else {
-								verifyFlag = true
 							}
+						} else {
+							tempUser.Error = "Error: User not found in memberInfo with the UserCookieMap UserID. Please notify a mod."
+							UserCookieMap[cookieValue.Value] = &tempUser
 						}
-					}
-
-					// Verifies only if no error above
-					if verifyFlag {
-						tempUser.RedditVerifiedStatus = true
-						UserCookieMap[cookieValue.Value] = &tempUser
 					}
 				}
 			}
