@@ -234,12 +234,13 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var (
-		errorVar string
-		state    string
-		code     string
-		id       string
-		tempUser User
-		verified bool
+		errorVar 	string
+		state    	string
+		code     	string
+		id       	string
+		tempUser 	User
+		verified 	bool
+		verifyFlag 	bool
 	)
 
 	defer func() {
@@ -393,8 +394,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				tempUser.Username = uname
 				tempUser.Discriminator = udiscrim
 				tempUser.UsernameDiscrim = uname + "#" + udiscrim
-				tempUser.DiscordVerifiedStatus = true
-
 				UserCookieMap[cookieValue.Value] = &tempUser
 
 				// Verifies user if reddit verification was completed succesfully
@@ -407,8 +406,16 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 							// Sets error message
 							tempUser.Error = err.Error()
 							UserCookieMap[cookieValue.Value] = &tempUser
+						} else {
+							verifyFlag = true
 						}
 					}
+				}
+
+				// Verifies only if no error above
+				if verifyFlag {
+					tempUser.DiscordVerifiedStatus = true
+					UserCookieMap[cookieValue.Value] = &tempUser
 				}
 			}
 			// Prints error if it exists
@@ -454,10 +461,8 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 				} else {
 					// Either only saves reddit info or verifies if Discord verification was completed successfully
-
 					// Saves the reddit username and acc age bool
 					tempUser.RedditName = Name
-					tempUser.RedditVerifiedStatus = true
 					tempUser.AccOldEnough = true
 					UserCookieMap[cookieValue.Value] = &tempUser
 
@@ -472,8 +477,16 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 								// Sets error message
 								tempUser.Error = err.Error()
 								UserCookieMap[cookieValue.Value] = &tempUser
+							} else {
+								verifyFlag = true
 							}
 						}
+					}
+
+					// Verifies only if no error above
+					if verifyFlag {
+						tempUser.RedditVerifiedStatus = true
+						UserCookieMap[cookieValue.Value] = &tempUser
 					}
 				}
 			}
