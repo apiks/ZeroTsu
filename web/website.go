@@ -387,7 +387,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				// Sets error message
 				tempUser.Error = err.Error()
 				UserCookieMap[cookieValue.Value] = &tempUser
-			} else {
+			} else if uname != "" && udiscrim != "" && uid != "" {
 				// Sets username#discrim for website use
 				tempUser.ID = uid
 				tempUser.Username = uname
@@ -412,6 +412,9 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 						UserCookieMap[cookieValue.Value] = &tempUser
 					}
 				}
+			} else {
+				tempUser.Error = "Error: Needed discord values are missing. Please verify again or message a mod."
+				UserCookieMap[cookieValue.Value] = &tempUser
 			}
 
 			// Prints error if it exists
@@ -443,7 +446,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				// Sets error message
 				tempUser.Error = err.Error()
 				UserCookieMap[cookieValue.Value] = &tempUser
-			} else {
+			} else if Name != "" && DateUnix != 0 {
 				// Calculate if account is older than a week
 				epochT := time.Unix(int64(DateUnix), 0)
 				prevWeek := time.Now().AddDate(0, 0, -7)
@@ -481,6 +484,9 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 				}
+			} else {
+				tempUser.Error = "Error: Needed reddit values are missing. Please verify again or message a mod."
+				UserCookieMap[cookieValue.Value] = &tempUser
 			}
 		}
 	}
