@@ -272,6 +272,7 @@ func RSSParser(s *discordgo.Session) {
 										if strings.Contains(strings.ToLower(pin.Content), "episode") ||
 											strings.Contains(strings.ToLower(pin.Content), "[spoilers]") ||
 											strings.Contains(strings.ToLower(pin.Content), "[rewatch]") {
+											err = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
 											if err != nil {
 												_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 												continue
