@@ -45,6 +45,8 @@ var (
 	RemindMeMap = make(map[string]*RemindMeSlice)
 
 	RafflesSlice	[]Raffle
+	WaifuSlice		[]Waifu
+	WaifuTradeSlice	[]WaifuTrade
 )
 
 type FilterStruct struct {
@@ -95,6 +97,16 @@ type Raffle struct {
 	Name			string		`json:"Name"`
 	ParticipantIDs	[]string	`json:"ParticipantIDs"`
 	ReactMessageID	string		`json:"ReactMessageID"`
+}
+
+type Waifu struct {
+	Name			string				`json:"Name"`
+}
+
+type WaifuTrade struct {
+	TradeID			string				`json:"TradeID"`
+	InitiatorID		string				`json:"InitiatorID"`
+	AccepteeID		string				`json:"AccepteeID"`
 }
 
 // HasPermissions sees if a user has elevated permissions. By Kagumi
@@ -740,6 +752,66 @@ func RaffleRemove(raffle string) error {
 
 	// Writes to file
 	err = ioutil.WriteFile("database/raffles.json", marshaledStruct, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Reads Waifus from waifus.json
+func WaifusRead() {
+
+	// Reads the waifu objects and puts them in waifuByte as bytes
+	WaifuByte, _ := ioutil.ReadFile("database/waifus.json")
+
+	// Takes the bytes and puts them into the Waifus slice
+	MapMutex.Lock()
+	_ = json.Unmarshal(WaifuByte, &WaifuSlice)
+	MapMutex.Unlock()
+}
+
+// Writes Waifus to waifus.json
+func WaifusWrite(waifu []Waifu) error {
+
+	// Turns that slice into bytes to be ready to written to file
+	marshaledStruct, err := json.MarshalIndent(waifu, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	// Writes to file
+	err = ioutil.WriteFile("database/waifus.json", marshaledStruct, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Reads WaifuTrades from waifutrades.json
+func WaifuTradesRead() {
+
+	// Reads the waifu objects and puts them in waifuTradesByte as bytes
+	waifuTradesByte, _ := ioutil.ReadFile("database/waifutrades.json")
+
+	// Takes the bytes and puts them into the WaifuTrades slice
+	MapMutex.Lock()
+	_ = json.Unmarshal(waifuTradesByte, &WaifuTradeSlice)
+	MapMutex.Unlock()
+}
+
+// Writes WaifuTrades to waifutrades.json
+func WaifuTradesWrite(trade []WaifuTrade) error {
+
+	// Turns that slice into bytes to be ready to written to file
+	marshaledStruct, err := json.MarshalIndent(trade, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	// Writes to file
+	err = ioutil.WriteFile("database/waifutrades.json", marshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
