@@ -214,7 +214,7 @@ func rollWaifu(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 	if misc.MemberInfoMap[m.Author.ID].Waifu.Name != "" {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You already have a waifu. Please love her more!")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: More than one waifu will ruin your laifu.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
