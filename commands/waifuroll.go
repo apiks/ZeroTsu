@@ -664,7 +664,7 @@ func showOwners(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-// Sort functions for waifu owners use by owner number
+// Sort functions for waifu owners use by owner Number
 type byOwnerFrequency []waifuOwners
 
 func (e byOwnerFrequency) Len() int {
