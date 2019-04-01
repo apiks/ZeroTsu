@@ -843,6 +843,7 @@ func helpWaifuEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
+	fmt.Println(&commandsField)
 
 	// Sends embed in channel
 	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
