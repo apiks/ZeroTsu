@@ -237,12 +237,6 @@ func rollWaifu(s *discordgo.Session, m *discordgo.Message) {
 
 	waifuLen = len(misc.WaifuSlice)
 	randomWaifuIndex = rand.Intn(waifuLen)
-	if randomWaifuIndex > waifuLen {
-		randomWaifuIndex -= randomWaifuIndex
-	}
-	for randomWaifuIndex < 0 {
-		randomWaifuIndex += randomWaifuIndex
-	}
 	waifuRoll = misc.WaifuSlice[randomWaifuIndex]
 	misc.MemberInfoMap[m.Author.ID].Waifu = waifuRoll
 	misc.MemberInfoWrite(misc.MemberInfoMap)
