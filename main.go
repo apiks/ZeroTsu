@@ -94,6 +94,12 @@ func Start() {
 	// Reads raffles from raffles.json
 	misc.RafflesRead()
 
+	// Reads waifus from waifus.json
+	misc.WaifusRead()
+
+	// Reads waifu trades from waifutrades.json
+	misc.WaifuTradesRead()
+
 	// Cleans up duplicate usernames and nicknames (Run once per cleanup, keep off unless needed)
 	//misc.DuplicateUsernamesAndNicknamesCleanup()
 
