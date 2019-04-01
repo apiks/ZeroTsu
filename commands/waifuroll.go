@@ -710,6 +710,7 @@ func init() {
 		trigger:  "owners",
 		aliases:  []string{"showowners", "viewowners", "tradestop"},
 		desc:     "Prints all waifus and how many owners they have.",
+		elevated: true,
 		category: "waifus",
 	})
 }
