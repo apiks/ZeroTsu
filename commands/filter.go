@@ -112,6 +112,106 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
+// Handles filter in an onEdit basis
+func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
+
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
+				fmt.Println(rec)
+			}
+		}
+	}()
+
+	// Stops double edit checks from forcing recovery
+	if m.Content == "" {
+		return
+	}
+
+	// Checks if it's within the config server
+	ch, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		ch, err = s.Channel(m.ChannelID)
+		if err != nil {
+			return
+		}
+	}
+	s.RWMutex.RLock()
+	if ch.GuildID != config.ServerID {
+		s.RWMutex.RUnlock()
+		return
+	}
+	// Checks if it's the bot that sent the message
+	if m.Author.ID == s.State.User.ID {
+		s.RWMutex.RUnlock()
+		return
+	}
+	// Pulls info on message author
+	mem, err := s.State.Member(config.ServerID, m.Author.ID)
+	if err != nil {
+		mem, err = s.GuildMember(config.ServerID, m.Author.ID)
+		if err != nil {
+			return
+		}
+	}
+	// Checks if user is mod or bot before checking the message
+	if misc.HasPermissions(mem) {
+		s.RWMutex.RUnlock()
+		return
+	}
+	s.RWMutex.RUnlock()
+
+	var (
+		removals      string
+		badWordsSlice []string
+		badWordExists bool
+	)
+
+	messageLowercase := strings.ToLower(m.Content)
+
+	// Checks if message should be filtered
+	badWordExists, badWordsSlice = isFiltered(s, m.Message)
+
+	// If function returns true handle the filtered message
+	if badWordExists {
+		// Deletes the message that was sent if it has a filtered word.
+		err = s.ChannelMessageDelete(m.ChannelID, m.ID)
+		if err != nil {
+			return
+		}
+
+		// Iterates through all the bad words
+		for i := 0; i < len(badWordsSlice); i++ {
+			// Stores the removals for printing
+			if len(removals) == 0 {
+				removals = badWordsSlice[0]
+			} else {
+				removals = removals + ", " + badWordsSlice[i]
+			}
+		}
+
+		// Sends embed mod message
+		err := FilterEmbed(s, m.Message, removals, m.ChannelID)
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+
+		// Sends message to user's DMs if possible
+		dm, err := s.UserChannelCreate(m.Author.ID)
+		if err != nil {
+			return
+		}
+		_, _ = s.ChannelMessageSend(dm.ID, "Your message `" + messageLowercase + "` was removed for using: _" + removals + "_ \n\n" +
+			"Using such words makes me disappointed in you, darling.\n\nFor a list of banned phrases and words please check <https://pastebin.com/GgkD4pT9>")
+	}
+}
+
 // Filters reactions that contain a filtered phrase
 func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 

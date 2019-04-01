@@ -115,6 +115,9 @@ func Start() {
 	// Phrase Filter
 	goBot.AddHandler(commands.FilterHandler)
 
+	// Message Edit Filter
+	goBot.AddHandler(commands.FilterEditHandler)
+
 	// React Filter
 	goBot.AddHandler(commands.FilterReactsHandler)
 
