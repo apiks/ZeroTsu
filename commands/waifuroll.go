@@ -600,6 +600,51 @@ func cancelTrade(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
+// Prints how many users each waifu has
+func showOwners(s *discordgo.Session, m *discordgo.Message) {
+	var (
+		waifuNum 	int
+		message		string
+		messages 	[]string
+	)
+
+	commandStrings := strings.Split(m.Content, " ")
+
+	if len(commandStrings) != 1 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"owners`")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
+
+	// Iterates through each waifu and member, increasing the waifuNum each time it detects a user with that waifu, and saves it to the messsage
+	misc.MapMutex.Lock()
+	for _, waifu := range misc.WaifuSlice {
+		for _, member := range misc.MemberInfoMap {
+			if member.Waifu.Name == waifu.Name {
+				waifuNum++
+			}
+		}
+		message += "\n" + waifu.Name + " has " + strconv.Itoa(waifuNum) + " owners"
+		waifuNum = 0
+	}
+	misc.MapMutex.Unlock()
+
+	messages = misc.SplitLongMessage(message)
+
+	for _, message := range messages {
+		_, err := s.ChannelMessageSend(m.ChannelID, message)
+		if err != nil {
+			_, _ = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		}
+	}
+}
+
 func init() {
 	add(&command{
 		execute:  addWaifu,
@@ -658,6 +703,13 @@ func init() {
 		trigger:  "canceltrade",
 		aliases:  []string{"tradecancel", "stoptrade", "tradestop"},
 		desc:     "Cancels a proposed waifu trade.",
+		category: "waifus",
+	})
+	add(&command{
+		execute:  showOwners,
+		trigger:  "owners",
+		aliases:  []string{"showowners", "viewowners", "tradestop"},
+		desc:     "Prints all waifus and how many owners they have.",
 		category: "waifus",
 	})
 }
