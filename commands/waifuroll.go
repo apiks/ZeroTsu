@@ -595,63 +595,63 @@ func cancelTrade(s *discordgo.Session, m *discordgo.Message) {
 }
 
 func init() {
-	add(&command{
-		execute:  addWaifu,
-		trigger:  "addwaifu",
-		aliases:  []string{"addwife"},
-		desc:     "Adds a waifu to the waifu list.",
-		elevated: true,
-		category: "waifus",
-	})
-	add(&command{
-		execute:  removeWaifu,
-		trigger:  "removewaifu",
-		aliases:  []string{"removewife", "deletewaifu", "deletewife"},
-		desc:     "Removes a waifu from the waifu list.",
-		elevated: true,
-		category: "waifus",
-	})
-	add(&command{
-		execute:  viewWaifus,
-		trigger:  "viewwaifus",
-		aliases:  []string{"showwaifus", "vwaifus", "waifulist", "listwaifu", "waifus"},
-		desc:     "Shows the current list of waifus.",
-		elevated: true,
-		category: "waifus",
-	})
-	add(&command{
-		execute:  rollWaifu,
-		trigger:  "rollwaifu",
-		aliases:  []string{"rollwife", "wiferoll", "waifuroll"},
-		desc:     "Rolls a random waifu.",
-		category: "waifus",
-	})
-	add(&command{
-		execute:  myWaifu,
-		trigger:  "waifu",
-		aliases:  []string{"mywaifu", "mywife", "showwaifu", "waifushow", "viewwaifu", "viewwife"},
-		desc:     "Shows what your assigned waifu is.",
-		category: "waifus",
-	})
-	add(&command{
-		execute:  tradeWaifu,
-		trigger:  "tradewaifu",
-		aliases:  []string{"tradewife", "sellwaifu", "starttrade", "tradestart"},
-		desc:     "Trades two waifus between two users if both agree.",
-		category: "waifus",
-	})
-	add(&command{
-		execute:  acceptTrade,
-		trigger:  "accepttrade",
-		aliases:  []string{"tradeaccept", "buywaifu"},
-		desc:     "Accepts a proposed waifu trade.",
-		category: "waifus",
-	})
-	add(&command{
-		execute:  cancelTrade,
-		trigger:  "canceltrade",
-		aliases:  []string{"tradecancel", "stoptrade", "tradestop"},
-		desc:     "Cancels a proposed waifu trade.",
-		category: "waifus",
-	})
+	// add(&command{
+	// 	execute:  addWaifu,
+	// 	trigger:  "addwaifu",
+	// 	aliases:  []string{"addwife"},
+	// 	desc:     "Adds a waifu to the waifu list.",
+	// 	elevated: true,
+	// 	category: "waifus",
+	// })
+	// add(&command{
+	// 	execute:  removeWaifu,
+	// 	trigger:  "removewaifu",
+	// 	aliases:  []string{"removewife", "deletewaifu", "deletewife"},
+	// 	desc:     "Removes a waifu from the waifu list.",
+	// 	elevated: true,
+	// 	category: "waifus",
+	// })
+	// add(&command{
+	// 	execute:  viewWaifus,
+	// 	trigger:  "viewwaifus",
+	// 	aliases:  []string{"showwaifus", "vwaifus", "waifulist", "listwaifu", "waifus"},
+	// 	desc:     "Shows the current list of waifus.",
+	// 	elevated: true,
+	// 	category: "waifus",
+	// })
+	// add(&command{
+	// 	execute:  rollWaifu,
+	// 	trigger:  "rollwaifu",
+	// 	aliases:  []string{"rollwife", "wiferoll", "waifuroll"},
+	// 	desc:     "Rolls a random waifu.",
+	// 	category: "waifus",
+	// })
+	// add(&command{
+	// 	execute:  myWaifu,
+	// 	trigger:  "waifu",
+	// 	aliases:  []string{"mywaifu", "mywife", "showwaifu", "waifushow", "viewwaifu", "viewwife"},
+	// 	desc:     "Shows what your assigned waifu is.",
+	// 	category: "waifus",
+	// })
+	// add(&command{
+	// 	execute:  tradeWaifu,
+	// 	trigger:  "tradewaifu",
+	// 	aliases:  []string{"tradewife", "sellwaifu", "starttrade", "tradestart"},
+	// 	desc:     "Trades two waifus between two users if both agree.",
+	// 	category: "waifus",
+	// })
+	// add(&command{
+	// 	execute:  acceptTrade,
+	// 	trigger:  "accepttrade",
+	// 	aliases:  []string{"tradeaccept", "buywaifu"},
+	// 	desc:     "Accepts a proposed waifu trade.",
+	// 	category: "waifus",
+	// })
+	// add(&command{
+	// 	execute:  cancelTrade,
+	// 	trigger:  "canceltrade",
+	// 	aliases:  []string{"tradecancel", "stoptrade", "tradestop"},
+	// 	desc:     "Cancels a proposed waifu trade.",
+	// 	category: "waifus",
+	// })
 }
