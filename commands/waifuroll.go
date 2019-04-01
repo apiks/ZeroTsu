@@ -12,6 +12,12 @@ import (
 	"github.com/r-anime/ZeroTsu/config"
 )
 
+type waifuOwners struct {
+	Name 	string 		`json:"Name"`
+	Owners 	int 		`json:"Owners"`
+
+}
+
 // Adds a waifu to the waifu list
 func addWaifu(s *discordgo.Session, m *discordgo.Message) {
 
@@ -606,6 +612,8 @@ func showOwners(s *discordgo.Session, m *discordgo.Message) {
 		waifuNum 	int
 		message		string
 		messages 	[]string
+		owners		[]waifuOwners
+		owner		waifuOwners
 	)
 
 	commandStrings := strings.Split(m.Content, " ")
@@ -630,19 +638,42 @@ func showOwners(s *discordgo.Session, m *discordgo.Message) {
 				waifuNum++
 			}
 		}
-		message += "\n" + waifu.Name + " has " + strconv.Itoa(waifuNum) + " owners"
+		owner.Name = waifu.Name
+		owner.Owners = waifuNum
+		owners = append(owners, owner)
 		waifuNum = 0
 	}
 	misc.MapMutex.Unlock()
 
+	// Sorts by number of owners and add to message string
+	sort.Sort(byOwnerFrequency(owners))
+	for _, trueOwner := range owners {
+		message += "\n" + trueOwner.Name + " has " + strconv.Itoa(trueOwner.Owners) + " owners"
+	}
+
+	// Splits the message string if over 1900 characters
 	messages = misc.SplitLongMessage(message)
 
+	// Sends the message
 	for _, message := range messages {
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
 			_, _ = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 		}
 	}
+}
+
+// Sort functions for waifu owners use by owner number
+type byOwnerFrequency []waifuOwners
+
+func (e byOwnerFrequency) Len() int {
+	return len(e)
+}
+func (e byOwnerFrequency) Swap(i, j int) {
+	e[i], e[j] = e[j], e[i]
+}
+func (e byOwnerFrequency) Less(i, j int) bool {
+	return e[j].Owners < e[i].Owners
 }
 
 func init() {
