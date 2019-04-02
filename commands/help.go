@@ -1021,13 +1021,13 @@ func init() {
 		desc:     "Print all raffle commands.",
 		elevated: true,
 	})
-	add(&command{
-		execute:  helpWaifuCommand,
-		trigger:  "hwaifu",
-		aliases:  []string{"h[waifu]", "hwaifus", "h[waifus]"},
-		desc:     "Print all waifu commands.",
-		elevated: true,
-	})
+	//add(&command{
+	//	execute:  helpWaifuCommand,
+	//	trigger:  "hwaifu",
+	//	aliases:  []string{"h[waifu]", "hwaifus", "h[waifus]"},
+	//	desc:     "Print all waifu commands.",
+	//	elevated: true,
+	//})
 
 	misc.MapMutex.Lock()
 	categoriesMap["Channel"] = "Mod channel-related commands."
@@ -1039,6 +1039,6 @@ func init() {
 	categoriesMap["Rss"] = "RSS feed from sub commands."
 	categoriesMap["Stats"] = "Channel and emoji stats."
 	categoriesMap["Raffles"] = "Raffle commands."
-	categoriesMap["Waifus"] = "Waifu commands."
+	//categoriesMap["Waifus"] = "Waifu commands."
 	misc.MapMutex.Unlock()
 }
