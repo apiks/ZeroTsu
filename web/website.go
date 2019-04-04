@@ -408,8 +408,12 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 							UserCookieMap[cookieValue.Value] = &tempUser
 						}
 					} else {
-						tempUser.Error = "Error: User not found in memberInfo with the UserCookieMap UserID. Please notify a mod."
-						UserCookieMap[cookieValue.Value] = &tempUser
+						// Wait 3 seconds for memberInfo to hopefully update before checking again
+						time.Sleep(3 * time.Second)
+						if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
+							tempUser.Error = "Error: User not found in memberInfo with the UserCookieMap UserID. Please notify a mod."
+							UserCookieMap[cookieValue.Value] = &tempUser
+						}
 					}
 				}
 			} else {
@@ -479,8 +483,12 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 								UserCookieMap[cookieValue.Value] = &tempUser
 							}
 						} else {
-							tempUser.Error = "Error: User not found in memberInfo with the UserCookieMap UserID. Please notify a mod."
-							UserCookieMap[cookieValue.Value] = &tempUser
+							// Wait 3 seconds for memberInfo to hopefully update before checking again
+							time.Sleep(3 * time.Second)
+							if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
+								tempUser.Error = "Error: User not found in memberInfo with the UserCookieMap UserID. Please notify a mod."
+								UserCookieMap[cookieValue.Value] = &tempUser
+							}
 						}
 					}
 				}
