@@ -240,6 +240,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		id       			string
 		tempUser 			User
 		verified 			bool
+		flag				bool
 	)
 
 	defer func() {
@@ -338,10 +339,8 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		UserCookieMap[cookieValue.Value] = &tempUser
 	}
-	misc.MapMutex.Unlock()
 
 	// Verifies user if they have a reddit account linked in memberInfo already, skipping half or the entire verification process
-	misc.MapMutex.Lock()
 	if UserCookieMap[cookieValue.Value].ID != "" {
 		if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
 			if misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID].RedditUsername != "" {
@@ -399,21 +398,33 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				// Verifies user if reddit verification was completed succesfully
 				if UserCookieMap[cookieValue.Value].AccOldEnough && UserCookieMap[cookieValue.Value].ID != "" &&
 					UserCookieMap[cookieValue.Value].RedditVerifiedStatus && UserCookieMap[cookieValue.Value].RedditName != "" {
-					if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
-						// Verifies user
-						err := Verify(cookieValue, r)
-						if err != nil {
-							// Sets error message
-							tempUser.Error = err.Error()
-							UserCookieMap[cookieValue.Value] = &tempUser
-						}
-					} else {
-						tempUser.Error = "Error: User not found in memberInfo with the UserCookieMap UserID. Please notify a mod."
-						UserCookieMap[cookieValue.Value] = &tempUser
-					}
-				} else {
-					tempUser.Error = "Error: Reddit UserCookieMap values are wrong or missing. Please notify a mod"
-					UserCookieMap[cookieValue.Value] = &tempUser
+					flag = true
+					//if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
+					//	// Verifies user
+					//	err := Verify(cookieValue, r)
+					//	if err != nil {
+					//		// Sets error message
+					//		tempUser.Error = err.Error()
+					//		UserCookieMap[cookieValue.Value] = &tempUser
+					//	}
+					//} else {
+					//	// Sleeps for a bit with unlocked map so memberInfo can update before trying to verify again
+					//	misc.MapMutex.Unlock()
+					//	time.Sleep(3 * time.Second)
+					//	misc.MapMutex.Lock()
+					//	if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
+					//		// Verifies user
+					//		err := Verify(cookieValue, r)
+					//		if err != nil {
+					//			// Sets error message
+					//			tempUser.Error = err.Error()
+					//			UserCookieMap[cookieValue.Value] = &tempUser
+					//		}
+					//	} else {
+					//		tempUser.Error = "Error: User not found in memberInfo with the UserCookieMap UserID. Please notify a mod."
+					//		UserCookieMap[cookieValue.Value] = &tempUser
+					//	}
+					//}
 				}
 			} else {
 				tempUser.Error = "Error: Needed discord values are missing. Please verify again or message a mod."
@@ -473,21 +484,33 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					if UserCookieMap[cookieValue.Value].ID != "" &&
 						UserCookieMap[cookieValue.Value].DiscordVerifiedStatus &&
 						UserCookieMap[cookieValue.Value].RedditName != "" {
-						if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
-							// Verifies user
-							err := Verify(cookieValue, r)
-							if err != nil {
-								// Sets error message
-								tempUser.Error = err.Error()
-								UserCookieMap[cookieValue.Value] = &tempUser
-							}
-						} else {
-							tempUser.Error = "Error: User not found in memberInfo with the UserCookieMap UserID. Please notify a mod."
-							UserCookieMap[cookieValue.Value] = &tempUser
-						}
-					} else {
-						tempUser.Error = "Error: Discord UserCookieMap values are wrong or missing. Please notify a mod"
-						UserCookieMap[cookieValue.Value] = &tempUser
+						flag = true
+						//if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
+						//	// Verifies user
+						//	err := Verify(cookieValue, r)
+						//	if err != nil {
+						//		// Sets error message
+						//		tempUser.Error = err.Error()
+						//		UserCookieMap[cookieValue.Value] = &tempUser
+						//	}
+						//} else {
+						//	// Sleeps for a bit with unlocked map so memberInfo can update before trying to verify again
+						//	misc.MapMutex.Unlock()
+						//	time.Sleep(3 * time.Second)
+						//	misc.MapMutex.Lock()
+						//	if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
+						//		// Verifies user
+						//		err := Verify(cookieValue, r)
+						//		if err != nil {
+						//			// Sets error message
+						//			tempUser.Error = err.Error()
+						//			UserCookieMap[cookieValue.Value] = &tempUser
+						//		}
+						//	} else {
+						//		tempUser.Error = "Error: User not found in memberInfo with the UserCookieMap UserID. Please notify a mod."
+						//		UserCookieMap[cookieValue.Value] = &tempUser
+						//	}
+						//}
 					}
 				}
 			} else {
@@ -498,13 +521,42 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	misc.MapMutex.Unlock()
 
+	// Verifies user if either Discord or Reddit flags are up
+	misc.MapMutex.Lock()
+	if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
+		if flag {
+			err := Verify(cookieValue, r)
+			if err != nil {
+				// Sets error message
+				tempUser.Error = err.Error()
+				UserCookieMap[cookieValue.Value] = &tempUser
+			}
+		}
+	} else {
+		// Sleeps for a bit with unlocked map so memberInfo can update before trying to verify again
+		misc.MapMutex.Unlock()
+		time.Sleep(3 * time.Second)
+		misc.MapMutex.Lock()
+		if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
+			// Verifies user
+			err := Verify(cookieValue, r)
+			if err != nil {
+				// Sets error message
+				tempUser.Error = err.Error()
+				UserCookieMap[cookieValue.Value] = &tempUser
+			}
+		} else {
+			tempUser.Error = "Error: User not found in memberInfo with the UserCookieMap UserID. Please notify a mod."
+			UserCookieMap[cookieValue.Value] = &tempUser
+		}
+	}
+
 	// Loads the html & css verification files
 	t, err := template.ParseFiles("web/assets/verification.html")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
-	misc.MapMutex.Lock()
 	if _, ok := UserCookieMap[cookieValue.Value]; !ok {
 		if tempUser.Error == "" {
 			tempUser.Cookie = cookieValue.Value

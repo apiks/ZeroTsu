@@ -199,8 +199,6 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		return
 	}
 
-	fmt.Println(existingUser)
-
 	// If user is already in memberInfo but hasn't verified before tell him to verify now
 	if MemberInfoMap[user.User.ID].RedditUsername == "" && !initialized {
 
