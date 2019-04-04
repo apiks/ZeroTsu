@@ -126,11 +126,10 @@ func InitializeUser(u *discordgo.Member) {
 // Also updates discriminator
 // Also verifies them if they're already verified in memberinfo
 func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
-
 	var (
 		flag        = false
 		initialized = false
-		userID		  string
+		nameFlag	= false
 	)
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -144,75 +143,72 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	}()
 
 	// Pulls info on user if possible
-	s.RWMutex.Lock()
 	user, err := s.GuildMember(config.ServerID, e.User.ID)
 	if err != nil {
-		s.RWMutex.Unlock()
 		return
 	}
-	userID = user.User.ID
-	s.RWMutex.Unlock()
 
 	// If memberInfo is empty, it initializes
 	MapMutex.Lock()
 	if len(MemberInfoMap) == 0 {
 
-		// Initializes the first user of memberInfo.
+		// Initializes the first user of memberInfo
 		InitializeUser(user)
 
 		flag = true
 		initialized = true
 
 		// Encrypts id
-		ciphertext := Encrypt(Key, userID)
+		ciphertext := Encrypt(Key, user.User.ID)
 
 		// Sends verification message to user in DMs if possible
-		dm, _ := s.UserChannelCreate(userID)
+		dm, _ := s.UserChannelCreate(user.User.ID)
 		_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
 			"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
 
 	} else {
 		// Checks if user exists in memberInfo.json. If yes it changes flag to true
-		if _, ok := MemberInfoMap[userID]; ok {
+		if _, ok := MemberInfoMap[user.User.ID]; ok {
 			flag = true
 		}
 	}
-	MapMutex.Unlock()
 
 	// If user still doesn't exist after check above, it initializes user
 	if !flag {
 
 		// Initializes the new user
-		MapMutex.Lock()
 		InitializeUser(user)
-		MapMutex.Unlock()
 		initialized = true
 
 		// Encrypts id
-		ciphertext := Encrypt(Key, userID)
+		ciphertext := Encrypt(Key, user.User.ID)
 
 		// Sends verification message to user in DMs if possible
-		dm, _ := s.UserChannelCreate(userID)
+		dm, _ := s.UserChannelCreate(user.User.ID)
 		_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
 			"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
 	}
 
+	// Writes User Initialization to disk
+	MemberInfoWrite(MemberInfoMap)
+
 	// Fetches user from memberInfo
-	MapMutex.Lock()
-	existingUser, ok := MemberInfoMap[userID]
+	existingUser, ok := MemberInfoMap[user.User.ID]
 	if !ok {
 		MapMutex.Unlock()
 		return
 	}
 
+	fmt.Println(existingUser)
+
 	// If user is already in memberInfo but hasn't verified before tell him to verify now
-	if MemberInfoMap[userID].RedditUsername == "" && !initialized {
+	if MemberInfoMap[user.User.ID].RedditUsername == "" && !initialized {
 
 		// Encrypts id
-		ciphertext := Encrypt(Key, userID)
+		ciphertext := Encrypt(Key, user.User.ID)
 
 		// Sends verification message to user in DMs if possible
-		dm, _ := s.UserChannelCreate(userID)
+		dm, _ := s.UserChannelCreate(user.User.ID)
 		_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
 			"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
 	}
@@ -221,6 +217,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	// Checks if the user's current username is the same as the one in the database. Otherwise updates
 	if user.User.Username != existingUser.Username {
 		flag := true
+		nameFlag = true
 		lower := strings.ToLower(user.User.Username)
 
 		for _, names := range existingUser.PastUsernames {
@@ -239,6 +236,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	// Checks if the user's current nickname is the same as the one in the database. Otherwise updates
 	if existingUser.Nickname != user.Nick && user.Nick != "" {
 		flag := true
+		nameFlag = true
 		lower := strings.ToLower(user.Nick)
 
 		for _, names := range existingUser.PastNicknames {
@@ -256,14 +254,17 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 	// Checks if the discrim in database is the same as the discrim used by the user. If not it changes it
 	if user.User.Discriminator != existingUser.Discrim {
+		nameFlag = true
 		existingUser.Discrim = user.User.Discriminator
 	}
 
-	// Saves the updates to memberInfoMap and writes to disk
-	MapMutex.Lock()
-	MemberInfoMap[userID] = existingUser
-	MemberInfoWrite(MemberInfoMap)
-	MapMutex.Unlock()
+	// Saves the updates to memberInfoMap and writes to disk if need be
+	if nameFlag {
+		MapMutex.Lock()
+		MemberInfoMap[user.User.ID] = existingUser
+		MemberInfoWrite(MemberInfoMap)
+		MapMutex.Unlock()
+	}
 }
 
 // OnMemberUpdate listens for member updates to compare nicks

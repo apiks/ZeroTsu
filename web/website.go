@@ -408,13 +408,12 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 							UserCookieMap[cookieValue.Value] = &tempUser
 						}
 					} else {
-						// Wait 3 seconds for memberInfo to hopefully update before checking again
-						time.Sleep(3 * time.Second)
-						if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
-							tempUser.Error = "Error: User not found in memberInfo with the UserCookieMap UserID. Please notify a mod."
-							UserCookieMap[cookieValue.Value] = &tempUser
-						}
+						tempUser.Error = "Error: User not found in memberInfo with the UserCookieMap UserID. Please notify a mod."
+						UserCookieMap[cookieValue.Value] = &tempUser
 					}
+				} else {
+					tempUser.Error = "Error: Reddit UserCookieMap values are wrong or missing. Please notify a mod"
+					UserCookieMap[cookieValue.Value] = &tempUser
 				}
 			} else {
 				tempUser.Error = "Error: Needed discord values are missing. Please verify again or message a mod."
@@ -483,13 +482,12 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 								UserCookieMap[cookieValue.Value] = &tempUser
 							}
 						} else {
-							// Wait 3 seconds for memberInfo to hopefully update before checking again
-							time.Sleep(3 * time.Second)
-							if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
-								tempUser.Error = "Error: User not found in memberInfo with the UserCookieMap UserID. Please notify a mod."
-								UserCookieMap[cookieValue.Value] = &tempUser
-							}
+							tempUser.Error = "Error: User not found in memberInfo with the UserCookieMap UserID. Please notify a mod."
+							UserCookieMap[cookieValue.Value] = &tempUser
 						}
+					} else {
+						tempUser.Error = "Error: Discord UserCookieMap values are wrong or missing. Please notify a mod"
+						UserCookieMap[cookieValue.Value] = &tempUser
 					}
 				}
 			} else {
