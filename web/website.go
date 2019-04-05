@@ -228,7 +228,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		randNum, _ := randString(64)
 		expire := time.Now().Add(10 * time.Minute)
-		cookie := http.Cookie{Name: "session-id", Value: randNum, Expires: expire}
+		cookie := http.Cookie{Name: "session-id", Value: randNum, Expires: expire, HttpOnly: true}
 		http.SetCookie(w, &cookie)
 		cookieValue = &cookie
 	}
