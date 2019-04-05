@@ -240,7 +240,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		id       			string
 		tempUser 			User
 		verified 			bool
-		flag				bool
 	)
 
 	defer func() {
@@ -398,7 +397,17 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				// Verifies user if reddit verification was completed succesfully
 				if UserCookieMap[cookieValue.Value].AccOldEnough && UserCookieMap[cookieValue.Value].ID != "" &&
 					UserCookieMap[cookieValue.Value].RedditVerifiedStatus && UserCookieMap[cookieValue.Value].RedditName != "" {
-					flag = true
+					if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
+						err := Verify(cookieValue, r)
+						if err != nil {
+							// Sets error message
+							tempUser.Error = err.Error()
+							UserCookieMap[cookieValue.Value] = &tempUser
+						}
+					} else {
+						tempUser.Error = "Error: Are you sure you verified with the correct Discord account? It uses the browser Discord account so please go back and check if it is correct. If it is please notify a mod with the following: User not found in memberInfo with the UserCookieMap UserID."
+						UserCookieMap[cookieValue.Value] = &tempUser
+					}
 				}
 			} else {
 				tempUser.Error = "Error: Needed discord values are missing. Please verify again or message a mod."
@@ -458,7 +467,17 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					if UserCookieMap[cookieValue.Value].ID != "" &&
 						UserCookieMap[cookieValue.Value].DiscordVerifiedStatus &&
 						UserCookieMap[cookieValue.Value].RedditName != "" {
-						flag = true
+						if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
+							err := Verify(cookieValue, r)
+							if err != nil {
+								// Sets error message
+								tempUser.Error = err.Error()
+								UserCookieMap[cookieValue.Value] = &tempUser
+							}
+						} else {
+							tempUser.Error = "Error: Are you sure you verified with the correct Discord account? It uses the browser Discord account so please go back and check if it is correct. If it is please notify a mod with the following: User not found in memberInfo with the UserCookieMap UserID."
+							UserCookieMap[cookieValue.Value] = &tempUser
+						}
 					}
 				}
 			} else {
@@ -466,25 +485,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				UserCookieMap[cookieValue.Value] = &tempUser
 			}
 		}
-	}
-	misc.MapMutex.Unlock()
-
-	// Unlock and lock afterwards so memberInfo can update if it needs to
-
-	// Verifies user if either Discord or Reddit flags are up
-	misc.MapMutex.Lock()
-	if _, ok := misc.MemberInfoMap[UserCookieMap[cookieValue.Value].ID]; ok {
-		if flag {
-			err := Verify(cookieValue, r)
-			if err != nil {
-				// Sets error message
-				tempUser.Error = err.Error()
-				UserCookieMap[cookieValue.Value] = &tempUser
-			}
-		}
-	} else {
-		tempUser.Error = "Error: Are you sure you verified with the correct Discord account? It uses the browser Discord account so please go back and check if it is correct. If it is please notify a mod with the following: User not found in memberInfo with the UserCookieMap UserID."
-		UserCookieMap[cookieValue.Value] = &tempUser
 	}
 
 	// Loads the html & css verification files
