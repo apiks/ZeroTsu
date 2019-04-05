@@ -492,7 +492,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				UserCookieMap[cookieValue.Value] = &tempUser
 			}
 		} else {
-			tempUser.Error = "Error: Are you sure you verified with the correct Discord account? It uses the browser Discord account so please check if it is correct. If it is please notify a mod with the following: User not found in memberInfo with the UserCookieMap UserID."
+			tempUser.Error = "Error: Are you sure you verified with the correct Discord account? It uses the browser Discord account so please go back and check if it is correct. If it is please notify a mod with the following: User not found in memberInfo with the UserCookieMap UserID."
 			UserCookieMap[cookieValue.Value] = &tempUser
 		}
 	}
