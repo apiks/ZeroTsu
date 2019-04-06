@@ -281,7 +281,7 @@ func CheckAltAccountWhois(id string) []string {
 	}
 }
 
-// Displays all punishments for that user with timestamps and type of punishment
+// Displays all punishments for that specific user with timestamps and type of punishment
 func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var message string
