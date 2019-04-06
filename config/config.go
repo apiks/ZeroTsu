@@ -92,7 +92,7 @@ func ReadConfig() error {
 	return nil
 }
 
-// Loads hidden configSecrets.json values
+// Loads all hidden configSecrets.json values
 func ReadConfigSecrets() error {
 	fmt.Println("Reading from configsecrets file...")
 
