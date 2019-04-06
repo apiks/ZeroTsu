@@ -176,8 +176,7 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Remove reddit username from map
 	misc.MapMutex.Lock()
-	if misc.MemberInfoMap[userID] != nil {
-
+	if _, ok := misc.MemberInfoMap[userID]; ok {
 		// Sets verification variables
 		misc.MemberInfoMap[userID].RedditUsername = ""
 		misc.MemberInfoMap[userID].VerifiedDate = ""
@@ -195,10 +194,10 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.MapMutex.Unlock()
 		return
 	}
-	misc.MapMutex.Unlock()
 
 	// Writes modified memberInfo map to storage
 	misc.MemberInfoWrite(misc.MemberInfoMap)
+	misc.MapMutex.Unlock()
 
 	// Puts all server roles in roles
 	roles, err := s.GuildRoles(config.ServerID)
@@ -214,7 +213,7 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
-	// Assigns verified role to user
+	// Removes verified role from user
 	err = s.GuildMemberRoleRemove(config.ServerID, userID, roleID)
 	if err != nil {
 		return

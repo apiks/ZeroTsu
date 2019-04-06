@@ -74,6 +74,17 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 
+		_, err = s.ChannelMessageSend(m.ChannelID, "User not found in memberInfo. Initializing user and whoising.")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				misc.MapMutex.Unlock()
+				return
+			}
+			misc.MapMutex.Unlock()
+			return
+		}
+
 		// Initializes user if he doesn't exist and is in server
 		misc.InitializeUser(mem)
 		user = misc.MemberInfoMap[userID]
@@ -386,6 +397,6 @@ func init() {
 		aliases:  []string{"timestamps"},
 		desc:     "Shows all punishments for a user and their timestamps.",
 		elevated: true,
-		category: "misc",
+		category: "punishment",
 	})
 }
