@@ -22,13 +22,11 @@ var (
 	Website					string
 	ModCategoryID			string
 	VoteChannelCategoryID 	string
+	Waifus					string
 
 	RedditAppName			string
 	RedditAppSecret			string
 	DiscordAppSecret		string
-	DBUser					string
-	DBPass					string
-	DBName					string
 
 	config 					*configStruct
 	configsecrets 			*configSecrets
@@ -47,17 +45,13 @@ type configStruct struct {
 	Website		 			string	 		`json:"Website"`
 	ModCategoryID			string	 		`json:"ModCategoryID"`
 	VoteChannelCategoryID 	string 			`json:"VoteChannelCategoryID"`
+	Waifus					string			`json:"Waifus"`
 }
 
 type configSecrets struct {
-	RedditAppName			string			`json:"RedditName"`
-	RedditAppSecret			string			`json:"RedditSecret"`
-	DiscordAppSecret		string			`json:"DiscordSecret"`
-
-	// /r/anime specific DB
-	DBUser					string			`json:"DBUser"`
-	DBPass					string			`json:"DBPass"`
-	DBName					string			`json:"DBName"`
+	RedditAppName			string	`json:"RedditName"`
+	RedditAppSecret			string	`json:"RedditSecret"`
+	DiscordAppSecret		string	`json:"DiscordSecret"`
 }
 
 // Loads config.json values
@@ -88,6 +82,9 @@ func ReadConfig() error {
 	Website = config.Website
 	ModCategoryID = config.ModCategoryID
 	VoteChannelCategoryID = config.VoteChannelCategoryID
+	Waifus = config.Waifus
+
+	os.Setenv("ZeroTsuToken", "NDMxMzI4OTEyMDkwNDY0MjY2.DadKHA.2NcXYI6UTnWzpm_DiEhu_iTCTx0")
 
 	// Takes the bot token from the environment variable. Reason is to avoid pushing token to github
 	if os.Getenv("ZeroTsuToken") == "" {
@@ -114,11 +111,8 @@ func ReadConfigSecrets() error {
 	RedditAppName = configsecrets.RedditAppName
 	RedditAppSecret = configsecrets.RedditAppSecret
 	DiscordAppSecret = configsecrets.DiscordAppSecret
-	DBUser = configsecrets.DBUser
-	DBPass = configsecrets.DBPass
-	DBName = configsecrets.DBName
 
-	fmt.Println("Successfuly read configsecrets file.")
+	fmt.Println("Successfuly read hidden configsecrets file.")
 
 	return nil
 }

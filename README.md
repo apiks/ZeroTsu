@@ -60,6 +60,8 @@ How to install:
        ModCategoryID is the ID of a mod category if it exists. Leave empty if it doesn't exist
 
        VoteChannelCategoryID is the category ID of the category in which the channel created from a user channel creation vote is put
+	   
+	   Waifus is whether to enable the waifu commands. Use "true" to turn it on. Otherwise leave empty or "false"
 
 3. Make a file called configsecrets.json in the foldder config.json is in and set this up the following way. It's for verification:
 ```javascript

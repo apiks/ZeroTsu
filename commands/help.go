@@ -11,8 +11,7 @@ import (
 
 // Command categories in sorted form and map form(map for descriptions)
 var (
-	categoriesSorted = [9]string{"Channel", "Filters", "Misc", "Normal", "Punishment", "Reacts", "Rss", "Stats", "Raffles"}
-	//categoriesSorted = [10]string{"Channel", "Filters", "Misc", "Normal", "Punishment", "Reacts", "Rss", "Stats", "Raffles", "Waifus"}
+	categoriesSorted = [10]string{"Channel", "Filters", "Misc", "Normal", "Punishment", "Reacts", "Rss", "Stats", "Raffles", "Waifus"}
 	categoriesMap = make(map[string]string)
 )
 
@@ -123,9 +122,14 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
 		adminCategories.Name = "Categories:"
 		adminCategories.Inline = true
 
-		// Iterates through categories and their descriptions and adds them to the embed
+		// Iterates through categories and their descriptions and adds them to the embed. Special behavior for waifus based on config
 		misc.MapMutex.Lock()
 		for i := 0; i < len(categoriesSorted); i++ {
+			if categoriesSorted[i] == "Waifus" {
+				if config.Waifus != "true" {
+					continue
+				}
+			}
 			adminCategories.Value += fmt.Sprintf("%v - %v\n", categoriesSorted[i], categoriesMap[categoriesSorted[i]])
 		}
 		misc.MapMutex.Unlock()
@@ -1022,13 +1026,15 @@ func init() {
 		desc:     "Print all raffle commands.",
 		elevated: true,
 	})
-	//add(&command{
-	//	execute:  helpWaifuCommand,
-	//	trigger:  "hwaifu",
-	//	aliases:  []string{"h[waifu]", "hwaifus", "h[waifus]"},
-	//	desc:     "Print all waifu commands.",
-	//	elevated: true,
-	//})
+	if config.Waifus == "true" {
+		add(&command{
+			execute:  helpWaifuCommand,
+			trigger:  "hwaifu",
+			aliases:  []string{"h[waifu]", "hwaifus", "h[waifus]"},
+			desc:     "Print all waifu commands.",
+			elevated: true,
+		})
+	}
 
 	misc.MapMutex.Lock()
 	categoriesMap["Channel"] = "Mod channel-related commands."
@@ -1040,6 +1046,8 @@ func init() {
 	categoriesMap["Rss"] = "RSS feed from sub commands."
 	categoriesMap["Stats"] = "Channel and emoji stats."
 	categoriesMap["Raffles"] = "Raffle commands."
-	//categoriesMap["Waifus"] = "Waifu commands."
+	if config.Waifus == "true" {
+		categoriesMap["Waifus"] = "Waifu commands."
+	}
 	misc.MapMutex.Unlock()
 }

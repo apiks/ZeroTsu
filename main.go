@@ -16,18 +16,6 @@ import (
 // Initializes and starts Bot and website
 func main() {
 
-	err := config.ReadConfig()
-	if err != nil {
-		panic(err)
-	}
-	err = config.ReadConfigSecrets()
-	if err != nil {
-		panic(err)
-	}
-
-	// Establish SQL connection
-	//config.EstablishConnection()
-
 	Start()
 
 	// Web Server
@@ -40,7 +28,10 @@ func main() {
 		r.HandleFunc("/verification/", web.VerificationHandler)
 		r.HandleFunc("/channelstats", web.StatsPageHandler)
 		r.HandleFunc("/channelstats/", web.StatsPageHandler)
-		err = http.ListenAndServe(":8080", r)
+		err := http.ListenAndServe(":3000", r)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	<-make(chan struct{})
@@ -63,10 +54,10 @@ func Start() {
 	// Reads memberInfo.json from storage at bot start
 	misc.MemberInfoRead()
 
-	// Reads all banned users from memberInfo on bot start. Depreciated
+	// Reads all banned users from memberInfo on bot start
 	misc.GetBannedUsers()
 
-	// Reads ongoing votes from VoteInfo.json at bot start
+	// Reads ongoing votes from VoteInfo.json at bot start. Depreciated
 	commands.VoteInfoRead()
 
 	// Reads set react joins from reactChannelJoin.json. Disabled in favor of Kaguya by default. Uncomment if not using Kaguya
@@ -97,10 +88,12 @@ func Start() {
 	misc.RafflesRead()
 
 	// Reads waifus from waifus.json
-	misc.WaifusRead()
+	if config.Waifus == "true" {
+		misc.WaifusRead()
 
-	// Reads waifu trades from waifutrades.json
-	misc.WaifuTradesRead()
+		// Reads waifu trades from waifutrades.json
+		misc.WaifuTradesRead()
+	}
 
 	// Cleans up duplicate usernames and nicknames (Run once per cleanup, keep off unless needed)
 	//misc.DuplicateUsernamesAndNicknamesCleanup()
@@ -126,8 +119,8 @@ func Start() {
 	// Deletes non-whitelisted attachments
 	goBot.AddHandler(commands.MessageAttachmentsHandler)
 
-	// Abstraction of a command handler
-	goBot.AddHandler(commands.HandleCommand)
+	//Converter
+	//goBot.AddHandler(commands.ConverterHandler)
 
 	// React Channel Join Handler. Disabled in favor of Kaguya by default. Uncomment if not using Kaguya
 	//goBot.AddHandler(commands.ReactJoinHandler)
@@ -175,6 +168,9 @@ func Start() {
 
 	// Manual ban handler
 	goBot.AddHandler(misc.OnGuildBan)
+
+	// Abstraction of a command handler
+	goBot.AddHandler(commands.HandleCommand)
 
 	// Raffle react handler
 	goBot.AddHandler(commands.RaffleReactJoin)
