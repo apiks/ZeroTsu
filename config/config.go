@@ -97,7 +97,9 @@ func ReadConfigSecrets() error {
 	fmt.Println("Reading from configsecrets file...")
 
 	file, err := ioutil.ReadFile("configsecrets.json")
-	if err != nil {
+	if err != nil && config.Website == "" {
+		fmt.Println("configsecrets doesn't exist and website is disabled. Moving on. . .")
+	} else if err != nil {
 		panic(err)
 	}
 
