@@ -162,9 +162,11 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		ciphertext := Encrypt(Key, user.User.ID)
 
 		// Sends verification message to user in DMs if possible
-		dm, _ := s.UserChannelCreate(user.User.ID)
-		_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
-			"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
+		if config.Website != "" {
+			dm, _ := s.UserChannelCreate(user.User.ID)
+			_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
+				"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
+		}
 
 	} else {
 		// Checks if user exists in memberInfo.json. If yes it changes flag to true
@@ -184,9 +186,11 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		ciphertext := Encrypt(Key, user.User.ID)
 
 		// Sends verification message to user in DMs if possible
-		dm, _ := s.UserChannelCreate(user.User.ID)
-		_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
-			"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
+		if config.Website != "" {
+			dm, _ := s.UserChannelCreate(user.User.ID)
+			_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
+				"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
+		}
 	}
 
 	// Writes User Initialization to disk
@@ -206,9 +210,11 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		ciphertext := Encrypt(Key, user.User.ID)
 
 		// Sends verification message to user in DMs if possible
-		dm, _ := s.UserChannelCreate(user.User.ID)
-		_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
-			"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
+		if config.Website != "" {
+			dm, _ := s.UserChannelCreate(user.User.ID)
+			_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n"+
+				"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
+		}
 	}
 	MapMutex.Unlock()
 

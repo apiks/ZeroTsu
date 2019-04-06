@@ -55,7 +55,7 @@ How to install:
 
        VoiceChaID is the ID of the voice channel you want the bot to track and give the "voice" role to. Leave empty if not using it
 
-       Website is the address/ip+:8080 of the website or server
+       Website is the address/ip+:port of the website or server. Leave empty if not using it
 
        ModCategoryID is the ID of a mod category if it exists. Leave empty if it doesn't exist
 
@@ -70,7 +70,7 @@ How to install:
 }
 ```
 4. Set your "ZeroTsuToken" environment variable to the BOT token (either hidden on the system env or in config.go ReadConfig func with os.Setenv("ZeroTsuToken", "TOKEN"))
-5. Compile in your favorite IDE or compiler with "go build" (or type "set GOOS=linux" to change OS first and then "go build".)
+5. Compile in your favorite IDE or compiler with "go build" (or type "set GOOS=[Preferred OS]" to change OS first (like linux) and then "go build".)
 6. Invite BOT to server and give it an admin role
 7. Start the BOT and use
 

@@ -31,15 +31,17 @@ func main() {
 	Start()
 
 	// Web Server
-	r := mux.NewRouter()
-	staticFileHandler := http.StripPrefix("/web/assets", http.FileServer(http.Dir("./web/assets")))
-	r.PathPrefix("/web/assets/").Handler(staticFileHandler)
-	r.HandleFunc("/", web.HomepageHandler)
-	r.HandleFunc("/verification", web.VerificationHandler)
-	r.HandleFunc("/verification/", web.VerificationHandler)
-	r.HandleFunc("/channelstats", web.StatsPageHandler)
-	r.HandleFunc("/channelstats/", web.StatsPageHandler)
-	err = http.ListenAndServe(":8080", r)
+	if config.Website != "" {
+		r := mux.NewRouter()
+		staticFileHandler := http.StripPrefix("/web/assets", http.FileServer(http.Dir("./web/assets")))
+		r.PathPrefix("/web/assets/").Handler(staticFileHandler)
+		r.HandleFunc("/", web.HomepageHandler)
+		r.HandleFunc("/verification", web.VerificationHandler)
+		r.HandleFunc("/verification/", web.VerificationHandler)
+		r.HandleFunc("/channelstats", web.StatsPageHandler)
+		r.HandleFunc("/channelstats/", web.StatsPageHandler)
+		err = http.ListenAndServe(":8080", r)
+	}
 
 	<-make(chan struct{})
 	return
