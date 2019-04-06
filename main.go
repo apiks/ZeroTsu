@@ -16,6 +16,16 @@ import (
 // Initializes and starts Bot and website
 func main() {
 
+	// Initialize Config values
+	err := config.ReadConfig()
+	if err != nil {
+		panic(err)
+	}
+	err = config.ReadConfigSecrets()
+	if err != nil {
+		panic(err)
+	}
+
 	Start()
 
 	// Web Server
