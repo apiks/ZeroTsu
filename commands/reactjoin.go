@@ -309,6 +309,11 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
 
 	if len(commandStrings) != 3 && len(commandStrings) != 2 {
+		// Returns if the bot called the func
+		if m.Author.ID == s.State.User.ID {
+			return
+		}
+
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"removereact [messageID] Optional[emoji]`")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -323,6 +328,11 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if it's a valid messageID
 	num, err := strconv.Atoi(commandStrings[1])
 	if err != nil || num < 17 {
+		// Returns if the bot called the func
+		if m.Author.ID == s.State.User.ID {
+			return
+		}
+
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid messageID.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -336,6 +346,11 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	misc.MapMutex.Lock()
 	if len(reactChannelJoinMap) == 0 {
+		// Returns if the bot called the func
+		if m.Author.ID == s.State.User.ID {
+			return
+		}
+
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no set react joins.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -359,6 +374,11 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	misc.MapMutex.Unlock()
 	if messageExists == false {
+		// Returns if the bot called the func
+		if m.Author.ID == s.State.User.ID {
+			return
+		}
+
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: No such messageID is set in storage")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -375,6 +395,12 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 2 {
 		delete(reactChannelJoinMap, commandStrings[1])
 		ReactChannelJoinWrite(reactChannelJoinMap)
+
+		// Returns if the bot called the func
+		if m.Author.ID == s.State.User.ID {
+			misc.MapMutex.Unlock()
+			return
+		}
 		_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed entire message emoji react join.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -439,6 +465,12 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 					if len(reactChannelJoinMap[messageID].RoleEmojiMap[storageMessageID]) == 1 && len(reactChannelJoinMap[messageID].RoleEmojiMap[storageMessageID][role]) == 1 {
 						delete(reactChannelJoinMap, commandStrings[1])
 						ReactChannelJoinWrite(reactChannelJoinMap)
+
+						// Returns if the bot called the func
+						if m.Author.ID == s.State.User.ID {
+							misc.MapMutex.Unlock()
+							return
+						}
 						_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed emoji react join from message.")
 						if err != nil {
 							_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -453,6 +485,12 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 					} else if len(reactChannelJoinMap[messageID].RoleEmojiMap[storageMessageID][role]) == 1 {
 						delete(reactChannelJoinMap[messageID].RoleEmojiMap[storageMessageID], role)
 						ReactChannelJoinWrite(reactChannelJoinMap)
+
+						// Returns if the bot called the func
+						if m.Author.ID == s.State.User.ID {
+							misc.MapMutex.Unlock()
+							return
+						}
 						_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed emoji react join from message.")
 						if err != nil {
 							_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -468,6 +506,12 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 						a := reactChannelJoinMap[commandStrings[1]].RoleEmojiMap[storageMessageID][role]
 						a = append(a[:index], a[index+1:]...)
 						reactChannelJoinMap[commandStrings[1]].RoleEmojiMap[storageMessageID][role] = a
+
+						// Returns if the bot called the func
+						if m.Author.ID == s.State.User.ID {
+							misc.MapMutex.Unlock()
+							return
+						}
 						_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed emoji react join from message.")
 						if err != nil {
 							_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -490,6 +534,11 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// If it comes this far it means it's an invalid emoji
 	if emojiRegex == nil && emojiRegexAPI == nil {
+
+		// Returns if the bot called the func
+		if m.Author.ID == s.State.User.ID {
+			return
+		}
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Invalid emoji. Please input a valid emoji or emoji API name.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -574,7 +623,7 @@ func ReactInfoRead() {
 	misc.MapMutex.Unlock()
 }
 
-// Writes react channel join info to ReactChannelJoinWrite.json
+// Writes react channel join info to ReactChannelJoin.json
 func ReactChannelJoinWrite(info map[string]*reactChannelJoinStruct) {
 
 	// Turns info slice into byte ready to be pushed to file
@@ -644,29 +693,407 @@ func SaveReactJoin(messageID string, role string, emoji string) {
 	misc.MapMutex.Unlock()
 }
 
-//func init() {
-//	add(&command{
-//		execute:  setReactJoinCommand,
-//		trigger:  "setreact",
-//		aliases:  []string{"setreactjoin", "addreact"},
-//		desc:     "Sets a react join on a specific message, role and emote.",
-//		elevated: true,
-//		category: "reacts",
-//	})
-//	add(&command{
-//		execute:  removeReactJoinCommand,
-//		trigger:  "removereact",
-//		aliases:  []string{"removereactjoin", "deletereact"},
-//		desc:     "Removes a set react join.",
-//		elevated: true,
-//		category: "reacts",
-//	})
-//	add(&command{
-//		execute:  viewReactJoinsCommand,
-//		trigger:  "viewreacts",
-//		aliases:  []string{"viewreactjoins", "viewreact", "viewreacts", "reacts", "react"},
-//		desc:     "Views all set react joins.",
-//		elevated: true,
-//		category: "reacts",
-//	})
-//}
+// Adds role to the user that uses this command if the role is between opt-in dummy roles
+func joinCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	var (
+		roleID         string
+		name           string
+		chanMention    string
+		topic		   string
+
+		hasRoleAlready bool
+		roleExists	   bool
+	)
+
+	// Pulls info on message author
+	mem, err := s.State.Member(config.ServerID, m.Author.ID)
+	if err != nil {
+		mem, err = s.GuildMember(config.ServerID, m.Author.ID)
+		if err != nil {
+			return
+		}
+	}
+
+	messageLowercase := strings.ToLower(m.Content)
+	commandStrings := strings.Split(messageLowercase, " ")
+
+	if len(commandStrings) == 1 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "join [channel]`")
+		if err != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
+
+	// Pulls the role name from strings after "joinchannel " or "join "
+	if strings.HasPrefix(messageLowercase, config.BotPrefix+"joinchannel ") {
+		name = strings.Replace(messageLowercase, config.BotPrefix+"joinchannel ", "", -1)
+	} else {
+		name = strings.Replace(messageLowercase, config.BotPrefix+"join ", "", -1)
+	}
+
+	// Pulls info on server roles
+	deb, err := s.GuildRoles(config.ServerID)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+
+	// Pulls info on server channels
+	cha, err := s.GuildChannels(config.ServerID)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+
+	// Checks if there's a # before the channel name and removes it if so
+	if strings.Contains(name, "#") {
+		name = strings.Replace(name, "#", "", -1)
+
+		// Checks if it's in a mention format. If so then user already has access to channel
+		if strings.Contains(name, "<") {
+
+			// Fetches mention
+			name = strings.Replace(name, ">", "", -1)
+			name = strings.Replace(name, "<", "", -1)
+			name = misc.ChMentionID(name)
+
+			// Sends error message to user in DMs
+			dm, err := s.UserChannelCreate(m.Author.ID)
+			if err != nil {
+				return
+			}
+			_, _ = s.ChannelMessageSend(dm.ID, "You're already in "+name)
+			return
+		}
+	}
+
+	// Checks if the role exists on the server, sends error message if not
+	for i := 0; i < len(deb); i++ {
+		if deb[i].Name == name {
+			roleID = deb[i].ID
+			if strings.Contains(deb[i].ID, roleID) {
+				roleExists = true
+				break
+			}
+		}
+	}
+	if !roleExists {
+
+		// Sends error message to user in DMs if possible
+		dm, err := s.UserChannelCreate(m.Author.ID)
+		if err != nil {
+			return
+		}
+		_, _ = s.ChannelMessageSend(dm.ID, "There's no #"+name)
+		return
+	}
+
+	// Sets role ID
+	for i := 0; i < len(deb); i++ {
+		if deb[i].Name == name && roleID != "" {
+			roleID = deb[i].ID
+			break
+		}
+	}
+
+	// Checks if the user already has the role. Sends error message if he does
+	for i := 0; i < len(mem.Roles); i++ {
+		if strings.Contains(mem.Roles[i], roleID) {
+			hasRoleAlready = true
+			break
+		}
+	}
+	if hasRoleAlready {
+		// Sets the channel mention to the variable chanMention
+		for j := 0; j < len(cha); j++ {
+			if cha[j].Name == name {
+				chanMention = misc.ChMention(cha[j])
+				break
+			}
+		}
+
+		// Sends error message to user in DMs
+		dm, err := s.UserChannelCreate(m.Author.ID)
+		if err != nil {
+			return
+		}
+		_, _ = s.ChannelMessageSend(dm.ID, "You're already in "+chanMention)
+		return
+	}
+
+	// Updates the position of opt-in-under and opt-in-above position
+	for i := 0; i < len(deb); i++ {
+		if deb[i].Name == config.OptInUnder {
+			misc.OptinUnderPosition = deb[i].Position
+		} else if deb[i].Name == config.OptInAbove {
+			misc.OptinAbovePosition = deb[i].Position
+		}
+	}
+
+	// Sets role
+	role, err := s.State.Role(config.ServerID, roleID)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+
+	// Gives role to user if the role is between dummy opt-ins
+	if role.Position < misc.OptinUnderPosition &&
+		role.Position > misc.OptinAbovePosition {
+		err = s.GuildMemberRoleAdd(config.ServerID, m.Author.ID, roleID)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err)
+			return
+		}
+
+		for j := 0; j < len(cha); j++ {
+			if cha[j].Name == name {
+				topic = cha[j].Topic
+				// Sets the channel mention to the variable chanMention
+				chanMention = misc.ChMention(cha[j])
+				break
+			}
+		}
+
+		success := "You have joined " + chanMention
+		if topic != "" {
+			success = success + "\n **Topic:** " + topic
+		}
+
+		// Sends success message to user in DMs if possible
+		dm, err := s.UserChannelCreate(m.Author.ID)
+		if err != nil {
+			return
+		}
+		_, _ = s.ChannelMessageSend(dm.ID, success)
+	}
+}
+
+// Removes a role from the user that uses this command if the role is between opt-in dummy roles
+func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	var (
+		roleID         string
+		name           string
+		chanMention    string
+
+		hasRoleAlready bool
+		roleExists	   bool
+	)
+
+	// Pulls info on message author
+	mem, err := s.State.Member(config.ServerID, m.Author.ID)
+	if err != nil {
+		mem, err = s.GuildMember(config.ServerID, m.Author.ID)
+		if err != nil {
+			return
+		}
+	}
+
+	messageLowercase := strings.ToLower(m.Content)
+	commandStrings := strings.Split(messageLowercase, " ")
+
+	if len(commandStrings) == 1 {
+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "leave [channel]`")
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
+
+	// Pulls the role name from strings after "leavechannel " or "leave "
+	if strings.HasPrefix(messageLowercase, config.BotPrefix+"leavechannel ") {
+		name = strings.Replace(messageLowercase, config.BotPrefix+"leavechannel ", "", -1)
+	} else {
+		name = strings.Replace(messageLowercase, config.BotPrefix+"leave ", "", -1)
+	}
+
+	// Pulls info on server roles
+	deb, err := s.GuildRoles(config.ServerID)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+
+	// Pulls info on server channels
+	cha, err := s.GuildChannels(config.ServerID)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+
+	// Checks if there's a # before the channel name and removes it if so
+	if strings.Contains(name, "#") {
+		name = strings.Replace(name, "#", "", -1)
+		// Checks if it's in a mention format. If so then user already has access to channel
+		if strings.Contains(name, "<") {
+
+			// Fetches mention
+			name = strings.Replace(name, ">", "", -1)
+			name = strings.Replace(name, "<", "", -1)
+			name = misc.ChMentionID(name)
+
+			// Sends error message to user in DMs
+			dm, err := s.UserChannelCreate(m.Author.ID)
+			if err != nil {
+				return
+			}
+			_, _ = s.ChannelMessageSend(dm.ID, "You cannot leave "+name + " using this command.")
+			return
+		}
+	}
+
+	// Checks if the role exists on the server, sends error message if not
+	for i := 0; i < len(deb); i++ {
+		if deb[i].Name == name {
+			roleID = deb[i].ID
+			if strings.Contains(deb[i].ID, roleID) {
+				roleExists = true
+				break
+			}
+		}
+	}
+	if !roleExists  {
+		// Sends error message to user in DMs if possible
+		dm, err := s.UserChannelCreate(m.Author.ID)
+		if err != nil {
+			return
+		}
+		_, _ = s.ChannelMessageSend(dm.ID, "There's no #"+name+"")
+		return
+	}
+
+	// Sets role ID
+	for i := 0; i < len(deb); i++ {
+		if deb[i].Name == name && roleID != "" {
+			roleID = deb[i].ID
+			break
+		}
+	}
+
+	// Checks if the user already has the role. Sends error message if he does
+	for i := 0; i < len(mem.Roles); i++ {
+		if strings.Contains(mem.Roles[i], roleID) {
+			hasRoleAlready = true
+			break
+		}
+	}
+	if !hasRoleAlready {
+
+		// Sets the channel mention to the variable chanMention
+		for j := 0; j < len(cha); j++ {
+			if cha[j].Name == name {
+				chanMention = misc.ChMention(cha[j])
+				break
+			}
+		}
+
+		// Sends error message to user in DMs if possible
+		dm, err := s.UserChannelCreate(m.Author.ID)
+		if err != nil {
+			return
+		}
+		_, _ = s.ChannelMessageSend(dm.ID, "You're already out of " + chanMention + "")
+		return
+	}
+
+	// Updates the position of opt-in-under and opt-in-above position
+	for i := 0; i < len(deb); i++ {
+		if deb[i].Name == config.OptInUnder {
+			misc.OptinUnderPosition = deb[i].Position
+		} else if deb[i].Name == config.OptInAbove {
+			misc.OptinAbovePosition = deb[i].Position
+		}
+	}
+
+	// Sets role
+	role, err := s.State.Role(config.ServerID, roleID)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+
+	// Removes role from user if the role is between dummy opt-ins
+	if role.Position < misc.OptinUnderPosition &&
+		role.Position > misc.OptinAbovePosition {
+
+		var (
+			chanMention string
+		)
+
+		err = s.GuildMemberRoleRemove(config.ServerID, m.Author.ID, roleID)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err)
+			return
+		}
+
+		for j := 0; j < len(cha); j++ {
+			if cha[j].Name == name {
+				// Sets the channel mention to the variable chanMention
+				chanMention = misc.ChMention(cha[j])
+				break
+			}
+		}
+
+		// Sends success message to user in DMs if possible
+		dm, err := s.UserChannelCreate(m.Author.ID)
+		if err != nil {
+			return
+		}
+		_, _ = s.ChannelMessageSend(dm.ID, "You have left " + chanMention)
+	}
+}
+
+func init() {
+	add(&command{
+		execute:  setReactJoinCommand,
+		trigger:  "setreact",
+		aliases:  []string{"setreactjoin", "addreact"},
+		desc:     "Sets a react join on a specific message, role and emote.",
+		elevated: true,
+		category: "reacts",
+	})
+	add(&command{
+		execute:  removeReactJoinCommand,
+		trigger:  "removereact",
+		aliases:  []string{"removereactjoin", "deletereact"},
+		desc:     "Removes a set react join.",
+		elevated: true,
+		category: "reacts",
+	})
+	add(&command{
+		execute:  viewReactJoinsCommand,
+		trigger:  "viewreacts",
+		aliases:  []string{"viewreactjoins", "viewreact", "viewreacts", "reacts", "react"},
+		desc:     "Views all set react joins.",
+		elevated: true,
+		category: "reacts",
+	})
+	add(&command{
+		execute:  joinCommand,
+		trigger:  "join",
+		aliases:  []string{"joinchannel"},
+		desc:     "Join a spoiler channel.",
+		deleteAfter: true,
+		category: "normal",
+	})
+	add(&command{
+		execute:  leaveCommand,
+		trigger:  "leave",
+		aliases:  []string{"leavechannel"},
+		desc:     "Leave a spoiler channel.",
+		deleteAfter: true,
+		category: "normal",
+	})
+}

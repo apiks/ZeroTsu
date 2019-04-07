@@ -83,6 +83,11 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 	}
+	if cmd.category == "reacts" {
+		if config.Kaguya == "true" {
+			return
+		}
+	}
 	cmd.execute(s, m.Message)
 	misc.MapMutex.Lock()
 	cmd.commandCount++

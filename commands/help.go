@@ -122,11 +122,16 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
 		adminCategories.Name = "Categories:"
 		adminCategories.Inline = true
 
-		// Iterates through categories and their descriptions and adds them to the embed. Special behavior for waifus based on config
+		// Iterates through categories and their descriptions and adds them to the embed. Special behavior for waifus and reacts based on config
 		misc.MapMutex.Lock()
 		for i := 0; i < len(categoriesSorted); i++ {
 			if categoriesSorted[i] == "Waifus" {
 				if config.Waifus != "true" {
+					continue
+				}
+			}
+			if categoriesSorted[i] == "Reacts" {
+				if config.Kaguya == "true" {
 					continue
 				}
 			}
@@ -549,6 +554,85 @@ func helpPunishmentEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	return err
 }
 
+// Prints pretty help
+func helpReactsCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	// Checks if it's within the config server
+	ch, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		ch, err = s.Channel(m.ChannelID)
+		if err != nil {
+			return
+		}
+	}
+	if ch.GuildID != config.ServerID {
+		return
+	}
+
+	err = helpReactsEmbed(s, m)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+}
+
+// Mod command help page embed
+func helpReactsEmbed(s *discordgo.Session, m *discordgo.Message) error {
+
+	var (
+		embedMess          discordgo.MessageEmbed
+		embedFooter	   	   discordgo.MessageEmbedFooter
+
+		// Embed slice and its fields
+		embed    		   []*discordgo.MessageEmbedField
+		commandsField  	   discordgo.MessageEmbedField
+
+		// Slice for sorting
+		commands		   []string
+	)
+
+	// Set embed color
+	embedMess.Color = 0x00ff00
+
+	// Sets footer field
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", config.BotPrefix)
+	embedMess.Footer = &embedFooter
+
+	// Sets command field
+	commandsField.Name = "Command:"
+	commandsField.Inline = true
+
+	// Iterates through commands in the filter category
+	misc.MapMutex.Lock()
+	for command := range commandMap {
+		commands = append(commands, command)
+	}
+	sort.Strings(commands)
+	for i := 0; i < len(commands); i++ {
+		if commandMap[commands[i]].category == "reacts" {
+			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], commandMap[commands[i]].desc)
+		}
+	}
+	misc.MapMutex.Unlock()
+
+	// Adds the field to embed slice (because embedMess.Fields requires slice input)
+	embed = append(embed, &commandsField)
+
+	// Adds everything together
+	embedMess.Fields = embed
+
+	// Sends embed in channel
+	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return err
+		}
+		return err
+	}
+	return err
+}
+
 // Mod command help page
 func helpRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if it's within the config server
@@ -830,7 +914,7 @@ func helpWaifuEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	commandsField.Name = "Command:"
 	commandsField.Inline = true
 
-	// Iterates through commands in the filter category
+	// Iterates through commands in the waifus category
 	misc.MapMutex.Lock()
 	for command := range commandMap {
 		commands = append(commands, command)
@@ -1003,6 +1087,13 @@ func init() {
 		trigger:  "hpunishment",
 		aliases:  []string{"h[punishment]", "hpunishments", "h[punishments]"},
 		desc:     "Print all mod pusnihment commands.",
+		elevated: true,
+	})
+	add(&command{
+		execute:  helpReactsCommand,
+		trigger:  "helpreacts",
+		aliases:  []string{"hreact", "helpreacts", "hreacts"},
+		desc:     "Print all react mod commands.",
 		elevated: true,
 	})
 	add(&command{

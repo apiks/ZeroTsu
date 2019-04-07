@@ -32,7 +32,8 @@ func setRssCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	if strings.Contains(commandStrings[1], "/u/") == true {
+	if strings.Contains(commandStrings[1], "/u/") ||
+		strings.Contains(commandStrings[1], "u/") {
 		author = commandStrings[1]
 		thread = strings.Replace(messageLowercase, config.BotPrefix+"setrss "+commandStrings[1]+" ", "", 1)
 
@@ -113,7 +114,8 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	if strings.Contains(commandStrings[1], "/u/") == true {
+	if strings.Contains(commandStrings[1], "/u/") ||
+		strings.Contains(commandStrings[1], "u/") {
 		author = commandStrings[1]
 		thread = strings.Replace(messageLowercase, config.BotPrefix+"removerss "+commandStrings[1]+" ", "", 1)
 	} else {
@@ -124,7 +126,7 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Calls the function to remove the threads from rssThreads.json
 	misc.MapMutex.Lock()
-	threadExists, err := misc.RssThreadsRemove(thread, m.ChannelID, author)
+	threadExists, err := misc.RssThreadsRemove(thread, author)
 	if err != nil {
 		misc.MapMutex.Unlock()
 		misc.CommandErrorHandler(s, m, err)
@@ -222,7 +224,7 @@ func init() {
 	add(&command{
 		execute:  viewRssCommand,
 		trigger:  "viewrss",
-		aliases:  []string{"showrss", "rssview", "rssshow", "viewrs", "showrs"},
+		aliases:  []string{"showrss", "rssview", "rssshow", "viewrs", "showrs", "rss"},
 		desc:     "Prints all currently set RSS.",
 		elevated: true,
 		category: "rss",

@@ -433,25 +433,34 @@ func RssThreadsWrite(thread string, channel string, author string) (bool, error)
 }
 
 // Removes string "thread" from rssThreads.json
-func RssThreadsRemove(thread string, channel string, author string) (bool, error) {
+func RssThreadsRemove(thread string, author string) (bool, error) {
 
 	thread = strings.ToLower(thread)
 
 	var (
 		threadExists = false
-		threadStruct = RssThreadStruct{thread, channel, author}
 		err          error
 	)
 
 	// Deletes the thread if it finds it exists
-	for i := 0; i < len(ReadRssThreads); i++ {
-		if ReadRssThreads[i].Thread == threadStruct.Thread {
+	for i, readThread := range ReadRssThreads {
+		if readThread.Thread == thread {
 			threadExists = true
-			ReadRssThreads = append(ReadRssThreads[:i], ReadRssThreads[i+1:]...)
+			if author == "" {
+				ReadRssThreads = ReadRssThreads[:i+copy(ReadRssThreads[i:], ReadRssThreads[i+1:])]
+				break
+			} else {
+				if readThread.Author == author {
+					ReadRssThreads = ReadRssThreads[:i+copy(ReadRssThreads[i:], ReadRssThreads[i+1:])]
+					break
+				} else {
+					threadExists = false
+				}
+			}
 		}
 	}
 
-	if threadExists == false {
+	if !threadExists {
 		return false, err
 	}
 
@@ -519,7 +528,7 @@ func RssThreadsTimerWrite(thread string, date time.Time, channelID string) bool 
 }
 
 // Removes string "thread" to rssThreadCheck.json
-func RssThreadsTimerRemove(thread string, date time.Time, channelID string) {
+func RssThreadsTimerRemove(thread string, date time.Time, channelID string) error {
 
 	thread = strings.ToLower(thread)
 
@@ -530,7 +539,7 @@ func RssThreadsTimerRemove(thread string, date time.Time, channelID string) {
 
 	// Deletes the thread if it finds it exists
 	for i := 0; i < len(ReadRssThreadsCheck); i++ {
-		if ReadRssThreadsCheck[i].Thread == threadCheckStruct.Thread &&
+		if strings.ToLower(ReadRssThreadsCheck[i].Thread) == threadCheckStruct.Thread &&
 			ReadRssThreadsCheck[i].ChannelID == threadCheckStruct.ChannelID {
 			threadExists = true
 			ReadRssThreadsCheck = append(ReadRssThreadsCheck[:i], ReadRssThreadsCheck[i+1:]...)
@@ -538,21 +547,22 @@ func RssThreadsTimerRemove(thread string, date time.Time, channelID string) {
 		}
 	}
 	if !threadExists {
-		fmt.Println("thread doesn't exist")
-		return
+		return fmt.Errorf("Thread doesn't exist")
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.Marshal(ReadRssThreadsCheck)
 	if err != nil {
-		return
+		return err
 	}
 
 	// Writes to file
 	err = ioutil.WriteFile("database/rssThreadCheck.json", marshaledStruct, 0644)
 	if err != nil {
-		return
+		return err
 	}
+
+	return nil
 }
 
 // Reads threads from rssThreadCheck.json
@@ -1126,4 +1136,105 @@ func MentionParser(s *discordgo.Session, m string) string {
 	}
 
 	return m
+}
+
+// Parses a string for a channel and returns its ID and name
+func ChannelParser(s *discordgo.Session, channel string) (string, string) {
+	var (
+		channelID 	string
+		channelName string
+		flag		bool
+	)
+
+	// If it's a channel ping remove <# and > from it to get the channel ID
+	if strings.Contains(channel, "#") {
+		channelID = strings.TrimPrefix(channel,"<#")
+		channelID = strings.TrimSuffix(channelID,">")
+	}
+
+	// Check if it's an ID by length and save the ID if so
+	_, err := strconv.Atoi(channel)
+	if len(channel) >= 17 && err == nil {
+		channelID = channel
+	}
+
+	// Find the channelID if it doesn't exists via channel name, else find the channel name
+	channels, err := s.GuildChannels(config.ServerID)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+		if err != nil {
+			return channelID, channelName
+		}
+		return channelID, channelName
+	}
+	for _, cha := range channels {
+		if channelID == "" {
+			if strings.ToLower(cha.Name) == strings.ToLower(channel) {
+				channelID = cha.ID
+				channelName = cha.Name
+				flag = true
+				break
+			}
+		}
+		if cha.ID == channelID {
+			channelName = cha.Name
+			flag = true
+			break
+		}
+	}
+
+	if !flag {
+		return "", ""
+	}
+
+	return channelID, channelName
+}
+
+// Parses a string for a category and returns its ID and name
+func CategoryParser(s *discordgo.Session, category string) (string, string) {
+	var (
+		categoryID 		string
+		categoryName 	string
+		flag			bool
+	)
+
+	// Check if it's an ID by length and save the ID if so
+	_, err := strconv.Atoi(category)
+	if len(category) >= 17 && err == nil {
+		categoryID = category
+	}
+
+	// Find the categoryID if it doesn't exists via category name, else find the category name
+	channels, err := s.GuildChannels(config.ServerID)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+		if err != nil {
+			return categoryID, categoryID
+		}
+		return categoryID, categoryName
+	}
+	for _, cha := range channels {
+		if categoryID == "" {
+			if cha.Type != discordgo.ChannelTypeGuildCategory {
+				continue
+			}
+			if strings.ToLower(cha.Name) == strings.ToLower(category) {
+				categoryID = cha.ID
+				categoryName = cha.Name
+				flag = true
+				break
+			}
+		}
+		if cha.ID == categoryID {
+			categoryName = cha.Name
+			flag = true
+			break
+		}
+	}
+
+	if !flag {
+		return "", ""
+	}
+
+	return categoryID, categoryName
 }

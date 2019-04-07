@@ -23,6 +23,7 @@ var (
 	ModCategoryID			string
 	VoteChannelCategoryID 	string
 	Waifus					string
+	Kaguya					string
 
 	RedditAppName			string
 	RedditAppSecret			string
@@ -46,6 +47,7 @@ type configStruct struct {
 	ModCategoryID			string	 		`json:"ModCategoryID"`
 	VoteChannelCategoryID 	string 			`json:"VoteChannelCategoryID"`
 	Waifus					string			`json:"Waifus"`
+	Kaguya					string			`json:"Kaguya"`
 }
 
 type configSecrets struct {
@@ -83,6 +85,7 @@ func ReadConfig() error {
 	ModCategoryID = config.ModCategoryID
 	VoteChannelCategoryID = config.VoteChannelCategoryID
 	Waifus = config.Waifus
+	Kaguya = config.Kaguya
 
 	// Takes the bot token from the environment variable. Reason is to avoid pushing token to github
 	if os.Getenv("ZeroTsuToken") == "" {
