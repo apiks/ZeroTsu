@@ -569,6 +569,11 @@ func helpReactsCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
+	// Checks if reacts are disabled in config
+	if config.Kaguya == "true" {
+		return
+	}
+
 	err = helpReactsEmbed(s, m)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
@@ -878,6 +883,11 @@ func helpWaifuCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	if ch.GuildID != config.ServerID {
+		return
+	}
+
+	// Checks if waifus are disabled in config
+	if config.Waifus != "true" {
 		return
 	}
 
