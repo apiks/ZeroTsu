@@ -62,6 +62,8 @@ How to install:
        VoteChannelCategoryID is the category ID of the category in which the channel created from a user channel creation vote is put
 	   
 	   Waifus is whether to enable the waifu commands. Use "true" to turn it on. Otherwise leave empty or "false"
+	   
+	   Kaguya is whether to enable the reacts commands. Use "true" to disable them. otherwise leave empty or "false" to turn them on. Kaguya is the other bot that goes with this one for react purposes to avoid rate limitation.
 
 3. Make a file called configsecrets.json in the foldder config.json is in and set this up the following way. It's for verification and optional IF Website value above is empty:
 ```javascript
