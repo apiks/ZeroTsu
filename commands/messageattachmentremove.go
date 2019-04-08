@@ -13,7 +13,8 @@ import (
 
 var (
 	whitelist = [...]string{"png", "gif", "gifv",
-		"jpeg", "jpg", "bmp", "tif", "tiff", "webm", "webps"}
+		"jpeg", "jpg", "bmp", "tif", "tiff", "webm", "webps", "webp",
+		"mp4", "ogg", "wmv", "3gp", "avi", "flv", "wav"}
 )
 
 // Checks messages with uploads if they're uploading a whitelisted file type. If not it removes them
