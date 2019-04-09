@@ -603,7 +603,6 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 	misc.MapMutex.Lock()
 	if spamFilterMap[m.Author.ID] < 4 {
 		spamFilterMap[m.Author.ID]++
-		misc.MapMutex.Unlock()
 	} else {
 		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil && spamFilterMap[m.Author.ID] > 15 {
@@ -617,8 +616,8 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 			misc.MapMutex.Unlock()
 			return
 		}
-		misc.MapMutex.Unlock()
 	}
+	misc.MapMutex.Unlock()
 }
 
 // Handles expiring user spam map

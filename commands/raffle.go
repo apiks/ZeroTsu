@@ -34,7 +34,7 @@ func raffleParticipateCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if such a raffle exists and adds the user ID to it if so
 	misc.MapMutex.Lock()
 	for index, raffle := range misc.RafflesSlice {
-		if raffle.Name == commandStrings[1] {
+		if raffle.Name == strings.ToLower(commandStrings[1]) {
 			raffleExists = true
 
 			// Checks if the user already joined that raffle
@@ -44,8 +44,10 @@ func raffleParticipateCommand(s *discordgo.Session, m *discordgo.Message) {
 					if err != nil {
 						_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 						if err != nil {
+							misc.MapMutex.Unlock()
 							return
 						}
+						misc.MapMutex.Unlock()
 						return
 					}
 					misc.MapMutex.Unlock()
@@ -211,8 +213,10 @@ func raffleLeaveCommand(s *discordgo.Session, m *discordgo.Message) {
 				if err != nil {
 					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 					if err != nil {
+						misc.MapMutex.Unlock()
 						return
 					}
+					misc.MapMutex.Unlock()
 					return
 				}
 				misc.MapMutex.Unlock()
@@ -355,34 +359,7 @@ func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	misc.MapMutex.Lock()
 	for raffleIndex, raffle := range misc.RafflesSlice {
-		if raffle.Name == commandStrings[1] {
-
-			//// Quick temp bugfix for sticker raffle. Will be removed
-			//users, err := s.MessageReactions("550409250489499658", raffle.ReactMessageID, "🎰", 100)
-			//if err != nil {
-			//	fmt.Println(err)
-			//	misc.MapMutex.Unlock()
-			//	return
-			//}
-			//for i, raffleUserID := range raffle.ParticipantIDs {
-			//	for _, reactUser := range users {
-			//		if raffleUserID == reactUser.ID {
-			//			flag = true
-			//		}
-			//	}
-			//	if !flag {
-			//		misc.RafflesSlice[raffleIndex].ParticipantIDs = append(misc.RafflesSlice[raffleIndex].ParticipantIDs[:i], misc.RafflesSlice[raffleIndex].ParticipantIDs[i+1:]...)
-			//	}
-			//	flag = false
-			//}
-			//err = misc.RafflesWrite(misc.RafflesSlice)
-			//if err != nil {
-			//	fmt.Println(err)
-			//	misc.MapMutex.Unlock()
-			//	return
-			//}
-
-
+		if raffle.Name == strings.ToLower(commandStrings[1]) {
 			participantLen := len(misc.RafflesSlice[raffleIndex].ParticipantIDs)
 			if participantLen == 0 {
 				winnerID = "none"
@@ -520,11 +497,7 @@ func viewRafflesCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, message)
 	if err != nil {
-		_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
-		if err != nil {
-			return
-		}
-		return
+		_, _ = s.ChannelMessageSend(config.BotLogID, err.Error())
 	}
 }
 

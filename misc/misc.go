@@ -387,11 +387,13 @@ func ListenForDeletedRoleHandler(s *discordgo.Session, g *discordgo.GuildRoleDel
 	if g.GuildID != config.ServerID {
 		return
 	}
+
+	MapMutex.Lock()
 	if SpoilerMap[g.RoleID] != nil {
+		MapMutex.Unlock()
 		return
 	}
 
-	MapMutex.Lock()
 	delete(SpoilerMap, g.RoleID)
 	MapMutex.Unlock()
 

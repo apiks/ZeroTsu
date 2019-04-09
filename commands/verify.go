@@ -21,10 +21,10 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if there's enough parameters (command, user and reddit username.)
 	if len(commandStrings) != 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"verify [@user, userID, or username#discrim] [redditUsername]`\n\n" +
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"verify [@user, userID, or username#discrim] [redditUsername]`\n\n"+
 			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -57,7 +57,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in the server. Cannot verify user until they rejoin the server.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
 					return
 				}
@@ -121,11 +121,8 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	err = verifyEmbed(s, m, userMem, redditUsername)
 	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
 			return
 		}
 		return
@@ -155,10 +152,10 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if there's enough parameters (command, user and reddit username.)
 	if len(commandStrings) < 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"unverify [@user, userID, or username#discrim]`\n\n" +
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"unverify [@user, userID, or username#discrim]`\n\n"+
 			"Note: If using username#discrim you can have spaces in the username.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -183,7 +180,7 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	} else {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in memberInfo. Cannot unverify user until they join the server.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -221,11 +218,8 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	err = unverifyEmbed(s, m, commandStrings[1])
 	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
 			return
 		}
 		return

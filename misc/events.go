@@ -228,7 +228,16 @@ func RSSParser(s *discordgo.Session) {
 
 		if difference > 0 {
 			// Removes the fact that the thread had been posted already
-			RssThreadsTimerRemove(ReadRssThreadsCheck[p].Thread, ReadRssThreadsCheck[p].Date, ReadRssThreadsCheck[p].ChannelID)
+			err = RssThreadsTimerRemove(ReadRssThreadsCheck[p].Thread, ReadRssThreadsCheck[p].Date, ReadRssThreadsCheck[p].ChannelID)
+			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+				if err != nil {
+					MapMutex.Unlock()
+					return
+				}
+				MapMutex.Unlock()
+				return
+			}
 		}
 	}
 

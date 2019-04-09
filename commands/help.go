@@ -41,11 +41,11 @@ func helpEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	// Checks for mod perms and handles accordingly
-	s.State.RWMutex.RLock()
+	s.RWMutex.RLock()
 	if misc.HasPermissions(mem) {
 		admin = true
 	}
-	s.State.RWMutex.RUnlock()
+	s.RWMutex.RUnlock()
 
 	err = helpEmbed(s, m, admin)
 	if err != nil {
@@ -109,6 +109,11 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
 		sort.Strings(commands)
 		for i := 0; i < len(commands); i++ {
 			if !commandMap[commands[i]].elevated {
+				if commandMap[commands[i]].category == "waifus" {
+					if config.Waifus != "true" {
+						continue
+					}
+				}
 				userCommands.Value += fmt.Sprintf("`%v` - %v\n", commands[i], commandMap[commands[i]].desc)
 			}
 		}

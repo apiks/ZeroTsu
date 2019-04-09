@@ -348,6 +348,7 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(reactChannelJoinMap) == 0 {
 		// Returns if the bot called the func
 		if m.Author.ID == s.State.User.ID {
+			misc.MapMutex.Unlock()
 			return
 		}
 
