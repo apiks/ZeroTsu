@@ -24,6 +24,8 @@ var (
 	VoteChannelCategoryID 	string
 	Waifus					string
 	Kaguya					string
+	MsgAttachRemoval		string
+	PlayingMsg				string
 
 	RedditAppName			string
 	RedditAppSecret			string
@@ -48,6 +50,8 @@ type configStruct struct {
 	VoteChannelCategoryID 	string 			`json:"VoteChannelCategoryID"`
 	Waifus					string			`json:"Waifus"`
 	Kaguya					string			`json:"Kaguya"`
+	MsgAttachRemoval		string			`json:"MsgAttachRemoval"`
+	PlayingMsg				string			`json:"PlayingMsg"`
 }
 
 type configSecrets struct {
@@ -86,6 +90,8 @@ func ReadConfig() error {
 	VoteChannelCategoryID = config.VoteChannelCategoryID
 	Waifus = config.Waifus
 	Kaguya = config.Kaguya
+	MsgAttachRemoval = config.MsgAttachRemoval
+	PlayingMsg = config.PlayingMsg
 
 	// Takes the bot token from the environment variable. Reason is to avoid pushing token to github
 	if os.Getenv("ZeroTsuToken") == "" {
@@ -117,6 +123,41 @@ func ReadConfigSecrets() error {
 	DiscordAppSecret = configsecrets.DiscordAppSecret
 
 	fmt.Println("Successfuly read hidden configsecrets file.")
+
+	return nil
+}
+
+// Writes current config values to storage
+func WriteConfig() error {
+
+	// Updates all values
+	config.BotPrefix = BotPrefix
+	config.BotID = BotID
+	config.ServerID = ServerID
+	config.BotLogID = BotLogID
+	config.CommandRoles = CommandRoles
+	config.OptInUnder = OptInUnder
+	config.OptInAbove = OptInAbove
+	config.VoiceChaID = VoiceChaID
+	config.Website = Website
+	config.ModCategoryID = ModCategoryID
+	config.VoteChannelCategoryID = VoteChannelCategoryID
+	config.Waifus = Waifus
+	config.Kaguya = Kaguya
+	config.MsgAttachRemoval = MsgAttachRemoval
+	config.PlayingMsg = PlayingMsg
+
+	// Turns the config struct to bytes
+	marshaledStruct, err := json.MarshalIndent(config, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	// Writes to file
+	err = ioutil.WriteFile("config.json", marshaledStruct, 0644)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

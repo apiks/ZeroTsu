@@ -8,7 +8,7 @@
 
 * Extensive member system that tracks past member usernames, nicknames, mod-issued warnings, kicks, bans, reddit verification, verification date, whether in the server, timestamps for punishments, server join date
 
-* Punishment system where you can issue warnings, kick or ban people for a set period of time with the bot and log that using the member system, or remove those punishments and unban
+* Punishment system where you can issue warnings, kick or ban people for a set period of time with the bot and log that using the member system, or remove those punishments and unban. Also shows timestamps for all of those
 
 * Website verification system for reddit account linking and confirmation before being able to use the server
 
@@ -64,6 +64,10 @@ How to install:
 	   Waifus is whether to enable the waifu commands. Use "true" to turn it on. Otherwise leave empty or "false"
 	   
 	   Kaguya is whether to enable the reacts commands. Use "true" to disable them. otherwise leave empty or "false" to turn them on. Kaguya is the other bot that goes with this one for react purposes to avoid rate limitation.
+	   
+	   MsgAttachRemoval is whether to enable attachment removal of all file extensions except images, gifs and videos. Use "true" to enable, otherwise leave empty or "false" to turn it off.
+	   
+	   PlayingMsg is whatever "Playing" message you want the BOT to display. Leave empty to disable (can only be disabled from here.)
 
 3. Make a file called configsecrets.json in the foldder config.json is in and set this up the following way. It's for verification and optional IF Website value above is empty:
 ```javascript

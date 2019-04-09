@@ -20,7 +20,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
 	var banFlag bool
 
-	err := s.UpdateStatus(0, "with her darling")
+	err := s.UpdateStatus(0, config.PlayingMsg)
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 		if err != nil {

@@ -185,10 +185,12 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		user.VerifiedDate
 
 	// Sets reddit Username if it exists
-	if user.RedditUsername != "" {
-		message = message + "\n\n**Reddit Account:** " + "<https://reddit.com/u/" + user.RedditUsername + ">"
-	} else {
-		message += "\n\n**Reddit Account:** " + "None"
+	if config.Website != "" {
+		if user.RedditUsername != "" {
+			message = message + "\n\n**Reddit Account:** " + "<https://reddit.com/u/" + user.RedditUsername + ">"
+		} else {
+			message += "\n\n**Reddit Account:** " + "None"
+		}
 	}
 
 	// Sets unban date if it exists
@@ -201,22 +203,24 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Alt check
-	misc.MapMutex.Lock()
-	alts := CheckAltAccountWhois(userID)
+	if config.Website != "" {
+		misc.MapMutex.Lock()
+		alts := CheckAltAccountWhois(userID)
 
-	// If there's more than one account with the same reddit username add to whois message
-	if len(alts) > 1 {
-		// Forms the alts string
-		success := "\n\n**Alts:**\n"
-		for _, altID := range alts {
-			success += fmt.Sprintf("%v#%v | %v\n", misc.MemberInfoMap[altID].Username, misc.MemberInfoMap[altID].Discrim, altID)
+		// If there's more than one account with the same reddit username add to whois message
+		if len(alts) > 1 {
+			// Forms the alts string
+			success := "\n\n**Alts:**\n"
+			for _, altID := range alts {
+				success += fmt.Sprintf("%v#%v | %v\n", misc.MemberInfoMap[altID].Username, misc.MemberInfoMap[altID].Discrim, altID)
+			}
+
+			// Adds the alts to the whois message
+			message += success
+			alts = nil
 		}
-
-		// Adds the alts to the whois message
-		message += success
-		alts = nil
+		misc.MapMutex.Unlock()
 	}
-	misc.MapMutex.Unlock()
 
 	// Checks if the message contains a mention and finds the actual name instead of ID
 	message = misc.MentionParser(s, message)
@@ -281,7 +285,7 @@ func CheckAltAccountWhois(id string) []string {
 	}
 }
 
-// Displays all punishments for that specific user with timestamps and type of punishment
+// Displays all punishments for that user with timestamps and type of punishment
 func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var message string

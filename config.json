@@ -16,5 +16,7 @@
   "ModCategoryID": "360994750796529665",
   "VoteChannelCategoryID": "363756332920340481",
   "Waifus": "false",
-  "Kaguya": "true"
+  "Kaguya": "true",
+  "MsgAttachRemoval": "true",
+  "PlayingMsg": "with her darling"
 }

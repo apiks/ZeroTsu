@@ -128,8 +128,10 @@ func Start() {
 	// React Filter
 	goBot.AddHandler(commands.FilterReactsHandler)
 
-	// Deletes non-whitelisted attachments
-	goBot.AddHandler(commands.MessageAttachmentsHandler)
+	// Deletes non-whitelisted attachments if set to true
+	if config.MsgAttachRemoval == "true" {
+		goBot.AddHandler(commands.MessageAttachmentsHandler)
+	}
 
 	//Converter
 	//goBot.AddHandler(commands.ConverterHandler)
