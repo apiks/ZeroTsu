@@ -81,7 +81,7 @@ How to install:
 5. Set your "ZeroTsuToken" environment variable to the BOT token (either hidden on the system env or in config.go ReadConfig func with os.Setenv("ZeroTsuToken", "TOKEN"))
 6. Compile in your favorite IDE or compiler with "go build" (or type "set GOOS=[Preferred OS]" to change OS first (like linux) and then "go build".)
 7. Invite BOT to server and give it an admin role
-8. Start the BOT and use
+8. Start the BOT as admin and use
 
 <br/>
 
