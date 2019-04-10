@@ -55,7 +55,7 @@ How to install:
 
        VoiceChaID is the ID of the voice channel you want the bot to track and give the "voice" role to. Leave empty if not using it
 
-       Website is the address/ip+:port of the website or server. Leave empty if not using it
+       Website is the address/ip+:port of the website. Leave empty if not using it
 
        ModCategoryID is the ID of a mod category if it exists. Leave empty if it doesn't exist
 

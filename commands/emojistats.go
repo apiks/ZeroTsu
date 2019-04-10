@@ -188,13 +188,20 @@ func OnMessageEmojiUnreact(s *discordgo.Session, r *discordgo.MessageReactionRem
 // Display emoji stats
 func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 
-	var msgs []string
+	var (
+		msgs 			[]string
+		printEmojiMap = make(map[string]*misc.Emoji)
+		guildFlag		bool
+	)
 
-	// Sorts emojis by their message use
+	// Merges duplicates and returns that as a map
 	misc.MapMutex.Lock()
-	emojis := make([]*misc.Emoji, len(misc.EmojiStats))
-	for i := 0; i < len(misc.EmojiStats); i++ {
-		for _, emoji := range misc.EmojiStats {
+	printEmojiMap = mergeDuplicates()
+
+	// Sorts emojis by their message use from the above map
+	emojis := make([]*misc.Emoji, len(printEmojiMap))
+	for i := 0; i < len(printEmojiMap); i++ {
+		for _, emoji := range printEmojiMap {
 			emojis[i] = emoji
 			i++
 		}
@@ -202,13 +209,9 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 	sort.Sort(byEmojiFrequency(emojis))
 	misc.MapMutex.Unlock()
 
-	// Pull guild info
-	guild, err := s.State.Guild(config.ServerID)
+	guild, err := s.Guild(config.ServerID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		misc.ErrorLocation(err)
 		return
 	}
 
@@ -216,21 +219,25 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 	message := "```CSS\nName:                         ([Message Usage] | [Unique Usage] | [Reactions]) \n\n"
 	misc.MapMutex.Lock()
 	for _, emoji := range emojis {
-		// Fixes emojis without ID
-		if emoji.ID == "" {
-			for index := range guild.Emojis {
-				if guild.Emojis[index].Name == emoji.Name {
-					emoji.ID = guild.Emojis[index].ID
-					misc.EmojiStats[emoji.ID] = emoji
-					break
-				}
+
+		// Checks if an emoji with that name exists on the server before adding to print
+		for _, guildEmoji := range guild.Emojis {
+			if guildEmoji.Name == emoji.Name {
+				guildFlag = true
+				break
 			}
 		}
+		if !guildFlag {
+			continue
+		}
 
-		if emoji.ID != "" {
-			message += lineSpaceFormatEmoji(emoji.ID)
+		if emoji.Name != "" {
+			message += lineSpaceFormatEmoji(emoji.Name, printEmojiMap)
 			msgs, message = splitStatMessages(msgs, message)
 		}
+
+		// Resets guildFlag
+		guildFlag = false
 	}
 	misc.MapMutex.Unlock()
 
@@ -256,28 +263,108 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 }
 
 // Formats the line space length for the above to keep level spacing
-func lineSpaceFormatEmoji(id string) string {
-	line := fmt.Sprintf("%v", misc.EmojiStats[id].Name)
-	spacesRequired := 30 - len(misc.EmojiStats[id].Name)
+func lineSpaceFormatEmoji(name string, printEmojiMap map[string]*misc.Emoji) string {
+	line := fmt.Sprintf("%v", name)
+	spacesRequired := 30 - len(name)
 	for i := 0; i < spacesRequired; i++ {
 		line += " "
 	}
-	line += fmt.Sprintf("([%d])", misc.EmojiStats[id].MessageUsage)
+	line += fmt.Sprintf("([%d])", printEmojiMap[name].MessageUsage)
 	spacesRequired = 47 - len(line)
 	for i := 0; i < spacesRequired; i++ {
 		line += " "
 	}
-	line += fmt.Sprintf("| ([%d])", misc.EmojiStats[id].UniqueMessageUsage)
+	line += fmt.Sprintf("| ([%d])", printEmojiMap[name].UniqueMessageUsage)
 	spacesRequired = 64 - len(line)
 	for i := 0; i < spacesRequired; i++ {
 		line += " "
 	}
-	line += fmt.Sprintf("| ([%d])\n", misc.EmojiStats[id].Reactions)
+	line += fmt.Sprintf("| ([%d])\n", printEmojiMap[name].Reactions)
 
 	return line
 }
 
-// Sort functions for emoji use by message use. By Kagumi
+// Merges duplicate emotes in EmojiStats
+func mergeDuplicates() map[string]*misc.Emoji {
+
+	var (
+		duplicateMap = 	make(map[string]string)
+		uniqueTotal 	int
+		reactTotal 		int
+		msgTotal 		int
+		printEmojiMap = make(map[string]*misc.Emoji)
+	)
+
+
+	// Fetches the IDs of all of the emojis that have at least one duplicate in duplicateMap
+	for _, emoji := range misc.EmojiStats {
+		for _, emojiTwo := range misc.EmojiStats {
+			if emoji.ID == emojiTwo.ID {
+				continue
+			}
+			if emoji.Name != emojiTwo.Name {
+				continue
+			}
+			if _, ok := duplicateMap[emojiTwo.ID]; ok {
+				continue
+			}
+			if _, ok := duplicateMap[emoji.ID]; !ok {
+				duplicateMap[emoji.ID] = emoji.Name
+			}
+
+			duplicateMap[emojiTwo.ID] = emojiTwo.Name
+		}
+	}
+
+	// Merges their values and leaves only one of them in a new map for printing purposes
+	for duplicateOneID, duplicateOneName := range duplicateMap {
+		// Emoji var here so it resets every iteration
+		var emoji misc.Emoji
+
+		// Fetch current iteration values
+		uniqueTotal = misc.EmojiStats[duplicateOneID].UniqueMessageUsage
+		reactTotal = misc.EmojiStats[duplicateOneID].Reactions
+		msgTotal = misc.EmojiStats[duplicateOneID].MessageUsage
+
+		for duplicateTwoID, duplicateTwoName := range duplicateMap {
+			if duplicateOneID == duplicateTwoID {
+				continue
+			}
+			if duplicateOneName == duplicateTwoName {
+				uniqueTotal += misc.EmojiStats[duplicateTwoID].UniqueMessageUsage
+				reactTotal += misc.EmojiStats[duplicateTwoID].Reactions
+				msgTotal += misc.EmojiStats[duplicateTwoID].MessageUsage
+				delete(duplicateMap, duplicateTwoID )
+				continue
+			}
+		}
+
+		if _, ok := printEmojiMap[duplicateOneName]; !ok {
+			emoji.Name = duplicateOneName
+			emoji.ID = duplicateOneID
+			emoji.MessageUsage = msgTotal
+			emoji.Reactions = reactTotal
+			emoji.UniqueMessageUsage = uniqueTotal
+			printEmojiMap[duplicateOneName] = &emoji
+		}
+
+		// Reset values
+		uniqueTotal = 0
+		reactTotal = 0
+		msgTotal = 0
+	}
+
+	// Adds non-duplicate values to the print map
+	for _, statEmoji := range misc.EmojiStats {
+		if _, ok := printEmojiMap[statEmoji.Name]; !ok {
+			printEmojiMap[statEmoji.Name] = statEmoji
+		}
+	}
+
+	return printEmojiMap
+}
+
+// Sort functions for emoji use by message use
 type byEmojiFrequency []*misc.Emoji
 
 func (e byEmojiFrequency) Len() int {
