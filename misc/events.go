@@ -152,6 +152,16 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			return
 		}
 
+		// Writes verified stats to disk
+		err = VerifiedStatsWrite(VerifiedStats)
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+
 		// Writes memberInfo to disk
 		MemberInfoWrite(MemberInfoMap)
 

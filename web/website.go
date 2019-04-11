@@ -742,6 +742,9 @@ func Verify(cookieValue *http.Cookie, r *http.Request) error {
 
 	// Writes the username to memberInfo.json
 	misc.MemberInfoWrite(misc.MemberInfoMap)
+
+	// Adds to verified stats
+	misc.VerifiedStats[t.Format(misc.DateFormat)]++
 	return nil
 }
 

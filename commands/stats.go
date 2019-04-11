@@ -230,6 +230,9 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	message += fmt.Sprintf("\nOpt-in Total: %d\n\n------\n", optinChannelTotal)
 	message += fmt.Sprintf("\nGrand Total Messages: %d\n\n", optinChannelTotal+normalChannelTotal)
 	message += fmt.Sprintf("\nDaily User Change: %d\n\n", misc.UserStats[t.Format(misc.DateFormat)])
+	if len(misc.VerifiedStats) != 0 {
+		message += fmt.Sprintf("\nDaily Verified Change: %d\n\n", misc.VerifiedStats[t.Format(misc.DateFormat)])
+	}
 	misc.MapMutex.Unlock()
 
 	// Final message split for last block + formatting

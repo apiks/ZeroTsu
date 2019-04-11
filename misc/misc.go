@@ -38,9 +38,10 @@ var (
 	ReadRssThreads      []RssThreadStruct
 	ReadRssThreadsCheck []RssThreadCheckStruct
 
-	EmojiStats = make(map[string]*Emoji)
-	ChannelStats = make(map[string]*Channel)
-	UserStats = make(map[string]int)
+	EmojiStats 		= make(map[string]*Emoji)
+	ChannelStats 	= make(map[string]*Channel)
+	UserStats 		= make(map[string]int)
+	VerifiedStats 	= make(map[string]int)
 
 	RemindMeMap = make(map[string]*RemindMeSlice)
 
@@ -664,12 +665,42 @@ func UserChangeStatsWrite(userStats map[string]int) (bool, error) {
 // Reads userChange stats from userChangeStats.json
 func UserChangeStatsRead() {
 
-	// Reads the RemindMe notes and puts them in userChangeStatsByte as bytes
+	// Reads the stats and puts them in userChangeStatsByte as bytes
 	userChangeStatsByte, _ := ioutil.ReadFile("database/userChangeStats.json")
 
 	// Takes the bytes and puts them into the userStats map
 	MapMutex.Lock()
 	_ = json.Unmarshal(userChangeStatsByte, &UserStats)
+	MapMutex.Unlock()
+}
+
+// Writes Verified stats to verifiedStats.json
+func VerifiedStatsWrite(verifiedStats map[string]int) error {
+
+	// Turns that map into bytes to be ready to written to file
+	marshaledStruct, err := json.MarshalIndent(verifiedStats, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	// Writes to file
+	err = ioutil.WriteFile("database/verifiedStats.json", marshaledStruct, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Reads Verified stats from verifiedStats.json
+func VerifiedStatsRead() {
+
+	// Reads the stats and puts them in userChangeStatsByte as bytes
+	userChangeStatsByte, _ := ioutil.ReadFile("database/verifiedStats.json")
+
+	// Takes the bytes and puts them into the verifiedStats map
+	MapMutex.Lock()
+	_ = json.Unmarshal(userChangeStatsByte, &VerifiedStats)
 	MapMutex.Unlock()
 }
 

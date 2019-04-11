@@ -119,6 +119,11 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
+	// Stores time of verification
+	t := time.Now()
+	// Adds to verified stats
+	misc.VerifiedStats[t.Format(misc.DateFormat)]++
+
 	err = verifyEmbed(s, m, userMem, redditUsername)
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -215,6 +220,11 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		return
 	}
+
+	// Stores time of verification
+	t := time.Now()
+	// Removes from verified stats
+	misc.VerifiedStats[t.Format(misc.DateFormat)]--
 
 	err = unverifyEmbed(s, m, commandStrings[1])
 	if err != nil {

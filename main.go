@@ -107,6 +107,11 @@ func Start() {
 		misc.WaifuTradesRead()
 	}
 
+	if config.Website != "" {
+		// Reads all currently saved verified stats
+		misc.VerifiedStatsRead()
+	}
+
 	// Cleans up duplicate usernames and nicknames (Run once per cleanup, keep off unless needed)
 	//misc.DuplicateUsernamesAndNicknamesCleanup()
 
