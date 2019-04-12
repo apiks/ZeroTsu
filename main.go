@@ -197,6 +197,9 @@ func Start() {
 	goBot.AddHandler(commands.RaffleReactJoin)
 	goBot.AddHandler(commands.RaffleReactLeave)
 
+	// Logs each user that joins the server
+	goBot.AddHandler(misc.GuildJoin)
+
 	err = goBot.Open()
 	if err != nil {
 		fmt.Println(err)

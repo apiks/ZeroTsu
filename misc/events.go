@@ -577,3 +577,25 @@ func remindMeHandler(s *discordgo.Session) {
 	}
 	MapMutex.Unlock()
 }
+
+// Sends a message to a channel to log whenever a user joins. Intended use was to catch spambots
+func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
+				return
+			}
+		}
+	}()
+
+	_, err := s.ChannelMessageSend("566233292026937345", fmt.Sprintf("User joined the server: %v#%v", u.User.Username, u.User.Discriminator)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+		if err != nil {
+			return
+		}
+		return
+	}
+}
