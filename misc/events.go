@@ -590,12 +590,8 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		}
 	}()
 
-	_, err := s.ChannelMessageSend("566233292026937345", fmt.Sprintf("User joined the server: %v#%v", u.User.Username, u.User.Discriminator)
+	_, err := s.ChannelMessageSend("566233292026937345", fmt.Sprintf("User joined the server: %v#%v", u.User.Username, u.User.Discriminator))
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
-		if err != nil {
-			return
-		}
 		return
 	}
 }
