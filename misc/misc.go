@@ -1271,3 +1271,14 @@ func CategoryParser(s *discordgo.Session, category string) (string, string) {
 
 	return categoryID, categoryName
 }
+
+// Snowflake creation date calculator
+func CreationTime(ID string) (t time.Time, err error) {
+	i, err := strconv.ParseInt(ID, 10, 64)
+	if err != nil {
+		return
+	}
+	timestamp := (i >> 22) + 1420070400000
+	t = time.Unix(timestamp/1000, 0)
+	return
+}

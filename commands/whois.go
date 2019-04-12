@@ -23,6 +23,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		unbanDate     		string
 		splitMessage 		[]string
 		isInsideGuild = 	true
+		creationDate		time.Time
 	)
 
 	messageLowercase := strings.ToLower(m.Content)
@@ -176,13 +177,23 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		unbanDate = "No Ban"
 	}
 
+	// Fetches account creation time
+	creationDate, err = misc.CreationTime(userID)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return
+		}
+		return
+	}
+
 	// Sets whois message
 	message := "**User:** " + user.Username + "#" + user.Discrim + " | **ID:** " + user.ID +
 		"\n\n**Past Usernames:** " + pastUsernames +
 		"\n\n**Past Nicknames:** " + pastNicknames + "\n\n**Warnings:** " + warnings +
 		"\n\n**Kicks:** " + kicks + "\n\n**Bans:** " + bans +
 		"\n\n**Join Date:** " + user.JoinDate + "\n\n**Verification Date:** " +
-		user.VerifiedDate
+		user.VerifiedDate + "\n\n**Account Creation Date:** " + creationDate.String()
 
 	// Sets reddit Username if it exists
 	if config.Website != "" {
