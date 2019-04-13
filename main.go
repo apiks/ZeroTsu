@@ -200,6 +200,9 @@ func Start() {
 	// Logs each user that joins the server
 	goBot.AddHandler(misc.GuildJoin)
 
+	// Auto spambot ban
+	goBot.AddHandler(misc.SpambotJoin)
+
 	err = goBot.Open()
 	if err != nil {
 		fmt.Println(err)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -580,6 +581,8 @@ func remindMeHandler(s *discordgo.Session) {
 
 // Sends a message to a channel to log whenever a user joins. Intended use was to catch spambots
 func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
+	var creationDate time.Time
+
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -590,8 +593,84 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		}
 	}()
 
-	_, err := s.ChannelMessageSend("566233292026937345", fmt.Sprintf("User joined the server: %v\nEmail:%v\nLocale:%v\nDiscord Verified:%v", u.User.Mention(), u.User.Email, u.User.Locale, u.User.Verified))
+	creationDate, err := CreationTime(u.User.ID)
 	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+		if err != nil {
+			return
+		}
 		return
 	}
+
+	_, err = s.ChannelMessageSend("566233292026937345", fmt.Sprintf("User joined the server: %v\nAccount age: ", u.User.Mention(), creationDate.String()))
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+		if err != nil {
+			return
+		}
+		return
+	}
+}
+
+// Sends a message to suspected spambots to verify and bans them immediately after. Only does it for accounts younger than 3 days
+func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
+	var (
+		creationDate time.Time
+		now          time.Time
+	)
+
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
+			if err != nil {
+				return
+			}
+		}
+	}()
+
+	// Fetches date of account creation and checks if it's younger than 3 days
+	creationDate, err := CreationTime(u.User.ID)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+		if err != nil {
+			return
+		}
+		return
+	}
+	now = time.Now()
+	difference := now.Sub(creationDate)
+	if difference.Hours() > 72 {
+		return
+	}
+
+	// Matches known spambot patterns with regex
+	regexCases := regexp.MustCompile(`(?im)(^[a-zA-Z]+\d{3,4}[a-zA-Z]+$)|(^[a-zA-Z]+\d{5}$)|(^[a-zA-Z]+\d{3,4}$)`)
+	spambotMatches := regexCases.FindAllString(u.User.Username, 1)
+	if len(spambotMatches) == 0 {
+		return
+	}
+
+	// Checks if the user is verified
+	if _, ok := MemberInfoMap[u.User.ID]; ok {
+		if MemberInfoMap[u.User.ID].RedditUsername != "" {
+			return
+		}
+	}
+
+	// Sends a message to the user warning them in case it's a false positive
+	_, _ = s.ChannelMessageSend(u.User.ID, fmt.Sprintf("You have been suspected of being a spambot and banned.\nTo get unbanned please do our mandatory verification process at %v/verification and then rejoin the server.", config.Website))
+
+	// Bans the suspected account
+	err = s.GuildBanCreateWithReason(config.ServerID, u.User.ID, "Autoban Spambot Account", 0)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+		if err != nil {
+			return
+		}
+		return
+	}
+
+	// Botlog message
+	_, _ = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Suspected spambot was banned. User: %v", u.User.Mention()))
 }
