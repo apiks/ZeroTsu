@@ -90,12 +90,14 @@ func MemberInfoWrite(info map[string]*UserInfo) {
 	// Turns info slice into byte ready to be pushed to file
 	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 
 	// Writes to file
 	err = ioutil.WriteFile("database/memberInfo.json", MarshaledStruct, 0644)
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 }
@@ -129,7 +131,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	var (
 		flag        = false
 		initialized = false
-		nameFlag	= false
+		writeFlag	= false
 	)
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -221,7 +223,6 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	// Checks if the user's current username is the same as the one in the database. Otherwise updates
 	if user.User.Username != existingUser.Username && user.User.Username != "" {
 		flag := true
-		nameFlag = true
 		lower := strings.ToLower(user.User.Username)
 
 		for _, names := range existingUser.PastUsernames {
@@ -233,14 +234,14 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 		if flag {
 			existingUser.PastUsernames = append(existingUser.PastUsernames, user.User.Username)
-			existingUser.Username = user.User.Username
 		}
+		existingUser.Username = user.User.Username
+		writeFlag = true
 	}
 
 	// Checks if the user's current nickname is the same as the one in the database. Otherwise updates
 	if existingUser.Nickname != user.Nick && user.Nick != "" {
 		flag := true
-		nameFlag = true
 		lower := strings.ToLower(user.Nick)
 
 		for _, names := range existingUser.PastNicknames {
@@ -252,18 +253,19 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 		if flag {
 			existingUser.PastNicknames = append(existingUser.PastNicknames, user.Nick)
-			existingUser.Nickname = user.Nick
 		}
+		existingUser.Nickname = user.Nick
+		writeFlag = true
 	}
 
 	// Checks if the discrim in database is the same as the discrim used by the user. If not it changes it
 	if user.User.Discriminator != existingUser.Discrim && user.User.Discriminator != "" {
-		nameFlag = true
 		existingUser.Discrim = user.User.Discriminator
+		writeFlag = true
 	}
 
 	// Saves the updates to memberInfoMap and writes to disk if need be
-	if nameFlag {
+	if writeFlag {
 		MapMutex.Lock()
 		MemberInfoMap[user.User.ID] = existingUser
 		MemberInfoWrite(MemberInfoMap)
@@ -314,8 +316,8 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 
 		if flag {
 			user.PastUsernames = append(user.PastUsernames, e.User.Username)
-			user.Username = e.User.Username
 		}
+		user.Username = e.User.Username
 		writeFlag = true
 	}
 
@@ -333,9 +335,8 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 
 		if flag {
 			user.PastNicknames = append(user.PastNicknames, e.Nick)
-			user.Nickname = e.Nick
 		}
-
+		user.Nickname = e.Nick
 		writeFlag = true
 	}
 
@@ -400,8 +401,8 @@ func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 
 		if flag {
 			user.PastUsernames = append(user.PastUsernames, e.User.Username)
-			user.Username = e.User.Username
 		}
+		user.Username = e.User.Username
 		writeFlag = true
 	}
 
@@ -419,9 +420,8 @@ func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 
 		if flag {
 			user.PastNicknames = append(user.PastNicknames, e.Nick)
-			user.Nickname = e.Nick
 		}
-
+		user.Nickname = e.Nick
 		writeFlag = true
 	}
 
