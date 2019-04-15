@@ -658,6 +658,11 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		}
 	}
 
+	// Checks if they're using a default avatar
+	if u.User.Avatar != "" {
+		return
+	}
+
 	// Sends a message to the user warning them in case it's a false positive
 	_, _ = s.ChannelMessageSend(u.User.ID, fmt.Sprintf("You have been suspected of being a spambot and banned.\nTo get unbanned please do our mandatory verification process at %v/verification and then rejoin the server.", config.Website))
 
