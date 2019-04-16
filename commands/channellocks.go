@@ -15,6 +15,7 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		roleID           string
 		roleTempPosition int
 		spoilerRole 	 = false
+		airingID		 string
 	)
 
 	// Set variable for spoiler channels to be able to view history
@@ -50,7 +51,7 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Updates opt-in-under and opt-in-above position
+	// Updates opt-in-under and opt-in-above position, finds channel role ID if opt-in and finds ID of airing role if it exists
 	for i := 0; i < len(deb); i++ {
 		if deb[i].Name == config.OptInUnder {
 			misc.OptinUnderPosition = deb[i].Position
@@ -59,6 +60,8 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		} else if deb[i].Name == cha.Name {
 			roleID = deb[i].ID
 			roleTempPosition = deb[i].Position
+		} else if strings.ToLower(deb[i].Name) == "airing" {
+			airingID = deb[i].ID
 		}
 	}
 
@@ -72,8 +75,13 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if spoilerRole {
-		// Removes send permissions only from the channel role if it's a spoiler channel
+		// Removes send permissions only from the channel role and airing if it's a spoiler channel
 		err = s.ChannelPermissionSet(m.ChannelID, roleID, "role", allowed, discordgo.PermissionSendMessages)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err)
+			return
+		}
+		err = s.ChannelPermissionSet(m.ChannelID, airingID, "role", allowed, discordgo.PermissionSendMessages)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err)
 			return
@@ -138,6 +146,7 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 		roleID           string
 		roleTempPosition int
 		spoilerRole 	 = false
+		airingID		 string
 	)
 
 	// Pulls info on the channel the message is in
@@ -182,6 +191,8 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 		} else if deb[i].Name == cha.Name {
 			roleID = deb[i].ID
 			roleTempPosition = deb[i].Position
+		} else if strings.ToLower(deb[i].Name) == "airing" {
+			airingID = deb[i].ID
 		}
 	}
 
@@ -195,8 +206,13 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if spoilerRole {
-		// Adds send permissions only to the channel role if it's a spoiler channel
+		// Adds send permissions only to the channel role and airing if it's a spoiler channel
 		err = s.ChannelPermissionSet(m.ChannelID, roleID, "role", misc.SpoilerPerms, 0)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err)
+			return
+		}
+		err = s.ChannelPermissionSet(m.ChannelID, airingID, "role", misc.SpoilerPerms, 0)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err)
 			return
