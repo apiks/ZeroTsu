@@ -617,6 +617,8 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	var (
 		creationDate time.Time
 		now          time.Time
+
+		temp 			BannedUsers
 	)
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -663,6 +665,20 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
+	// Adds the spambot ban to bannedUsersSlice so it doesn't trigger the OnGuildBan func
+	temp.ID = u.User.ID
+	temp.User = u.User.Username
+	temp.UnbanDate = time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
+	MapMutex.Lock()
+	for index, val := range BannedUsersSlice {
+		if val.ID == u.User.ID {
+			BannedUsersSlice = append(BannedUsersSlice[:index], BannedUsersSlice[index+1:]...)
+		}
+	}
+	BannedUsersSlice = append(BannedUsersSlice, temp)
+	BannedUsersWrite(BannedUsersSlice)
+	MapMutex.Unlock()
+
 	// Sends a message to the user warning them in case it's a false positive
 	_, _ = s.ChannelMessageSend(u.User.ID, fmt.Sprintf("You have been suspected of being a spambot and banned.\nTo get unbanned please do our mandatory verification process at %v/verification and then rejoin the server.", config.Website))
 
@@ -677,5 +693,5 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 
 	// Botlog message
-	_, _ = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Suspected spambot was banned. User: %v", u.User.Mention()))
+	_, _ = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Suspected spambot was banned. User: %v\nID: %v", u.User.Mention(), u.User.ID))
 }
