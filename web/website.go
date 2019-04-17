@@ -63,7 +63,7 @@ type RAnimeJson struct {
 	} `json:"data"`
 }
 
-type Stats struct {
+type ChannelStats struct {
 	Name string
 	Dates []string
 	Messages []int
@@ -73,9 +73,15 @@ type Stats struct {
 
 type ChannelPick struct {
 	ChannelStats map[string]*misc.Channel
-	Flag bool
-	Stats Stats
-	Error bool
+	Flag         bool
+	Stats        ChannelStats
+	Error        bool
+}
+
+type UserChangeStats struct {
+	Dates			[]string
+	DailyAverage 	int
+	Change			[]int
 }
 
 // Sorting by date. By Kagumi
@@ -124,22 +130,22 @@ func HomepageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func StatsPageHandler(w http.ResponseWriter, r *http.Request) {
+func ChannelStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 
 	var (
-		dateLabels []string
-		messageCount []int
-		stats Stats
+		dateLabels    []string
+		messageCount  []int
+		stats         ChannelStats
 		totalMessages int
-		id string
-		pick ChannelPick
+		id            string
+		pick          ChannelPick
 	)
 
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
 			fmt.Println(rec)
-			fmt.Println("Error is in StatsPageHandler")
+			fmt.Println("Error is in ChannelStatsPageHandler")
 		}
 	}()
 
@@ -204,7 +210,9 @@ func StatsPageHandler(w http.ResponseWriter, r *http.Request) {
 	stats.Dates = dateLabels
 	stats.Messages = messageCount
 	stats.TotalMessages = totalMessages
-	stats.DailyAverage = totalMessages / len(dateLabels)
+	if len(dateLabels) != 0 {
+		stats.DailyAverage = totalMessages / len(dateLabels)
+	}
 	pick.Stats = stats
 
 
@@ -214,6 +222,53 @@ func StatsPageHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Print(err.Error())
 	}
 	err = t.Execute(w, pick)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	misc.MapMutex.Unlock()
+}
+
+func UserChangeStatsPageHandler(w http.ResponseWriter, r *http.Request) {
+
+	var (
+		dateLabels    	[]string
+		changeCount  	[]int
+		stats         	UserChangeStats
+		totalChange		int
+	)
+
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			fmt.Println(rec)
+			fmt.Println("Error is in UserChangeStatsPageHandler")
+		}
+	}()
+
+	// Save dates, sort them and then assign user change int in order of the dates
+	misc.MapMutex.Lock()
+	for date := range misc.UserStats {
+		dateLabels = append(dateLabels, date)
+		totalChange += misc.UserStats[date]
+	}
+	sort.Sort(byDate(dateLabels))
+	for i := 0; i < len(dateLabels); i++ {
+		changeCount = append(changeCount, misc.UserStats[dateLabels[i]])
+	}
+
+	stats.Dates = dateLabels
+	stats.Change = changeCount
+	if len(dateLabels) != 0 {
+		stats.DailyAverage = totalChange / len(dateLabels)
+	}
+
+
+	// Loads the html & css stats files
+	t, err := template.ParseFiles("./web/assets/userchangestats.html")
+	if err != nil {
+		fmt.Print(err.Error())
+	}
+	err = t.Execute(w, stats)
 	if err != nil {
 		fmt.Println(err.Error())
 	}

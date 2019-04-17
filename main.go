@@ -38,6 +38,8 @@ func main() {
 		r.HandleFunc("/verification/", web.VerificationHandler)
 		r.HandleFunc("/channelstats", web.StatsPageHandler)
 		r.HandleFunc("/channelstats/", web.StatsPageHandler)
+		r.HandleFunc("/userchangestats", web.UserChangeStatsPageHandler)
+		r.HandleFunc("/userchangestats/", web.UserChangeStatsPageHandler)
 		err := http.ListenAndServe(":8080", r)
 		if err != nil {
 			panic(err)

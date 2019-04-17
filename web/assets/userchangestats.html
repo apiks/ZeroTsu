@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>/r/anime Discord Homepage</title>
+    <link rel="stylesheet" href="/web/assets/userchangestats.css">
+    <meta charset="UTF-8">
+    <meta name="author" content="Apiks">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js"></script>
+</head>
+<body background="/web/assets/background.png">
+
+    <div class="dataFlex">
+        <div>
+            <p class="header">Daily Average</p>
+            <p class="data">{{ .DailyAverage }}</p>
+        </div>
+    </div>
+
+    <div class="chart-container" style="position: relative; height:10vh; width:80vw; width: 80%; margin: auto;">
+        <canvas id="stats" style="background-color: rgb(240,242,252); border-style: solid; border-radius: 0.5%; border-color: rgb(44,47,51);"></canvas>
+    </div>
+
+    <script>
+        var chart = document.getElementById("stats").getContext('2d');
+        var channelChart = new Chart(chart, {
+            type: `line`,
+            data: {
+                labels: {{ $.Dates }},
+                datasets: [{
+                    label: '# of change',
+                    data: {{ $.Change }},
+                    backgroundColor: [
+                        'rgba(116,150,229, 0.3)',
+                    ],
+                    borderColor: [
+                        'rgb(114,137,218)',
+                    ],
+                    borderWidth: 1
+                }]
+        },
+        options: {
+             responsive: true,
+             title: {
+                 display: true,
+                 text: "User Gain/Loss"
+             },
+             scales: {
+                 xAxes: [{
+                     scaleLabel: {
+                         display: true,
+                         labelString: 'Date'
+                     },
+                 }],
+                 yAxes: [{
+                     scaleLabel: {
+                         display: true,
+                         labelString: 'Change'
+                     }
+                 }]
+             },
+        }
+    });
+    </script>
+</body>
+</html>
