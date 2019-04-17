@@ -693,5 +693,5 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 
 	// Botlog message
-	_, _ = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Suspected spambot was banned. User: %v\nID: %v", u.User.Mention(), u.User.ID))
+	_, _ = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Suspected spambot was banned. User: <@!%v>", u.User.ID))
 }
