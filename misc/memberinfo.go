@@ -27,21 +27,22 @@ var (
 
 // UserInfo is the in memory storage of each user's information
 type UserInfo struct {
-	ID             string   			`json:"id"`
-	Discrim        string   			`json:"discrim"`
-	Username       string   			`json:"username"`
-	Nickname       string   			`json:"nickname,omitempty"`
-	PastUsernames  []string 			`json:"pastUsernames,omitempty"`
-	PastNicknames  []string 			`json:"pastNicknames,omitempty"`
-	Warnings       []string 			`json:"warnings,omitempty"`
-	Kicks          []string 			`json:"kicks,omitempty"`
-	Bans           []string 			`json:"bans,omitempty"`
-	JoinDate       string   			`json:"joinDate"`
-	RedditUsername string   			`json:"redditUser,omitempty"`
-	VerifiedDate   string   			`json:"verifiedDate,omitempty"`
-	UnbanDate      string   			`json:"unbanDate,omitempty"`
-	Timestamps 	   []Punishment			`json:"timestamps,omitempty"`
-	Waifu		   Waifu				`json:"waifu,omitempty"`
+	ID             		string   			`json:"id"`
+	Discrim        		string   			`json:"discrim"`
+	Username       		string   			`json:"username"`
+	Nickname       		string   			`json:"nickname,omitempty"`
+	PastUsernames  		[]string 			`json:"pastUsernames,omitempty"`
+	PastNicknames  		[]string 			`json:"pastNicknames,omitempty"`
+	Warnings       		[]string 			`json:"warnings,omitempty"`
+	Kicks          		[]string 			`json:"kicks,omitempty"`
+	Bans           		[]string 			`json:"bans,omitempty"`
+	JoinDate       		string   			`json:"joinDate"`
+	RedditUsername 		string   			`json:"redditUser,omitempty"`
+	VerifiedDate   		string   			`json:"verifiedDate,omitempty"`
+	UnbanDate      		string   			`json:"unbanDate,omitempty"`
+	Timestamps 	   		[]Punishment		`json:"timestamps,omitempty"`
+	Waifu		   		Waifu				`json:"waifu,omitempty"`
+	SuspectedSpambot	bool
 }
 
 // Creates a struct type in which we'll hold every banned user

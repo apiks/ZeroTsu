@@ -619,6 +619,7 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		now          time.Time
 
 		temp 			BannedUsers
+		tempMem			UserInfo
 	)
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -677,10 +678,23 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 	BannedUsersSlice = append(BannedUsersSlice, temp)
 	BannedUsersWrite(BannedUsersSlice)
+
+	// Adds a bool to memberInfo that it's a suspected spambot account in case they try to reverify
+	if _, ok := MemberInfoMap[u.User.ID]; !ok {
+		InitializeUser(u.Member)
+	}
+	tempMem = *MemberInfoMap[u.User.ID]
+	tempMem.SuspectedSpambot = true
+	MemberInfoMap[u.User.ID] = &tempMem
+	MemberInfoWrite(MemberInfoMap)
 	MapMutex.Unlock()
 
 	// Sends a message to the user warning them in case it's a false positive
-	_, _ = s.ChannelMessageSend(u.User.ID, fmt.Sprintf("You have been suspected of being a spambot and banned.\nTo get unbanned please do our mandatory verification process at %v/verification and then rejoin the server.", config.Website))
+	dm, _ := s.UserChannelCreate(u.User.ID)
+	_, err = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have been suspected of being a spambot and banned.\nTo get unbanned please do our mandatory verification process at https://%v/verification and then rejoin the server.", config.Website))
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	// Bans the suspected account
 	err = s.GuildBanCreateWithReason(config.ServerID, u.User.ID, "Autoban Spambot Account", 0)

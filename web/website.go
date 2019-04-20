@@ -826,6 +826,27 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 		if len(verifyMap) != 0 {
 			for userID := range verifyMap {
 
+				// Checks if banned suspected spambot accounts verified
+				if misc.MemberInfoMap[userID].SuspectedSpambot {
+					for i, banUser := range misc.BannedUsersSlice {
+						if banUser.ID == userID {
+							misc.BannedUsersSlice = append(misc.BannedUsersSlice[:i], misc.BannedUsersSlice[i+1:]...)
+							break
+						}
+					}
+					// Removes the ban
+					err := s.GuildBanDelete(config.ServerID, userID)
+					if err != nil {
+						_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+						if err != nil {
+							continue
+						}
+						continue
+					}
+					misc.MemberInfoMap[userID].SuspectedSpambot = false
+					misc.MemberInfoWrite(misc.MemberInfoMap)
+				}
+
 				// Checks if the user is in the server before continuing. Very important to avoid bugs
 				userInGuild = isUserInGuild(s, userID)
 				if !userInGuild {
@@ -874,6 +895,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 						continue
 					}
 					misc.InitializeUser(user)
+					misc.MemberInfoWrite(misc.MemberInfoMap)
 				}
 				delete(verifyMap, userID)
 			}
