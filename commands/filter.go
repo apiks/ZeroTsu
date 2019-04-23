@@ -20,6 +20,13 @@ var (
 // Handles filter in an onMessage basis
 func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
+	var (
+		removals      	string
+		badWordsSlice 	[]string
+		badWordExists 	bool
+		mLowercase		string
+	)
+
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -30,22 +37,16 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}()
 
-	// Checks if it's within the config server
-	ch, err := s.State.Channel(m.ChannelID)
-	if err != nil {
-		ch, err = s.Channel(m.ChannelID)
-		if err != nil {
-			return
-		}
+	// Stops double event bug with empty content
+	if m.Content == "" {
+		return
 	}
-	s.RWMutex.RLock()
-	if ch.GuildID != config.ServerID {
-		s.RWMutex.RUnlock()
+	// Checks if it's within the config server
+	if m.GuildID != config.ServerID {
 		return
 	}
 	// Checks if it's the bot that sent the message
 	if m.Author.ID == s.State.User.ID {
-		s.RWMutex.RUnlock()
 		return
 	}
 	// Pulls info on message author
@@ -58,63 +59,63 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	// Checks if user is mod or bot before checking the message
 	if misc.HasPermissions(mem) {
-		s.RWMutex.RUnlock()
 		return
 	}
-	s.RWMutex.RUnlock()
 
-	var (
-		removals      string
-		badWordsSlice []string
-		badWordExists bool
-	)
-
-	messageLowercase := strings.ToLower(m.Content)
+	mLowercase = strings.ToLower(m.Content)
 
 	// Checks if message should be filtered
 	badWordExists, badWordsSlice = isFiltered(s, m.Message)
 
-	// If function returns true handle the filtered message
-	if badWordExists {
-		// Deletes the message that was sent if it has a filtered word.
-		err = s.ChannelMessageDelete(m.ChannelID, m.ID)
-		if err != nil {
-			return
-		}
-
-		// Iterates through all the bad words
-		for i := 0; i < len(badWordsSlice); i++ {
-			// Stores the removals for printing
-			if len(removals) == 0 {
-				removals = badWordsSlice[0]
-			} else {
-				removals = removals + ", " + badWordsSlice[i]
-			}
-		}
-
-		// Sends embed mod message
-		err := FilterEmbed(s, m.Message, removals, m.ChannelID)
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
-			return
-		}
-
-		// Sends message to user's DMs if possible
-		dm, err := s.UserChannelCreate(m.Author.ID)
-		if err != nil {
-			return
-		}
-		_, _ = s.ChannelMessageSend(dm.ID, "Your message `" + messageLowercase + "` was removed for using: _" + removals + "_ \n\n" +
-			"Using such words makes me disappointed in you, darling.\n\nFor a list of banned phrases and words please check <https://pastebin.com/GgkD4pT9>")
+	// Exit func if no filtered phrase found
+	if !badWordExists {
+		return
 	}
+
+	// Deletes the message first
+	err = s.ChannelMessageDelete(m.ChannelID, m.ID)
+	if err != nil {
+		return
+	}
+
+	// Iterates through all the bad words in order and formats print string
+	for _, badWord := range badWordsSlice {
+		if len(removals) == 0 {
+			removals = badWord
+		} else {
+			removals += ", " + badWord
+		}
+	}
+
+	// Sends embed mod message
+	err = FilterEmbed(s, m.Message, removals, m.ChannelID)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return
+		}
+		return
+	}
+
+	// Sends message to user's DMs if possible
+	dm, err := s.UserChannelCreate(m.Author.ID)
+	if err != nil {
+		return
+	}
+	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message `%v` was removed for using: _%v_ \n\n" +
+		"Using such words makes me disappointed in you, darling.", mLowercase, removals))
 }
 
 // Handles filter in an onEdit basis
 func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 
+	var (
+		removals      	string
+		badWordsSlice 	[]string
+		badWordExists 	bool
+		mLowercase		string
+	)
+
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -125,27 +126,16 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 		}
 	}()
 
-	// Stops double edit checks from forcing recovery
+	// Stops double event bug with empty content
 	if m.Content == "" {
 		return
 	}
-
 	// Checks if it's within the config server
-	ch, err := s.State.Channel(m.ChannelID)
-	if err != nil {
-		ch, err = s.Channel(m.ChannelID)
-		if err != nil {
-			return
-		}
-	}
-	s.RWMutex.RLock()
-	if ch.GuildID != config.ServerID {
-		s.RWMutex.RUnlock()
+	if m.GuildID != config.ServerID {
 		return
 	}
 	// Checks if it's the bot that sent the message
 	if m.Author.ID == s.State.User.ID {
-		s.RWMutex.RUnlock()
 		return
 	}
 	// Pulls info on message author
@@ -158,62 +148,57 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	}
 	// Checks if user is mod or bot before checking the message
 	if misc.HasPermissions(mem) {
-		s.RWMutex.RUnlock()
 		return
 	}
-	s.RWMutex.RUnlock()
 
-	var (
-		removals      string
-		badWordsSlice []string
-		badWordExists bool
-	)
+	mLowercase = strings.ToLower(m.Content)
 
-	messageLowercase := strings.ToLower(m.Content)
-
-	// Checks if message should be filtered
+	// Checks if the message should be filtered
 	badWordExists, badWordsSlice = isFiltered(s, m.Message)
 
-	// If function returns true handle the filtered message
-	if badWordExists {
-		// Deletes the message that was sent if it has a filtered word.
-		err = s.ChannelMessageDelete(m.ChannelID, m.ID)
-		if err != nil {
-			return
-		}
-
-		// Iterates through all the bad words
-		for i := 0; i < len(badWordsSlice); i++ {
-			// Stores the removals for printing
-			if len(removals) == 0 {
-				removals = badWordsSlice[0]
-			} else {
-				removals = removals + ", " + badWordsSlice[i]
-			}
-		}
-
-		// Sends embed mod message
-		err := FilterEmbed(s, m.Message, removals, m.ChannelID)
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
-			return
-		}
-
-		// Sends message to user's DMs if possible
-		dm, err := s.UserChannelCreate(m.Author.ID)
-		if err != nil {
-			return
-		}
-		_, _ = s.ChannelMessageSend(dm.ID, "Your message `" + messageLowercase + "` was removed for using: _" + removals + "_ \n\n" +
-			"Using such words makes me disappointed in you, darling.\n\nFor a list of banned phrases and words please check <https://pastebin.com/GgkD4pT9>")
+	// Exit func if no filtered phrase found
+	if !badWordExists {
+		return
 	}
+
+	// Deletes the message first
+	err = s.ChannelMessageDelete(m.ChannelID, m.ID)
+	if err != nil {
+		return
+	}
+
+	// Iterates through all the bad words in order and formats print string
+	for _, badWord := range badWordsSlice {
+		if len(removals) == 0 {
+			removals = badWord
+		} else {
+			removals += ", " + badWord
+		}
+	}
+
+	// Sends embed mod message
+	err = FilterEmbed(s, m.Message, removals, m.ChannelID)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return
+		}
+		return
+	}
+
+	// Sends message to user's DMs if possible
+	dm, err := s.UserChannelCreate(m.Author.ID)
+	if err != nil {
+		return
+	}
+	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message `%v` was removed for using: _%v_ \n\n" +
+		"Using such words makes me disappointed in you, darling.", mLowercase, removals))
 }
 
 // Filters reactions that contain a filtered phrase
 func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
+
+	var badReactExists	bool
 
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
@@ -225,15 +210,8 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 		}
 	}()
 
-	// Checks if it's within the /r/anime server
-	ch, err := s.State.Channel(r.ChannelID)
-	if err != nil {
-		ch, err = s.Channel(r.ChannelID)
-		if err != nil {
-			return
-		}
-	}
-	if ch.GuildID != config.ServerID {
+	// Checks if it's within the config server
+	if r.GuildID != config.ServerID {
 		return
 	}
 	// Checks if it's the bot that sent the message
@@ -249,20 +227,121 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 		}
 	}
 	// Checks if user is mod or bot before checking the message
-	s.RWMutex.RLock()
 	if misc.HasPermissions(mem) {
-		s.RWMutex.RUnlock()
 		return
 	}
-	s.RWMutex.RUnlock()
 
-	// Iterates through all the filters to see if the message contained a filtered word
-	for i := 0; i < len(misc.ReadFilters); i++ {
+	// Checks if the react should be filtered
+	badReactExists = isFilteredReact(s, r)
 
-		// Assigns the filter to a react variable so it can be changed to normal API mode name
-		reactName := misc.ReadFilters[i].Filter
+	// Exit func if no filtered phrase found
+	if !badReactExists {
+		return
+	}
 
-		// Trims the fluff from a reaction so it can measured against the API version below
+	// Deletes the reaction that was sent if it has a filtered phrase
+	err = s.MessageReactionRemove(r.ChannelID, r.MessageID, r.Emoji.APIName(), r.UserID)
+	if err != nil {
+		_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+	}
+}
+
+// Checks if the message is supposed to be filtered
+func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string){
+
+	var (
+		mLowercase				string
+		mentions				string
+		userID					string
+
+		badPhraseSlice         []string
+		badPhraseCheckMentions []string
+		badPhraseCheck         []string
+		mentionCheck           []string
+	)
+
+	mLowercase = strings.ToLower(m.Content)
+
+	// Checks if the message contains a mention and finds the actual name instead of ID and put it in mentions
+	if strings.Contains(mLowercase, "<@") {
+
+		// Checks for both <@! and <@ mentions
+		mentionRegex := regexp.MustCompile(`(?m)<@!?\d+>`)
+		mentionCheck = mentionRegex.FindAllString(mLowercase, -1)
+		if mentionCheck != nil {
+			for _, mention := range mentionCheck {
+				userID = strings.TrimPrefix(mention, "<@")
+				userID = strings.TrimPrefix(userID, "!")
+				userID = strings.TrimSuffix(userID, ">")
+
+				// Checks first in memberInfo. Only checks serverside if it doesn't exist. Saves performance
+				misc.MapMutex.Lock()
+				if len(misc.MemberInfoMap) != 0 {
+					if _, ok := misc.MemberInfoMap[userID]; ok {
+						mentions += " " + strings.ToLower(misc.MemberInfoMap[userID].Nickname)
+						misc.MapMutex.Unlock()
+						continue
+					}
+				}
+				misc.MapMutex.Unlock()
+
+				// If user wasn't found in memberInfo with that username+discrim combo then fetch manually from Discord
+				user, err := s.State.Member(config.ServerID, userID)
+				if err != nil {
+					user, _ = s.GuildMember(config.ServerID, userID)
+				}
+				if user != nil {
+					mentions += " " + strings.ToLower(user.Nick)
+				}
+			}
+		}
+	}
+
+	// Iterates through all the filters to see if the message contained a filtered phrase
+	misc.MapMutex.Lock()
+	for _, filter := range misc.ReadFilters {
+
+		// Regex check the filter phrase in the message
+		re := regexp.MustCompile(filter.Filter)
+		badPhraseCheck = re.FindAllString(mLowercase, -1)
+		badPhraseCheckMentions = re.FindAllString(mentions, -1)
+
+		// Add all bad phrases in the message if they exist to the slice
+		if badPhraseCheck != nil {
+			for _, badPhrase := range badPhraseCheck {
+				badPhraseSlice = append(badPhraseSlice, badPhrase)
+			}
+		}
+		// Add all bad phrases in the mentions if they exist to the slice
+		if badPhraseCheckMentions != nil {
+			for _, badMention := range badPhraseCheckMentions {
+				badPhraseSlice = append(badPhraseSlice, badMention)
+			}
+		}
+	}
+	misc.MapMutex.Unlock()
+
+	// If a bad phrase exists return true to filter it
+	if len(badPhraseSlice) != 0 {
+		return true, badPhraseSlice
+	}
+
+	return false, nil
+}
+
+// Checks if the React is supposed to be filtered
+func isFilteredReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) bool {
+
+	var reactName	string
+
+	// Iterates through all the filters to see if the react contained a filtered phrase
+	misc.MapMutex.Lock()
+	for _, filter := range misc.ReadFilters {
+
+		// Assigns the filter to a string that can be changed to the normal API mode name later
+		reactName = filter.Filter
+
+		// Trims the fluff from the filter/reactName (which is a react usually) so it can measured against the API version
 		if strings.Contains(reactName, "<:") {
 			reactName = strings.Replace(reactName, "<:", "", -1)
 			reactName = strings.TrimSuffix(reactName, ">")
@@ -272,87 +351,19 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 			reactName = strings.TrimSuffix(reactName, ">")
 		}
 
+		// Regex check the phrase in the emoji's API name
 		re := regexp.MustCompile(reactName)
 		badWordCheck := re.FindAllString(r.Emoji.APIName(), -1)
-
-		if badWordCheck != nil {
-			// Deletes the reaction that was sent if it has a filtered word
-			err := s.MessageReactionRemove(r.ChannelID, r.MessageID, r.Emoji.APIName(), r.UserID)
-			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-				if err != nil {
-					return
-				}
-				return
-			}
+		if badWordCheck == nil {
+			continue
 		}
+
+		misc.MapMutex.Unlock()
+		return true
 	}
-}
+	misc.MapMutex.Unlock()
 
-// Checks if the message is supposed to be filtered
-func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string){
-
-	var (
-		badWordsSlice   []string
-		mentions		string
-	)
-
-	messageLowercase := strings.ToLower(m.Content)
-
-	// Checks if the message contains a mention and finds the actual name instead of ID and put it in mentions
-	if strings.Contains(messageLowercase, "<@!") {
-		mentionRegex := regexp.MustCompile("(?i)(<@!+[0-9]+>)")
-		mentionCheck := mentionRegex.FindAllString(messageLowercase, -1)
-		if mentionCheck != nil {
-			for index := range mentionCheck {
-				userID := strings.TrimPrefix(mentionCheck[index], "<@!")
-				userID = strings.TrimPrefix(userID, "!")
-				userID = strings.TrimSuffix(userID, ">")
-
-				// Checks first in memberInfo. Only checks serverside if it doesn't exist. Saves performance
-				misc.MapMutex.Lock()
-				if len(misc.MemberInfoMap) != 0 {
-					if misc.MemberInfoMap[userID] != nil {
-						mentions += " " + strings.ToLower(misc.MemberInfoMap[userID].Nickname)
-						misc.MapMutex.Unlock()
-						continue
-					}
-				}
-				misc.MapMutex.Unlock()
-
-				user, err := s.State.Member(config.ServerID, userID)
-				if err != nil {
-					user, _ := s.GuildMember(config.ServerID, userID)
-					if user != nil {
-						mentions += " " + strings.ToLower(user.Nick)
-						continue
-					}
-				}
-				if user != nil {
-					mentions += " " + strings.ToLower(user.Nick)
-				}
-			}
-		}
-	}
-
-	// Iterates through all the filters to see if the message contained a filtered word
-	for i := 0; i < len(misc.ReadFilters); i++ {
-
-		re := regexp.MustCompile(misc.ReadFilters[i].Filter)
-		badWordCheck := re.FindAllString(messageLowercase, -1)
-		badWordCheckMentions := re.FindAllString(mentions, -1)
-
-		if badWordCheck != nil {
-			badWordsSlice = append(badWordsSlice, badWordCheck[0])
-			return true, badWordsSlice
-		}
-		if badWordCheckMentions != nil {
-			badWordsSlice = append(badWordsSlice, badWordCheckMentions[0])
-			return true, badWordsSlice
-		}
-	}
-
-	return false, nil
+	return false
 }
 
 // Adds a filter to storage and memory
@@ -380,7 +391,7 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	if filterExists == false {
+	if !filterExists {
 		_, err := s.ChannelMessageSend(m.ChannelID, "`" + commandStrings[1] + "` has been added to the filter list.")
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
@@ -633,6 +644,14 @@ func SpamFilterTimer(s *discordgo.Session, e *discordgo.Ready) {
 	}
 }
 
+// Filters images from the images folder with a tolerance level of 25k
+func ImageFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
+
+	// Fetches any image links containing .png
+	//urlRegex := regexp.MustCompile(`(?mi)(http[a-zA-Z]?://+)?.+/.+.png`)
+	//urls := urlRegex.FindAllString(m.Content, -1)
+}
+
 // Adds filter commands to the commandHandler
 func init() {
 	add(&command{
@@ -646,7 +665,7 @@ func init() {
 	add(&command{
 		execute:  addFilterCommand,
 		trigger:  "addfilter",
-		aliases:  []string{"filter"},
+		aliases:  []string{"filter", "setfilter"},
 		desc:     "Adds a phrase to the filters list.",
 		elevated: true,
 		category: "filters",
