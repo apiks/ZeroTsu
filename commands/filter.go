@@ -13,18 +13,18 @@ import (
 )
 
 var (
-	spamFilterMap = make(map[string]int)
-	spamFilterIsBroken = false
+	spamFilterMap 		= make(map[string]int)
+	spamFilterIsBroken	bool
 )
 
 // Handles filter in an onMessage basis
 func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	var (
-		removals      	string
+		mLowercase		string
 		badWordsSlice 	[]string
 		badWordExists 	bool
-		mLowercase		string
+		removals      	string
 	)
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -110,10 +110,10 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 
 	var (
-		removals      	string
+		mLowercase		string
 		badWordsSlice 	[]string
 		badWordExists 	bool
-		mLowercase		string
+		removals      	string
 	)
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -366,14 +366,19 @@ func isFilteredReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) bool
 	return false
 }
 
-// Adds a filter to storage and memory
+// Adds a filter phrase to storage and memory
 func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(messageLowercase, " ", 2)
+	var (
+		mLowercase		string
+		commandStrings	[]string
+	)
+
+	mLowercase = strings.ToLower(m.Content)
+	commandStrings = strings.SplitN(mLowercase, " ", 2)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "filter [phrase]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vfilter [phrase]`\n\n[phrase] is either regex expression (preferable) or just a simple string.", config.BotPrefix))
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -384,54 +389,53 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Writes to filters.json
-	filterExists, err := misc.FiltersWrite(commandStrings[1])
+	// Writes the phrase to filters.json and checks if the filter was already in storage
+	err := misc.FiltersWrite(commandStrings[1])
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
-	if !filterExists {
-		_, err := s.ChannelMessageSend(m.ChannelID, "`" + commandStrings[1] + "` has been added to the filter list.")
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been added to the filter list.", commandStrings[1]))
+	if err != nil {
+		_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
 			return
 		}
-	} else {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: `" + commandStrings[1] + "` is already on the filter list.")
-		if err != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
-			if err != nil {
-				return
-			}
-			return
-		}
+		return
 	}
 }
 
-// Removes a filter from storage and memory
+// Removes a filter phrase from storage and memory
 func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 
+	var (
+		mLowercase		string
+		commandStrings	[]string
+	)
+
+	misc.MapMutex.Lock()
 	if len(misc.ReadFilters) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no filters.")
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
+				misc.MapMutex.Unlock()
 				return
 			}
+			misc.MapMutex.Unlock()
 			return
 		}
+		misc.MapMutex.Unlock()
 		return
 	}
+	misc.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(messageLowercase, " ", 2)
+	mLowercase = strings.ToLower(m.Content)
+	commandStrings = strings.SplitN(mLowercase, " ", 2)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "unfilter [phrase]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vunfilter [phrase]`\n\n[phrase] is the filter phrase that was used when creating a filter.", config.BotPrefix))
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -443,25 +447,13 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Removes phrase from storage and memory
-	filterExists, err := misc.FiltersRemove(commandStrings[1])
+	err := misc.FiltersRemove(commandStrings[1])
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
-	if filterExists {
-		_, err := s.ChannelMessageSend(m.ChannelID, "`" + commandStrings[1] + "` has been removed from the filter list.")
-		if err != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
-			return
-		}
-		return
-	}
-
-	_, err = s.ChannelMessageSend(m.ChannelID, "Error: `" + commandStrings[1] + "` is not in the filter list.")
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been removed from the filter list."))
 	if err != nil {
 		_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
@@ -474,29 +466,33 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 // Print filters from memory in chat
 func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	// Creates a string variable to store the filters in for showing later
 	var filters string
 
+	misc.MapMutex.Lock()
 	if len(misc.ReadFilters) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no filters.")
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
+				misc.MapMutex.Unlock()
 				return
 			}
+			misc.MapMutex.Unlock()
 			return
 		}
+		misc.MapMutex.Unlock()
 		return
 	}
 
-	// Iterates through all the filters if they exist and adds them to the filters string
-	for i := 0; i < len(misc.ReadFilters); i++ {
+	// Iterates through all the filters in memory and adds them to the filters string
+	for _, filter := range misc.ReadFilters {
 		if filters == "" {
-			filters = "`" + misc.ReadFilters[i].Filter + "`"
-		} else {
-			filters = filters + "\n `" + misc.ReadFilters[i].Filter + "`"
+			filters = fmt.Sprintf("`%v`", filter.Filter)
+			continue
 		}
+		filters = fmt.Sprintf("%v\n `%v`", filters, filter)
 	}
+	misc.MapMutex.Unlock()
 
 	_, err := s.ChannelMessageSend(m.ChannelID, filters)
 	if err != nil {
@@ -511,18 +507,20 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID string) error {
 
 	var (
-		embedMess      discordgo.MessageEmbed
-		embedThumbnail discordgo.MessageEmbedThumbnail
+		embedMess      		discordgo.MessageEmbed
+		embedThumbnail 		discordgo.MessageEmbedThumbnail
 
 		// Embed slice and its fields
-		embedField        []*discordgo.MessageEmbedField
-		embedFieldFilter  discordgo.MessageEmbedField
-		embedFieldMessage discordgo.MessageEmbedField
-		embedFieldChannel discordgo.MessageEmbedField
+		embedField        	[]*discordgo.MessageEmbedField
+		embedFieldFilter  	discordgo.MessageEmbedField
+		embedFieldMessage 	discordgo.MessageEmbedField
+		embedFieldChannel 	discordgo.MessageEmbedField
+
+		content				string
 	)
 
-	// Checks if the message contains a mention and finds the actual name instead of ID
-	content := m.Content
+	// Checks if the message contains a mention and replaces it with the actual nick instead of ID
+	content = m.Content
 	content = misc.MentionParser(s, content)
 
 	// Sets timestamp for removal
@@ -539,8 +537,8 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID
 	embedFieldChannel.Name = "Channel:"
 
 	// Sets field content
-	embedFieldFilter.Value = "**__" + removals + "__**"
-	embedFieldMessage.Value = "`" + content + "`"
+	embedFieldFilter.Value = fmt.Sprintf("**__%v**__", removals)
+	embedFieldMessage.Value = fmt.Sprintf("`%v`", content)
 	embedFieldChannel.Value = misc.ChMentionID(channelID)
 
 	// Sets field inline
@@ -562,7 +560,11 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID
 
 	// Sends embed in bot-log channel
 	_, err := s.ChannelMessageSendEmbed(config.BotLogID, &embedMess)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Removes user message if sent too quickly in succession
@@ -572,28 +574,18 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if spamFilterIsBroken {
 		return
 	}
-	// Checks if it's within the /r/anime server
-	s.RWMutex.Lock()
-	ch, err := s.State.Channel(m.ChannelID)
-	if err != nil {
-		ch, err = s.Channel(m.ChannelID)
-		if err != nil {
-			s.RWMutex.Unlock()
-			return
-		}
-		s.RWMutex.Unlock()
+	// Stops double event bug with empty content
+	if m.Content == "" {
 		return
 	}
-	if ch.GuildID != config.ServerID {
-		s.RWMutex.Unlock()
+	// Checks if it's within the config server
+	if m.GuildID != config.ServerID {
 		return
 	}
 	// Checks if it's the bot that sent the message
 	if m.Author.ID == s.State.User.ID {
-		s.RWMutex.Unlock()
 		return
 	}
-	s.RWMutex.Unlock()
 	// Pulls info on message author
 	mem, err := s.State.Member(config.ServerID, m.Author.ID)
 	if err != nil {
@@ -603,35 +595,44 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 	// Checks if user is mod or bot before checking the message
-	s.RWMutex.RLock()
 	if misc.HasPermissions(mem) {
-		s.RWMutex.RUnlock()
 		return
 	}
-	s.RWMutex.RUnlock()
 
-	// Removes message if there were over 4 rapidly sent messages
+	// Counter for how many rapidly sent user messages a user has
 	misc.MapMutex.Lock()
 	if spamFilterMap[m.Author.ID] < 4 {
 		spamFilterMap[m.Author.ID]++
-	} else {
-		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
-		if err != nil && spamFilterMap[m.Author.ID] > 15 {
-			_, err := s.ChannelMessageSend(config.BotLogID, "Error: Spam filter has been disabled due to massive overflow of requests.\n"+
-				err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				misc.MapMutex.Unlock()
-				return
-			}
+		misc.MapMutex.Unlock()
+		return
+	}
+
+	// Stops filter if there is an unusual high size of messages to be deleted from a user (i.e. discord lags)
+	if spamFilterMap[m.Author.ID] > 15 {
+		_, err = s.ChannelMessageSend(config.BotLogID, "Error: Spam filter has been disabled due to massive overflow of requests.")
+		if err != nil {
 			spamFilterIsBroken = true
 			misc.MapMutex.Unlock()
 			return
 		}
+		spamFilterIsBroken = true
+		misc.MapMutex.Unlock()
+		return
 	}
 	misc.MapMutex.Unlock()
+
+	// Deletes the message if over 4 rapidly sent messages
+	err = s.ChannelMessageDelete(m.ChannelID, m.ID)
+	if err != nil {
+		_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return
+		}
+		return
+	}
 }
 
-// Handles expiring user spam map
+// Handles expiring user spam filter map counter
 func SpamFilterTimer(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(4 * time.Second).C {
 		misc.MapMutex.Lock()
@@ -642,14 +643,6 @@ func SpamFilterTimer(s *discordgo.Session, e *discordgo.Ready) {
 		}
 		misc.MapMutex.Unlock()
 	}
-}
-
-// Filters images from the images folder with a tolerance level of 25k
-func ImageFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
-
-	// Fetches any image links containing .png
-	//urlRegex := regexp.MustCompile(`(?mi)(http[a-zA-Z]?://+)?.+/.+.png`)
-	//urls := urlRegex.FindAllString(m.Content, -1)
 }
 
 // Adds filter commands to the commandHandler
