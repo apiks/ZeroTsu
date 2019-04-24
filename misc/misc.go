@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
-	"strings"
-	"unicode"
-	"runtime"
 	"net/http"
 	"regexp"
+	"runtime"
 	"strconv"
+	"strings"
 	"time"
+	"unicode"
 
 	"github.com/bwmarrin/discordgo"
 

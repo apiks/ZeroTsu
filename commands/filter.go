@@ -453,7 +453,7 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been removed from the filter list."))
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been removed from the filter list."), commandStrings[1])
 	if err != nil {
 		_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
