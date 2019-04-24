@@ -3,6 +3,7 @@ package misc
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math"
 	"strings"
@@ -52,8 +53,6 @@ var (
 	RafflesSlice	[]Raffle
 	WaifuSlice		[]Waifu
 	WaifuTradeSlice	[]WaifuTrade
-
-	ImageSlice		[]io.Reader
 )
 
 type FilterStruct struct {
