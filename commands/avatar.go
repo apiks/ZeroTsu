@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -15,7 +16,7 @@ func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(m.Content, " ")
 
 	if len(commandStrings) > 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix + "avatar [@user, userID or username#discrim]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage `%avatar [user]`"))
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -32,7 +33,7 @@ func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
-		// Sends avatar
+		// Sends user who used the command's avatar
 		_, err = s.ChannelMessageSend(m.ChannelID, mem.AvatarURL("256"))
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
