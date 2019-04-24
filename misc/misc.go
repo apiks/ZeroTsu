@@ -3,7 +3,6 @@ package misc
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"math"
 	"strings"
