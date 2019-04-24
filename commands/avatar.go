@@ -16,7 +16,7 @@ func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(m.Content, " ")
 
 	if len(commandStrings) > 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage `%avatar [user]`"))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage `%vavatar [user]`", config.BotPrefix))
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
