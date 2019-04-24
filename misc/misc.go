@@ -21,8 +21,11 @@ import (
 // File for misc. functions, commands and variables.
 
 const (
-	UserAgent  = "script:github.com/r-anime/zerotsu:v1.0.0 (by /u/thechosenapiks, /u/geo1088)"
-	DateFormat = "2006-01-02"
+	UserAgent  			= "script:github.com/r-anime/zerotsu:v1.0.0 (by /u/thechosenapiks, /u/geo1088)"
+	DateFormat 			= "2006-01-02"
+	ToleranceLevel 		= 10
+	PixelSampleSize 	= 10000
+	CorrectPixelLimit	= 9000
 )
 
 var (
@@ -32,6 +35,7 @@ var (
 	SpoilerMap         = make(map[string]*discordgo.Role)
 
 	ReadFilters  []FilterStruct
+	ReadSoftFilters  []FilterStruct
 
 	ReadSpoilerRoles []discordgo.Role
 
@@ -48,6 +52,8 @@ var (
 	RafflesSlice	[]Raffle
 	WaifuSlice		[]Waifu
 	WaifuTradeSlice	[]WaifuTrade
+
+	ImageSlice		[]io.Reader
 )
 
 type FilterStruct struct {
@@ -108,6 +114,11 @@ type WaifuTrade struct {
 	TradeID			string				`json:"TradeID"`
 	InitiatorID		string				`json:"InitiatorID"`
 	AccepteeID		string				`json:"AccepteeID"`
+}
+
+type Coordinates struct {
+	X	int		`json:"X"`
+	Y	int		`json:"Y"`
 }
 
 // HasPermissions sees if a user has elevated permissions. By Kagumi
@@ -216,71 +227,75 @@ func (c *UserAgentTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 }
 
 // Adds string "phrase" to filters.json and memory
-func FiltersWrite(phrase string) (bool, error) {
+func FiltersWrite(phrase string) error {
 
-	var (
-		phraseStruct = 	FilterStruct{phrase}
-		err 			error
-	)
+	var filterStruct = 	FilterStruct{phrase}
 
 	// Appends the new filtered phrase to a slice of all of the old ones if it doesn't exist
-	for i := 0; i < len(ReadFilters); i++ {
-		if ReadFilters[i].Filter == phraseStruct.Filter {
-			return true, err
+	MapMutex.Lock()
+	for _, filter := range ReadFilters {
+		if filter.Filter == phrase {
+			MapMutex.Unlock()
+			return fmt.Errorf(fmt.Sprintf("Error: `%v` is already on the filter list.", phrase))
 		}
 	}
 
-	ReadFilters = append(ReadFilters, phraseStruct)
+	// Adds the phrase to the filter list
+	ReadFilters = append(ReadFilters, filterStruct)
 
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(ReadFilters, "", "    ")
 	if err != nil {
-		return false, err
+		MapMutex.Unlock()
+		return err
 	}
+	MapMutex.Unlock()
 
 	// Writes to file
 	err = ioutil.WriteFile("database/filters.json", marshaledStruct, 0644)
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	return false, err
+	return nil
 }
 
 // Removes string "phrase" from filters.json and memory
-func FiltersRemove(phrase string) (bool, error) {
+func FiltersRemove(phrase string) error {
 
-	var (
-		filterExists 	bool
-		phraseStruct = 	FilterStruct{phrase}
-		err          	error
-	)
+	var filterExists	bool
 
 	// Deletes the filtered phrase if it finds it exists
-	for i := 0; i < len(ReadFilters); i++ {
-		if ReadFilters[i].Filter == phraseStruct.Filter {
-			filterExists = true
+	MapMutex.Lock()
+	for i, filter := range ReadFilters {
+		if filter.Filter == phrase {
 			ReadFilters = append(ReadFilters[:i], ReadFilters[i+1:]...)
+			filterExists = true
+			break
 		}
 	}
 
-	if filterExists == false {
-		return false, err
+	// Exits func if the filter is not on the list
+	if !filterExists {
+		MapMutex.Unlock()
+		return fmt.Errorf(fmt.Sprintf("Error: `%v` is not in the filter list.", phrase))
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.Marshal(ReadFilters)
 	if err != nil {
-		return true, err
+		MapMutex.Unlock()
+		return err
 	}
+	MapMutex.Unlock()
 
 	// Writes to file
 	err = ioutil.WriteFile("database/filters.json", marshaledStruct, 0644)
 	if err != nil {
-		return true, err
+		return err
 	}
 
-	return true, err
+	return nil
 }
 
 // Reads filters from filters.json
@@ -294,6 +309,87 @@ func FiltersRead() {
 
 	// Takes the filtered words from filter.json from byte and puts them into the FilterStruct struct slice
 	_ = json.Unmarshal(filtersByte, &ReadFilters)
+}
+
+// Adds string "phrase" to filters.json and memory
+func SoftFiltersWrite(phrase string) (bool, error) {
+
+	var (
+		phraseStruct = 	FilterStruct{phrase}
+		err 			error
+	)
+
+	// Appends the new filtered phrase to a slice of all of the old ones if it doesn't exist
+	for i := 0; i < len(ReadSoftFilters); i++ {
+		if ReadSoftFilters[i].Filter == phraseStruct.Filter {
+			return true, err
+		}
+	}
+
+	ReadSoftFilters = append(ReadSoftFilters, phraseStruct)
+
+	// Turns that struct slice into bytes again to be ready to written to file
+	marshaledStruct, err := json.MarshalIndent(ReadSoftFilters, "", "    ")
+	if err != nil {
+		return false, err
+	}
+
+	// Writes to file
+	err = ioutil.WriteFile("database/softfilters.json", marshaledStruct, 0644)
+	if err != nil {
+		return false, err
+	}
+
+	return false, err
+}
+
+// Removes string "phrase" from filters.json and memory
+func SoftFiltersRemove(phrase string) (bool, error) {
+
+	var (
+		filterExists 	bool
+		phraseStruct = 	FilterStruct{phrase}
+		err          	error
+	)
+
+	// Deletes the filtered phrase if it finds it exists
+	for i := 0; i < len(ReadSoftFilters); i++ {
+		if ReadSoftFilters[i].Filter == phraseStruct.Filter {
+			filterExists = true
+			ReadSoftFilters = append(ReadSoftFilters[:i], ReadSoftFilters[i+1:]...)
+		}
+	}
+
+	if filterExists == false {
+		return false, err
+	}
+
+	// Turns that struct slice into bytes again to be ready to written to file
+	marshaledStruct, err := json.Marshal(ReadSoftFilters)
+	if err != nil {
+		return true, err
+	}
+
+	// Writes to file
+	err = ioutil.WriteFile("database/softfilters.json", marshaledStruct, 0644)
+	if err != nil {
+		return true, err
+	}
+
+	return true, err
+}
+
+// Reads filters from filters.json
+func SoftFiltersRead() {
+
+	// Reads all the filtered words from the filters.json file and puts them in filtersByte as bytes
+	filtersByte, err := ioutil.ReadFile("database/softfilters.json")
+	if err != nil {
+		return
+	}
+
+	// Takes the filtered words from filter.json from byte and puts them into the FilterStruct struct slice
+	_ = json.Unmarshal(filtersByte, &ReadSoftFilters)
 }
 
 // Writes spoilerRoles map to spoilerRoles.json
@@ -1105,44 +1201,45 @@ func BannedUsersWrite(bannedUsers []BannedUsers) {
 	return
 }
 
-// Checks if a message contains a channel or user mention and fixes it to a non-mention if that if true
+// Checks if a message contains a channel or user mentions and changes them to a non-mention if true
 func MentionParser(s *discordgo.Session, m string) string {
 
-	// Checks for user and replaces mention with user name
+	var (
+		mentions				string
+		userID					string
+		userMentionCheck		[]string
+		channelMentionCheck		[]string
+	)
+
 	if strings.Contains(m, "<@") {
-		userMentionRegex := regexp.MustCompile("(?i)(<!@+[0-9]+>)")
-		userMentionCheck := userMentionRegex.FindAllString(m, -1)
-		if userMentionCheck == nil {
-			userMentionRegex = regexp.MustCompile("(?i)(<@+[0-9]+>)")
-			userMentionCheck = userMentionRegex.FindAllString(m, -1)
-		}
+
+		// Checks for both <@! and <@ mentions
+		mentionRegex := regexp.MustCompile(`(?m)<@!?\d+>`)
+		userMentionCheck = mentionRegex.FindAllString(m, -1)
 		if userMentionCheck != nil {
-			for index := range userMentionCheck {
-				userID := strings.TrimPrefix(userMentionCheck[index], "<@")
+			for i := range userMentionCheck {
+				userID = strings.TrimPrefix(userMentionCheck[i], "<@")
 				userID = strings.TrimPrefix(userID, "!")
 				userID = strings.TrimSuffix(userID, ">")
 
 				// Checks first in memberInfo. Only checks serverside if it doesn't exist. Saves performance
 				MapMutex.Lock()
 				if len(MemberInfoMap) != 0 {
-					if MemberInfoMap[userID] != nil {
-						m = strings.Replace(m, userMentionCheck[index], fmt.Sprintf("@%v", MemberInfoMap[userID].Nickname), -1)
+					if _, ok := MemberInfoMap[userID]; ok {
+						mentions += " " + strings.ToLower(MemberInfoMap[userID].Nickname)
 						MapMutex.Unlock()
 						continue
 					}
 				}
 				MapMutex.Unlock()
 
+				// If user wasn't found in memberInfo with that username+discrim combo then fetch manually from Discord and then replace mentions with nick
 				user, err := s.State.Member(config.ServerID, userID)
 				if err != nil {
-					user, _ := s.GuildMember(config.ServerID, userID)
-					if user != nil {
-						m = strings.Replace(m, userMentionCheck[index], fmt.Sprintf("@%v", user.Nick), -1)
-						continue
-					}
+					user, _ = s.GuildMember(config.ServerID, userID)
 				}
 				if user != nil {
-					m = strings.Replace(m, userMentionCheck[index], fmt.Sprintf("@%v", user.Nick), -1)
+					m = strings.Replace(m, userMentionCheck[i], fmt.Sprintf("@%v", user.Nick), -1)
 				}
 			}
 		}
@@ -1150,19 +1247,20 @@ func MentionParser(s *discordgo.Session, m string) string {
 
 	// Checks for channel and replaces mention with channel name
 	if strings.Contains(m, "#") {
-		channelMentionRegex := regexp.MustCompile("(?i)(<#+[0-9]+>)")
-		channelMentionCheck := channelMentionRegex.FindAllString(m, -1)
+		channelMentionRegex := regexp.MustCompile(`(?m)(<#\d+>)`)
+		channelMentionCheck = channelMentionRegex.FindAllString(m, -1)
 		if channelMentionCheck != nil {
-			for index := range channelMentionCheck {
-				channelID := strings.TrimPrefix(channelMentionCheck[index], "<#")
+			for i := range channelMentionCheck {
+				channelID := strings.TrimPrefix(channelMentionCheck[i], "<#")
 				channelID = strings.TrimSuffix(channelID, ">")
 
+				// Fetches channel so we can parse its string name
 				cha, err := s.Channel(channelID)
 				if err != nil {
 					continue
 				}
 				if cha != nil {
-					m = strings.Replace(m, channelMentionCheck[index], fmt.Sprintf("#%v", cha.Name), -1)
+					m = strings.Replace(m, channelMentionCheck[i], fmt.Sprintf("#%v", cha.Name), -1)
 				}
 			}
 		}
