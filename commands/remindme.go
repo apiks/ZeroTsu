@@ -113,7 +113,7 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	misc.MapMutex.Unlock()
 
-	_, err = s.ChannelMessageSend(m.ChannelID, "Success! You will be reminded of the message on _" + Date.Format("2006-01-02 15:04") + "_.")
+	_, err = s.ChannelMessageSend(m.ChannelID, "Success! You will be reminded of the message on _" + Date.Format("2006-01-02 15:04 MST") + "_.")
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
