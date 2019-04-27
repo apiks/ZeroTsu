@@ -23,9 +23,6 @@ import (
 const (
 	UserAgent  			= "script:github.com/r-anime/zerotsu:v1.0.0 (by /u/thechosenapiks, /u/geo1088)"
 	DateFormat 			= "2006-01-02"
-	ToleranceLevel 		= 10
-	PixelSampleSize 	= 10000
-	CorrectPixelLimit	= 9000
 )
 
 var (
@@ -34,8 +31,8 @@ var (
 	SpoilerPerms       = discordgo.PermissionSendMessages + discordgo.PermissionReadMessages + discordgo.PermissionReadMessageHistory
 	SpoilerMap         = make(map[string]*discordgo.Role)
 
-	ReadFilters  []FilterStruct
-	ReadSoftFilters  []FilterStruct
+	ReadFilters  			[]FilterStruct
+	ReadMessRequirements  	[]MessRequirement
 
 	ReadSpoilerRoles []discordgo.Role
 
@@ -55,7 +52,14 @@ var (
 )
 
 type FilterStruct struct {
-	Filter string `json:"Filter"`
+	Filter 	string	`json:"Filter"`
+}
+
+type MessRequirement struct {
+	Phrase 		string	`json:"Phrase"`
+	Type 		string	`json:"Type"`
+	Channel		string	`json:"Channel"`
+	LastUserID	string
 }
 
 type RssThreadStruct struct {
@@ -112,11 +116,6 @@ type WaifuTrade struct {
 	TradeID			string				`json:"TradeID"`
 	InitiatorID		string				`json:"InitiatorID"`
 	AccepteeID		string				`json:"AccepteeID"`
-}
-
-type Coordinates struct {
-	X	int		`json:"X"`
-	Y	int		`json:"Y"`
 }
 
 // HasPermissions sees if a user has elevated permissions. By Kagumi
@@ -305,89 +304,98 @@ func FiltersRead() {
 		return
 	}
 
-	// Takes the filtered words from filter.json from byte and puts them into the FilterStruct struct slice
+	// Takes the filtered phrases from filter.json from byte and puts them into the FilterStruct struct slice
 	_ = json.Unmarshal(filtersByte, &ReadFilters)
 }
 
-// Adds string "phrase" to filters.json and memory
-func SoftFiltersWrite(phrase string) (bool, error) {
+// Adds string "phrase" to messrequirement.json and memory
+func MessRequirementWrite(phrase string, channel string, filterType string) error {
 
-	var (
-		phraseStruct = 	FilterStruct{phrase}
-		err 			error
-	)
+	var MessRequirementStruct = MessRequirement{phrase,filterType, channel, ""}
 
-	// Appends the new filtered phrase to a slice of all of the old ones if it doesn't exist
-	for i := 0; i < len(ReadSoftFilters); i++ {
-		if ReadSoftFilters[i].Filter == phraseStruct.Filter {
-			return true, err
+	// Appends the new phrase to a slice of all of the old ones if it doesn't exist
+	MapMutex.Lock()
+	for _, requirement := range ReadMessRequirements {
+		if requirement.Phrase == phrase {
+			MapMutex.Unlock()
+			return fmt.Errorf(fmt.Sprintf("Error: `%v` is already on the message requirement list.", phrase))
 		}
 	}
 
-	ReadSoftFilters = append(ReadSoftFilters, phraseStruct)
+	// Adds the phrase to the message requirement list
+	ReadMessRequirements = append(ReadMessRequirements, MessRequirementStruct)
 
 	// Turns that struct slice into bytes again to be ready to written to file
-	marshaledStruct, err := json.MarshalIndent(ReadSoftFilters, "", "    ")
+	marshaledStruct, err := json.MarshalIndent(ReadMessRequirements, "", "    ")
 	if err != nil {
-		return false, err
+		MapMutex.Unlock()
+		return err
 	}
+	MapMutex.Unlock()
 
 	// Writes to file
-	err = ioutil.WriteFile("database/softfilters.json", marshaledStruct, 0644)
+	err = ioutil.WriteFile("database/messrequirement.json", marshaledStruct, 0644)
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	return false, err
+	return nil
 }
 
-// Removes string "phrase" from filters.json and memory
-func SoftFiltersRemove(phrase string) (bool, error) {
+// Removes string "phrase" from messrequirement.json and memory
+func MessRequirementRemove(phrase string, channelID string) error {
 
-	var (
-		filterExists 	bool
-		phraseStruct = 	FilterStruct{phrase}
-		err          	error
-	)
+	var phraseExists	bool
 
 	// Deletes the filtered phrase if it finds it exists
-	for i := 0; i < len(ReadSoftFilters); i++ {
-		if ReadSoftFilters[i].Filter == phraseStruct.Filter {
-			filterExists = true
-			ReadSoftFilters = append(ReadSoftFilters[:i], ReadSoftFilters[i+1:]...)
+	MapMutex.Lock()
+	for i, requirement:= range ReadMessRequirements {
+		if requirement.Phrase == phrase {
+			if channelID != "" {
+				if requirement.Channel != channelID {
+					continue
+				}
+			}
+			ReadMessRequirements = append(ReadMessRequirements[:i], ReadMessRequirements[i+1:]...)
+			phraseExists = true
+			break
 		}
 	}
 
-	if filterExists == false {
-		return false, err
+	// Exits func if the filter is not on the list
+	if !phraseExists {
+		MapMutex.Unlock()
+		return fmt.Errorf(fmt.Sprintf("Error: `%v` is not in the message requirement list.", phrase))
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
-	marshaledStruct, err := json.Marshal(ReadSoftFilters)
+	marshaledStruct, err := json.Marshal(ReadMessRequirements)
 	if err != nil {
-		return true, err
+		MapMutex.Unlock()
+		return err
 	}
+	MapMutex.Unlock()
 
 	// Writes to file
-	err = ioutil.WriteFile("database/softfilters.json", marshaledStruct, 0644)
+	err = ioutil.WriteFile("database/messrequirement.json", marshaledStruct, 0644)
 	if err != nil {
-		return true, err
+		return err
 	}
 
-	return true, err
+	return nil
 }
 
-// Reads filters from filters.json
-func SoftFiltersRead() {
+// Reads filters from messrequirement.json
+func MessRequirementRead() {
 
-	// Reads all the filtered words from the filters.json file and puts them in filtersByte as bytes
-	filtersByte, err := ioutil.ReadFile("database/softfilters.json")
+	// Reads all the filtered words from the messrequirement.json file and puts them in requirementsByte as bytes
+	requirementsByte, err := ioutil.ReadFile("database/messrequirement.json")
 	if err != nil {
 		return
 	}
 
-	// Takes the filtered words from filter.json from byte and puts them into the FilterStruct struct slice
-	_ = json.Unmarshal(filtersByte, &ReadSoftFilters)
+	// Takes the required phrases from messrequirement.json from byte and puts them into the MessRequirement struct slice
+	_ = json.Unmarshal(requirementsByte, &ReadMessRequirements)
 }
 
 // Writes spoilerRoles map to spoilerRoles.json

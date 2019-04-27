@@ -63,6 +63,9 @@ func Start() {
 	// Reads filters.json from storage at bot start
 	misc.FiltersRead()
 
+	// Reads messrequirements.json from storage at bot start
+	misc.MessRequirementRead()
+
 	// Reads memberInfo.json from storage at bot start
 	misc.MemberInfoRead()
 

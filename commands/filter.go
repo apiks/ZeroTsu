@@ -78,6 +78,10 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	if badWordsSlice == nil {
+		return
+	}
+
 	// Iterates through all the bad words in order and formats print string
 	for _, badWord := range badWordsSlice {
 		if len(removals) == 0 {
@@ -167,6 +171,10 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 		return
 	}
 
+	if badWordsSlice == nil {
+		return
+	}
+
 	// Iterates through all the bad words in order and formats print string
 	for _, badWord := range badWordsSlice {
 		if len(removals) == 0 {
@@ -250,14 +258,18 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string){
 
 	var (
-		mLowercase				string
-		mentions				string
-		userID					string
+		mLowercase					string
+		mentions					string
+		userID						string
 
-		badPhraseSlice         []string
-		badPhraseCheckMentions []string
-		badPhraseCheck         []string
-		mentionCheck           []string
+		mentionCheck           		[]string
+
+		badPhraseSlice         		[]string
+		badPhraseCheckMentions 		[]string
+		badPhraseCheck         		[]string
+
+		messRequireCheckMentions	[]string
+		messRequireCheck			[]string
 	)
 
 	mLowercase = strings.ToLower(m.Content)
@@ -326,6 +338,43 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string){
 		return true, badPhraseSlice
 	}
 
+	// Iterates through all of the message requirements to see if the message follows a set requirement {
+	misc.MapMutex.Lock()
+	for i, requirement := range misc.ReadMessRequirements {
+		if requirement.Channel != m.ChannelID {
+			continue
+		}
+
+		// Regex check the requirement phrase in the message
+		re := regexp.MustCompile(requirement.Phrase)
+		messRequireCheck = re.FindAllString(mLowercase, -1)
+		messRequireCheckMentions = re.FindAllString(mentions, -1)
+
+		// If a required phrase exists in the message or mentions, check if it should be removed
+		if messRequireCheck != nil {
+			misc.ReadMessRequirements[i].LastUserID = m.Author.ID
+			continue
+		}
+		if messRequireCheckMentions != nil {
+			misc.ReadMessRequirements[i].LastUserID = m.Author.ID
+			continue
+		}
+
+		if requirement.Type == "soft" {
+			if requirement.LastUserID == "" {
+				misc.ReadMessRequirements[i].LastUserID = m.Author.ID
+			} else if requirement.LastUserID != m.Author.ID {
+				misc.MapMutex.Unlock()
+				return true, nil
+			}
+		}
+		if requirement.Type == "hard" {
+			misc.MapMutex.Unlock()
+			return true, nil
+		}
+	}
+	misc.MapMutex.Unlock()
+
 	return false, nil
 }
 
@@ -389,7 +438,7 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Writes the phrase to filters.json and checks if the filter was already in storage
+	// Writes the phrase to filters.json and checks if the requirement was already in storage
 	err := misc.FiltersWrite(commandStrings[1])
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
@@ -567,6 +616,205 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID
 	return nil
 }
 
+// Adds a message requirement phrase to storage and memory
+func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	var (
+		mLowercase				string
+		commandStrings			[]string
+		channelID				string
+		requirementType			string
+		phrase					string
+	)
+
+	mLowercase = strings.ToLower(m.Content)
+	commandStrings = strings.SplitN(mLowercase, " ", 4)
+
+	if len(commandStrings) == 1 {
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vmrequire [channel]* [type]* [phrase]`\n\n" +
+			"`[channel]` is a ping or ID to the channel where the requirement will only be done.\n" +
+			"`[type]` can either be soft or hard. Soft means a user must mention the phrase in their first message and is okay until someone else types a message. Hard means all messages must contain that phrase. Defaults to soft.\n" +
+			"`[phrase]` is either regex expression (preferable) or just a simple string.\n\n" +
+			"***** is optional.", config.BotPrefix))
+		if err != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
+	// Resolves optional parameters based on commandStrings length
+	if len(commandStrings) == 2 {
+		phrase = commandStrings[1]
+	} else if len(commandStrings) == 3 {
+		channelID, _ = misc.ChannelParser(s, commandStrings[1])
+		if channelID == "" {
+			if commandStrings[1] == "soft" ||
+				commandStrings[1] == "hard" {
+
+				requirementType = commandStrings[1]
+				phrase = commandStrings[2]
+			} else {
+				phrase = commandStrings[1] + " " + commandStrings[2]
+			}
+		} else {
+			phrase = commandStrings[2]
+		}
+	} else if len(commandStrings) == 4 {
+		channelID, _ = misc.ChannelParser(s, commandStrings[1])
+		if channelID == "" {
+			if commandStrings[1] == "soft" ||
+				commandStrings[1] == "hard" {
+
+				requirementType = commandStrings[1]
+				phrase = commandStrings[2] + " " + commandStrings[3]
+			} else {
+				phrase = commandStrings[1] + " " + commandStrings[2] + " " + commandStrings[3]
+			}
+		} else if commandStrings[2] == "soft" ||
+			commandStrings[2] == "hard" {
+
+			requirementType = commandStrings[2]
+			phrase = commandStrings[3]
+		} else {
+			phrase = commandStrings[2] + " " + commandStrings[3]
+		}
+	}
+	if requirementType == "" {
+		requirementType = "soft"
+	}
+
+	// Writes the phrase to messrequirement.json and checks if the requirement was already in storage
+	err := misc.MessRequirementWrite(phrase, channelID, requirementType)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been added to the message requirement list.", phrase))
+	if err != nil {
+		_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return
+		}
+		return
+	}
+}
+
+// Removes a message requirement from storage and memory
+func removeMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	var (
+		mLowercase		string
+		commandStrings	[]string
+		channelID		string
+		phrase			string
+	)
+
+	misc.MapMutex.Lock()
+	if len(misc.ReadMessRequirements) == 0 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no message requirements.")
+		if err != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				misc.MapMutex.Unlock()
+				return
+			}
+			misc.MapMutex.Unlock()
+			return
+		}
+		misc.MapMutex.Unlock()
+		return
+	}
+	misc.MapMutex.Unlock()
+
+	mLowercase = strings.ToLower(m.Content)
+	commandStrings = strings.SplitN(mLowercase, " ", 3)
+
+	if len(commandStrings) == 1 {
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vunmrequire [channel]* [phrase]`\n\n[channel] is the channel for which that message requirement was set.\n" +
+			"`[phrase]` is the phrase that was used when creating a message requirement.\n\n ***** are optional.", config.BotPrefix))
+		if err != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
+
+	// Resolves optional parameter
+	if len(commandStrings) == 3 {
+		channelID, _ = misc.ChannelParser(s, commandStrings[1])
+		if channelID == "" {
+			phrase = commandStrings[1] + " " + commandStrings[2]
+		} else {
+			phrase = commandStrings[2]
+		}
+	} else {
+		phrase = commandStrings[1]
+	}
+
+	// Removes the phrase from storage and memory
+	err := misc.MessRequirementRemove(phrase, channelID)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been removed from the filter list.", phrase))
+	if err != nil {
+		_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return
+		}
+		return
+	}
+}
+
+// Print message requirements from memory in chat
+func viewMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	var mRequirements string
+
+	misc.MapMutex.Lock()
+	if len(misc.ReadMessRequirements) == 0 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no message requirements.")
+		if err != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				misc.MapMutex.Unlock()
+				return
+			}
+			misc.MapMutex.Unlock()
+			return
+		}
+		misc.MapMutex.Unlock()
+		return
+	}
+
+	// Iterates through all the message requirements in memory and adds them to the mRequirements string
+	for _, requirement := range misc.ReadMessRequirements {
+		if requirement.Channel == "" {
+			requirement.Channel = "All channels"
+		}
+		mRequirements += fmt.Sprintf("`%v - %v - %v`\n", requirement.Phrase, requirement.Channel, requirement.Type)
+	}
+	misc.MapMutex.Unlock()
+
+	_, err := s.ChannelMessageSend(m.ChannelID, mRequirements)
+	if err != nil {
+		_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+		if err != nil {
+			return
+		}
+		return
+	}
+}
+
 // Removes user message if sent too quickly in succession
 func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 
@@ -645,6 +893,14 @@ func SpamFilterTimer(s *discordgo.Session, e *discordgo.Ready) {
 	}
 }
 
+// Filters images from the images folder with a tolerance level of 25k
+func ImageFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
+
+	// Fetches any image links containing .png
+	//urlRegex := regexp.MustCompile(`(?mi)(http[a-zA-Z]?://+)?.+/.+.png`)
+	//urls := urlRegex.FindAllString(m.Content, -1)
+}
+
 // Adds filter commands to the commandHandler
 func init() {
 	add(&command{
@@ -668,6 +924,30 @@ func init() {
 		trigger:  "removefilter",
 		aliases:  []string{"deletefilter", "unfilter"},
 		desc:     "Removes a phrase from the filters list.",
+		elevated: true,
+		category: "filters",
+	})
+	add(&command{
+		execute:  viewMessRequirementCommand,
+		trigger:  "mrequirements",
+		aliases:  []string{"viewmrequirements", "showmrequirements", "messagerequirements", "messagereqirement", "viewmessrequirements", "messrequirements", "mrequirement", "messrequirement"},
+		desc:     "Prints all current message requirement filters.",
+		elevated: true,
+		category: "filters",
+	})
+	add(&command{
+		execute:  addMessRequirementCommand,
+		trigger:  "mrequire",
+		aliases:  []string{ "messrequire", "setmrequire", "setmessrequire", "setmessagerequire", "addmrequire", "messagerequire", "messrequire", "addmessrequire", "addmessagereqyure"},
+		desc:     "Adds a phrase to the message requirement list where it will remove messages that do not contain it.",
+		elevated: true,
+		category: "filters",
+	})
+	add(&command{
+		execute:  removeMessRequirementCommand,
+		trigger:  "unmrequire",
+		aliases:  []string{"munrequire", "removemrequire", "removemrequirement", "deletemrequire", "deletemrequirement", "unmessrequire", "deletemessrequire", "removemessrequire"},
+		desc:     "Removes a phrase from the message requirement list.",
 		elevated: true,
 		category: "filters",
 	})
