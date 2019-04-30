@@ -28,18 +28,11 @@ func OnMessageEmoji(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	// Checks if it's within config server
-	ch, err := s.State.Channel(m.ChannelID)
-	if err != nil {
-		ch, err = s.Channel(m.ChannelID)
-		if err != nil {
-			return
-		}
-	}
-	if ch.GuildID != config.ServerID {
+	if m.GuildID != config.ServerID {
 		return
 	}
 	// Pulls the entire guild structure so we can check guild emojis from it later
-	guild, err := s.Guild(ch.GuildID)
+	guild, err := s.Guild(m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m.Message, err)
 	}
@@ -85,18 +78,11 @@ func OnMessageEmojiReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 	}()
 
 	// Checks if it's within the /r/anime server
-	ch, err := s.State.Channel(r.ChannelID)
-	if err != nil {
-		ch, err = s.Channel(r.ChannelID)
-		if err != nil {
-			return
-		}
-	}
-	if ch.GuildID != config.ServerID {
+	if r.GuildID != config.ServerID {
 		return
 	}
 	// Pulls the entire guild structure so we can check guild emojis from it later
-	guild, err := s.Guild(ch.GuildID)
+	guild, err := s.Guild(r.GuildID)
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
@@ -142,18 +128,11 @@ func OnMessageEmojiUnreact(s *discordgo.Session, r *discordgo.MessageReactionRem
 	}()
 
 	// Checks if it's within the /r/anime server
-	ch, err := s.State.Channel(r.ChannelID)
-	if err != nil {
-		ch, err = s.Channel(r.ChannelID)
-		if err != nil {
-			return
-		}
-	}
-	if ch.GuildID != config.ServerID {
+	if r.GuildID != config.ServerID {
 		return
 	}
 	// Pulls the entire guild structure so we can check guild emojis from it later
-	guild, err := s.Guild(ch.GuildID)
+	guild, err := s.Guild(r.GuildID)
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {

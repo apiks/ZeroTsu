@@ -1,12 +1,12 @@
 package commands
 
 import (
-	"strings"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"strconv"
+	"strings"
 	"time"
-	"fmt"
 
 	"github.com/bwmarrin/discordgo"
 
@@ -300,16 +300,21 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	misc.MapMutex.Lock()
 	VoteInfoMap[m.ID] = &temp
-	misc.MapMutex.Unlock()
 
 	// Writes to storage
 	VoteInfoWrite(VoteInfoMap)
+	misc.MapMutex.Unlock()
 
 	if !admin {
 		_, err = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Vote for temp channel `%v` has been started by user %v#%v in %v.", temp.Channel, temp.User.Username, temp.User.Discriminator, misc.ChMentionID(m.ChannelID)))
 		if err != nil {
-			fmt.Println(err)
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
 		}
+		return
 	}
 }
 
@@ -366,6 +371,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					if err != nil {
 						continue
 					}
+					continue
 				}
 
 				// Deletes the vote from memory
@@ -512,8 +518,13 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 			if temp.ChannelType == "temp" || temp.ChannelType == "temporary" {
 				_, err = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Temp channel `%v` has been created from a vote by user %v#%v.", temp.Channel, temp.User.Username, temp.User.Discriminator))
 				if err != nil {
-					fmt.Println(err)
+					_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+					if err != nil {
+						return
+					}
+					return
 				}
+				return
 			}
 		}
 		misc.MapMutex.Unlock()
@@ -559,7 +570,11 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					if difference > 0 {
 						_, err = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Temp channel `%v` has been deleted due to being inactive for 3 hours.", cha[i].Name))
 						if err != nil {
-							fmt.Println(err)
+							_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+							if err != nil {
+								return
+							}
+							return
 						}
 
 						// Deletes channel and role

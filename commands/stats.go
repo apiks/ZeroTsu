@@ -30,20 +30,9 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}()
 
 	// Checks if it's within the config server and whether it's the bot
-	s.RWMutex.RLock()
-	ch, err := s.State.Channel(m.ChannelID)
-	if err != nil {
-		ch, err = s.Channel(m.ChannelID)
-		if err != nil {
-			s.RWMutex.RUnlock()
-			return
-		}
-	}
-	if ch.GuildID != config.ServerID {
-		s.RWMutex.RUnlock()
+	if m.GuildID != config.ServerID {
 		return
 	}
-	s.RWMutex.RUnlock()
 
 	// Pull channel info
 	channel, err := s.State.Channel(m.ChannelID)
@@ -81,10 +70,8 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 
-		s.State.RWMutex.RLock()
 		channelStatsVar.ChannelID = channel.ID
 		channelStatsVar.Name = channel.Name
-		s.State.RWMutex.RUnlock()
 		channelStatsVar.RoleCount = make(map[string]int)
 		channelStatsVar.RoleCount[channel.Name] = misc.GetRoleUserAmount(guild, roles, channel.Name)
 
@@ -140,7 +127,6 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 	}
-
 
 	// Sorts channel by their message use
 	channels := make([]*misc.Channel, len(misc.ChannelStats))
@@ -344,8 +330,8 @@ func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 	t := time.Now()
 	misc.MapMutex.Lock()
 	misc.UserStats[t.Format(misc.DateFormat)]--
-	misc.MapMutex.Unlock()
 	misc.MemberInfoWrite(misc.MemberInfoMap)
+	misc.MapMutex.Unlock()
 }
 
 // Checks if specific channel stat should be printed

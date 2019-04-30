@@ -101,18 +101,15 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	misc.MemberInfoMap[userID].Warnings = append(misc.MemberInfoMap[userID].Warnings[:index], misc.MemberInfoMap[userID].Warnings[index+1:]...)
-	misc.MapMutex.Unlock()
 
 	// Writes new map to storage
 	misc.MemberInfoWrite(misc.MemberInfoMap)
+	misc.MapMutex.Unlock()
 
 	err = removePunishmentEmbed(s, m, punishment)
 	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
 			return
 		}
 		return
@@ -209,18 +206,15 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	misc.MemberInfoMap[userID].Kicks = append(misc.MemberInfoMap[userID].Kicks[:index], misc.MemberInfoMap[userID].Kicks[index+1:]...)
-	misc.MapMutex.Unlock()
 
 	// Writes new map to storage
 	misc.MemberInfoWrite(misc.MemberInfoMap)
+	misc.MapMutex.Unlock()
 
 	err = removePunishmentEmbed(s, m, punishment)
 	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
 			return
 		}
 		return
@@ -317,18 +311,15 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	misc.MemberInfoMap[userID].Bans = append(misc.MemberInfoMap[userID].Bans[:index], misc.MemberInfoMap[userID].Bans[index+1:]...)
-	misc.MapMutex.Unlock()
 
 	// Writes new map to storage
 	misc.MemberInfoWrite(misc.MemberInfoMap)
+	misc.MapMutex.Unlock()
 
 	err = removePunishmentEmbed(s, m, punishment)
 	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
 			return
 		}
 		return

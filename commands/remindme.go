@@ -75,14 +75,10 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Saves the userID in a separate variable
-	s.RWMutex.Lock()
 	userID = m.Author.ID
-	s.RWMutex.Unlock()
 
 	// Saves the remindMe data to an object of type remindMe
-	s.RWMutex.Lock()
 	remindMeObject.CommandChannel = m.ChannelID
-	s.RWMutex.Unlock()
 	misc.MapMutex.Lock()
 	_, ok := misc.RemindMeMap[userID]
 	if ok {
@@ -130,9 +126,7 @@ func viewRemindMe(s *discordgo.Session, m *discordgo.Message) {
 		message		string
 	)
 
-	s.RWMutex.Lock()
 	userID = m.Author.ID
-	s.RWMutex.Unlock()
 
 	// Checks if the user has any reminds
 	misc.MapMutex.Lock()
@@ -210,9 +204,7 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 		flag		bool
 	)
 
-	s.RWMutex.Lock()
 	userID = m.Author.ID
-	s.RWMutex.Unlock()
 
 	// Checks if the user has any reminds
 	misc.MapMutex.Lock()

@@ -602,13 +602,16 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
-	_, err = s.ChannelMessageSend("566233292026937345", fmt.Sprintf("User joined the server: %v\nAccount age: %v", u.User.Mention(), creationDate.String()))
-	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+	// Sends user join message for r/anime discord server
+	if config.ServerID == "267799767843602452" {
+		_, err = s.ChannelMessageSend("566233292026937345", fmt.Sprintf("User joined the server: %v\nAccount age: %v", u.User.Mention(), creationDate.String()))
 		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+			if err != nil {
+				return
+			}
 			return
 		}
-		return
 	}
 }
 
@@ -620,6 +623,8 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 		temp 			BannedUsers
 		tempMem			UserInfo
+
+		dmMessage		string
 	)
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -690,11 +695,13 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	MapMutex.Unlock()
 
 	// Sends a message to the user warning them in case it's a false positive
-	dm, _ := s.UserChannelCreate(u.User.ID)
-	_, err = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have been suspected of being a spambot and banned.\nTo get unbanned please do our mandatory verification process at https://%v/verification and then rejoin the server.", config.Website))
-	if err != nil {
-		fmt.Println(err)
+	dmMessage = "You have been suspected of being a spambot and banned."
+	if config.ServerID == "267799767843602452" {
+		dmMessage += "\nTo get unbanned please do our mandatory verification process at https://%v/verification and then rejoin the server."
 	}
+
+	dm, _ := s.UserChannelCreate(u.User.ID)
+	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf(dmMessage, config.Website))
 
 	// Bans the suspected account
 	err = s.GuildBanCreateWithReason(config.ServerID, u.User.ID, "Autoban Spambot Account", 0)

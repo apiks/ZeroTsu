@@ -147,10 +147,8 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	banTimestamp.Punishment = reason
 	banTimestamp.Type = "Ban"
 	misc.MemberInfoMap[userID].Timestamps = append(misc.MemberInfoMap[userID].Timestamps, banTimestamp)
-	misc.MapMutex.Unlock()
 
 	// Writes to memberInfo.json
-	misc.MapMutex.Lock()
 	misc.MemberInfoWrite(misc.MemberInfoMap)
 	misc.MapMutex.Unlock()
 
