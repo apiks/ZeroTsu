@@ -62,6 +62,9 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		if perm.ID == airingID && airingID != "" {
 			originalAiringPerms = perm
 		}
+		if perm.ID == config.ServerID {
+			originalEveryonePerms = perm
+		}
 	}
 
 	// Removes send permissions from everyone, channel role and airing role
@@ -79,11 +82,12 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 	}
-	originalEveryonePerms = cha.PermissionOverwrites[0]
-	err = s.ChannelPermissionSet(m.ChannelID, config.ServerID, "role", originalEveryonePerms.Allow & ^discordgo.PermissionSendMessages, originalEveryonePerms.Deny | discordgo.PermissionSendMessages)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
-		return
+	if originalEveryonePerms != nil {
+		err = s.ChannelPermissionSet(m.ChannelID, config.ServerID, "role", originalEveryonePerms.Allow & ^discordgo.PermissionSendMessages, originalEveryonePerms.Deny | discordgo.PermissionSendMessages)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err)
+			return
+		}
 	}
 
 	// Adds mod role overwrites if they don't exist
@@ -180,6 +184,9 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 		if perm.ID == airingID && airingID != "" {
 			originalAiringPerms = perm
 		}
+		if perm.ID == config.ServerID {
+			originalEveryonePerms = perm
+		}
 	}
 
 	// Adds send permissions to the channel role and airing if it's a spoiler channel
@@ -197,12 +204,12 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 	}
-	// Sets default send permissions for @everyone
-	originalEveryonePerms = cha.PermissionOverwrites[0]
-	err = s.ChannelPermissionSet(m.ChannelID, config.ServerID, "role", originalEveryonePerms.Allow, originalEveryonePerms.Deny & ^discordgo.PermissionSendMessages)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
-		return
+	if originalEveryonePerms != nil {
+		err = s.ChannelPermissionSet(m.ChannelID, config.ServerID, "role", originalEveryonePerms.Allow, originalEveryonePerms.Deny & ^discordgo.PermissionSendMessages)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err)
+			return
+		}
 	}
 
 	// Adds mod role overwrites if they don't exist
