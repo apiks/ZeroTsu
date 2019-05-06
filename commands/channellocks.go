@@ -13,15 +13,13 @@ import (
 func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		roleExists       = false
-		roleID           string
-		roleTempPosition int
-		spoilerRole 	 = false
-		airingID		 string
+		roleExists       		bool
+		roleID           		string
+		airingID		 		string
+		originalRolePerms		*discordgo.PermissionOverwrite
+		originalAiringPerms		*discordgo.PermissionOverwrite
+		originalEveryonePerms	*discordgo.PermissionOverwrite
 	)
-
-	// Set variable for spoiler channels to be able to view history
-	allowed := discordgo.PermissionReadMessages + discordgo.PermissionReadMessageHistory
 
 	// Pulls info on the channel the message is in
 	cha, err := s.Channel(m.ChannelID)
@@ -33,74 +31,61 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Error if lock used in moderator category
-	if cha.ParentID == config.ModCategoryID {
-		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot lock a mod channel due to permission reasons.")
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
-			return
-		}
-		return
-	}
-
-	// Fetches info on server roles from the server and puts it in deb
-	deb, err := s.GuildRoles(config.ServerID)
+	// Fetches info on server roles from the server and puts it in roles
+	roles, err := s.GuildRoles(config.ServerID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
-	// Updates opt-in-under and opt-in-above position, finds channel role ID if opt-in and finds ID of airing role if it exists
-	for i := 0; i < len(deb); i++ {
-		if deb[i].Name == config.OptInUnder {
-			misc.OptinUnderPosition = deb[i].Position
-		} else if deb[i].Name == config.OptInAbove {
-			misc.OptinAbovePosition = deb[i].Position
-		} else if deb[i].Name == cha.Name {
-			roleID = deb[i].ID
-			roleTempPosition = deb[i].Position
-		} else if strings.ToLower(deb[i].Name) == "airing" {
-			airingID = deb[i].ID
+	// Checks if the channel has an associated role and updates airing role location if it exists
+	for _, role := range roles {
+		if strings.ToLower(role.Name) == strings.ToLower(cha.Name) {
+			roleID = role.ID
+		}
+		if strings.ToLower(role.Name) == "airing" {
+			airingID = role.ID
 		}
 	}
 
-	// Checks if the channel being locked is between the opt-ins
-	for i := 0; i < len(deb); i++ {
-		if roleTempPosition < misc.OptinUnderPosition &&
-			roleTempPosition > misc.OptinAbovePosition {
-			spoilerRole = true
-			break
+	// Saves the original role and airing perms if they exists
+	if roleID != "" || airingID != "" {
+		for _, perm := range cha.PermissionOverwrites {
+			if perm.ID == roleID {
+				originalRolePerms = perm
+			}
+			if perm.ID == airingID {
+				originalAiringPerms = perm
+			}
 		}
 	}
 
-	if spoilerRole {
-		// Removes send permissions only from the channel role and airing if it's a spoiler channel
-		err = s.ChannelPermissionSet(m.ChannelID, roleID, "role", allowed, discordgo.PermissionSendMessages)
-		if err != nil {
-			misc.CommandErrorHandler(s, m, err)
-			return
-		}
-		err = s.ChannelPermissionSet(m.ChannelID, airingID, "role", allowed, discordgo.PermissionSendMessages)
-		if err != nil {
-			misc.CommandErrorHandler(s, m, err)
-			return
-		}
-	} else {
-		// Removes send permission from @everyone
-		err = s.ChannelPermissionSet(m.ChannelID, config.ServerID, "role", 0, discordgo.PermissionSendMessages)
+	// Removes send permissions from everyone, channel role and airing role
+	if originalRolePerms != nil {
+		err = s.ChannelPermissionSet(m.ChannelID, roleID, "role", originalRolePerms.Allow &^ discordgo.PermissionSendMessages, originalRolePerms.Deny | discordgo.PermissionSendMessages)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
 	}
+	if originalAiringPerms != nil {
+		err = s.ChannelPermissionSet(m.ChannelID, airingID, "role", originalAiringPerms.Allow &^ discordgo.PermissionSendMessages, originalAiringPerms.Deny | discordgo.PermissionSendMessages)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err)
+			return
+		}
+	}
+	originalEveryonePerms = cha.PermissionOverwrites[0]
+	err = s.ChannelPermissionSet(m.ChannelID, config.ServerID, "role", originalEveryonePerms.Allow &^ discordgo.PermissionSendMessages, originalEveryonePerms.Deny | discordgo.PermissionSendMessages)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
 
-	// Checks if the channel has a permission overwrite for all mod positions
-	for i := 0; i < len(cha.PermissionOverwrites); i++ {
-		for _, goodRole := range config.CommandRoles {
-			if cha.PermissionOverwrites[i].ID == goodRole {
+	// Adds mod role overwrites if they don't exist
+	for _, perm := range cha.PermissionOverwrites {
+		for _, modRole := range config.CommandRoles {
+			if perm.ID == modRole {
 				roleExists = true
 				break
 			}
@@ -109,16 +94,12 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 			break
 		}
 	}
-
-	// If the mod permission overwrite doesn't exist it adds it
 	if !roleExists {
-		for i := 0; i < len(deb); i++ {
-			for _, goodRole := range config.CommandRoles {
-				err = s.ChannelPermissionSet(m.ChannelID, goodRole, "role", discordgo.PermissionAll, 0)
-				if err != nil {
-					misc.CommandErrorHandler(s, m, err)
-					return
-				}
+		for _, modRole := range config.CommandRoles {
+			err = s.ChannelPermissionSet(m.ChannelID, modRole, "role", discordgo.PermissionAll, 0)
+			if err != nil {
+				misc.CommandErrorHandler(s, m, err)
+				return
 			}
 		}
 	}
@@ -129,6 +110,7 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			return
 		}
+		return
 	}
 
 	_, err = s.ChannelMessageSend(config.BotLogID, "🔒 "+misc.ChMention(cha)+" was locked by "+m.Author.Username)
@@ -137,6 +119,7 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			return
 		}
+		return
 	}
 }
 
@@ -144,11 +127,12 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		def              int
-		roleID           string
-		roleTempPosition int
-		spoilerRole 	 = false
-		airingID		 string
+		roleExists				bool
+		roleID					string
+		airingID				string
+		originalRolePerms		*discordgo.PermissionOverwrite
+		originalAiringPerms		*discordgo.PermissionOverwrite
+		originalEveryonePerms	*discordgo.PermissionOverwrite
 	)
 
 	// Pulls info on the channel the message is in
@@ -161,78 +145,87 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Sets permission variable to be neutral for send messages
-	def &= ^discordgo.PermissionSendMessages
-
-	// Error if lock used in moderator category
-	if cha.ParentID == config.ModCategoryID {
-		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot lock a mod channel due to permission reasons.")
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
-			return
-		}
-		return
-	}
-
-	// Fetches info on server roles from the server and puts it in deb
-	deb, err := s.GuildRoles(config.ServerID)
+	// Fetches info on server roles from the server and puts it in roles
+	roles, err := s.GuildRoles(config.ServerID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
-	// Updates opt-in-under and opt-in-above position
-	for i := 0; i < len(deb); i++ {
-		if deb[i].Name == config.OptInUnder {
-			misc.OptinUnderPosition = deb[i].Position
-		} else if deb[i].Name == config.OptInAbove {
-			misc.OptinAbovePosition = deb[i].Position
-		} else if deb[i].Name == cha.Name {
-			roleID = deb[i].ID
-			roleTempPosition = deb[i].Position
-		} else if strings.ToLower(deb[i].Name) == "airing" {
-			airingID = deb[i].ID
+	// Checks if the channel has an associated role and updates airing role location if it exists
+	for _, role := range roles {
+		if strings.ToLower(role.Name) == strings.ToLower(cha.Name) {
+			roleID = role.ID
+		}
+		if strings.ToLower(role.Name) == "airing" {
+			airingID = role.ID
 		}
 	}
 
-	// Checks if the channel being locked is between the opt-ins
-	for i := 0; i < len(deb); i++ {
-		if roleTempPosition < misc.OptinUnderPosition &&
-			roleTempPosition > misc.OptinAbovePosition {
-			spoilerRole = true
+	// Saves the original role and airing perms if they exists
+	if roleID != "" || airingID != "" {
+		for _, perm := range cha.PermissionOverwrites {
+			if perm.ID == roleID {
+				originalRolePerms = perm
+			}
+			if perm.ID == airingID {
+				originalAiringPerms = perm
+			}
+		}
+	}
+
+	// Adds send permissions to the channel role and airing if it's a spoiler channel
+	if originalRolePerms != nil {
+		err = s.ChannelPermissionSet(m.ChannelID, roleID, "role", originalRolePerms.Allow | discordgo.PermissionSendMessages, originalRolePerms.Deny &^ discordgo.PermissionSendMessages)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err)
+			return
+		}
+	}
+	if originalAiringPerms != nil {
+		err = s.ChannelPermissionSet(m.ChannelID, airingID, "role", originalAiringPerms.Allow | discordgo.PermissionSendMessages, originalAiringPerms.Deny &^ discordgo.PermissionSendMessages)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err)
+			return
+		}
+	}
+	// Sets default send permissions for @everyone
+	originalEveryonePerms = cha.PermissionOverwrites[0]
+	err = s.ChannelPermissionSet(m.ChannelID, config.ServerID, "role", originalEveryonePerms.Allow, originalEveryonePerms.Deny &^ discordgo.PermissionSendMessages)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err)
+		return
+	}
+
+	// Adds mod role overwrites if they don't exist
+	for _, perm := range cha.PermissionOverwrites {
+		for _, modRole := range config.CommandRoles {
+			if perm.ID == modRole {
+				roleExists = true
+				break
+			}
+		}
+		if roleExists {
 			break
 		}
 	}
-
-	if spoilerRole {
-		// Adds send permissions only to the channel role and airing if it's a spoiler channel
-		err = s.ChannelPermissionSet(m.ChannelID, roleID, "role", misc.SpoilerPerms, 0)
-		if err != nil {
-			misc.CommandErrorHandler(s, m, err)
-			return
-		}
-		err = s.ChannelPermissionSet(m.ChannelID, airingID, "role", misc.SpoilerPerms, 0)
-		if err != nil {
-			misc.CommandErrorHandler(s, m, err)
-			return
-		}
-	} else {
-		// Adds send permission from @everyone
-		err = s.ChannelPermissionSet(m.ChannelID, config.ServerID, "role", def, 0)
-		if err != nil {
-			misc.CommandErrorHandler(s, m, err)
-			return
+	if !roleExists {
+		for _, modRole := range config.CommandRoles {
+			err = s.ChannelPermissionSet(m.ChannelID, modRole, "role", discordgo.PermissionAll, 0)
+			if err != nil {
+				misc.CommandErrorHandler(s, m, err)
+				return
+			}
 		}
 	}
+
 	_, err = s.ChannelMessageSend(m.ChannelID, "🔓 This channel has been unlocked.")
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
+		return
 	}
 	_, err = s.ChannelMessageSend(config.BotLogID, "🔓 "+misc.ChMention(cha)+" was unlocked by "+m.Author.Username)
 	if err != nil {
@@ -240,6 +233,7 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			return
 		}
+		return
 	}
 }
 

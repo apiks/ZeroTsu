@@ -720,7 +720,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "join [channel]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "join [channel/role]`")
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -791,7 +791,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			return
 		}
-		_, _ = s.ChannelMessageSend(dm.ID, "There's no #"+name)
+		_, _ = s.ChannelMessageSend(dm.ID, "There's no "+name)
 		return
 	}
 
@@ -902,7 +902,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	if len(commandStrings) == 1 {
 
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "leave [channel]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "leave [channel/role]`")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 			if err != nil {
@@ -971,7 +971,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			return
 		}
-		_, _ = s.ChannelMessageSend(dm.ID, "There's no #"+name+"")
+		_, _ = s.ChannelMessageSend(dm.ID, "There's no "+name+"")
 		return
 	}
 
