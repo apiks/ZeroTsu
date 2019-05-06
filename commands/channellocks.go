@@ -41,7 +41,7 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if the channel has an associated role and updates airing role location if it exists
 	for _, role := range roles {
 		if strings.ToLower(role.Name) == strings.ToLower(cha.Name) &&
-			role.Name != "everyone" {
+			role.ID != config.ServerID {
 			for rolID := range misc.SpoilerMap {
 				if role.ID == rolID {
 					roleID = role.ID
@@ -55,14 +55,12 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Saves the original role and airing perms if they exists
-	if roleID != "" || airingID != "" {
-		for _, perm := range cha.PermissionOverwrites {
-			if perm.ID == roleID {
-				originalRolePerms = perm
-			}
-			if perm.ID == airingID {
-				originalAiringPerms = perm
-			}
+	for _, perm := range cha.PermissionOverwrites {
+		if perm.ID == roleID && roleID != "" {
+			originalRolePerms = perm
+		}
+		if perm.ID == airingID && airingID != "" {
+			originalAiringPerms = perm
 		}
 	}
 
@@ -161,7 +159,7 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if the channel has an associated role and updates airing role location if it exists
 	for _, role := range roles {
 		if strings.ToLower(role.Name) == strings.ToLower(cha.Name) &&
-			role.Name != "everyone" {
+			role.ID != config.ServerID {
 			for rolID := range misc.SpoilerMap {
 				if role.ID == rolID {
 					roleID = role.ID
@@ -175,14 +173,12 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Saves the original role and airing perms if they exists
-	if roleID != "" || airingID != "" {
-		for _, perm := range cha.PermissionOverwrites {
-			if perm.ID == roleID {
-				originalRolePerms = perm
-			}
-			if perm.ID == airingID {
-				originalAiringPerms = perm
-			}
+	for _, perm := range cha.PermissionOverwrites {
+		if perm.ID == roleID && roleID != "" {
+			originalRolePerms = perm
+		}
+		if perm.ID == airingID && airingID != "" {
+			originalAiringPerms = perm
 		}
 	}
 
