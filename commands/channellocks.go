@@ -62,21 +62,21 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Removes send permissions from everyone, channel role and airing role
 	if originalRolePerms != nil {
-		err = s.ChannelPermissionSet(m.ChannelID, roleID, "role", originalRolePerms.Allow &^ discordgo.PermissionSendMessages, originalRolePerms.Deny | discordgo.PermissionSendMessages)
+		err = s.ChannelPermissionSet(m.ChannelID, roleID, "role", originalRolePerms.Allow & ^discordgo.PermissionSendMessages, originalRolePerms.Deny | discordgo.PermissionSendMessages)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
 	}
 	if originalAiringPerms != nil {
-		err = s.ChannelPermissionSet(m.ChannelID, airingID, "role", originalAiringPerms.Allow &^ discordgo.PermissionSendMessages, originalAiringPerms.Deny | discordgo.PermissionSendMessages)
+		err = s.ChannelPermissionSet(m.ChannelID, airingID, "role", originalAiringPerms.Allow & ^discordgo.PermissionSendMessages, originalAiringPerms.Deny | discordgo.PermissionSendMessages)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
 	}
 	originalEveryonePerms = cha.PermissionOverwrites[0]
-	err = s.ChannelPermissionSet(m.ChannelID, config.ServerID, "role", originalEveryonePerms.Allow &^ discordgo.PermissionSendMessages, originalEveryonePerms.Deny | discordgo.PermissionSendMessages)
+	err = s.ChannelPermissionSet(m.ChannelID, config.ServerID, "role", originalEveryonePerms.Allow & ^discordgo.PermissionSendMessages, originalEveryonePerms.Deny | discordgo.PermissionSendMessages)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -176,14 +176,14 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Adds send permissions to the channel role and airing if it's a spoiler channel
 	if originalRolePerms != nil {
-		err = s.ChannelPermissionSet(m.ChannelID, roleID, "role", originalRolePerms.Allow | discordgo.PermissionSendMessages, originalRolePerms.Deny &^ discordgo.PermissionSendMessages)
+		err = s.ChannelPermissionSet(m.ChannelID, roleID, "role", originalRolePerms.Allow | discordgo.PermissionSendMessages, originalRolePerms.Deny & ^discordgo.PermissionSendMessages)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
 	}
 	if originalAiringPerms != nil {
-		err = s.ChannelPermissionSet(m.ChannelID, airingID, "role", originalAiringPerms.Allow | discordgo.PermissionSendMessages, originalAiringPerms.Deny &^ discordgo.PermissionSendMessages)
+		err = s.ChannelPermissionSet(m.ChannelID, airingID, "role", originalAiringPerms.Allow | discordgo.PermissionSendMessages, originalAiringPerms.Deny & ^discordgo.PermissionSendMessages)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err)
 			return
@@ -191,7 +191,7 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	// Sets default send permissions for @everyone
 	originalEveryonePerms = cha.PermissionOverwrites[0]
-	err = s.ChannelPermissionSet(m.ChannelID, config.ServerID, "role", originalEveryonePerms.Allow, originalEveryonePerms.Deny &^ discordgo.PermissionSendMessages)
+	err = s.ChannelPermissionSet(m.ChannelID, config.ServerID, "role", originalEveryonePerms.Allow, originalEveryonePerms.Deny & ^discordgo.PermissionSendMessages)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
