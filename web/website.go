@@ -280,7 +280,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Pulls cookie if it exists, else it creates a new one and assigns it
 	cookie, _ := r.Cookie("sessid")
-	expire := time.Now().Add(15 * time.Second)
+	expire := time.Now().Add(10 * time.Minute)
 	if cookie == nil {
 		randNum, _ := randString(64)
 		cookieSet := http.Cookie{Name: "sessid", Value: randNum, Expires: expire, HttpOnly: true}
