@@ -40,8 +40,14 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if the channel has an associated role and updates airing role location if it exists
 	for _, role := range roles {
-		if strings.ToLower(role.Name) == strings.ToLower(cha.Name) {
-			roleID = role.ID
+		if strings.ToLower(role.Name) == strings.ToLower(cha.Name) &&
+			role.Name != "everyone" {
+			for rolID := range misc.SpoilerMap {
+				if role.ID == rolID {
+					roleID = role.ID
+					break
+				}
+			}
 		}
 		if strings.ToLower(role.Name) == "airing" {
 			airingID = role.ID
@@ -154,8 +160,14 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if the channel has an associated role and updates airing role location if it exists
 	for _, role := range roles {
-		if strings.ToLower(role.Name) == strings.ToLower(cha.Name) {
-			roleID = role.ID
+		if strings.ToLower(role.Name) == strings.ToLower(cha.Name) &&
+			role.Name != "everyone" {
+			for rolID := range misc.SpoilerMap {
+				if role.ID == rolID {
+					roleID = role.ID
+					break
+				}
+			}
 		}
 		if strings.ToLower(role.Name) == "airing" {
 			airingID = role.ID
