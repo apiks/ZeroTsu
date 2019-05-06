@@ -26,7 +26,7 @@ var (
 
 	// Map that keeps all user IDs that have successfuly verified but have not been given the role
 	verifyMap     = make(map[string]string)
-	)
+)
 
 type Access struct {
 	RedditAccessToken string `json:"access_token"`
@@ -280,9 +280,9 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Pulls cookie if it exists, else it creates a new one and assigns it
 	cookie, _ := r.Cookie("sessid")
+	expire := time.Now().Add(15 * time.Second)
 	if cookie == nil {
 		randNum, _ := randString(64)
-		expire := time.Now().Add(10 * time.Minute)
 		cookieSet := http.Cookie{Name: "sessid", Value: randNum, Expires: expire, HttpOnly: true}
 		http.SetCookie(w, &cookieSet)
 		cookie = &cookieSet
@@ -308,9 +308,11 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	SafeCookieMap.mux.Lock()
 	if _, ok := SafeCookieMap.userCookieMap[cookie.Value]; !ok {
 		tempUser.Cookie = cookie.Value
-		tempUser.Expiry = cookie.Expires
+		tempUser.Expiry = expire
 		tempUser.UsernameDiscrim = ""
 		SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
+	} else {
+		tempUser = *SafeCookieMap.userCookieMap[cookie.Value]
 	}
 	SafeCookieMap.mux.Unlock()
 
@@ -445,6 +447,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				tempUser.UsernameDiscrim = uname + "#" + udiscrim
 				tempUser.DiscordVerifiedStatus = true
 				SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
+				fmt.Println("discord ver")
 
 				// Verifies user if reddit verification was already completed succesfully
 				if SafeCookieMap.userCookieMap[cookie.Value].AccOldEnough && SafeCookieMap.userCookieMap[cookie.Value].ID != "" &&
@@ -886,12 +889,13 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 		}
 		misc.MapMutex.Unlock()
 
-		// Clears userCookieMap based on expiry date
+		//Clears userCookieMap based on expiry date
 		SafeCookieMap.mux.Lock()
 		if len(SafeCookieMap.userCookieMap) != 0 {
 			now := time.Now()
 			for key, cookie := range SafeCookieMap.userCookieMap {
 				if now.Sub(cookie.Expiry) > 0 {
+					fmt.Println("delet")
 					delete(SafeCookieMap.userCookieMap, key)
 				}
 			}
