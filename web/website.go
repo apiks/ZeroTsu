@@ -387,8 +387,10 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		usernameDiscrim := misc.MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].Username + "#" + misc.MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].Discrim
 		tempUser.UsernameDiscrim = usernameDiscrim
 
+		// Overwrites userCookieMap redditName value with the memberinfo one to avoid abuse in changing their reddit usernames
 		if misc.MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].RedditUsername != "" {
 			tempUser.RedditVerifiedStatus = true
+			tempUser.RedditName = misc.MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].RedditUsername
 		}
 		SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
 	}
@@ -397,8 +399,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	if SafeCookieMap.userCookieMap[cookie.Value].ID != "" {
 		if _, ok := misc.MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID]; ok {
 			if misc.MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].RedditUsername != "" {
-				// Overwrites userCookieMap redditName value with the memberinfo one to avoid abuse in changing their reddit usernames
-				SafeCookieMap.userCookieMap[cookie.Value].RedditName = misc.MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].RedditUsername
 				// Verifies user
 				err := Verify(cookie, r)
 				if err != nil {
@@ -447,7 +447,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				tempUser.UsernameDiscrim = uname + "#" + udiscrim
 				tempUser.DiscordVerifiedStatus = true
 				SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
-				fmt.Println("discord ver")
 
 				// Verifies user if reddit verification was already completed succesfully
 				if SafeCookieMap.userCookieMap[cookie.Value].AccOldEnough && SafeCookieMap.userCookieMap[cookie.Value].ID != "" &&
