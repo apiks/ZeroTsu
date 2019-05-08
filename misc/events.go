@@ -648,7 +648,7 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 	now = time.Now()
 	difference := now.Sub(creationDate)
-	if difference.Hours() > 72 {
+	if difference.Hours() > 384 {
 		return
 	}
 
