@@ -653,7 +653,7 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 
 	// Matches known spambot patterns with regex
-	regexCases := regexp.MustCompile(`(?im)(^[a-zA-Z]+\d{2,4}[a-zA-Z]+$)|(^[a-zA-Z]+\d{5}$)|(^[a-zA-Z]+\d{2,4}$)`)
+	regexCases := regexp.MustCompile(`(?im)(^[a-zA-Z]+\d{2,4}[a-zA-Z]+$)|(^[a-zA-Z]+\d{5}$)|(^[a-zA-Z]+\d{2,5}$)`)
 	spambotMatches := regexCases.FindAllString(u.User.Username, 1)
 	if len(spambotMatches) == 0 {
 		return
