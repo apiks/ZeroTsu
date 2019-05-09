@@ -886,20 +886,20 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 				delete(verifyMap, userID)
 			}
 		}
-		misc.MapMutex.Unlock()
 
-		//Clears userCookieMap based on expiry date
-		SafeCookieMap.mux.Lock()
+		// Clears userCookieMap based on expiry date
 		if len(SafeCookieMap.userCookieMap) != 0 {
-			now := time.Now()
-			for key, cookie := range SafeCookieMap.userCookieMap {
-				if now.Sub(cookie.Expiry) > 0 {
-					fmt.Println("delet")
-					delete(SafeCookieMap.userCookieMap, key)
-				}
+			misc.MapMutex.Unlock()
+			continue
+		}
+		now := time.Now()
+		for key, cookie := range SafeCookieMap.userCookieMap {
+			if now.Sub(cookie.Expiry) > 0 {
+				delete(SafeCookieMap.userCookieMap, key)
+				break
 			}
 		}
-		SafeCookieMap.mux.Unlock()
+		misc.MapMutex.Unlock()
 	}
 }
 
