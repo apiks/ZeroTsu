@@ -464,7 +464,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			} else {
-				tempUser.Error = "Error: Needed discord verification values are missing. Please verify again or message a mod."
+				tempUser.Error = "Error: Needed discord verification values are missing. You probably timed out. Please verify again or message a mod."
 				SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
 			}
 
@@ -533,7 +533,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			} else {
-				tempUser.Error = "Error: Needed reddit values are missing. Please verify again or message a mod."
+				tempUser.Error = "Error: Needed reddit values are missing. You probably timed out. Please verify again or message a mod."
 				SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
 			}
 		}
