@@ -138,9 +138,9 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 			if err != nil {
-				return
+				continue
 			}
-			return
+			continue
 		}
 
 		// Writes user gain stats to disk
@@ -148,9 +148,9 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 			if err != nil {
-				return
+				continue
 			}
-			return
+			continue
 		}
 
 		// Writes verified stats to disk
@@ -158,9 +158,9 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 			if err != nil {
-				return
+				continue
 			}
-			return
+			continue
 		}
 
 		// Writes memberInfo to disk
@@ -171,18 +171,18 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 			if err != nil {
-				return
+				continue
 			}
-			return
+			continue
 		}
 		// Fetches all server roles
 		roles, err := s.GuildRoles(config.ServerID)
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 			if err != nil {
-				return
+				continue
 			}
-			return
+			continue
 		}
 		// Updates optin role stat
 		t := time.Now()
@@ -202,9 +202,9 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 			if err != nil {
-				return
+				continue
 			}
-			return
+			continue
 		}
 	}
 }
