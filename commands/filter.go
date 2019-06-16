@@ -872,10 +872,6 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Deletes the message if over 4 rapidly sent messages
 	err = s.ChannelMessageDelete(m.ChannelID, m.ID)
 	if err != nil {
-		_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
 		return
 	}
 }

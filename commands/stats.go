@@ -422,6 +422,9 @@ func dailyStats(s *discordgo.Session) {
 	if hour == 0 && minute == 0 && dailyFlag {
 		dailyFlag = false
 	}
+
+	// Update daily anime schedule command daily
+	UpdatePrintMessageSchedule()
 }
 
 // Daily stat update timer
