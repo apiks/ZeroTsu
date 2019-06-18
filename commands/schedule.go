@@ -67,9 +67,6 @@ func UpdatePrintMessageSchedule() {
 	// Also reset message to daily default
 	printMessage = fmt.Sprintf("**%v:**\n\n", currentDay)
 	document.Find(fmt.Sprintf("#%v h3", currentDay)).Each(processEachShow)
-
-	// Append end of message
-	printMessage += "\nFull weekly schedule: https://AnimeSchedule.net"
 }
 
 func init() {
