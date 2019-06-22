@@ -520,11 +520,11 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				if err != nil {
 					_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 					if err != nil {
-						return
+						continue
 					}
-					return
+					continue
 				}
-				return
+				continue
 			}
 		}
 		misc.MapMutex.Unlock()

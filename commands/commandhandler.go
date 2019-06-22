@@ -49,17 +49,13 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}()
 
-	s.RWMutex.RLock()
 	if m.Author.ID == s.State.User.ID {
-		s.RWMutex.RUnlock()
 		return
 	}
 	if len(m.Message.Content) == 0 {
-		s.RWMutex.RUnlock()
 		return
 	}
 	if m.Message.Content[0:len(config.BotPrefix)] != config.BotPrefix {
-		s.RWMutex.RUnlock()
 		return
 	}
 
@@ -69,15 +65,12 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if !ok {
 		cmd, ok = commandMap[aliasMap[cmdTrigger]]
 		if !ok {
-			s.RWMutex.RUnlock()
 			return
 		}
 	}
 	if cmd.elevated && !hasElevatedPermissions(s, m.Author) {
-		s.RWMutex.RUnlock()
 		return
 	}
-	s.RWMutex.RUnlock()
 	if cmd.category == "waifus" {
 		if config.Waifus != "true" {
 			return
@@ -89,9 +82,7 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 	cmd.execute(s, m.Message)
-	misc.MapMutex.Lock()
 	cmd.commandCount++
-	misc.MapMutex.Unlock()
 	if cmd.deleteAfter {
 		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {

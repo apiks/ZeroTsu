@@ -426,10 +426,8 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	misc.MapMutex.Unlock()
 
 	// Verifies Discord and Reddit
-	misc.MapMutex.Lock()
 	if SafeCookieMap.userCookieMap[cookie.Value].Code != "" && !verified {
 
 		// Discord verification

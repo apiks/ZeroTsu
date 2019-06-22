@@ -183,10 +183,8 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Initializes user if he doesn't exist in memberInfo but is in server
 		misc.InitializeUser(userMem)
 	}
-	misc.MapMutex.Unlock()
 
 	// Appends warning to user in memberInfo
-	misc.MapMutex.Lock()
 	misc.MemberInfoMap[userID].Warnings = append(misc.MemberInfoMap[userID].Warnings, warning)
 
 	// Adds timestamp for that warning
