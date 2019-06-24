@@ -339,7 +339,6 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 		if err != nil {
 			return
 		}
-		return
 	}
 
 	// Fetches role ID
@@ -381,20 +380,15 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 	}
 
 	// Removes role
-	for _, role := range m.Roles {
-		if role == roleIDString {
-			err := s.GuildMemberRoleRemove(v.GuildID, v.UserID, roleIDString)
-			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
-				if err != nil {
-					s.RWMutex.Unlock()
-					return
-				}
-				s.RWMutex.Unlock()
-				return
-			}
-			break
+	err = s.GuildMemberRoleRemove(v.GuildID, v.UserID, roleIDString)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+		if err != nil {
+			s.RWMutex.Unlock()
+			return
 		}
+		s.RWMutex.Unlock()
+		return
 	}
 	s.RWMutex.Unlock()
 }
