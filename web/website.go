@@ -52,7 +52,7 @@ type User struct {
 	Code                  	string			`json:"code"`
 }
 
-// Mutex safe userCookieMap
+// Mutex safe userCookieMap. DO NOT USE LOCAL MUX WITH GLOBAL MUTEX
 type SafeUserCookieMap struct {
 	userCookieMap	map[string]*User
 	mux				sync.Mutex
@@ -305,7 +305,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Create entry in UserCookieMap if it doesn't exist. Otherwise just update tempUser with map value
-	SafeCookieMap.mux.Lock()
+	misc.MapMutex.Lock()
 	if _, ok := SafeCookieMap.userCookieMap[cookie.Value]; !ok {
 		tempUser.Cookie = cookie.Value
 		tempUser.Expiry = expire
@@ -314,7 +314,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		tempUser = *SafeCookieMap.userCookieMap[cookie.Value]
 	}
-	SafeCookieMap.mux.Unlock()
+	misc.MapMutex.Unlock()
 
 	// Fetches queries from link if they exist
 	queryValues := r.URL.Query()
@@ -327,9 +327,8 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	if errorVar != "" {
 		// Set error
 		tempUser.Error = "Error: Permission not given in verification. If this was a mistake please try to verify again."
-		SafeCookieMap.mux.Lock()
+		misc.MapMutex.Lock()
 		SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
-		SafeCookieMap.mux.Unlock()
 
 		// Loads the html & css verification files
 		t, err := template.ParseFiles("web/assets/verification.html")
@@ -339,13 +338,12 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				fmt.Println(err.Error())
 			}
 		}
-		SafeCookieMap.mux.Lock()
 		// Resets assigned Error Message
 		if cookie != nil {
 			tempUser.Error = ""
 			SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
 		}
-		SafeCookieMap.mux.Unlock()
+		misc.MapMutex.Unlock()
 		return
 	}
 
@@ -367,18 +365,18 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 			// Set new decrypted user ID to verify
 			tempUser.ID = trueid
-			SafeCookieMap.mux.Lock()
+			misc.MapMutex.Lock()
 			SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
-			SafeCookieMap.mux.Unlock()
+			misc.MapMutex.Unlock()
 		}
 	}
 
 	// Saves the code in the user cookie map if it exists
 	if code != "" {
 		tempUser.Code = code
-		SafeCookieMap.mux.Lock()
+		misc.MapMutex.Lock()
 		SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
-		SafeCookieMap.mux.Unlock()
+		misc.MapMutex.Unlock()
 	}
 
 	// Sets the username + discrim combo if it exists in memberinfo via ID, also sorts out the reddit verified status
