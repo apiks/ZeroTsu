@@ -429,7 +429,7 @@ func dailyStats(s *discordgo.Session) {
 
 // Daily stat update timer
 func DailyStatsTimer(s *discordgo.Session, e *discordgo.Ready) {
-	for range time.NewTicker(15 * time.Second).C {
+	for range time.NewTicker(40 * time.Second).C {
 		dailyStats(s)
 	}
 }
