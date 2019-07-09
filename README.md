@@ -32,7 +32,7 @@
 
 * Automatically give a channel to a user when they join a voice channel, and remove it when they leave using a role named "voice"
 
-* RemindMe feature where it either messages you or pings you with a message you've set after a period of time you've set.
+* RemindMe feature where it either messages you or pings you with a message you've set after a period of time you've set
 
 <br/>
 
