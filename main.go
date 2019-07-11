@@ -40,7 +40,7 @@ func main() {
 		r.HandleFunc("/channelstats/", web.ChannelStatsPageHandler)
 		r.HandleFunc("/userchangestats", web.UserChangeStatsPageHandler)
 		r.HandleFunc("/userchangestats/", web.UserChangeStatsPageHandler)
-		err := http.ListenAndServe("", r)
+		err := http.ListenAndServe(":8080", r)
 		if err != nil {
 			panic(err)
 		}
