@@ -52,6 +52,9 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
+	if m.Author.Bot {
+		return
+	}
 	if len(m.Message.Content) == 0 {
 		return
 	}
