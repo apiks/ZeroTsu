@@ -85,7 +85,8 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Initialize user if they are not in memberInfo
 	misc.MapMutex.Lock()
-	if len(misc.MemberInfoMap) == 0 || misc.MemberInfoMap[userID] == nil {
+	if _, ok := misc.MemberInfoMap[userID]; !ok || len(misc.MemberInfoMap) == 0 {
+		// Initializes user if he doesn't exist in memberInfo but is in server
 		misc.InitializeUser(userMem)
 	}
 	// Adds kick reason to user memberInfo info
