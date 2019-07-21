@@ -76,6 +76,19 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
+	// Checks if user has a privileged role
+	if misc.HasPermissions(userMem) {
+		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Target user has a privileged role. Cannot ban.")
+		if err != nil {
+			_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
+
 	// Fetches the guild Name
 	guild, err := s.Guild(config.ServerID)
 	if err != nil {

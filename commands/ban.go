@@ -91,8 +91,10 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			return
 		}
-		// Checks if user has a privileged role
-	} else if misc.HasPermissions(userMem) {
+	}
+
+	// Checks if user has a privileged role
+	if misc.HasPermissions(userMem) {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Target user has a privileged role. Cannot ban.")
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
