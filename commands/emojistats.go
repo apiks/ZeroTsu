@@ -300,6 +300,10 @@ func mergeDuplicates() map[string]*misc.Emoji {
 		// Emoji var here so it resets every iteration
 		var emoji misc.Emoji
 
+		if _, ok := misc.EmojiStats[duplicateOneID]; !ok {
+			continue
+		}
+
 		// Fetch current iteration values
 		uniqueTotal = misc.EmojiStats[duplicateOneID].UniqueMessageUsage
 		reactTotal = misc.EmojiStats[duplicateOneID].Reactions
@@ -309,11 +313,16 @@ func mergeDuplicates() map[string]*misc.Emoji {
 			if duplicateOneID == duplicateTwoID {
 				continue
 			}
-			if duplicateOneName == duplicateTwoName {
+			if duplicateOneID == "" || duplicateTwoID == "" {
+				continue
+			}
+			if strings.ToLower(duplicateOneName) == strings.ToLower(duplicateTwoName) {
+				if _, ok := misc.EmojiStats[duplicateTwoID]; !ok {
+					continue
+				}
 				uniqueTotal += misc.EmojiStats[duplicateTwoID].UniqueMessageUsage
 				reactTotal += misc.EmojiStats[duplicateTwoID].Reactions
 				msgTotal += misc.EmojiStats[duplicateTwoID].MessageUsage
-				delete(duplicateMap, duplicateTwoID )
 				continue
 			}
 		}
