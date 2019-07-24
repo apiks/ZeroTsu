@@ -141,6 +141,8 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Sets role name to hyphenated form
 	roleName = newCha.Name
 
+	time.Sleep(250 * time.Millisecond)
+
 	// Edits the new role with proper hyphenated name
 	_, err = s.GuildRoleEdit(config.ServerID, newRole.ID, roleName, 0, false, 0, false)
 	if err != nil {
@@ -153,7 +155,6 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		ID:   newRole.ID,
 		Name: command,
 	}
-
 	// Locks mutex based on whether the bot called the command or not because it's already being locked in channelvote
 	if m.Author.ID != s.State.User.ID {
 		misc.MapMutex.Lock()
@@ -170,6 +171,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
+	time.Sleep(250 * time.Millisecond)
 	// Finds ID of Muted role and Airing role
 	for i := 0; i < len(deb); i++ {
 		if deb[i].Name == "Muted" {
