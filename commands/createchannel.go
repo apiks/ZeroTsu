@@ -28,7 +28,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		descriptionSlice []string
 		fixed            bool
 
-		categoryNum int
+		categoryNum = 0
 
 		channel channel
 
@@ -40,7 +40,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"create [name] OPTIONAL[type] [category] [description; must have at least one other non-name parameter]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"create [name] OPTIONAL[type] [category] [description; must have at least one other non-name parameter]`\n\nThree type of parameters exist: `airing`, `temp` and `optin`. `Optin` is the default one.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -65,20 +65,22 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	for i := 0; i < len(commandStrings); i++ {
-		if categoryNum != 0 {
-			if (commandStrings[i] == "airing" ||
-				commandStrings[i] == "general" ||
-				commandStrings[i] == "opt-in" ||
-				commandStrings[i] == "optin" ||
-				commandStrings[i] == "temp" ||
-				commandStrings[i] == "temporary") &&
-				i == categoryNum-1 {
-
-				channel.Type = commandStrings[i]
-				commandStrings = append(commandStrings[:i], commandStrings[i+1:]...)
-				command = strings.Join(commandStrings, " ")
-				fixed = true
+		if commandStrings[i] == "airing" ||
+			commandStrings[i] == "general" ||
+			commandStrings[i] == "opt-in" ||
+			commandStrings[i] == "optin" ||
+			commandStrings[i] == "temp" ||
+			commandStrings[i] == "temporary" {
+			if categoryNum != 0 {
+				if categoryNum-1 != i {
+					continue
+				}
 			}
+
+			channel.Type = commandStrings[i]
+			commandStrings = append(commandStrings[:i], commandStrings[i+1:]...)
+			command = strings.Join(commandStrings, " ")
+			fixed = true
 		}
 	}
 
