@@ -141,8 +141,6 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Sets role name to hyphenated form
 	roleName = newCha.Name
 
-	time.Sleep(250 * time.Millisecond)
-
 	// Edits the new role with proper hyphenated name
 	_, err = s.GuildRoleEdit(config.ServerID, newRole.ID, roleName, 0, false, 0, false)
 	if err != nil {
@@ -171,7 +169,6 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
-	time.Sleep(250 * time.Millisecond)
 	// Finds ID of Muted role and Airing role
 	for i := 0; i < len(deb); i++ {
 		if deb[i].Name == "Muted" {
@@ -210,10 +207,12 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Muted perms
-	err = s.ChannelPermissionSet(newCha.ID, muted, "role", 0, discordgo.PermissionSendMessages)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
-		return
+	if muted != "" {
+		err = s.ChannelPermissionSet(newCha.ID, muted, "role", 0, discordgo.PermissionSendMessages)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err)
+			return
+		}
 	}
 
 	time.Sleep(100 * time.Millisecond)
