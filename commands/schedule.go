@@ -90,6 +90,7 @@ func getDaySchedule(weekday int) string {
 			for _, show := range showSlice {
 				printMessage += fmt.Sprintf("__%v__ - *%v UTC*\n\n", show.Name, show.AirTime)
 			}
+			break
 		}
 	}
 	misc.MapMutex.Unlock()
@@ -160,7 +161,12 @@ func UpdateAnimeSchedule() {
 		return
 	}
 
-	// Find all airing shows and process them
+	// Find all airing shows and process them after resetting map
+	misc.MapMutex.Lock()
+	for dayInt := range AnimeSchedule {
+		delete(AnimeSchedule, dayInt)
+	}
+	misc.MapMutex.Unlock()
 	document.Find(".columns h3").Each(processEachShow)
 }
 
