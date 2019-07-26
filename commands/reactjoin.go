@@ -43,6 +43,15 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	}
 	misc.MapMutex.Unlock()
 
+	// Fetches user and checks if it's the bot
+	mem, err := s.User(r.UserID)
+	if err != nil {
+		return
+	}
+	if mem.Bot {
+		return
+	}
+
 	// Pulls all of the server roles
 	roles, err := s.GuildRoles(config.ServerID)
 	if err != nil {
@@ -124,6 +133,15 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 		return
 	}
 	misc.MapMutex.Unlock()
+
+	// Fetches user and checks if it's the bot
+	mem, err := s.User(r.UserID)
+	if err != nil {
+		return
+	}
+	if mem.Bot {
+		return
+	}
 
 	// Pulls all of the server roles
 	roles, err := s.GuildRoles(config.ServerID)
