@@ -82,7 +82,7 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 // Gets a target weekday's anime schedule
 func getDaySchedule(weekday int) string {
-	var printMessage string
+	var printMessage = fmt.Sprintf("**%v:**\n\n", time.Weekday(weekday).String())
 
 	misc.MapMutex.Lock()
 	for dayInt, showSlice := range AnimeSchedule {
