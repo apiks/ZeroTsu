@@ -84,7 +84,7 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 					}
 				}
 				for _, serverRole := range roles {
-					if serverRole.Name == role {
+					if strings.ToLower(serverRole.Name) == strings.ToLower(role) {
 						// Gives the role
 						err := s.GuildMemberRoleAdd(config.ServerID, r.UserID, serverRole.ID)
 						if err != nil {
@@ -166,7 +166,7 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 					}
 				}
 				for _, serverRole := range roles {
-					if serverRole.Name == role {
+					if strings.ToLower(serverRole.Name) == strings.ToLower(role) {
 						// Removes the role
 						err := s.GuildMemberRoleRemove(config.ServerID, r.UserID, serverRole.ID)
 						if err != nil {
