@@ -424,7 +424,7 @@ func dailyStats(s *discordgo.Session) {
 	}
 
 	// Update daily anime schedule command
-	UpdatePrintMessageSchedule()
+	UpdateAnimeSchedule()
 }
 
 // Daily stat update timer

@@ -118,7 +118,7 @@ func Start() {
 	}
 
 	// Updates schedule command print message on load
-	commands.UpdatePrintMessageSchedule()
+	commands.UpdateAnimeSchedule()
 
 	// Cleans up duplicate usernames and nicknames (Run once per cleanup, keep off unless needed)
 	//misc.DuplicateUsernamesAndNicknamesCleanup()
