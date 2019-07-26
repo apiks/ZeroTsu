@@ -82,13 +82,52 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 // Gets a target weekday's anime schedule
 func getDaySchedule(weekday int) string {
-	var printMessage = fmt.Sprintf("**%v:**\n\n", time.Weekday(weekday).String())
+	var (
+		printMessage = fmt.Sprintf("**%v:**\n\n", time.Weekday(weekday).String())
+		DST = isTimeDST(time.Now())
+		JST *time.Location
+		BST *time.Location
+		PDT *time.Location
+		PST *time.Location
+	)
+
+	// Set timezones based on DST
+	JST = time.FixedZone("JST", +9*3600)
+	if DST {
+		BST = time.FixedZone("BST", +1*3600)
+		PDT = time.FixedZone("PDT", -7*3600)
+	} else {
+		PST = time.FixedZone("PST", -8*3600)
+	}
 
 	misc.MapMutex.Lock()
 	for dayInt, showSlice := range AnimeSchedule {
 		if dayInt == weekday {
 			for _, show := range showSlice {
-				printMessage += fmt.Sprintf("__%v__ - *%v UTC*\n\n", show.Name, show.AirTime)
+
+				// Parses the time in a proper time object
+				t, err := time.Parse("15:04", show.AirTime)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+
+				// Format print message for show's air times and timezones
+				jstTimezoneString, _ := t.In(JST).Zone()
+				if DST {
+					ukTimezoneString, _ := t.In(BST).Zone()
+					westAmericanTimezoneString, _ := t.In(PDT).Zone()
+
+					printMessage += fmt.Sprintf("**%v** - **|** %v __%v__ **|** %v __%v__ **|** %v __%v__ **|**\n\n", show.Name, t.UTC().In(BST).Format("15:04"), ukTimezoneString,
+						t.UTC().In(PDT).Format("15:04"), westAmericanTimezoneString,
+						t.UTC().In(JST).Format("15:04"), jstTimezoneString)
+				} else {
+					westAmericanTimezoneString, _ := t.In(PST).Zone()
+
+					printMessage += fmt.Sprintf("**%v** - **|** %v __GMT__ **|** %v __%v__ **|** %v __%v__ **|**\n\n", show.Name, t.UTC().Format("15:04"),
+						t.UTC().In(PST).Format("15:04"), westAmericanTimezoneString,
+						t.UTC().In(JST).Format("15:04"), jstTimezoneString)
+				}
 			}
 			break
 		}
@@ -168,6 +207,30 @@ func UpdateAnimeSchedule() {
 	}
 	misc.MapMutex.Unlock()
 	document.Find(".columns h3").Each(processEachShow)
+}
+
+// isTimeDST returns true if time t occurs within daylight saving time
+// for its time zone.
+func isTimeDST(t time.Time) bool {
+	// If the most recent (within the last year) clock change
+	// was forward then assume the change was from std to dst.
+	hh, mm, _ := t.UTC().Clock()
+	tClock := hh*60 + mm
+	for m := -1; m > -12; m-- {
+		// assume dst lasts for least one month
+		hh, mm, _ := t.AddDate(0, m, 0).UTC().Clock()
+		clock := hh*60 + mm
+		if clock != tClock {
+			if clock > tClock {
+				// std to dst
+				return true
+			}
+			// dst to std
+			return false
+		}
+	}
+	// assume no dst
+	return false
 }
 
 func init() {
