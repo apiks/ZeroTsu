@@ -43,12 +43,8 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	}
 	misc.MapMutex.Unlock()
 
-	// Fetches user and checks if it's the bot
-	mem, err := s.User(r.UserID)
-	if err != nil {
-		return
-	}
-	if mem.Bot {
+	// Return if the one reacting is this BOT
+	if r.UserID == s.State.SessionID {
 		return
 	}
 
@@ -134,12 +130,8 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 	}
 	misc.MapMutex.Unlock()
 
-	// Fetches user and checks if it's the bot
-	mem, err := s.User(r.UserID)
-	if err != nil {
-		return
-	}
-	if mem.Bot {
+	// Return if the one unreacting is this BOT
+	if r.UserID == s.State.SessionID {
 		return
 	}
 
