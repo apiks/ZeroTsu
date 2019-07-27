@@ -206,6 +206,16 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			}
 			continue
 		}
+
+		// Clears up spoilerRoles.json
+		err = cleanSpoilerRoles(s)
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+			if err != nil {
+				continue
+			}
+			continue
+		}
 	}
 }
 
@@ -709,4 +719,47 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	// Botlog message
 	_, _ = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Suspected spambot was banned. User: <@!%v>", u.User.ID))
+}
+
+// Cleans spoilerroles.json
+func cleanSpoilerRoles(s *discordgo.Session) error {
+
+	var (
+		shouldWrite bool
+		shouldDelete bool
+	)
+
+	// Pulls all of the server roles
+	roles, err := s.GuildRoles(config.ServerID)
+	if err != nil {
+		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+		if err != nil {
+			return err
+		}
+		return err
+	}
+
+	// Removes roles not found in spoilerRoles.json
+	MapMutex.Lock()
+	for key, spoilerRole := range SpoilerMap {
+		shouldDelete = true
+		for _, role := range roles {
+			if role.ID == spoilerRole.ID {
+				shouldDelete = false
+				break
+			}
+		}
+		if shouldDelete {
+			delete(SpoilerMap, key)
+			shouldWrite = true
+		}
+	}
+
+	// Writes to storage if necessary
+	if shouldWrite {
+		SpoilerRolesWrite(SpoilerMap)
+	}
+	MapMutex.Unlock()
+
+	return nil
 }
