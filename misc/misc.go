@@ -49,6 +49,8 @@ var (
 	RafflesSlice	[]Raffle
 	WaifuSlice		[]Waifu
 	WaifuTradeSlice	[]WaifuTrade
+
+	startTime 		time.Time
 )
 
 type FilterStruct struct {

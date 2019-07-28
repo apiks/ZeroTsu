@@ -30,6 +30,19 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		}
 	}
 
+	// Clean up SpoilerRoles.json
+	err = cleanSpoilerRoles(s)
+	if err != nil {
+		if err != nil {
+			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+			if err != nil {
+			}
+		}
+	}
+
+	// Start tracking uptime from here
+	startTime = time.Now()
+
 	for range time.NewTicker(30 * time.Second).C {
 
 		// Checks whether it has to post rss thread
@@ -37,18 +50,6 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
 		// RemindMe handler for checks and execution
 		remindMeHandler(s)
-
-		// Clean up SpoilerRoles.json
-		err = cleanSpoilerRoles(s)
-		if err != nil {
-			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
-				if err != nil {
-					continue
-				}
-				continue
-			}
-		}
 
 		// Goes through bannedUsers.json if it's not empty and unbans if needed
 		MapMutex.Lock()
