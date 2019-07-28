@@ -296,7 +296,7 @@ func deleteChannelReacts(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Fetches channel ID
-	channelID, channelName = misc.ChannelParser(s, commandStrings[1])
+	channelID, channelName = misc.CategoryParser(s, commandStrings[1])
 	if channelID == "" && channelName == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such channel exists.")
 		if err != nil {
