@@ -2,7 +2,6 @@ package misc
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"net/http"
 	"regexp"
