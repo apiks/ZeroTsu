@@ -218,7 +218,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Airing perms
-	if channel.Type == "airing" {
+	if channel.Type == "airing"  && airing != "" {
 		err = s.ChannelPermissionSet(newCha.ID, airing, "role", misc.SpoilerPerms, 0)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err)
