@@ -872,7 +872,13 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 		}
 
-		success := "You have joined " + chanMention
+		// Sets DM message
+		success := "You have joined "
+		if chanMention == "" {
+			success += role.Name
+		} else {
+			success += "You have joined " + chanMention
+		}
 		if topic != "" {
 			success = success + "\n **Topic:** " + topic
 		}
@@ -1057,12 +1063,20 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 		}
 
+		// Sets DM message
+		success := "You have left "
+		if chanMention == "" {
+			success += role.Name
+		} else {
+			success += "You have left " + chanMention
+		}
+
 		// Sends success message to user in DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 			return
 		}
-		_, _ = s.ChannelMessageSend(dm.ID, "You have left " + chanMention)
+		_, _ = s.ChannelMessageSend(dm.ID, success)
 	}
 }
 
