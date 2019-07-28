@@ -40,7 +40,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"create [name] OPTIONAL[type] [category] [description; must have at least one other non-name parameter]`\n\nThree type of parameters exist: `airing`, `temp` and `optin`. `Optin` is the default one.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"create [name] OPTIONAL[type] [categoryID] [description; must have at least one other non-name parameter]`\n\nThree type of parameters exist: `airing`, `temp` and `optin`. `Optin` is the default one. Temp gets auto-deleted after three hours of inactivity.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
