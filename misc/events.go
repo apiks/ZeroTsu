@@ -766,7 +766,6 @@ func cleanSpoilerRoles(s *discordgo.Session) error {
 			}
 		}
 		if shouldDelete {
-			log.Println("delete")
 			SpoilerRolesDelete(spoilerRole.ID)
 		}
 	}
