@@ -1388,3 +1388,7 @@ func CreationTime(ID string) (t time.Time, err error) {
 	t = time.Unix(timestamp/1000, 0)
 	return
 }
+
+func Uptime() time.Duration {
+	return time.Since(startTime)
+}
