@@ -29,12 +29,12 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
 	// Clean up SpoilerRoles.json in each guild
 	for _, guild := range e.Guilds {
+		MapMutex.Lock()
 		err := cleanSpoilerRoles(s, guild.ID)
 		if err != nil {
 			_, _ = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
-			if err != nil {
-			}
 		}
+		MapMutex.Unlock()
 	}
 
 
@@ -151,7 +151,7 @@ func UnbanEmbed(s *discordgo.Session, user *UserInfo, mod string) error {
 
 // Periodic 20min events
 func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
-	for range time.NewTicker(20 * time.Minute).C {
+	for range time.NewTicker(20 * time.Second).C {
 
 		MapMutex.Lock()
 		for _, guild := range e.Guilds {
@@ -766,7 +766,6 @@ func cleanSpoilerRoles(s *discordgo.Session, guildID string) error {
 	}
 
 	// Removes roles not found in spoilerRoles.json
-	MapMutex.Lock()
 	for _, spoilerRole := range GuildMap[guildID].SpoilerMap {
 		shouldDelete = true
 		for _, role := range roles {
@@ -787,7 +786,6 @@ func cleanSpoilerRoles(s *discordgo.Session, guildID string) error {
 
 	SpoilerRolesWrite(GuildMap[guildID].SpoilerMap, guildID)
 	LoadGuildFile(guildID, "spoilerRoles.json")
-	MapMutex.Unlock()
 
 	return nil
 }
