@@ -53,7 +53,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	length = commandStrings[2]
 	reason = commandStrings[3]
 	// Checks if the reason contains a mention and finds the actual name instead of ID
-	reason = misc.MentionParser(s, reason)
+	reason = misc.MentionParser(s, reason, m.GuildID)
 
 	// Checks if a number is contained in length var. Fixes some cases of invalid length
 	lengthSlice := strings.Split(length, "")
@@ -85,16 +85,16 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Pulls info on user as mem
-	userMem, err := s.State.Member(config.ServerID, mem.ID)
+	userMem, err := s.State.Member(m.GuildID, mem.ID)
 	if err != nil {
-		userMem, err = s.GuildMember(config.ServerID, mem.ID)
+		userMem, err = s.GuildMember(m.GuildID, mem.ID)
 		if err != nil {
 			return
 		}
 	}
 
 	// Checks if user has a privileged role
-	if misc.HasPermissions(userMem) {
+	if misc.HasPermissions(userMem, m.GuildID) {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Target user has a privileged role. Cannot ban.")
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -108,11 +108,11 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo and handles them
 	misc.MapMutex.Lock()
-	if _, ok := misc.MemberInfoMap[userID]; !ok || len(misc.MemberInfoMap) == 0 {
+	if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; !ok || len(misc.GuildMap[m.GuildID].MemberInfoMap) == 0 {
 		// Pulls info on user if they're in the server
-		userMem, err := s.State.Member(config.ServerID, mem.ID)
+		userMem, err := s.State.Member(m.GuildID, mem.ID)
 		if err != nil {
-			userMem, err = s.GuildMember(config.ServerID, mem.ID)
+			userMem, err = s.GuildMember(m.GuildID, mem.ID)
 			if err != nil {
 				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot ban user until they join the server.")
 				if err != nil {
@@ -133,7 +133,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Adds ban date to memberInfo and checks if perma
-	misc.MemberInfoMap[userID].Bans = append(misc.MemberInfoMap[userID].Bans, reason)
+	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Bans = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Bans, reason)
 	UnbanDate, perma, err := misc.ResolveTimeFromString(length)
 	if err != nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid time given.")
@@ -153,9 +153,9 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		perma = true
 	}
 	if !perma {
-		misc.MemberInfoMap[userID].UnbanDate = UnbanDate.Format("2006-01-02 15:04:05.999999999 -0700 MST")
+		misc.GuildMap[m.GuildID].MemberInfoMap[userID].UnbanDate = UnbanDate.Format("2006-01-02 15:04:05.999999999 -0700 MST")
 	} else {
-		misc.MemberInfoMap[userID].UnbanDate = "_Never_"
+		misc.GuildMap[m.GuildID].MemberInfoMap[userID].UnbanDate = "_Never_"
 	}
 
 	// Adds timestamp for that ban
@@ -168,14 +168,14 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	banTimestamp.Timestamp = t
 	banTimestamp.Punishment = reason
 	banTimestamp.Type = "Ban"
-	misc.MemberInfoMap[userID].Timestamps = append(misc.MemberInfoMap[userID].Timestamps, banTimestamp)
+	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, banTimestamp)
 
 	// Writes to memberInfo.json
-	misc.MemberInfoWrite(misc.MemberInfoMap)
+	misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	misc.MapMutex.Unlock()
 
 	// Pulls the guild name early on purpose
-	guild, err := s.Guild(config.ServerID)
+	guild, err := s.Guild(m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -193,13 +193,13 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Adds the now banned user to BannedUsersSlice, removes the previous instances if he already existed there and writes to disk
 	misc.MapMutex.Lock()
-	for index, val := range misc.BannedUsersSlice {
+	for index, val := range misc.GuildMap[m.GuildID].BannedUsers {
 		if val.ID == userID {
-			misc.BannedUsersSlice = append(misc.BannedUsersSlice[:index], misc.BannedUsersSlice[index+1:]...)
+			misc.GuildMap[m.GuildID].BannedUsers = append(misc.GuildMap[m.GuildID].BannedUsers[:index], misc.GuildMap[m.GuildID].BannedUsers[index+1:]...)
 		}
 	}
-	misc.BannedUsersSlice = append(misc.BannedUsersSlice, temp)
-	misc.BannedUsersWrite(misc.BannedUsersSlice)
+	misc.GuildMap[m.GuildID].BannedUsers = append(misc.GuildMap[m.GuildID].BannedUsers, temp)
+	misc.BannedUsersWrite(misc.GuildMap[m.GuildID].BannedUsers, m.GuildID)
 	misc.MapMutex.Unlock()
 
 	// Parses how long is left of the ban
@@ -214,7 +214,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Assigns success ban print string for user
-	if perma && config.ServerID == "267799767843602452" {
+	if perma && m.GuildID == "267799767843602452" {
 		success = "You have been banned from " + guild.Name + ": **" + reason + "**\n\nUntil: _Forever_ \n\nIf you would like to appeal, use modmail at <https://reddit.com/r/anime>"
 	} else {
 		success = "You have been banned from " + guild.Name + ": **" + reason + "**\n\nUntil: _" + UnbanDate.Format("2006-01-02 15:04:05") + " " + z + "_\n" +
@@ -226,7 +226,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	_, _ = s.ChannelMessageSend(dm.ID, success)
 
 	// Bans the user
-	err = s.GuildBanCreateWithReason(config.ServerID, userID, reason, 0)
+	err = s.GuildBanCreateWithReason(m.GuildID, userID, reason, 0)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return

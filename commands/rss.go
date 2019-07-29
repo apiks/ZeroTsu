@@ -49,7 +49,7 @@ func setRssCommand(s *discordgo.Session, m *discordgo.Message) {
 func setRssThread(s *discordgo.Session, m *discordgo.Message, thread string, author string) {
 
 	misc.MapMutex.Lock()
-	threadExists, err := misc.RssThreadsWrite(thread, m.ChannelID, author)
+	threadExists, err := misc.RssThreadsWrite(thread, m.ChannelID, author, m.GuildID)
 	if err != nil {
 		misc.MapMutex.Unlock()
 		misc.CommandErrorHandler(s, m, err)
@@ -86,7 +86,7 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 		thread string
 	)
 
-	if len(misc.ReadRssThreads) == 0 {
+	if len(misc.GuildMap[m.GuildID].RssThreads) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error. There are no set rss threads.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -126,7 +126,7 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Calls the function to remove the threads from rssThreads.json
 	misc.MapMutex.Lock()
-	threadExists, err := misc.RssThreadsRemove(thread, author)
+	threadExists, err := misc.RssThreadsRemove(thread, author, m.GuildID)
 	if err != nil {
 		misc.MapMutex.Unlock()
 		misc.CommandErrorHandler(s, m, err)
@@ -161,7 +161,7 @@ func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var threads string
 
-	if len(misc.ReadRssThreads) == 0 {
+	if len(misc.GuildMap[m.GuildID].RssThreads) == 0 {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no set RSS threads.")
 		if err != nil {
@@ -175,7 +175,7 @@ func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Iterates through all the filters if they exist and adds them to the filters string and print them
-	for i := 0; i < len(misc.ReadRssThreads); i++ {
+	for i := 0; i < len(misc.GuildMap[m.GuildID].RssThreads); i++ {
 		if len(threads) > 1850 {
 			_, err := s.ChannelMessageSend(m.ChannelID, threads)
 			if err != nil {
@@ -188,11 +188,11 @@ func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		if threads == "" {
-			threads = "`" + misc.ReadRssThreads[i].Thread + " - " + misc.ReadRssThreads[i].Channel + " - " +
-				misc.ReadRssThreads[i].Author + "`\n"
+			threads = "`" + misc.GuildMap[m.GuildID].RssThreads[i].Thread + " - " + misc.GuildMap[m.GuildID].RssThreads[i].Channel + " - " +
+				misc.GuildMap[m.GuildID].RssThreads[i].Author + "`\n"
 		} else {
-			threads = threads + "\n `" + misc.ReadRssThreads[i].Thread + " - " + misc.ReadRssThreads[i].Channel + " - " +
-				misc.ReadRssThreads[i].Author + "`\n"
+			threads = threads + "\n `" + misc.GuildMap[m.GuildID].RssThreads[i].Thread + " - " + misc.GuildMap[m.GuildID].RssThreads[i].Channel + " - " +
+				misc.GuildMap[m.GuildID].RssThreads[i].Author + "`\n"
 		}
 	}
 

@@ -40,7 +40,7 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo
 	misc.MapMutex.Lock()
-	if misc.MemberInfoMap[userID] == nil {
+	if misc.GuildMap[m.GuildID].MemberInfoMap[userID] == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo. Cannot remove nonexisting warning.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -70,7 +70,7 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 	misc.MapMutex.Lock()
-	if index > len(misc.MemberInfoMap[userID].Warnings) || index < 0 {
+	if index > len(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings) || index < 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid warning index.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -93,17 +93,17 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Removes warning from map and sets punishment
 	misc.MapMutex.Lock()
-	punishment := misc.MemberInfoMap[userID].Warnings[index]
-	for timestampIndex, timestamp := range misc.MemberInfoMap[userID].Timestamps {
-		if strings.ToLower(timestamp.Punishment) == strings.ToLower(misc.MemberInfoMap[userID].Warnings[index]) {
-			misc.MemberInfoMap[userID].Timestamps = append(misc.MemberInfoMap[userID].Timestamps[:timestampIndex], misc.MemberInfoMap[userID].Timestamps[timestampIndex+1:]...)
+	punishment := misc.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings[index]
+	for timestampIndex, timestamp := range misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps {
+		if strings.ToLower(timestamp.Punishment) == strings.ToLower(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings[index]) {
+			misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[:timestampIndex], misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[timestampIndex+1:]...)
 			break
 		}
 	}
-	misc.MemberInfoMap[userID].Warnings = append(misc.MemberInfoMap[userID].Warnings[:index], misc.MemberInfoMap[userID].Warnings[index+1:]...)
+	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings[:index], misc.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings[index+1:]...)
 
 	// Writes new map to storage
-	misc.MemberInfoWrite(misc.MemberInfoMap)
+	misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	misc.MapMutex.Unlock()
 
 	err = removePunishmentEmbed(s, m, punishment)
@@ -145,7 +145,7 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo
 	misc.MapMutex.Lock()
-	if misc.MemberInfoMap[userID] == nil {
+	if misc.GuildMap[m.GuildID].MemberInfoMap[userID] == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo. Cannot remove nonexisting kick.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -175,7 +175,7 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 	misc.MapMutex.Lock()
-	if index > len(misc.MemberInfoMap[userID].Kicks) || index < 0 {
+	if index > len(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks) || index < 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid kick index.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -198,17 +198,17 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Removes kick from map and sets punishment
 	misc.MapMutex.Lock()
-	punishment := misc.MemberInfoMap[userID].Kicks[index]
-	for timestampIndex, timestamp := range misc.MemberInfoMap[userID].Timestamps {
-		if strings.ToLower(timestamp.Punishment) == strings.ToLower(misc.MemberInfoMap[userID].Kicks[index]) {
-			misc.MemberInfoMap[userID].Timestamps = append(misc.MemberInfoMap[userID].Timestamps[:timestampIndex], misc.MemberInfoMap[userID].Timestamps[timestampIndex+1:]...)
+	punishment := misc.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks[index]
+	for timestampIndex, timestamp := range misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps {
+		if strings.ToLower(timestamp.Punishment) == strings.ToLower(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks[index]) {
+			misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[:timestampIndex], misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[timestampIndex+1:]...)
 			break
 		}
 	}
-	misc.MemberInfoMap[userID].Kicks = append(misc.MemberInfoMap[userID].Kicks[:index], misc.MemberInfoMap[userID].Kicks[index+1:]...)
+	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks[:index], misc.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks[index+1:]...)
 
 	// Writes new map to storage
-	misc.MemberInfoWrite(misc.MemberInfoMap)
+	misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	misc.MapMutex.Unlock()
 
 	err = removePunishmentEmbed(s, m, punishment)
@@ -250,7 +250,7 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo
 	misc.MapMutex.Lock()
-	if misc.MemberInfoMap[userID] == nil {
+	if misc.GuildMap[m.GuildID].MemberInfoMap[userID] == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo. Cannot remove nonexisting ban.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -280,7 +280,7 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 	misc.MapMutex.Lock()
-	if index > len(misc.MemberInfoMap[userID].Bans) || index < 0 {
+	if index > len(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Bans) || index < 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid ban index.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -303,17 +303,17 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Removes ban from map and sets punishment
 	misc.MapMutex.Lock()
-	punishment := misc.MemberInfoMap[userID].Bans[index]
-	for timestampIndex, timestamp := range misc.MemberInfoMap[userID].Timestamps {
-		if strings.ToLower(timestamp.Punishment) == strings.ToLower(misc.MemberInfoMap[userID].Bans[index]) {
-			misc.MemberInfoMap[userID].Timestamps = append(misc.MemberInfoMap[userID].Timestamps[:timestampIndex], misc.MemberInfoMap[userID].Timestamps[timestampIndex+1:]...)
+	punishment := misc.GuildMap[m.GuildID].MemberInfoMap[userID].Bans[index]
+	for timestampIndex, timestamp := range misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps {
+		if strings.ToLower(timestamp.Punishment) == strings.ToLower(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Bans[index]) {
+			misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[:timestampIndex], misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[timestampIndex+1:]...)
 			break
 		}
 	}
-	misc.MemberInfoMap[userID].Bans = append(misc.MemberInfoMap[userID].Bans[:index], misc.MemberInfoMap[userID].Bans[index+1:]...)
+	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Bans = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Bans[:index], misc.GuildMap[m.GuildID].MemberInfoMap[userID].Bans[index+1:]...)
 
 	// Writes new map to storage
-	misc.MemberInfoWrite(misc.MemberInfoMap)
+	misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	misc.MapMutex.Unlock()
 
 	err = removePunishmentEmbed(s, m, punishment)

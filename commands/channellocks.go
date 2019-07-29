@@ -32,7 +32,7 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Fetches info on server roles from the server and puts it in roles
-	roles, err := s.GuildRoles(config.ServerID)
+	roles, err := s.GuildRoles(m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -41,9 +41,9 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if the channel has an associated role and updates airing role location if it exists
 	for _, role := range roles {
 		if strings.ToLower(role.Name) == strings.ToLower(cha.Name) &&
-			role.ID != config.ServerID {
-			for rolID := range misc.SpoilerMap {
-				if role.ID == rolID {
+			role.ID != m.GuildID {
+			for roleID := range misc.GuildMap[m.GuildID].SpoilerMap {
+				if role.ID == roleID {
 					roleID = role.ID
 					break
 				}
@@ -62,7 +62,7 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		if perm.ID == airingID && airingID != "" {
 			originalAiringPerms = perm
 		}
-		if perm.ID == config.ServerID {
+		if perm.ID == m.GuildID {
 			originalEveryonePerms = perm
 		}
 	}
@@ -83,7 +83,7 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	if originalEveryonePerms != nil {
-		err = s.ChannelPermissionSet(m.ChannelID, config.ServerID, "role", originalEveryonePerms.Allow & ^discordgo.PermissionSendMessages, originalEveryonePerms.Deny | discordgo.PermissionSendMessages)
+		err = s.ChannelPermissionSet(m.ChannelID, m.GuildID, "role", originalEveryonePerms.Allow & ^discordgo.PermissionSendMessages, originalEveryonePerms.Deny | discordgo.PermissionSendMessages)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err)
 			return
@@ -154,7 +154,7 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Fetches info on server roles from the server and puts it in roles
-	roles, err := s.GuildRoles(config.ServerID)
+	roles, err := s.GuildRoles(m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -163,8 +163,8 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if the channel has an associated role and updates airing role location if it exists
 	for _, role := range roles {
 		if strings.ToLower(role.Name) == strings.ToLower(cha.Name) &&
-			role.ID != config.ServerID {
-			for rolID := range misc.SpoilerMap {
+			role.ID != m.GuildID {
+			for rolID := range misc.GuildMap[m.GuildID].SpoilerMap {
 				if role.ID == rolID {
 					roleID = role.ID
 					break
@@ -184,7 +184,7 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 		if perm.ID == airingID && airingID != "" {
 			originalAiringPerms = perm
 		}
-		if perm.ID == config.ServerID {
+		if perm.ID == m.GuildID {
 			originalEveryonePerms = perm
 		}
 	}
@@ -205,7 +205,7 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	if originalEveryonePerms != nil {
-		err = s.ChannelPermissionSet(m.ChannelID, config.ServerID, "role", originalEveryonePerms.Allow, originalEveryonePerms.Deny & ^discordgo.PermissionSendMessages)
+		err = s.ChannelPermissionSet(m.ChannelID, m.GuildID, "role", originalEveryonePerms.Allow, originalEveryonePerms.Deny & ^discordgo.PermissionSendMessages)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err)
 			return

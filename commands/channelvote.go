@@ -1,9 +1,7 @@
 package commands
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"strconv"
 	"strings"
 	"time"
@@ -14,29 +12,7 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
-var (
-	VoteInfoMap = make(map[string]*VoteInfo)
-	TempChaMap  = make(map[string]*TempChaInfo)
-	inChanCreation bool
-)
-
-// VoteInfo is the in memory storage of each vote channel's info
-type VoteInfo struct {
-	Date         time.Time          `json:"Date"`
-	Channel      string             `json:"Channel"`
-	ChannelType  string             `json:"ChannelType"`
-	Category     string             `json:"Category,omitempty"`
-	Description  string             `json:"Description,omitempty"`
-	VotesReq     int                `json:"VotesReq"`
-	MessageReact *discordgo.Message `json:"MessageReact"`
-	User		 *discordgo.User	`json:"User"`
-}
-
-type TempChaInfo struct {
-	CreationDate	time.Time		`json:"CreationDate"`
-	RoleName		string			`json:"RoleName"`
-	Elevated		bool			`json:"Elevated"`
-}
+var inChanCreation bool
 
 // Starts a 30 hour vote in a channel with parameters that automatically creates a spoiler channel if the vote passes
 func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
@@ -52,23 +28,11 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 		admin			 bool
 	)
 
-	// Checks if it's within the /r/anime server
-	ch, err := s.State.Channel(m.ChannelID)
-	if err != nil {
-		ch, err = s.Channel(m.ChannelID)
-		if err != nil {
-			return
-		}
-	}
-	if ch.GuildID != config.ServerID {
-		return
-	}
-
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	// Checks if the message author is an admin or not and saves it, to save operations down the line
-	if hasElevatedPermissions(s, m.Author) {
+	if hasElevatedPermissions(s, m.Author, m.GuildID) {
 		admin = true
 	}
 
@@ -187,7 +151,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Pulls up all current server channels and checks if it exists in UserTempCha.json. If not it deletes it from storage
-	cha, err := s.GuildChannels(config.ServerID)
+	cha, err := s.GuildChannels(m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -196,7 +160,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks ongoing non-mod tmep channels
 	if !admin {
 		misc.MapMutex.Lock()
-		for k, v := range TempChaMap {
+		for k, v := range misc.GuildMap[m.GuildID].TempChaMap {
 			exists := false
 			for i := 0; i < len(cha); i++ {
 				if cha[i].Name == v.RoleName {
@@ -205,8 +169,8 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 				}
 			}
 			if !exists {
-				delete(TempChaMap, k)
-				TempChaWrite(TempChaMap)
+				delete(misc.GuildMap[m.GuildID].TempChaMap, k)
+				misc.TempChaWrite(misc.GuildMap[m.GuildID].TempChaMap, m.GuildID)
 			}
 			if !v.Elevated {
 				controlNumUser++
@@ -230,8 +194,8 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		// Checks if there are any current temp channel votes made by users and already created channels that have reached the cap and prints error if there are
 		misc.MapMutex.Lock()
-		for _, v := range VoteInfoMap {
-			if !hasElevatedPermissions(s, v.User) {
+		for _, v := range misc.GuildMap[m.GuildID].VoteInfoMap {
+			if !hasElevatedPermissions(s, v.User, m.GuildID) {
 				controlNumVote++
 			}
 		}
@@ -282,7 +246,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	t := time.Now()
 
-	var temp VoteInfo
+	var temp misc.VoteInfo
 
 	// Saves the date of removal in separate variable and then adds 30 hours to it
 	thirtyHours := time.Hour * 30
@@ -299,10 +263,10 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	temp.User = m.Author
 
 	misc.MapMutex.Lock()
-	VoteInfoMap[m.ID] = &temp
+	misc.GuildMap[m.GuildID].VoteInfoMap[m.ID] = &temp
 
 	// Writes to storage
-	VoteInfoWrite(VoteInfoMap)
+	misc.VoteInfoWrite(misc.GuildMap[m.GuildID].VoteInfoMap, m.GuildID)
 	misc.MapMutex.Unlock()
 
 	if !admin {
@@ -337,342 +301,275 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 	for range time.NewTicker(15 * time.Second).C {
 		misc.MapMutex.Lock()
-		for k := range VoteInfoMap {
+		for _, guild := range e.Guilds {
+			for k := range misc.GuildMap[guild.ID].VoteInfoMap {
 
-			t := time.Now()
+				t := time.Now()
 
-			// Updates message
-			messageReact, err := s.ChannelMessage(VoteInfoMap[k].MessageReact.ChannelID, VoteInfoMap[k].MessageReact.ID)
-			if err != nil {
-				//If message doesn't exist (was deleted or otherwise not found)
-				// Deletes the vote from memory
-				delete(VoteInfoMap, k)
-				// Writes to storage
-				VoteInfoWrite(VoteInfoMap)
-				continue
-			}
+				// Updates message
+				messageReact, err := s.ChannelMessage(misc.GuildMap[guild.ID].VoteInfoMap[k].MessageReact.ChannelID, misc.GuildMap[guild.ID].VoteInfoMap[k].MessageReact.ID)
+				if err != nil {
+					//If message doesn't exist (was deleted or otherwise not found)
+					// Deletes the vote from memory
+					delete(misc.GuildMap[guild.ID].VoteInfoMap, k)
+					// Writes to storage
+					misc.VoteInfoWrite(misc.GuildMap[guild.ID].VoteInfoMap, guild.ID)
+					continue
+				}
 
-			// Calculates if it's time to remove
-			difference := t.Sub(VoteInfoMap[k].Date)
-			if difference > 0 {
+				// Calculates if it's time to remove
+				difference := t.Sub(misc.GuildMap[guild.ID].VoteInfoMap[k].Date)
+				if difference > 0 {
+					if messageReact == nil {
+						continue
+					}
+
+					// Fixes role name bugs
+					role := strings.Replace(strings.TrimSpace(misc.GuildMap[guild.ID].VoteInfoMap[k].Channel), " ", "-", -1)
+					role = strings.Replace(role, "--", "-", -1)
+
+					numStr := strconv.Itoa(misc.GuildMap[guild.ID].VoteInfoMap[k].VotesReq - 1)
+					_, err = s.ChannelMessageSend(messageReact.ChannelID, "Channel vote has ended. `"+misc.GuildMap[guild.ID].VoteInfoMap[k].Channel+"` has failed to "+
+						"gather the necessary "+numStr+" votes.")
+					if err != nil {
+						_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+						if err != nil {
+							continue
+						}
+						continue
+					}
+
+					// Deletes the vote from memory
+					delete(misc.GuildMap[guild.ID].VoteInfoMap, k)
+
+					// Writes to storage
+					misc.VoteInfoWrite(misc.GuildMap[guild.ID].VoteInfoMap, guild.ID)
+					continue
+				}
+
 				if messageReact == nil {
 					continue
 				}
+				if messageReact.Reactions == nil {
+					continue
+				}
+				// Checks if the vote was successful and executes if so
+				if messageReact.Reactions[0].Count < misc.GuildMap[guild.ID].VoteInfoMap[k].VotesReq {
+					continue
+				}
+
+				// Tell the startvote command to wait for this command to finish before moving on
+				inChanCreation = true
+
+				var (
+					message discordgo.Message
+					author  discordgo.User
+				)
 
 				// Fixes role name bugs
-				role := strings.Replace(strings.TrimSpace(VoteInfoMap[k].Channel), " ", "-", -1)
+				role := strings.Replace(strings.TrimSpace(misc.GuildMap[guild.ID].VoteInfoMap[k].Channel), " ", "-", -1)
 				role = strings.Replace(role, "--", "-", -1)
 
-				numStr := strconv.Itoa(VoteInfoMap[k].VotesReq - 1)
-				_, err = s.ChannelMessageSend(messageReact.ChannelID, "Channel vote has ended. `" + VoteInfoMap[k].Channel + "` has failed to "+
-					"gather the necessary "+ numStr+ " votes.")
-				if err != nil {
-					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-					if err != nil {
-						continue
-					}
-					continue
+				// Removes all hyphen prefixes and suffixes because discord cannot handle them
+				for strings.HasPrefix(role, "-") || strings.HasSuffix(role, "-") {
+					role = strings.TrimPrefix(role, "-")
+					role = strings.TrimSuffix(role, "-")
 				}
 
-				// Deletes the vote from memory
-				delete(VoteInfoMap, k)
+				misc.GuildMap[guild.ID].VoteInfoMap[k].Channel = role
 
-				// Writes to storage
-				VoteInfoWrite(VoteInfoMap)
-				continue
-			}
+				// Allows entry to be deleted from memory now, rather than later, avoiding potential bugs if the below commands don't work
+				temp := misc.GuildMap[guild.ID].VoteInfoMap[k]
+				delete(misc.GuildMap[guild.ID].VoteInfoMap, k)
+				misc.VoteInfoWrite(misc.GuildMap[guild.ID].VoteInfoMap, guild.ID)
 
-			if messageReact == nil {
-				continue
-			}
-			if messageReact.Reactions == nil {
-				continue
-			}
-			// Checks if the vote was successful and executes if so
-			if messageReact.Reactions[0].Count < VoteInfoMap[k].VotesReq {
-				continue
-			}
+				// Create command
+				author.ID = s.State.User.ID
+				message.ID = temp.MessageReact.ChannelID
+				message.GuildID = guild.ID
+				message.Author = &author
+				message.Content = config.BotPrefix + "create " + temp.Channel + " " + temp.ChannelType +
+					" " + temp.Category + " " + temp.Description
+				createChannelCommand(s, &message)
 
-			// Tell the startvote command to wait for this command to finish before moving on
-			inChanCreation = true
+				time.Sleep(500 * time.Millisecond)
 
-			var (
-				message discordgo.Message
-				author  discordgo.User
-			)
+				// Sortroles command if optin, airing or temp
+				if temp.ChannelType != "general" {
+					message.Content = config.BotPrefix + "sortroles"
+					sortRolesCommand(s, &message)
+				}
 
-			// Fixes role name bugs
-			role := strings.Replace(strings.TrimSpace(VoteInfoMap[k].Channel), " ", "-", -1)
-			role = strings.Replace(role, "--", "-", -1)
+				time.Sleep(500 * time.Millisecond)
 
-			// Removes all hyphen prefixes and suffixes because discord cannot handle them
-			for strings.HasPrefix(role, "-") || strings.HasSuffix(role, "-") {
-				role = strings.TrimPrefix(role, "-")
-				role = strings.TrimSuffix(role, "-")
-			}
+				// Sortcategory command if category exists and it's not temp
+				if temp.Category != "" && temp.ChannelType != "temp" && temp.ChannelType != "temporary" {
+					message.Content = config.BotPrefix + "sortcategory " + temp.Category
+					sortCategoryCommand(s, &message)
+				}
 
-			VoteInfoMap[k].Channel = role
-
-			// Allows entry to be deleted from memory now, rather than later, avoiding potential bugs if the below commands don't work
-			temp := VoteInfoMap[k]
-			delete(VoteInfoMap, k)
-			VoteInfoWrite(VoteInfoMap)
-
-			// Create command
-			author.ID = s.State.User.ID
-			message.ID = temp.MessageReact.ChannelID
-			message.Author = &author
-			message.Content = config.BotPrefix + "create " + temp.Channel + " " + temp.ChannelType +
-				" " + temp.Category + " " + temp.Description
-			createChannelCommand(s, &message)
-
-			time.Sleep(500 * time.Millisecond)
-
-			// Sortroles command if optin, airing or temp
-			if temp.ChannelType != "general" {
-				message.Content = config.BotPrefix + "sortroles"
-				sortRolesCommand(s, &message)
-			}
-
-			time.Sleep(500 * time.Millisecond)
-
-			// Sortcategory command if category exists and it's not temp
-			if temp.Category != "" && temp.ChannelType != "temp" && temp.ChannelType != "temporary" {
-				message.Content = config.BotPrefix + "sortcategory " + temp.Category
-				sortCategoryCommand(s, &message)
-			}
-
-			if temp.ChannelType != "temp" {
-				_, err = s.ChannelMessageSend(messageReact.ChannelID, "Channel `" + temp.Channel + "` was successfully created! Those that have voted were given the role. Use `"+
-					config.BotPrefix+ "join "+ role + "` until reaction join has been set if you do not have it.")
-				if err != nil {
-					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+				if temp.ChannelType != "temp" {
+					_, err = s.ChannelMessageSend(messageReact.ChannelID, "Channel `"+temp.Channel+"` was successfully created! Those that have voted were given the role. Use `"+
+						config.BotPrefix+"join "+role+"` until reaction join has been set if you do not have it.")
 					if err != nil {
+						_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+						if err != nil {
+							inChanCreation = false
+							continue
+						}
 						inChanCreation = false
 						continue
 					}
-					inChanCreation = false
-					continue
-				}
-			} else {
-				_, err = s.ChannelMessageSend(messageReact.ChannelID, "Channel `" + temp.Channel + "` was successfully created! Those that have voted were given the role. Use `"+
-					config.BotPrefix+ "join "+ role + "` otherwise.")
-				if err != nil {
-					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+				} else {
+					_, err = s.ChannelMessageSend(messageReact.ChannelID, "Channel `"+temp.Channel+"` was successfully created! Those that have voted were given the role. Use `"+
+						config.BotPrefix+"join "+role+"` otherwise.")
 					if err != nil {
+						_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+						if err != nil {
+							inChanCreation = false
+							continue
+						}
 						inChanCreation = false
 						continue
 					}
-					inChanCreation = false
-					continue
-				}
-			}
-
-			time.Sleep(200 * time.Millisecond)
-
-			roles, err := s.GuildRoles(config.ServerID)
-			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-				if err != nil {
-					inChanCreation = false
-					continue
-				}
-				inChanCreation = false
-				continue
-			}
-			for i := 0; i < len(roles); i++ {
-				if roles[i].Name == role {
-					role = roles[i].ID
-					break
-				}
-			}
-
-			// Gets the users who voted and gives them the role
-			users, err := s.MessageReactions(temp.MessageReact.ChannelID, temp.MessageReact.ID, "👍", 100)
-			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-				if err != nil {
-					inChanCreation = false
-					continue
-				}
-				inChanCreation = false
-				continue
-			}
-
-			for i := 0; i < len(users); i++ {
-				if users[i].ID == config.BotID {
-					continue
 				}
 
-				err := s.GuildMemberRoleAdd(config.ServerID, users[i].ID, role)
-				if err != nil {
-					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-					if err != nil {
-						continue
-					}
-					continue
-				}
-			}
-			inChanCreation = false
+				time.Sleep(200 * time.Millisecond)
 
-			if temp.ChannelType == "temp" || temp.ChannelType == "temporary" {
-				_, err = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Temp channel `%v` has been created from a vote by user %v#%v.", temp.Channel, temp.User.Username, temp.User.Discriminator))
+				roles, err := s.GuildRoles(guild.ID)
 				if err != nil {
 					_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 					if err != nil {
+						inChanCreation = false
+						continue
+					}
+					inChanCreation = false
+					continue
+				}
+				for i := 0; i < len(roles); i++ {
+					if roles[i].Name == role {
+						role = roles[i].ID
+						break
+					}
+				}
+
+				// Gets the users who voted and gives them the role
+				users, err := s.MessageReactions(temp.MessageReact.ChannelID, temp.MessageReact.ID, "👍", 100)
+				if err != nil {
+					_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+					if err != nil {
+						inChanCreation = false
+						continue
+					}
+					inChanCreation = false
+					continue
+				}
+
+				for i := 0; i < len(users); i++ {
+					if users[i].ID == config.BotID {
+						continue
+					}
+
+					err := s.GuildMemberRoleAdd(guild.ID, users[i].ID, role)
+					if err != nil {
+						_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+						if err != nil {
+							continue
+						}
+						continue
+					}
+				}
+				inChanCreation = false
+
+				if temp.ChannelType == "temp" || temp.ChannelType == "temporary" {
+					_, err = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Temp channel `%v` has been created from a vote by user %v#%v.", temp.Channel, temp.User.Username, temp.User.Discriminator))
+					if err != nil {
+						_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+						if err != nil {
+							continue
+						}
 						continue
 					}
 					continue
 				}
+			}
+			misc.MapMutex.Unlock()
+
+			cha, err := s.GuildChannels(guild.ID)
+			if err != nil {
 				continue
 			}
-		}
-		misc.MapMutex.Unlock()
 
-		cha, err := s.GuildChannels(config.ServerID)
-		if err != nil {
-			continue
-		}
-
-		misc.MapMutex.Lock()
-		for k, v := range TempChaMap {
-			for i := 0; i < len(cha); i++ {
-				if cha[i].Name == v.RoleName {
-					mess, err := s.ChannelMessages(cha[i].ID, 1, "", "", "")
-					if err != nil {
-						_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-						if err != nil {
-							continue
-						}
-						continue
-					}
-
-					// Fetches the properly parsed timestamp from discord, else uses channel creation
-					if len(mess) != 0 {
-						timestamp, err = mess[0].Timestamp.Parse()
-						if err != nil {
-							_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-							if err != nil {
-								continue
-							}
-							continue
-						}
-					} else {
-						timestamp = v.CreationDate
-					}
-
-					// Adds how long before last message for channel to be deletes
-					timestamp = timestamp.Add(time.Hour * 3)
-					t := time.Now()
-
-					// Calculates if it's time to remove
-					difference := t.Sub(timestamp)
-					if difference > 0 {
-						_, err = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Temp channel `%v` has been deleted due to being inactive for 3 hours.", cha[i].Name))
+			misc.MapMutex.Lock()
+			for k, v := range misc.GuildMap[guild.ID].TempChaMap {
+				for i := 0; i < len(cha); i++ {
+					if cha[i].Name == v.RoleName {
+						mess, err := s.ChannelMessages(cha[i].ID, 1, "", "", "")
 						if err != nil {
 							_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 							if err != nil {
+								continue
+							}
+							continue
+						}
+
+						// Fetches the properly parsed timestamp from discord, else uses channel creation
+						if len(mess) != 0 {
+							timestamp, err = mess[0].Timestamp.Parse()
+							if err != nil {
+								_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+								if err != nil {
+									continue
+								}
+								continue
+							}
+						} else {
+							timestamp = v.CreationDate
+						}
+
+						// Adds how long before last message for channel to be deletes
+						timestamp = timestamp.Add(time.Hour * 3)
+						t := time.Now()
+
+						// Calculates if it's time to remove
+						difference := t.Sub(timestamp)
+						if difference > 0 {
+							_, err = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Temp channel `%v` has been deleted due to being inactive for 3 hours.", cha[i].Name))
+							if err != nil {
+								_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+								if err != nil {
+									return
+								}
 								return
 							}
-							return
-						}
 
-						// Deletes channel and role
-						_, err := s.ChannelDelete(cha[i].ID)
-						if err != nil {
-							_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+							// Deletes channel and role
+							_, err := s.ChannelDelete(cha[i].ID)
 							if err != nil {
+								_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+								if err != nil {
+									continue
+								}
 								continue
 							}
-							continue
-						}
 
-						err = s.GuildRoleDelete(config.ServerID, k)
-						if err != nil {
-							_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+							err = s.GuildRoleDelete(guild.ID, k)
 							if err != nil {
+								_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+								if err != nil {
+									continue
+								}
 								continue
 							}
-							continue
-						}
 
-						delete(TempChaMap, k)
-						TempChaWrite(TempChaMap)
+							delete(misc.GuildMap[guild.ID].TempChaMap, k)
+							misc.TempChaWrite(misc.GuildMap[guild.ID].TempChaMap, guild.ID)
+						}
 					}
 				}
 			}
 		}
 		misc.MapMutex.Unlock()
-	}
-}
-
-// Reads vote info from voteInfo.json
-func VoteInfoRead() {
-
-	// Reads all vote channel info voteInfo.json file and puts them in VoteInfoMap as bytes
-	voteInfoByte, err := ioutil.ReadFile("database/voteInfo.json")
-	if err != nil {
-		return
-	}
-
-	// Takes all of the vote channels from voteInfo.json from byte and puts them into the VoteInfo map
-	misc.MapMutex.Lock()
-	err = json.Unmarshal(voteInfoByte, &VoteInfoMap)
-	if err != nil {
-		misc.MapMutex.Unlock()
-		return
-	}
-	misc.MapMutex.Unlock()
-}
-
-// Writes vote info to voteInfo.json
-func VoteInfoWrite(info map[string]*VoteInfo) {
-
-	// Turns info slice into byte ready to be pushed to file
-	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
-	if err != nil {
-		return
-	}
-
-	//Writes to file
-	err = ioutil.WriteFile("database/voteInfo.json", MarshaledStruct, 0644)
-	if err != nil {
-		return
-	}
-}
-
-// Reads temp channels from TempCha.json
-func TempChaRead() {
-
-	// Reads all user temp channel info userTempCha.json file and puts them in tempChaByte as bytes
-	tempChaByte, err := ioutil.ReadFile("database/tempCha.json")
-	if err != nil {
-		return
-	}
-
-	// Takes all of the user temp channels from tempCha.json from byte and puts them into the tempChaMap map
-	misc.MapMutex.Lock()
-	err = json.Unmarshal(tempChaByte, &TempChaMap)
-	if err != nil {
-		misc.MapMutex.Unlock()
-		return
-	}
-	misc.MapMutex.Unlock()
-}
-
-// Writes temp cha info to tempCha.json
-func TempChaWrite(info map[string]*TempChaInfo) {
-
-	// Turns info map into byte ready to be pushed to file
-	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
-	if err != nil {
-		return
-	}
-
-	// Writes to file
-	err = ioutil.WriteFile("database/tempCha.json", MarshaledStruct, 0644)
-	if err != nil {
-		return
 	}
 }
 

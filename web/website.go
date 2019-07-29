@@ -161,7 +161,7 @@ func ChannelStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 	// Checks for nil entry assignment error and saves from that (could be abused to stop bot)
 	if id != "" {
 		misc.MapMutex.Lock()
-		if misc.ChannelStats[id] == nil {
+		if misc.GuildMap[config.ServerID].ChannelStats[id] == nil {
 			pick.Error = false
 			// Loads the html & css stats files
 			t, err := template.ParseFiles("./web/assets/channelstats.html")
@@ -180,7 +180,7 @@ func ChannelStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 	if id == "" {
 		pick.ChannelStats = make(map[string]*misc.Channel)
 		misc.MapMutex.Lock()
-		pick.ChannelStats = misc.ChannelStats
+		pick.ChannelStats = misc.GuildMap[config.ServerID].ChannelStats
 		// Loads the html & css stats files
 		t, err := template.ParseFiles("./web/assets/channelstats.html")
 		if err == nil {
@@ -199,16 +199,16 @@ func ChannelStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Save dates, sort them and then assign messages in order of the dates
 	misc.MapMutex.Lock()
-	for date := range misc.ChannelStats[id].Messages {
+	for date := range misc.GuildMap[config.ServerID].ChannelStats[id].Messages {
 		dateLabels = append(dateLabels, date)
 	}
 	sort.Sort(byDate(dateLabels))
 	for i := 0; i < len(dateLabels); i++ {
-		messageCount = append(messageCount, misc.ChannelStats[id].Messages[dateLabels[i]])
-		totalMessages += misc.ChannelStats[id].Messages[dateLabels[i]]
+		messageCount = append(messageCount, misc.GuildMap[config.ServerID].ChannelStats[id].Messages[dateLabels[i]])
+		totalMessages += misc.GuildMap[config.ServerID].ChannelStats[id].Messages[dateLabels[i]]
 	}
 
-	stats.Name = misc.ChannelStats[id].Name
+	stats.Name = misc.GuildMap[config.ServerID].ChannelStats[id].Name
 	stats.Dates = dateLabels
 	stats.Messages = messageCount
 	stats.TotalMessages = totalMessages
@@ -248,13 +248,13 @@ func UserChangeStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Save dates, sort them and then assign user change int in order of the dates
 	misc.MapMutex.Lock()
-	for date := range misc.UserStats {
+	for date := range misc.GuildMap[config.ServerID].UserChangeStats {
 		dateLabels = append(dateLabels, date)
-		totalChange += misc.UserStats[date]
+		totalChange += misc.GuildMap[config.ServerID].UserChangeStats[date]
 	}
 	sort.Sort(byDate(dateLabels))
 	for i := 0; i < len(dateLabels); i++ {
-		changeCount = append(changeCount, misc.UserStats[dateLabels[i]])
+		changeCount = append(changeCount, misc.GuildMap[config.ServerID].UserChangeStats[dateLabels[i]])
 	}
 
 	stats.Dates = dateLabels
@@ -381,22 +381,22 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Sets the username + discrim combo if it exists in memberinfo via ID, also sorts out the reddit verified status
 	misc.MapMutex.Lock()
-	if _, ok := misc.MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID]; ok {
-		usernameDiscrim := misc.MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].Username + "#" + misc.MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].Discrim
+	if _, ok := misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID]; ok {
+		usernameDiscrim := misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].Username + "#" + misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].Discrim
 		tempUser.UsernameDiscrim = usernameDiscrim
 
 		// Overwrites userCookieMap redditName value with the memberinfo one to avoid abuse in changing their reddit usernames
-		if misc.MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].RedditUsername != "" {
+		if misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].RedditUsername != "" {
 			tempUser.RedditVerifiedStatus = true
-			tempUser.RedditName = misc.MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].RedditUsername
+			tempUser.RedditName = misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].RedditUsername
 		}
 		SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
 	}
 
 	// Verifies user if they have a reddit account linked in memberInfo already, skipping the entire verification process
 	if SafeCookieMap.userCookieMap[cookie.Value].ID != "" {
-		if _, ok := misc.MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID]; ok {
-			if misc.MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].RedditUsername != "" {
+		if _, ok := misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID]; ok {
+			if misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].RedditUsername != "" {
 				// Verifies user
 				err := Verify(cookie, r)
 				if err != nil {
@@ -447,7 +447,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				// Verifies user if reddit verification was already completed succesfully
 				if SafeCookieMap.userCookieMap[cookie.Value].AccOldEnough && SafeCookieMap.userCookieMap[cookie.Value].ID != "" &&
 					SafeCookieMap.userCookieMap[cookie.Value].RedditVerifiedStatus && SafeCookieMap.userCookieMap[cookie.Value].RedditName != "" {
-					if _, ok := misc.MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID]; ok {
+					if _, ok := misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID]; ok {
 						err := Verify(cookie, r)
 						if err != nil {
 							// Sets error message
@@ -515,7 +515,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					if SafeCookieMap.userCookieMap[cookie.Value].ID != "" &&
 						SafeCookieMap.userCookieMap[cookie.Value].DiscordVerifiedStatus &&
 						SafeCookieMap.userCookieMap[cookie.Value].RedditName != "" {
-						if _, ok := misc.MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID]; ok {
+						if _, ok := misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID]; ok {
 							err := Verify(cookie, r)
 							if err != nil {
 								// Sets error message
@@ -743,7 +743,7 @@ func Verify(cookieValue *http.Cookie, r *http.Request) error {
 	}()
 
 	// Confirms that the map is not empty
-	if len(misc.MemberInfoMap) == 0 {
+	if len(misc.GuildMap[config.ServerID].MemberInfoMap) == 0 {
 		return fmt.Errorf("Critical Error: MemberInfo is empty. Please notify a mod.")
 	}
 	// Checks if cookie has expired while doing this
@@ -754,7 +754,7 @@ func Verify(cookieValue *http.Cookie, r *http.Request) error {
 		return fmt.Errorf("Rare Error: CookieValue is not in UserCookieMap. Please notify a mod.")
 	}
 	userID = SafeCookieMap.userCookieMap[cookieValue.Value].ID
-	if _, ok := misc.MemberInfoMap[userID]; !ok {
+	if _, ok := misc.GuildMap[config.ServerID].MemberInfoMap[userID]; !ok {
 		return fmt.Errorf("Critical Error: Either user does not exist in MemberInfo or the user ID does not exist. Please notify a mod.")
 	}
 
@@ -764,10 +764,10 @@ func Verify(cookieValue *http.Cookie, r *http.Request) error {
 	joinDate := t.Format("2006-01-02 15:04:05") + " " + z
 
 	// Assigns needed values to temp
-	temp = *misc.MemberInfoMap[userID]
+	temp = *misc.GuildMap[config.ServerID].MemberInfoMap[userID]
 	temp.RedditUsername = SafeCookieMap.userCookieMap[cookieValue.Value].RedditName
 	temp.VerifiedDate = joinDate
-	misc.MemberInfoMap[userID] = &temp
+	misc.GuildMap[config.ServerID].MemberInfoMap[userID] = &temp
 
 	// Saves the userID for verified timer
 	verifyMap[userID] = userID
@@ -778,10 +778,10 @@ func Verify(cookieValue *http.Cookie, r *http.Request) error {
 	}
 
 	// Writes the username to memberInfo.json
-	misc.MemberInfoWrite(misc.MemberInfoMap)
+	misc.WriteMemberInfo(misc.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
 
 	// Adds to verified stats
-	misc.VerifiedStats[t.Format(misc.DateFormat)]++
+	misc.GuildMap[config.ServerID].VerifiedStats[t.Format(misc.DateFormat)]++
 	return nil
 }
 
@@ -809,10 +809,10 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 			for userID := range verifyMap {
 
 				// Checks if banned suspected spambot accounts verified
-				if misc.MemberInfoMap[userID].SuspectedSpambot {
-					for i, banUser := range misc.BannedUsersSlice {
+				if misc.GuildMap[config.ServerID].MemberInfoMap[userID].SuspectedSpambot {
+					for i, banUser := range misc.GuildMap[config.ServerID].BannedUsers {
 						if banUser.ID == userID {
-							misc.BannedUsersSlice = append(misc.BannedUsersSlice[:i], misc.BannedUsersSlice[i+1:]...)
+							misc.GuildMap[config.ServerID].BannedUsers = append(misc.GuildMap[config.ServerID].BannedUsers[:i], misc.GuildMap[config.ServerID].BannedUsers[i+1:]...)
 							break
 						}
 					}
@@ -825,8 +825,8 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 						}
 						continue
 					}
-					misc.MemberInfoMap[userID].SuspectedSpambot = false
-					misc.MemberInfoWrite(misc.MemberInfoMap)
+					misc.GuildMap[config.ServerID].MemberInfoMap[userID].SuspectedSpambot = false
+					misc.WriteMemberInfo(misc.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
 				}
 
 				// Checks if the user is in the server before continuing. Very important to avoid bugs
@@ -877,7 +877,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 						continue
 					}
 					misc.InitializeUser(user)
-					misc.MemberInfoWrite(misc.MemberInfoMap)
+					misc.WriteMemberInfo(misc.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
 				}
 				delete(verifyMap, userID)
 			}
@@ -927,15 +927,15 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	// Checks if the user is an already verified one
 	misc.MapMutex.Lock()
-	if len(misc.MemberInfoMap) == 0 {
+	if len(misc.GuildMap[config.ServerID].MemberInfoMap) == 0 {
 		misc.MapMutex.Unlock()
 		return
 	}
-	if misc.MemberInfoMap[userID] == nil {
+	if misc.GuildMap[config.ServerID].MemberInfoMap[userID] == nil {
 		misc.MapMutex.Unlock()
 		return
 	}
-	if misc.MemberInfoMap[userID].RedditUsername == "" {
+	if misc.GuildMap[config.ServerID].MemberInfoMap[userID].RedditUsername == "" {
 		misc.MapMutex.Unlock()
 		return
 	}
@@ -986,17 +986,17 @@ func CheckAltAccount(s *discordgo.Session, id string) bool {
 		}
 	}()
 
-	if len(misc.MemberInfoMap) == 0 {
+	if len(misc.GuildMap[config.ServerID].MemberInfoMap) == 0 {
 		return false
 	}
-	if misc.MemberInfoMap[id] == nil {
+	if misc.GuildMap[config.ServerID].MemberInfoMap[id] == nil {
 		return false
 	}
 
 	// Iterates through all users in memberInfo.json
-	for _, userOne := range misc.MemberInfoMap {
+	for _, userOne := range misc.GuildMap[config.ServerID].MemberInfoMap {
 		// Checks if the current user has the same reddit username as userCookieMap user
-		if userOne.RedditUsername == misc.MemberInfoMap[id].RedditUsername {
+		if userOne.RedditUsername == misc.GuildMap[config.ServerID].MemberInfoMap[id].RedditUsername {
 			alts = append(alts, userOne.ID)
 		}
 	}

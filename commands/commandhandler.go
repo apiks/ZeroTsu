@@ -71,7 +71,7 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 	}
-	if cmd.elevated && !hasElevatedPermissions(s, m.Author) {
+	if cmd.elevated && !hasElevatedPermissions(s, m.Author, m.GuildID) {
 		return
 	}
 	if cmd.category == "waifus" {
@@ -94,13 +94,13 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
-func hasElevatedPermissions(s *discordgo.Session, u *discordgo.User) bool {
-	mem, err := s.State.Member(config.ServerID, u.ID)
+func hasElevatedPermissions(s *discordgo.Session, u *discordgo.User, guildID string) bool {
+	mem, err := s.State.Member(guildID, u.ID)
 	if err != nil {
-		mem, err = s.GuildMember(config.ServerID, u.ID)
+		mem, err = s.GuildMember(guildID, u.ID)
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
-	return misc.HasPermissions(mem)
+	return misc.HasPermissions(mem, guildID)
 }

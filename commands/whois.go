@@ -50,16 +50,16 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Fetches user from server if possible
-	mem, err := s.State.Member(config.ServerID, userID)
+	mem, err := s.State.Member(m.GuildID, userID)
 	if err != nil {
-		mem, err = s.GuildMember(config.ServerID, userID)
+		mem, err = s.GuildMember(m.GuildID, userID)
 		if err != nil {
 			isInsideGuild = false
 		}
 	}
 	// Checks if user is in MemberInfo and assigns to user variable. Else initializes user.
 	misc.MapMutex.Lock()
-	user, ok := misc.MemberInfoMap[userID]
+	user, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]
 	if !ok {
 		if mem == nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot whois until user joins the server.")
@@ -89,8 +89,8 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		// Initializes user if he doesn't exist and is in server
 		misc.InitializeUser(mem)
-		user = misc.MemberInfoMap[userID]
-		misc.MemberInfoWrite(misc.MemberInfoMap)
+		user = misc.GuildMap[m.GuildID].MemberInfoMap[userID]
+		misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	}
 	misc.MapMutex.Unlock()
 
@@ -217,14 +217,14 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Alt check
 	if config.Website != "" {
 		misc.MapMutex.Lock()
-		alts := CheckAltAccountWhois(userID)
+		alts := CheckAltAccountWhois(userID, m.GuildID)
 
 		// If there's more than one account with the same reddit username add to whois message
 		if len(alts) > 1 {
 			// Forms the alts string
 			success := "\n\n**Alts:**\n"
 			for _, altID := range alts {
-				success += fmt.Sprintf("%v#%v | %v\n", misc.MemberInfoMap[altID].Username, misc.MemberInfoMap[altID].Discrim, altID)
+				success += fmt.Sprintf("%v#%v | %v\n", misc.GuildMap[m.GuildID].MemberInfoMap[altID].Username, misc.GuildMap[m.GuildID].MemberInfoMap[altID].Discrim, altID)
 			}
 
 			// Adds the alts to the whois message
@@ -235,7 +235,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if the message contains a mention and finds the actual name instead of ID
-	message = misc.MentionParser(s, message)
+	message = misc.MentionParser(s, message, m.GuildID)
 
 	// Splits the message if it's over 1950 characters
 	if len(message) > 1950 {
@@ -270,23 +270,23 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 }
 
 // Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Whois version
-func CheckAltAccountWhois(id string) []string {
+func CheckAltAccountWhois(id string, guildID string) []string {
 
 	var alts []string
 
 	// Stops func if target reddit username is nil
-	if misc.MemberInfoMap[id].RedditUsername == "" {
+	if misc.GuildMap[guildID].MemberInfoMap[id].RedditUsername == "" {
 		return nil
 	}
 
 	// Iterates through all users in memberInfo.json
-	for _, user := range misc.MemberInfoMap {
+	for _, user := range misc.GuildMap[guildID].MemberInfoMap {
 		// Skips iteration if iteration reddit username is nil
 		if user.RedditUsername == "" {
 			continue
 		}
 		// Checks if the current user has the same reddit username as the entry parameter and adds to alts string slice if so
-		if user.RedditUsername == misc.MemberInfoMap[id].RedditUsername {
+		if user.RedditUsername == misc.GuildMap[guildID].MemberInfoMap[id].RedditUsername {
 			alts = append(alts, user.ID)
 		}
 	}
@@ -324,15 +324,15 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Fetches user from server if possible
-	mem, err := s.State.Member(config.ServerID, userID)
+	mem, err := s.State.Member(m.GuildID, userID)
 	if err != nil {
-		mem, err = s.GuildMember(config.ServerID, userID)
+		mem, err = s.GuildMember(m.GuildID, userID)
 		if err != nil {
 		}
 	}
 	// Checks if user is in MemberInfo and assigns to user variable. Else initializes user.
 	misc.MapMutex.Lock()
-	user, ok := misc.MemberInfoMap[userID]
+	user, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]
 	if !ok {
 		if mem == nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot timestamp until they rejoin server.")
@@ -351,8 +351,8 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		// Initializes user if he doesn't exist and is in server
 		misc.InitializeUser(mem)
-		user = misc.MemberInfoMap[userID]
-		misc.MemberInfoWrite(misc.MemberInfoMap)
+		user = misc.GuildMap[m.GuildID].MemberInfoMap[userID]
+		misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	}
 
 	// Check if timestamps exist

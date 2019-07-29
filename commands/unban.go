@@ -46,7 +46,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Goes through every banned user from BannedUsersSlice and if the user is in it, confirms that user is a temp ban
 	misc.MapMutex.Lock()
-	if len(misc.BannedUsersSlice) == 0 {
+	if len(misc.GuildMap[m.GuildID].BannedUsers) == 0 {
 		_, err = s.ChannelMessageSend(m.ChannelID, "No bans found.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -61,12 +61,12 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	for i := 0; i < len(misc.BannedUsersSlice); i++ {
-		if misc.BannedUsersSlice[i].ID == userID {
+	for i := 0; i < len(misc.GuildMap[m.GuildID].BannedUsers); i++ {
+		if misc.GuildMap[m.GuildID].BannedUsers[i].ID == userID {
 			banFlag = true
 
 			// Removes the ban from BannedUsersSlice
-			misc.BannedUsersSlice = append(misc.BannedUsersSlice[:i], misc.BannedUsersSlice[i+1:]...)
+			misc.GuildMap[m.GuildID].BannedUsers = append(misc.GuildMap[m.GuildID].BannedUsers[:i], misc.GuildMap[m.GuildID].BannedUsers[i+1:]...)
 			break
 		}
 	}
@@ -85,7 +85,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Removes the ban
-	err = s.GuildBanDelete(config.ServerID, userID)
+	err = s.GuildBanDelete(m.GuildID, userID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -96,11 +96,11 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Updates unban date in memberInfo.json entry
 	misc.MapMutex.Lock()
-	misc.MemberInfoMap[userID].UnbanDate = t.Format("2006-01-02 15:04:05")
+	misc.GuildMap[m.GuildID].MemberInfoMap[userID].UnbanDate = t.Format("2006-01-02 15:04:05")
 
 	// Writes to memberInfo.json and bannedUsers.json
-	misc.MemberInfoWrite(misc.MemberInfoMap)
-	misc.BannedUsersWrite(misc.BannedUsersSlice)
+	misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+	misc.BannedUsersWrite(misc.GuildMap[m.GuildID].BannedUsers, m.GuildID)
 	misc.MapMutex.Unlock()
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%v#%v__ has been unbanned.", user.Username, user.Discriminator))
@@ -114,7 +114,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Sends an embed message to bot-log
 	misc.MapMutex.Lock()
-	err = misc.UnbanEmbed(s, misc.MemberInfoMap[userID], m.Author.Username)
+	err = misc.UnbanEmbed(s, misc.GuildMap[m.GuildID].MemberInfoMap[userID], m.Author.Username)
 	misc.MapMutex.Unlock()
 }
 

@@ -41,24 +41,20 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Content == "" {
 		return
 	}
-	// Checks if it's within the config server
-	if m.GuildID != config.ServerID {
-		return
-	}
 	// Checks if it's the bot that sent the message
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
 	// Pulls info on message author
-	mem, err := s.State.Member(config.ServerID, m.Author.ID)
+	mem, err := s.State.Member(m.GuildID, m.Author.ID)
 	if err != nil {
-		mem, err = s.GuildMember(config.ServerID, m.Author.ID)
+		mem, err = s.GuildMember(m.GuildID, m.Author.ID)
 		if err != nil {
 			return
 		}
 	}
 	// Checks if user is mod or bot before checking the message
-	if misc.HasPermissions(mem) {
+	if misc.HasPermissions(mem, m.GuildID) {
 		return
 	}
 
@@ -134,24 +130,20 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	if m.Content == "" {
 		return
 	}
-	// Checks if it's within the config server
-	if m.GuildID != config.ServerID {
-		return
-	}
 	// Checks if it's the bot that sent the message
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
 	// Pulls info on message author
-	mem, err := s.State.Member(config.ServerID, m.Author.ID)
+	mem, err := s.State.Member(m.GuildID, m.Author.ID)
 	if err != nil {
-		mem, err = s.GuildMember(config.ServerID, m.Author.ID)
+		mem, err = s.GuildMember(m.GuildID, m.Author.ID)
 		if err != nil {
 			return
 		}
 	}
 	// Checks if user is mod or bot before checking the message
-	if misc.HasPermissions(mem) {
+	if misc.HasPermissions(mem, m.GuildID) {
 		return
 	}
 
@@ -218,24 +210,20 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 		}
 	}()
 
-	// Checks if it's within the config server
-	if r.GuildID != config.ServerID {
-		return
-	}
 	// Checks if it's the bot that sent the message
 	if r.UserID == s.State.User.ID {
 		return
 	}
 	// Pulls info on message author
-	mem, err := s.State.Member(config.ServerID, r.UserID)
+	mem, err := s.State.Member(r.GuildID, r.UserID)
 	if err != nil {
-		mem, err = s.GuildMember(config.ServerID, r.UserID)
+		mem, err = s.GuildMember(r.GuildID, r.UserID)
 		if err != nil {
 			return
 		}
 	}
 	// Checks if user is mod or bot before checking the message
-	if misc.HasPermissions(mem) {
+	if misc.HasPermissions(mem, r.GuildID) {
 		return
 	}
 
@@ -288,9 +276,9 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string){
 
 				// Checks first in memberInfo. Only checks serverside if it doesn't exist. Saves performance
 				misc.MapMutex.Lock()
-				if len(misc.MemberInfoMap) != 0 {
-					if _, ok := misc.MemberInfoMap[userID]; ok {
-						mentions += " " + strings.ToLower(misc.MemberInfoMap[userID].Nickname)
+				if len(misc.GuildMap[m.GuildID].MemberInfoMap) != 0 {
+					if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
+						mentions += " " + strings.ToLower(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Nickname)
 						misc.MapMutex.Unlock()
 						continue
 					}
@@ -298,9 +286,9 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string){
 				misc.MapMutex.Unlock()
 
 				// If user wasn't found in memberInfo with that username+discrim combo then fetch manually from Discord
-				user, err := s.State.Member(config.ServerID, userID)
+				user, err := s.State.Member(m.GuildID, userID)
 				if err != nil {
-					user, _ = s.GuildMember(config.ServerID, userID)
+					user, _ = s.GuildMember(m.GuildID, userID)
 				}
 				if user != nil {
 					mentions += " " + strings.ToLower(user.Nick)
@@ -311,7 +299,7 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string){
 
 	// Iterates through all the filters to see if the message contained a filtered phrase
 	misc.MapMutex.Lock()
-	for _, filter := range misc.ReadFilters {
+	for _, filter := range misc.GuildMap[m.GuildID].Filters {
 
 		// Regex check the filter phrase in the message
 		re := regexp.MustCompile(filter.Filter)
@@ -340,7 +328,7 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string){
 
 	// Iterates through all of the message requirements to see if the message follows a set requirement {
 	misc.MapMutex.Lock()
-	for i, requirement := range misc.ReadMessRequirements {
+	for i, requirement := range misc.GuildMap[m.GuildID].MessageRequirements {
 		if requirement.Channel != m.ChannelID {
 			continue
 		}
@@ -352,17 +340,17 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string){
 
 		// If a required phrase exists in the message or mentions, check if it should be removed
 		if messRequireCheck != nil {
-			misc.ReadMessRequirements[i].LastUserID = m.Author.ID
+			misc.GuildMap[m.GuildID].MessageRequirements[i].LastUserID = m.Author.ID
 			continue
 		}
 		if messRequireCheckMentions != nil {
-			misc.ReadMessRequirements[i].LastUserID = m.Author.ID
+			misc.GuildMap[m.GuildID].MessageRequirements[i].LastUserID = m.Author.ID
 			continue
 		}
 
 		if requirement.Type == "soft" {
 			if requirement.LastUserID == "" {
-				misc.ReadMessRequirements[i].LastUserID = m.Author.ID
+				misc.GuildMap[m.GuildID].MessageRequirements[i].LastUserID = m.Author.ID
 			} else if requirement.LastUserID != m.Author.ID {
 				misc.MapMutex.Unlock()
 				return true, nil
@@ -385,7 +373,7 @@ func isFilteredReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) bool
 
 	// Iterates through all the filters to see if the react contained a filtered phrase
 	misc.MapMutex.Lock()
-	for _, filter := range misc.ReadFilters {
+	for _, filter := range misc.GuildMap[r.GuildID].Filters {
 
 		// Assigns the filter to a string that can be changed to the normal API mode name later
 		reactName = filter.Filter
@@ -439,7 +427,7 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Writes the phrase to filters.json and checks if the requirement was already in storage
-	err := misc.FiltersWrite(commandStrings[1])
+	err := misc.FiltersWrite(commandStrings[1], m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -464,7 +452,7 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
-	if len(misc.ReadFilters) == 0 {
+	if len(misc.GuildMap[m.GuildID].Filters) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no filters.")
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
@@ -496,7 +484,7 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Removes phrase from storage and memory
-	err := misc.FiltersRemove(commandStrings[1])
+	err := misc.FiltersRemove(commandStrings[1], m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -518,7 +506,7 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 	var filters string
 
 	misc.MapMutex.Lock()
-	if len(misc.ReadFilters) == 0 {
+	if len(misc.GuildMap[m.GuildID].Filters) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no filters.")
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
@@ -534,7 +522,7 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Iterates through all the filters in memory and adds them to the filters string
-	for _, filter := range misc.ReadFilters {
+	for _, filter := range misc.GuildMap[m.GuildID].Filters {
 		if filters == "" {
 			filters = fmt.Sprintf("`%v`", filter.Filter)
 			continue
@@ -570,7 +558,7 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID
 
 	// Checks if the message contains a mention and replaces it with the actual nick instead of ID
 	content = m.Content
-	content = misc.MentionParser(s, content)
+	content = misc.MentionParser(s, content, m.GuildID)
 
 	// Sets timestamp for removal
 	t := time.Now()
@@ -649,7 +637,7 @@ func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 2 {
 		phrase = commandStrings[1]
 	} else if len(commandStrings) == 3 {
-		channelID, _ = misc.ChannelParser(s, commandStrings[1])
+		channelID, _ = misc.ChannelParser(s, commandStrings[1], m.GuildID)
 		if channelID == "" {
 			if commandStrings[1] == "soft" ||
 				commandStrings[1] == "hard" {
@@ -663,7 +651,7 @@ func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 			phrase = commandStrings[2]
 		}
 	} else if len(commandStrings) == 4 {
-		channelID, _ = misc.ChannelParser(s, commandStrings[1])
+		channelID, _ = misc.ChannelParser(s, commandStrings[1], m.GuildID)
 		if channelID == "" {
 			if commandStrings[1] == "soft" ||
 				commandStrings[1] == "hard" {
@@ -687,7 +675,7 @@ func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Writes the phrase to messrequirement.json and checks if the requirement was already in storage
-	err := misc.MessRequirementWrite(phrase, channelID, requirementType)
+	err := misc.MessRequirementWrite(phrase, channelID, requirementType, m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -714,7 +702,7 @@ func removeMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
-	if len(misc.ReadMessRequirements) == 0 {
+	if len(misc.GuildMap[m.GuildID].MessageRequirements) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no message requirements.")
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
@@ -748,7 +736,7 @@ func removeMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Resolves optional parameter
 	if len(commandStrings) == 3 {
-		channelID, _ = misc.ChannelParser(s, commandStrings[1])
+		channelID, _ = misc.ChannelParser(s, commandStrings[1], m.GuildID)
 		if channelID == "" {
 			phrase = commandStrings[1] + " " + commandStrings[2]
 		} else {
@@ -759,13 +747,13 @@ func removeMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Removes the phrase from storage and memory
-	err := misc.MessRequirementRemove(phrase, channelID)
+	err := misc.MessRequirementRemove(phrase, channelID, m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been removed from the filter list.", phrase))
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been removed from the message requirement list.", phrase))
 	if err != nil {
 		_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
@@ -781,7 +769,7 @@ func viewMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	var mRequirements string
 
 	misc.MapMutex.Lock()
-	if len(misc.ReadMessRequirements) == 0 {
+	if len(misc.GuildMap[m.GuildID].MessageRequirements) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no message requirements.")
 		if err != nil {
 			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
@@ -797,7 +785,7 @@ func viewMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Iterates through all the message requirements in memory and adds them to the mRequirements string
-	for _, requirement := range misc.ReadMessRequirements {
+	for _, requirement := range misc.GuildMap[m.GuildID].MessageRequirements {
 		if requirement.Channel == "" {
 			requirement.Channel = "All channels"
 		}
@@ -826,24 +814,20 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Content == "" {
 		return
 	}
-	// Checks if it's within the config server
-	if m.GuildID != config.ServerID {
-		return
-	}
 	// Checks if it's the bot that sent the message
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
 	// Pulls info on message author
-	mem, err := s.State.Member(config.ServerID, m.Author.ID)
+	mem, err := s.State.Member(m.GuildID, m.Author.ID)
 	if err != nil {
-		mem, err = s.GuildMember(config.ServerID, m.Author.ID)
+		mem, err = s.GuildMember(m.GuildID, m.Author.ID)
 		if err != nil {
 			return
 		}
 	}
 	// Checks if user is mod or bot before checking the message
-	if misc.HasPermissions(mem) {
+	if misc.HasPermissions(mem, m.GuildID) {
 		return
 	}
 
@@ -887,14 +871,6 @@ func SpamFilterTimer(s *discordgo.Session, e *discordgo.Ready) {
 		}
 		misc.MapMutex.Unlock()
 	}
-}
-
-// Filters images from the images folder with a tolerance level of 25k
-func ImageFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
-
-	// Fetches any image links containing .png
-	//urlRegex := regexp.MustCompile(`(?mi)(http[a-zA-Z]?://+)?.+/.+.png`)
-	//urls := urlRegex.FindAllString(m.Content, -1)
 }
 
 // Adds filter commands to the commandHandler

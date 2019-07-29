@@ -37,7 +37,7 @@ func jokeCommand(s *discordgo.Session, m *discordgo.Message) {
 	joke := new(Joke)
 	err := getJson(jokeURL, joke)
 	if err != nil {
-		_, err = s.ChannelMessageSend(m.ChannelID, "https://i.imgur.com/WUNHoRm.png")
+		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Joke website is not working properly. Please tell Apiks about it.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -62,7 +62,7 @@ func init() {
 	add(&command{
 		execute: jokeCommand,
 		trigger: "joke",
-		desc:    "Print a joke.",
+		desc:    "Print a joke. Source: github.com/15Dkatz/official_joke_api",
 		category: "normal",
 	})
 }

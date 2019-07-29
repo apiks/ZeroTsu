@@ -43,7 +43,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	warning = commandStrings[2]
 	// Checks if the warning contains a mention and finds the actual name instead of ID
-	warning = misc.MentionParser(s, warning)
+	warning = misc.MentionParser(s, warning, m.GuildID)
 
 	// Fetches user
 	mem, err := s.User(userID)
@@ -54,11 +54,11 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo and handles them
 	misc.MapMutex.Lock()
-	if _, ok := misc.MemberInfoMap[userID]; !ok || len(misc.MemberInfoMap) == 0 {
+	if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; !ok || len(misc.GuildMap[m.GuildID].MemberInfoMap) == 0 {
 		// Pulls info on user if they're in the server
-		userMem, err := s.State.Member(config.ServerID, mem.ID)
+		userMem, err := s.State.Member(m.GuildID, mem.ID)
 		if err != nil {
-			userMem, err = s.GuildMember(config.ServerID, mem.ID)
+			userMem, err = s.GuildMember(m.GuildID, mem.ID)
 			if err != nil {
 				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot warn user until they join the server.")
 				if err != nil {
@@ -81,7 +81,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Appends warning to user in memberInfo
 	misc.MapMutex.Lock()
-	misc.MemberInfoMap[userID].Warnings = append(misc.MemberInfoMap[userID].Warnings, warning)
+	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings, warning)
 
 	// Adds timestamp for that warning
 	t, err := m.Timestamp.Parse()
@@ -93,10 +93,10 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	warningTimestamp.Timestamp = t
 	warningTimestamp.Punishment = warning
 	warningTimestamp.Type = "Warning"
-	misc.MemberInfoMap[userID].Timestamps = append(misc.MemberInfoMap[userID].Timestamps, warningTimestamp)
+	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, warningTimestamp)
 
 	// Writes to memberInfo.json
-	misc.MemberInfoWrite(misc.MemberInfoMap)
+	misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	misc.MapMutex.Unlock()
 
 	// Sends warning embed message to channel
@@ -135,7 +135,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Pulls the guild name early on purpose
-	guild, err := s.Guild(config.ServerID)
+	guild, err := s.Guild(m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -149,7 +149,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	warning = commandStrings[2]
 	// Checks if the warning contains a mention and finds the actual name instead of ID
-	warning = misc.MentionParser(s, warning)
+	warning = misc.MentionParser(s, warning, m.GuildID)
 
 	// Fetches user
 	mem, err := s.User(userID)
@@ -160,11 +160,11 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo and handles them
 	misc.MapMutex.Lock()
-	if _, ok := misc.MemberInfoMap[userID]; !ok || len(misc.MemberInfoMap) == 0 {
+	if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; !ok || len(misc.GuildMap[m.GuildID].MemberInfoMap) == 0 {
 		// Pulls info on user if they're in the server
-		userMem, err := s.State.Member(config.ServerID, mem.ID)
+		userMem, err := s.State.Member(m.GuildID, mem.ID)
 		if err != nil {
-			userMem, err = s.GuildMember(config.ServerID, mem.ID)
+			userMem, err = s.GuildMember(m.GuildID, mem.ID)
 			if err != nil {
 				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot warn user until they join the server.")
 				if err != nil {
@@ -185,7 +185,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Appends warning to user in memberInfo
-	misc.MemberInfoMap[userID].Warnings = append(misc.MemberInfoMap[userID].Warnings, warning)
+	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings, warning)
 
 	// Adds timestamp for that warning
 	t, err := m.Timestamp.Parse()
@@ -197,10 +197,10 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	warningTimestamp.Timestamp = t
 	warningTimestamp.Punishment = warning
 	warningTimestamp.Type = "Warning"
-	misc.MemberInfoMap[userID].Timestamps = append(misc.MemberInfoMap[userID].Timestamps, warningTimestamp)
+	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, warningTimestamp)
 
 	// Writes to memberInfo.json
-	misc.MemberInfoWrite(misc.MemberInfoMap)
+	misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	misc.MapMutex.Unlock()
 
 	// Sends message in DMs that they have been warned if able

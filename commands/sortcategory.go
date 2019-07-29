@@ -36,7 +36,7 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Fetches all channels from the server and puts it in deb
-	deb, err := s.GuildChannels(config.ServerID)
+	deb, err := s.GuildChannels(m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return

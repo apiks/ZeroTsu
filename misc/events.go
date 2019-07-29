@@ -21,6 +21,23 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
 	var banFlag bool
 
+	for _, guild := range e.Guilds {
+		// Initialize guild if missing
+		initDB(guild.ID)
+		writeAll(guild.ID)
+	}
+
+	// Clean up SpoilerRoles.json in each guild
+	for _, guild := range e.Guilds {
+		err := cleanSpoilerRoles(s, guild.ID)
+		if err != nil {
+			_, _ = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+			if err != nil {
+			}
+		}
+	}
+
+
 	err := s.UpdateStatus(0, config.PlayingMsg)
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
@@ -29,81 +46,71 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		}
 	}
 
-	// Clean up SpoilerRoles.json
-	err = cleanSpoilerRoles(s)
-	if err != nil {
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
-			if err != nil {
-			}
-		}
-	}
-
 	// Start tracking uptime from here
 	startTime = time.Now()
 
 	for range time.NewTicker(30 * time.Second).C {
 
-		// Checks whether it has to post rss thread
-		RSSParser(s)
+		// Checks whether it has to post rss thread and handle remindMes
+		for _, guild := range e.Guilds {
+			RSSParser(s, guild.ID)
+			remindMeHandler(s, guild.ID)
 
-		// RemindMe handler for checks and execution
-		remindMeHandler(s)
+			// Goes through bannedUsers.json if it's not empty and unbans if needed
+			MapMutex.Lock()
+			if len(GuildMap[guild.ID].BannedUsers) != 0 {
+				t := time.Now()
+				for index, user := range GuildMap[guild.ID].BannedUsers {
+					difference := t.Sub(user.UnbanDate)
+					if difference > 0 {
+						banFlag = false
 
-		// Goes through bannedUsers.json if it's not empty and unbans if needed
-		MapMutex.Lock()
-		if len(BannedUsersSlice) != 0 {
-			t := time.Now()
-			for index, user := range BannedUsersSlice {
-				difference := t.Sub(user.UnbanDate)
-				if difference > 0 {
-					banFlag = false
-
-					// Checks if user is in MemberInfo and assigns to user variable if true
-					user, ok := MemberInfoMap[user.ID]
-					if !ok {
-						continue
-					}
-					// Fetches all server bans so it can check if the user is banned there (whether he's been manually unbanned for example)
-					bans, err := s.GuildBans(config.ServerID)
-					if err != nil {
-						_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
-						if err != nil {
+						// Checks if user is in MemberInfo and assigns to user variable if true
+						user, ok := GuildMap[guild.ID].MemberInfoMap[user.ID]
+						if !ok {
 							continue
 						}
-						continue
-					}
-					for _, ban := range bans {
-						if ban.User.ID == user.ID {
-							banFlag = true
-							break
-						}
-					}
-					if banFlag {
-						// Unbans user if possible
-						err = s.GuildBanDelete(config.ServerID, user.ID)
+						// Fetches all server bans so it can check if the user is banned there (whether he's been manually unbanned for example)
+						bans, err := s.GuildBans(guild.ID)
 						if err != nil {
-							_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+							_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
 							if err != nil {
 								continue
 							}
 							continue
 						}
+						for _, ban := range bans {
+							if ban.User.ID == user.ID {
+								banFlag = true
+								break
+							}
+						}
+						if banFlag {
+							// Unbans user if possible
+							err = s.GuildBanDelete(guild.ID, user.ID)
+							if err != nil {
+								_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+								if err != nil {
+									continue
+								}
+								continue
+							}
+						}
+
+						// Removes unban date entirely
+						GuildMap[guild.ID].MemberInfoMap[user.ID].UnbanDate = ""
+
+						// Removes the user ban from bannedUsers.json
+						GuildMap[guild.ID].BannedUsers = append(GuildMap[guild.ID].BannedUsers[:index], GuildMap[guild.ID].BannedUsers[index+1:]...)
+
+						// Writes to memberInfo.json and bannedUsers.json
+						WriteMemberInfo(GuildMap[guild.ID].MemberInfoMap, guild.ID)
+						BannedUsersWrite(GuildMap[guild.ID].BannedUsers, guild.ID)
+
+						// Sends an embed message to bot-log
+						_ = UnbanEmbed(s, user, "")
+						break
 					}
-
-					// Removes unban date entirely
-					MemberInfoMap[user.ID].UnbanDate = ""
-
-					// Removes the user ban from bannedUsers.json
-					BannedUsersSlice = append(BannedUsersSlice[:index], BannedUsersSlice[index+1:]...)
-
-					// Writes to memberInfo.json and bannedUsers.json
-					MemberInfoWrite(MemberInfoMap)
-					BannedUsersWrite(BannedUsersSlice)
-
-					// Sends an embed message to bot-log
-					_ = UnbanEmbed(s, user, "")
-					break
 				}
 			}
 		}
@@ -146,98 +153,101 @@ func UnbanEmbed(s *discordgo.Session, user *UserInfo, mod string) error {
 func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(20 * time.Minute).C {
 
-		// Writes emoji stats to disk
-		_, err := EmojiStatsWrite(EmojiStats)
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
-			if err != nil {
-				continue
-			}
-			continue
-		}
+		for _, guild := range e.Guilds {
 
-		// Writes user gain stats to disk
-		_, err = UserChangeStatsWrite(UserStats)
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+			// Writes emoji stats to disk
+			_, err := EmojiStatsWrite(GuildMap[guild.ID].EmojiStats, guild.ID)
 			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+				if err != nil {
+					continue
+				}
 				continue
 			}
-			continue
-		}
 
-		// Writes verified stats to disk
-		err = VerifiedStatsWrite(VerifiedStats)
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+			// Writes user gain stats to disk
+			_, err = UserChangeStatsWrite(GuildMap[guild.ID].UserChangeStats, guild.ID)
 			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+				if err != nil {
+					continue
+				}
 				continue
 			}
-			continue
-		}
 
-		// Writes memberInfo to disk
-		MemberInfoWrite(MemberInfoMap)
+			// Writes verified stats to disk
+			err = VerifiedStatsWrite(GuildMap[guild.ID].VerifiedStats, guild.ID)
+			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+				if err != nil {
+					continue
+				}
+				continue
+			}
 
-		// Fetches all guild users
-		guild, err := s.Guild(config.ServerID)
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
-			if err != nil {
-				continue
-			}
-			continue
-		}
-		// Fetches all server roles
-		roles, err := s.GuildRoles(config.ServerID)
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
-			if err != nil {
-				continue
-			}
-			continue
-		}
-		// Updates optin role stat
-		t := time.Now()
-		MapMutex.Lock()
-		for chas := range ChannelStats {
-			if ChannelStats[chas].RoleCount == nil {
-				ChannelStats[chas].RoleCount = make(map[string]int)
-			}
-			if ChannelStats[chas].Optin {
-				ChannelStats[chas].RoleCount[t.Format(DateFormat)] = GetRoleUserAmount(guild, roles, ChannelStats[chas].Name)
-			}
-		}
-		MapMutex.Unlock()
+			// Writes memberInfo to disk
+			WriteMemberInfo(GuildMap[guild.ID].MemberInfoMap, guild.ID)
 
-		// Writes channel stats to disk
-		_, err = ChannelStatsWrite(ChannelStats)
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+			// Fetches all guild users
+			guild, err := s.Guild(guild.ID)
 			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+				if err != nil {
+					continue
+				}
 				continue
 			}
-			continue
-		}
+			// Fetches all server roles
+			roles, err := s.GuildRoles(guild.ID)
+			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+				if err != nil {
+					continue
+				}
+				continue
+			}
+			// Updates optin role stat
+			t := time.Now()
+			MapMutex.Lock()
+			for chas := range GuildMap[guild.ID].ChannelStats {
+				if GuildMap[guild.ID].ChannelStats[chas].RoleCount == nil {
+					GuildMap[guild.ID].ChannelStats[chas].RoleCount = make(map[string]int)
+				}
+				if GuildMap[guild.ID].ChannelStats[chas].Optin {
+					GuildMap[guild.ID].ChannelStats[chas].RoleCount[t.Format(DateFormat)] = GetRoleUserAmount(guild, roles, GuildMap[guild.ID].ChannelStats[chas].Name)
+				}
+			}
+			MapMutex.Unlock()
 
-		// Clears up spoilerRoles.json
-		err = cleanSpoilerRoles(s)
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+			// Writes channel stats to disk
+			_, err = ChannelStatsWrite(GuildMap[guild.ID].ChannelStats, guild.ID)
 			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+				if err != nil {
+					continue
+				}
 				continue
 			}
-			continue
+
+			// Clears up spoilerRoles.json
+			err = cleanSpoilerRoles(s, guild.ID)
+			if err != nil {
+				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+				if err != nil {
+					continue
+				}
+				continue
+			}
 		}
 	}
 }
 
 // Pulls the rss thread and prints it
-func RSSParser(s *discordgo.Session) {
+func RSSParser(s *discordgo.Session, guildID string) {
 
 	var exists bool
 
-	if len(ReadRssThreads) == 0 {
+	if len(GuildMap[guildID].RssThreads) == 0 {
 		return
 	}
 
@@ -255,14 +265,14 @@ func RSSParser(s *discordgo.Session) {
 
 	// Removes a thread if more than 16 hours have passed
 	MapMutex.Lock()
-	for p := 0; p < len(ReadRssThreadsCheck); p++ {
+	for p := 0; p < len(GuildMap[guildID].RssThreadChecks); p++ {
 		// Calculates if it's time to remove
-		dateRemoval := ReadRssThreadsCheck[p].Date.Add(hours)
+		dateRemoval := GuildMap[guildID].RssThreadChecks[p].Date.Add(hours)
 		difference := t.Sub(dateRemoval)
 
 		if difference > 0 {
 			// Removes the fact that the thread had been posted already
-			err = RssThreadsTimerRemove(ReadRssThreadsCheck[p].Thread, ReadRssThreadsCheck[p].Date, ReadRssThreadsCheck[p].ChannelID)
+			err = RssThreadsTimerRemove(GuildMap[guildID].RssThreadChecks[p].Thread, GuildMap[guildID].RssThreadChecks[p].Date, GuildMap[guildID].RssThreadChecks[p].ChannelID, guildID)
 			if err != nil {
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 				if err != nil {
@@ -279,16 +289,16 @@ func RSSParser(s *discordgo.Session) {
 	for _, item := range feed.Items {
 		itemTitleLowercase := strings.ToLower(item.Title)
 		itemAuthorLowercase := strings.ToLower(item.Author.Name)
-		for j := 0; j < len(ReadRssThreads); j++ {
+		for j := 0; j < len(GuildMap[guildID].RssThreads); j++ {
 			exists = false
-			storageAuthorLowercase := strings.ToLower(ReadRssThreads[j].Author)
+			storageAuthorLowercase := strings.ToLower(GuildMap[guildID].RssThreads[j].Author)
 
-			if strings.Contains(itemTitleLowercase, ReadRssThreads[j].Thread) &&
+			if strings.Contains(itemTitleLowercase, GuildMap[guildID].RssThreads[j].Thread) &&
 				strings.Contains(itemAuthorLowercase, storageAuthorLowercase) {
 
-				for k := 0; k < len(ReadRssThreadsCheck); k++ {
-					if ReadRssThreadsCheck[k].Thread == ReadRssThreads[j].Thread &&
-						ReadRssThreadsCheck[k].ChannelID == ReadRssThreads[j].Channel {
+				for k := 0; k < len(GuildMap[guildID].RssThreadChecks); k++ {
+					if GuildMap[guildID].RssThreadChecks[k].Thread == GuildMap[guildID].RssThreads[j].Thread &&
+						GuildMap[guildID].RssThreadChecks[k].ChannelID == GuildMap[guildID].RssThreads[j].Channel {
 						exists = true
 						break
 					}
@@ -296,9 +306,9 @@ func RSSParser(s *discordgo.Session) {
 
 				if !exists {
 					// Posts latest sub episode thread and pins/unpins
-					valid := RssThreadsTimerWrite(ReadRssThreads[j].Thread, t, ReadRssThreads[j].Channel)
+					valid := RssThreadsTimerWrite(GuildMap[guildID].RssThreads[j].Thread, t, GuildMap[guildID].RssThreads[j].Channel, guildID)
 					if valid {
-						message, err := s.ChannelMessageSend(ReadRssThreads[j].Channel, item.Link)
+						message, err := s.ChannelMessageSend(GuildMap[guildID].RssThreads[j].Channel, item.Link)
 						if err != nil {
 							_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 							continue
@@ -365,7 +375,7 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 	}
 
 	// Fetches role ID
-	guildRoles, err := s.GuildRoles(config.ServerID)
+	guildRoles, err := s.GuildRoles(m.GuildID)
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 		if err != nil {
@@ -516,8 +526,8 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 // If there's a manual ban handle it correctly
 func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
 	MapMutex.Lock()
-	for i := 0; i < len(BannedUsersSlice); i++ {
-		if BannedUsersSlice[i].ID == e.User.ID {
+	for i := 0; i < len(GuildMap[e.GuildID].BannedUsers); i++ {
+		if GuildMap[e.GuildID].BannedUsers[i].ID == e.User.ID {
 			MapMutex.Unlock()
 			return
 		}
@@ -530,7 +540,7 @@ func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
 }
 
 // Sends remindMe message if it is time, either as a DM or ping
-func remindMeHandler(s *discordgo.Session) {
+func remindMeHandler(s *discordgo.Session, guildID string) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -543,7 +553,7 @@ func remindMeHandler(s *discordgo.Session) {
 
 	t := time.Now()
 	MapMutex.Lock()
-	for userID, remindMeSlice := range RemindMeMap {
+	for userID, remindMeSlice := range GuildMap[guildID].RemindMes {
 		for index, remindMeObject := range remindMeSlice.RemindMeSlice {
 
 			// Checks if it's time to send message/ping the user
@@ -556,7 +566,7 @@ func remindMeHandler(s *discordgo.Session) {
 				// Else sends the message in the channel the command was made in with a ping
 				if err != nil {
 					// Checks if the user is in the server before pinging him
-					_, err := s.GuildMember(config.ServerID, userID)
+					_, err := s.GuildMember(guildID, userID)
 					if err == nil {
 						pingMessage := fmt.Sprintf("<@%v> Remindme: %v", userID, remindMeObject.Message)
 						_, err = s.ChannelMessageSend(remindMeObject.CommandChannel, pingMessage)
@@ -574,12 +584,12 @@ func remindMeHandler(s *discordgo.Session) {
 
 				// Removes the RemindMe object from the RemindMe slice and writes to disk
 				if len(remindMeSlice.RemindMeSlice) == 1 {
-					delete(RemindMeMap, userID)
+					delete(GuildMap[guildID].RemindMes, userID)
 				} else {
 					remindMeSlice.RemindMeSlice = append(remindMeSlice.RemindMeSlice[:index], remindMeSlice.RemindMeSlice[index+1:]...)
-					RemindMeMap[userID].RemindMeSlice = remindMeSlice.RemindMeSlice
+					GuildMap[guildID].RemindMes[userID].RemindMeSlice = remindMeSlice.RemindMeSlice
 				}
-				_, err = RemindMeWrite(RemindMeMap)
+				_, err = RemindMeWrite(GuildMap[guildID].RemindMes, guildID)
 				if err != nil {
 					_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
 					if err != nil {
@@ -620,7 +630,7 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 
 	// Sends user join message for r/anime discord server
-	if config.ServerID == "267799767843602452" {
+	if u.GuildID == "267799767843602452" {
 		_, err = s.ChannelMessageSend("566233292026937345", fmt.Sprintf("User joined the server: %v\nAccount age: %v", u.User.Mention(), creationDate.String()))
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
@@ -677,8 +687,8 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 
 	// Checks if the user is verified
-	if _, ok := MemberInfoMap[u.User.ID]; ok {
-		if MemberInfoMap[u.User.ID].RedditUsername != "" {
+	if _, ok := GuildMap[u.GuildID].MemberInfoMap[u.User.ID]; ok {
+		if GuildMap[u.GuildID].MemberInfoMap[u.User.ID].RedditUsername != "" {
 			return
 		}
 	}
@@ -693,27 +703,27 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	temp.User = u.User.Username
 	temp.UnbanDate = time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
 	MapMutex.Lock()
-	for index, val := range BannedUsersSlice {
+	for index, val := range GuildMap[u.GuildID].BannedUsers {
 		if val.ID == u.User.ID {
-			BannedUsersSlice = append(BannedUsersSlice[:index], BannedUsersSlice[index+1:]...)
+			GuildMap[u.GuildID].BannedUsers = append(GuildMap[u.GuildID].BannedUsers[:index], GuildMap[u.GuildID].BannedUsers[index+1:]...)
 		}
 	}
-	BannedUsersSlice = append(BannedUsersSlice, temp)
-	BannedUsersWrite(BannedUsersSlice)
+	GuildMap[u.GuildID].BannedUsers = append(GuildMap[u.GuildID].BannedUsers, temp)
+	BannedUsersWrite(GuildMap[u.GuildID].BannedUsers, u.GuildID)
 
 	// Adds a bool to memberInfo that it's a suspected spambot account in case they try to reverify
-	if _, ok := MemberInfoMap[u.User.ID]; !ok {
+	if _, ok := GuildMap[u.GuildID].MemberInfoMap[u.User.ID]; !ok {
 		InitializeUser(u.Member)
 	}
-	tempMem = *MemberInfoMap[u.User.ID]
+	tempMem = *GuildMap[u.GuildID].MemberInfoMap[u.User.ID]
 	tempMem.SuspectedSpambot = true
-	MemberInfoMap[u.User.ID] = &tempMem
-	MemberInfoWrite(MemberInfoMap)
+	GuildMap[u.GuildID].MemberInfoMap[u.User.ID] = &tempMem
+	WriteMemberInfo(GuildMap[u.GuildID].MemberInfoMap, u.GuildID)
 	MapMutex.Unlock()
 
 	// Sends a message to the user warning them in case it's a false positive
 	dmMessage = "You have been suspected of being a spambot and banned."
-	if config.ServerID == "267799767843602452" {
+	if u.GuildID == "267799767843602452" {
 		dmMessage += "\nTo get unbanned please do our mandatory verification process at https://%v/verification and then rejoin the server."
 	}
 
@@ -721,7 +731,7 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf(dmMessage, config.Website))
 
 	// Bans the suspected account
-	err = s.GuildBanCreateWithReason(config.ServerID, u.User.ID, "Autoban Spambot Account", 0)
+	err = s.GuildBanCreateWithReason(u.GuildID, u.User.ID, "Autoban Spambot Account", 0)
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
 		if err != nil {
@@ -735,12 +745,12 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 }
 
 // Cleans spoilerroles.json
-func cleanSpoilerRoles(s *discordgo.Session) error {
+func cleanSpoilerRoles(s *discordgo.Session, guildID string) error {
 
 	var shouldDelete bool
 
 	// Pulls all of the server roles
-	roles, err := s.GuildRoles(config.ServerID)
+	roles, err := s.GuildRoles(guildID)
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
 		if err != nil {
@@ -751,7 +761,7 @@ func cleanSpoilerRoles(s *discordgo.Session) error {
 
 	// Removes roles not found in spoilerRoles.json
 	MapMutex.Lock()
-	for _, spoilerRole := range SpoilerMap {
+	for _, spoilerRole := range GuildMap[guildID].SpoilerMap {
 		shouldDelete = true
 		for _, role := range roles {
 			if role.ID == spoilerRole.ID {
@@ -765,13 +775,13 @@ func cleanSpoilerRoles(s *discordgo.Session) error {
 			}
 		}
 		if shouldDelete {
-			SpoilerRolesDelete(spoilerRole.ID)
+			SpoilerRolesDelete(spoilerRole.ID, guildID)
 		}
 	}
 
-	SpoilerRolesWrite(SpoilerMap)
+	SpoilerRolesWrite(GuildMap[guildID].SpoilerMap, guildID)
+	LoadGuildFile(guildID, "spoilerRoles.json")
 	MapMutex.Unlock()
-	SpoilerRolesRead()
 
 	return nil
 }

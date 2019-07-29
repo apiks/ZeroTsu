@@ -123,7 +123,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Creates the new channel of type text
-	newCha, err := s.GuildChannelCreate(config.ServerID, command, 0)
+	newCha, err := s.GuildChannelCreate(m.GuildID, command, 0)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -132,7 +132,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	time.Sleep(500 * time.Millisecond)
 
 	// Creates the new role
-	newRole, err := s.GuildRoleCreate(config.ServerID)
+	newRole, err := s.GuildRoleCreate(m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -142,7 +142,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	roleName = newCha.Name
 
 	// Edits the new role with proper hyphenated name
-	_, err = s.GuildRoleEdit(config.ServerID, newRole.ID, roleName, 0, false, 0, false)
+	_, err = s.GuildRoleEdit(m.GuildID, newRole.ID, roleName, 0, false, 0, false)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -157,14 +157,14 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	if m.Author.ID != s.State.User.ID {
 		misc.MapMutex.Lock()
 	}
-	misc.SpoilerMap[newRole.ID] = &tempRole
-	misc.SpoilerRolesWrite(misc.SpoilerMap)
+	misc.GuildMap[m.GuildID].SpoilerMap[newRole.ID] = &tempRole
+	misc.SpoilerRolesWrite(misc.GuildMap[m.GuildID].SpoilerMap, m.GuildID)
 	if m.Author.ID != s.State.User.ID {
 		misc.MapMutex.Unlock()
 	}
 
 	// Pulls info on server roles
-	deb, err := s.GuildRoles(config.ServerID)
+	deb, err := s.GuildRoles(m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -192,7 +192,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	if channel.Type != "general" {
 		// Everyone perms
-		err = s.ChannelPermissionSet(newCha.ID, config.ServerID, "role", 0, misc.SpoilerPerms)
+		err = s.ChannelPermissionSet(newCha.ID, m.GuildID, "role", 0, misc.SpoilerPerms)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err)
 			return
@@ -218,7 +218,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Airing perms
-	if channel.Type == "airing"  && airing != "" {
+	if channel.Type == "airing" && airing != "" {
 		err = s.ChannelPermissionSet(newCha.ID, airing, "role", misc.SpoilerPerms, 0)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err)
@@ -240,7 +240,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	if channel.Type == "temp" || channel.Type == "temporary" {
 		t := time.Now()
-		var temp TempChaInfo
+		var temp misc.TempChaInfo
 		temp.RoleName = roleName
 		temp.CreationDate = t
 		temp.Elevated = true
@@ -249,16 +249,16 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		if m.Author.ID != s.State.User.ID {
 			misc.MapMutex.Lock()
 		}
-		for _, v := range VoteInfoMap {
+		for _, v := range misc.GuildMap[m.GuildID].VoteInfoMap {
 			if roleName == v.Channel {
-				if !hasElevatedPermissions(s, v.User) {
+				if !hasElevatedPermissions(s, v.User, m.GuildID) {
 					temp.Elevated = false
 					break
 				}
 			}
 		}
-		TempChaMap[newRole.ID] = &temp
-		TempChaWrite(TempChaMap)
+		misc.GuildMap[m.GuildID].TempChaMap[newRole.ID] = &temp
+		misc.TempChaWrite(misc.GuildMap[m.GuildID].TempChaMap, m.GuildID)
 		if m.Author.ID != s.State.User.ID {
 			misc.MapMutex.Unlock()
 		}
@@ -269,7 +269,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Parses category from name or ID
 	if channel.Category != "" {
 		// Pulls info on server channel
-		chaAll, err := s.GuildChannels(config.ServerID)
+		chaAll, err := s.GuildChannels(m.GuildID)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err)
 			return

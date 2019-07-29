@@ -29,11 +29,6 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}()
 
-	// Checks if it's within the config server and whether it's the bot
-	if m.GuildID != config.ServerID {
-		return
-	}
-
 	// Pull channel info
 	channel, err := s.State.Channel(m.ChannelID)
 	if err != nil {
@@ -46,9 +41,14 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Sets channel params if it didn't exist before in database
 	misc.MapMutex.Lock()
-	if misc.ChannelStats[m.ChannelID] == nil {
+	if misc.GuildMap[m.GuildID] == nil {
+		misc.MapMutex.Unlock()
+		return
+	}
+
+	if _, ok := misc.GuildMap[m.GuildID].ChannelStats[m.ChannelID]; !ok {
 		// Fetches all guild users
-		guild, err := s.Guild(config.ServerID)
+		guild, err := s.Guild(m.GuildID)
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -59,7 +59,7 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		// Fetches all server roles
-		roles, err := s.GuildRoles(config.ServerID)
+		roles, err := s.GuildRoles(m.GuildID)
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -84,13 +84,13 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		channelStatsVar.Messages = make(map[string]int)
 		channelStatsVar.Exists = true
-		misc.ChannelStats[m.ChannelID] = &channelStatsVar
+		misc.GuildMap[m.GuildID].ChannelStats[m.ChannelID] = &channelStatsVar
 	}
-	if misc.ChannelStats[m.ChannelID].ChannelID == "" {
-		misc.ChannelStats[m.ChannelID].ChannelID = m.ChannelID
+	if misc.GuildMap[m.GuildID].ChannelStats[m.ChannelID].ChannelID == "" {
+		misc.GuildMap[m.GuildID].ChannelStats[m.ChannelID].ChannelID = m.ChannelID
 	}
 
-	misc.ChannelStats[m.ChannelID].Messages[t.Format(misc.DateFormat)]++
+	misc.GuildMap[m.GuildID].ChannelStats[m.ChannelID].Messages[t.Format(misc.DateFormat)]++
 	misc.MapMutex.Unlock()
 }
 
@@ -107,16 +107,16 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 
 	// Fixes channels without ID param
 	misc.MapMutex.Lock()
-	for id := range misc.ChannelStats {
-		if misc.ChannelStats[id].ChannelID == "" {
-			misc.ChannelStats[id].ChannelID = id
+	for id := range misc.GuildMap[m.GuildID].ChannelStats {
+		if misc.GuildMap[m.GuildID].ChannelStats[id].ChannelID == "" {
+			misc.GuildMap[m.GuildID].ChannelStats[id].ChannelID = id
 			flag = true
 		}
 	}
 
 	// Writes channel stats to disk if IDs were fixed
 	if flag {
-		_, err := misc.ChannelStatsWrite(misc.ChannelStats)
+		_, err := misc.ChannelStatsWrite(misc.GuildMap[m.GuildID].ChannelStats, m.GuildID)
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -129,9 +129,9 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sorts channel by their message use
-	channels := make([]*misc.Channel, len(misc.ChannelStats))
-	for i := 0; i < len(misc.ChannelStats); i++ {
-		for _, channel := range misc.ChannelStats {
+	channels := make([]*misc.Channel, len(misc.GuildMap[m.GuildID].ChannelStats))
+	for i := 0; i < len(misc.GuildMap[m.GuildID].ChannelStats); i++ {
+		for _, channel := range misc.GuildMap[m.GuildID].ChannelStats {
 			channels[i] = channel
 			i++
 		}
@@ -139,27 +139,27 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	sort.Sort(byFrequencyChannel(channels))
 
 	// Calculates normal channels and optin channels message totals
-	for chas := range misc.ChannelStats {
-		if !misc.ChannelStats[chas].Optin {
-			for date := range misc.ChannelStats[chas].Messages {
-				normalChannelTotal += misc.ChannelStats[chas].Messages[date]
+	for chas := range misc.GuildMap[m.GuildID].ChannelStats {
+		if !misc.GuildMap[m.GuildID].ChannelStats[chas].Optin {
+			for date := range misc.GuildMap[m.GuildID].ChannelStats[chas].Messages {
+				normalChannelTotal += misc.GuildMap[m.GuildID].ChannelStats[chas].Messages[date]
 			}
 		} else {
-			for date := range misc.ChannelStats[chas].Messages {
-				optinChannelTotal += misc.ChannelStats[chas].Messages[date]
+			for date := range misc.GuildMap[m.GuildID].ChannelStats[chas].Messages {
+				optinChannelTotal += misc.GuildMap[m.GuildID].ChannelStats[chas].Messages[date]
 			}
 		}
 	}
 	misc.MapMutex.Unlock()
 
 	// Fetches info on server roles from the server and puts it in deb
-	deb, err := s.GuildRoles(config.ServerID)
+	deb, err := s.GuildRoles(m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
 	}
 
-	// Updates opt-in-under and opt-in-above position for use later in isChannlUsable func
+	// Updates opt-in-under and opt-in-above position for use later in isChannelUsable func
 	for i := 0; i < len(deb); i++ {
 		if deb[i].Name == config.OptInUnder {
 			misc.OptinUnderPosition = deb[i].Position
@@ -169,7 +169,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Pull guild info
-	guild, err := s.State.Guild(config.ServerID)
+	guild, err := s.State.Guild(m.GuildID)
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
@@ -190,7 +190,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		}
 		// Formats  and splits message
 		if !channel.Optin {
-			message += lineSpaceFormatChannel(channel.ChannelID, false, *s)
+			message += lineSpaceFormatChannel(channel.ChannelID, false, m.GuildID)
 			message += "\n"
 		}
 		msgs, message = splitStatMessages(msgs, message)
@@ -208,16 +208,16 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 				continue
 			}
 			// Formats  and splits message
-			message += lineSpaceFormatChannel(channel.ChannelID, true, *s)
+			message += lineSpaceFormatChannel(channel.ChannelID, true, m.GuildID)
 			msgs, message = splitStatMessages(msgs, message)
 		}
 	}
 
 	message += fmt.Sprintf("\nOpt-in Total: %d\n\n------\n", optinChannelTotal)
 	message += fmt.Sprintf("\nGrand Total Messages: %d\n\n", optinChannelTotal+normalChannelTotal)
-	message += fmt.Sprintf("\nDaily User Change: %d\n\n", misc.UserStats[t.Format(misc.DateFormat)])
-	if len(misc.VerifiedStats) != 0 {
-		message += fmt.Sprintf("\nDaily Verified Change: %d\n\n", misc.VerifiedStats[t.Format(misc.DateFormat)])
+	message += fmt.Sprintf("\nDaily User Change: %d\n\n", misc.GuildMap[m.GuildID].UserChangeStats[t.Format(misc.DateFormat)])
+	if len(misc.GuildMap[m.GuildID].VerifiedStats) != 0 {
+		message += fmt.Sprintf("\nDaily Verified Change: %d\n\n", misc.GuildMap[m.GuildID].VerifiedStats[t.Format(misc.DateFormat)])
 	}
 	misc.MapMutex.Unlock()
 
@@ -267,20 +267,20 @@ func (e byFrequencyChannel) Less(i, j int) bool {
 }
 
 // Formats the line space length for the above to keep level spacing
-func lineSpaceFormatChannel(id string, optin bool, s discordgo.Session) string {
+func lineSpaceFormatChannel(id string, optin bool, guildID string) string {
 
 	var totalMessages int
 	t := time.Now()
 
-	for date := range misc.ChannelStats[id].Messages {
-		totalMessages += misc.ChannelStats[id].Messages[date]
+	for date := range misc.GuildMap[guildID].ChannelStats[id].Messages {
+		totalMessages += misc.GuildMap[guildID].ChannelStats[id].Messages[date]
 	}
-	line := fmt.Sprintf("%v", misc.ChannelStats[id].Name)
-	spacesRequired := 33 - len(misc.ChannelStats[id].Name)
+	line := fmt.Sprintf("%v", misc.GuildMap[guildID].ChannelStats[id].Name)
+	spacesRequired := 33 - len(misc.GuildMap[guildID].ChannelStats[id].Name)
 	for i := 0; i < spacesRequired; i++ {
 		line += " "
 	}
-	line += fmt.Sprintf("([%d])", misc.ChannelStats[id].Messages[t.Format(misc.DateFormat)])
+	line += fmt.Sprintf("([%d])", misc.GuildMap[guildID].ChannelStats[id].Messages[t.Format(misc.DateFormat)])
 	spacesRequired = 51 - len(line)
 	for i := 0; i < spacesRequired; i++ {
 		line += " "
@@ -291,7 +291,7 @@ func lineSpaceFormatChannel(id string, optin bool, s discordgo.Session) string {
 		line += " "
 	}
 	if optin {
-		line += fmt.Sprintf("| [%d])\n", misc.ChannelStats[id].RoleCount[t.Format(misc.DateFormat)])
+		line += fmt.Sprintf("| [%d])\n", misc.GuildMap[guildID].ChannelStats[id].RoleCount[t.Format(misc.DateFormat)])
 	}
 
 	return line
@@ -311,7 +311,7 @@ func OnMemberJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	t := time.Now()
 	misc.MapMutex.Lock()
-	misc.UserStats[t.Format(misc.DateFormat)]++
+	misc.GuildMap[u.GuildID].UserChangeStats[t.Format(misc.DateFormat)]++
 	misc.MapMutex.Unlock()
 }
 
@@ -329,8 +329,8 @@ func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 
 	t := time.Now()
 	misc.MapMutex.Lock()
-	misc.UserStats[t.Format(misc.DateFormat)]--
-	misc.MemberInfoWrite(misc.MemberInfoMap)
+	misc.GuildMap[u.GuildID].UserChangeStats[t.Format(misc.DateFormat)]--
+	misc.WriteMemberInfo(misc.GuildMap[u.GuildID].MemberInfoMap, u.GuildID)
 	misc.MapMutex.Unlock()
 }
 
@@ -360,7 +360,7 @@ func isChannelUsable(channel misc.Channel, guild *discordgo.Guild) (misc.Channel
 			channel.Exists = false
 		}
 	}
-	misc.ChannelStats[channel.ChannelID] = &channel
+	misc.GuildMap[guild.ID].ChannelStats[channel.ChannelID] = &channel
 
 	if channel.Exists {
 		return channel, true
@@ -378,7 +378,7 @@ func splitStatMessages (msgs []string, message string) ([]string, string) {
 	return msgs, message
 }
 
-// Posts daily stats
+// Posts daily stats and update schedule command
 func dailyStats(s *discordgo.Session) {
 
 	var (

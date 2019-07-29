@@ -80,9 +80,9 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Saves the remindMe data to an object of type remindMe
 	remindMeObject.CommandChannel = m.ChannelID
 	misc.MapMutex.Lock()
-	_, ok := misc.RemindMeMap[userID]
+	_, ok := misc.GuildMap[m.GuildID].RemindMes[userID]
 	if ok {
-		remindMeObject.RemindID = len(misc.RemindMeMap[userID].RemindMeSlice) + 1
+		remindMeObject.RemindID = len(misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice) + 1
 		flag = true
 	} else {
 		remindMeObject.RemindID = 1
@@ -94,10 +94,10 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Adds the above object to the remindMe map where all of the remindMes are kept and writes them to disk
 	misc.MapMutex.Lock()
 	if !flag {
-		misc.RemindMeMap[userID] = &dummySlice
+		misc.GuildMap[m.GuildID].RemindMes[userID] = &dummySlice
 	}
-	misc.RemindMeMap[userID].RemindMeSlice = append(misc.RemindMeMap[userID].RemindMeSlice, remindMeObject)
-	_, err = misc.RemindMeWrite(misc.RemindMeMap)
+	misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice = append(misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice, remindMeObject)
+	_, err = misc.RemindMeWrite(misc.GuildMap[m.GuildID].RemindMes, m.GuildID)
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
@@ -130,7 +130,7 @@ func viewRemindMe(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if the user has any reminds
 	misc.MapMutex.Lock()
-	_, ok := misc.RemindMeMap[userID]
+	_, ok := misc.GuildMap[m.GuildID].RemindMes[userID]
 	if !ok {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No saved reminds for you found.")
 		if err != nil {
@@ -162,7 +162,7 @@ func viewRemindMe(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	misc.MapMutex.Lock()
-	for _, remind := range 	misc.RemindMeMap[userID].RemindMeSlice {
+	for _, remind := range 	misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice {
 		formattedMessage := fmt.Sprintf("`%v` - _%v_ - ID: %v", remind.Message, remind.Date.Format("2006-01-02 15:04"), remind.RemindID)
 		remindMes = append(remindMes, formattedMessage)
 	}
@@ -208,7 +208,7 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if the user has any reminds
 	misc.MapMutex.Lock()
-	_, ok := misc.RemindMeMap[userID]
+	_, ok := misc.GuildMap[m.GuildID].RemindMes[userID]
 	if !ok {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No saved reminds found for you to delete.")
 		if err != nil {
@@ -254,19 +254,19 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 
 	// Deletes the remind from the map and writes to disk
 	misc.MapMutex.Lock()
-	for index, remind := range misc.RemindMeMap[userID].RemindMeSlice {
+	for index, remind := range misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice {
 		if remind.RemindID == remindID {
 
 			// Deletes either the entire value or just the remind from the slice
-			if len(misc.RemindMeMap[userID].RemindMeSlice) == 1 {
-				delete(misc.RemindMeMap, userID)
+			if len(misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice) == 1 {
+				delete(misc.GuildMap[m.GuildID].RemindMes, userID)
 			} else {
-				misc.RemindMeMap[userID].RemindMeSlice = append(misc.RemindMeMap[userID].RemindMeSlice[:index], misc.RemindMeMap[userID].RemindMeSlice[index+1:]...)
+				misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice = append(misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice[:index], misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice[index+1:]...)
 			}
 
 			flag = true
 
-			_, err := misc.RemindMeWrite(misc.RemindMeMap)
+			_, err := misc.RemindMeWrite(misc.GuildMap[m.GuildID].RemindMes, m.GuildID)
 			if err != nil {
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 				if err != nil {

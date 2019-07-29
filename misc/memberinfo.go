@@ -5,10 +5,10 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -19,8 +19,6 @@ import (
 )
 
 var (
-	MemberInfoMap    = make(map[string]*UserInfo)
-	BannedUsersSlice []BannedUsers
 	MapMutex         sync.Mutex
 	Key              = []byte("VfBhgLzmD4QH3W94pjgdbH8Tyv2HPRzq")
 )
@@ -59,69 +57,20 @@ type Punishment struct {
 	Timestamp  time.Time				`json:"timestamp"`
 }
 
-// Reads member info from memberInfo.json
-func MemberInfoRead() {
-
-	// Reads all the member users from the memberInfo.json file and puts them in memberInfoByte as bytes
-	memberInfoByte, err := ioutil.ReadFile("database/memberInfo.json")
-	if err != nil {
-		return
-	}
-
-	// Takes all the users from memberInfo.json from byte and puts them into the UserInfo map
-	MapMutex.Lock()
-	err = json.Unmarshal(memberInfoByte, &MemberInfoMap)
-	if err != nil {
-		MapMutex.Unlock()
-		return
-	}
-
-	// Fixes empty IDs. Unneeded unless they show up again. If so uncomment the below
-	//for ID, user := range MemberInfoMap {
-	//	if user.ID == "" {
-	//		user.ID = ID
-	//	}
-	//}
-	MapMutex.Unlock()
-}
-
-// Writes member info to memberInfo.json
-func MemberInfoWrite(info map[string]*UserInfo) {
-
-	// Turns info slice into byte ready to be pushed to file
-	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	// Writes to file
-	err = ioutil.WriteFile("database/memberInfo.json", MarshaledStruct, 0644)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-}
-
 // Initializes user in memberInfo if he doesn't exist there
 func InitializeUser(u *discordgo.Member) {
-
-	var temp UserInfo
-
-	// Sets ID, username and discriminator
-	temp.ID = u.User.ID
-	temp.Username = u.User.Username
-	temp.Discrim = u.User.Discriminator
 
 	// Stores time of joining
 	t := time.Now()
 	z, _ := t.Zone()
 	join := t.Format("2006-01-02 15:04:05") + " " + z
 
-	// Sets join date
-	temp.JoinDate = join
-
-	MemberInfoMap[u.User.ID] = &temp
+	GuildMap[u.GuildID].MemberInfoMap[u.User.ID] = &UserInfo{
+		ID:       u.User.ID,
+		Discrim:  u.User.Discriminator,
+		Username: u.User.Username,
+		JoinDate: join,
+	}
 }
 
 // Checks if user exists in memberInfo on joining server and adds him if he doesn't
@@ -146,14 +95,14 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	}()
 
 	// Pulls info on user if possible
-	user, err := s.GuildMember(config.ServerID, e.User.ID)
+	user, err := s.GuildMember(e.GuildID, e.User.ID)
 	if err != nil {
 		return
 	}
 
 	// If memberInfo is empty, it initializes
 	MapMutex.Lock()
-	if len(MemberInfoMap) == 0 {
+	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
 
 		// Initializes the first user of memberInfo
 		InitializeUser(user)
@@ -173,7 +122,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 	} else {
 		// Checks if user exists in memberInfo.json. If yes it changes flag to true
-		if _, ok := MemberInfoMap[user.User.ID]; ok {
+		if _, ok := GuildMap[e.GuildID].MemberInfoMap[user.User.ID]; ok {
 			flag = true
 		}
 	}
@@ -197,17 +146,17 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	}
 
 	// Writes User Initialization to disk
-	MemberInfoWrite(MemberInfoMap)
+	WriteMemberInfo(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
 
 	// Fetches user from memberInfo
-	existingUser, ok := MemberInfoMap[user.User.ID]
+	existingUser, ok := GuildMap[e.GuildID].MemberInfoMap[user.User.ID]
 	if !ok {
 		MapMutex.Unlock()
 		return
 	}
 
 	// If user is already in memberInfo but hasn't verified before tell him to verify now
-	if MemberInfoMap[user.User.ID].RedditUsername == "" && !initialized {
+	if GuildMap[e.GuildID].MemberInfoMap[user.User.ID].RedditUsername == "" && !initialized {
 
 		// Encrypts id
 		ciphertext := Encrypt(Key, user.User.ID)
@@ -268,8 +217,8 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	// Saves the updates to memberInfoMap and writes to disk if need be
 	if writeFlag {
 		MapMutex.Lock()
-		MemberInfoMap[user.User.ID] = existingUser
-		MemberInfoWrite(MemberInfoMap)
+		GuildMap[e.GuildID].MemberInfoMap[user.User.ID] = existingUser
+		WriteMemberInfo(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
 		MapMutex.Unlock()
 	}
 }
@@ -290,13 +239,13 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	}()
 
 	MapMutex.Lock()
-	if len(MemberInfoMap) == 0 {
+	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
 		MapMutex.Unlock()
 		return
 	}
 
 	// Fetches user from memberInfo if possible
-	user, ok := MemberInfoMap[e.User.ID]
+	user, ok := GuildMap[e.GuildID].MemberInfoMap[e.User.ID]
 	if !ok {
 		MapMutex.Unlock()
 		return
@@ -354,8 +303,8 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 
 	// Saves the updates to memberInfoMap and writes to disk
 	MapMutex.Lock()
-	MemberInfoMap[e.User.ID] = user
-	MemberInfoWrite(MemberInfoMap)
+	GuildMap[e.GuildID].MemberInfoMap[e.User.ID] = user
+	WriteMemberInfo(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
 	MapMutex.Unlock()
 }
 
@@ -375,13 +324,13 @@ func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 	}()
 
 	MapMutex.Lock()
-	if len(MemberInfoMap) == 0 {
+	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
 		MapMutex.Unlock()
 		return
 	}
 
 	// Fetches user from memberInfo if possible
-	user, ok := MemberInfoMap[e.User.ID]
+	user, ok := GuildMap[e.GuildID].MemberInfoMap[e.User.ID]
 	if !ok {
 		MapMutex.Unlock()
 		return
@@ -439,8 +388,8 @@ func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 
 	// Saves the updates to memberInfoMap and writes to disk
 	MapMutex.Lock()
-	MemberInfoMap[e.User.ID] = user
-	MemberInfoWrite(MemberInfoMap)
+	GuildMap[e.GuildID].MemberInfoMap[e.User.ID] = user
+	WriteMemberInfo(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
 	MapMutex.Unlock()
 }
 
@@ -500,24 +449,34 @@ func Decrypt(key []byte, cryptoText string) (string, bool) {
 
 // Cleans up duplicate nicknames and usernames in memberInfo.json
 func DuplicateUsernamesAndNicknamesCleanup() {
-	MapMutex.Lock()
-	DuplicateRecursion()
-	MapMutex.Unlock()
-
-	MemberInfoWrite(MemberInfoMap)
+	path := "database/guilds"
+	folders, err := ioutil.ReadDir(path)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	for _, f := range folders {
+		if !f.IsDir() {
+			continue
+		}
+		MapMutex.Lock()
+		DuplicateRecursion(f.Name())
+		MapMutex.Unlock()
+		WriteMemberInfo(GuildMap[f.Name()].MemberInfoMap, f.Name())
+	}
 
 	fmt.Println("FINISHED WITH DUPLICATES")
 }
 
 // Helper of above
-func DuplicateRecursion() {
-	for _, value := range MemberInfoMap {
+func DuplicateRecursion(guildID string) {
+	for _, value := range GuildMap[guildID].MemberInfoMap {
 		// Remove duplicate usernames
 		for index, username := range value.PastUsernames {
 			for indexDuplicate, usernameDuplicate := range value.PastUsernames {
 				if index != indexDuplicate && username == usernameDuplicate {
 					value.PastUsernames = append(value.PastUsernames[:indexDuplicate], value.PastUsernames[indexDuplicate+1:]...)
-					DuplicateRecursion()
+					DuplicateRecursion(guildID)
 					return
 				}
 			}
@@ -527,7 +486,7 @@ func DuplicateRecursion() {
 			for indexDuplicate, nicknameDuplicate := range value.PastNicknames {
 				if index != indexDuplicate && nickname == nicknameDuplicate {
 					value.PastNicknames = append(value.PastNicknames[:indexDuplicate], value.PastNicknames[indexDuplicate+1:]...)
-					DuplicateRecursion()
+					DuplicateRecursion(guildID)
 					return
 				}
 			}
@@ -540,24 +499,37 @@ func DuplicateRecursion() {
 func UsernameCleanup(s *discordgo.Session, e *discordgo.Ready) {
 	var progress int
 	MapMutex.Lock()
-	for _, mapUser := range MemberInfoMap {
-		user, err := s.User(mapUser.ID)
-		if err != nil {
+	for _, guild := range e.Guilds {
+		for _, mapUser := range GuildMap[guild.ID].MemberInfoMap {
+			user, err := s.User(mapUser.ID)
+			if err != nil {
+				progress++
+				continue
+			}
+			if mapUser.Username != user.Username {
+				mapUser.Username = user.Username
+			}
+			if mapUser.Discrim != user.Discriminator {
+				mapUser.Discrim = user.Discriminator
+			}
 			progress++
-			continue
+			fmt.Printf("%v out of %v \n", progress, len(GuildMap[guild.ID].MemberInfoMap))
 		}
-		if mapUser.Username != user.Username {
-			mapUser.Username = user.Username
-		}
-		if mapUser.Discrim != user.Discriminator {
-			mapUser.Discrim = user.Discriminator
-		}
-		progress++
-		fmt.Printf("%v out of %v \n", progress, len(MemberInfoMap))
-	}
-	MapMutex.Unlock()
+		MapMutex.Unlock()
 
-	MemberInfoWrite(MemberInfoMap)
+		path := "database/guilds"
+		folders, err := ioutil.ReadDir(path)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		for _, f := range folders {
+			if !f.IsDir() {
+				continue
+			}
+			WriteMemberInfo(GuildMap[guild.ID].MemberInfoMap, f.Name())
+		}
+	}
 
 	fmt.Println("FINISHED WITH USERNAMES")
 }

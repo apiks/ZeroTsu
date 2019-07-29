@@ -21,12 +21,12 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 		controlNum int
 	)
 
-	if len(misc.SpoilerMap) == 0 {
+	if len(misc.GuildMap[m.GuildID].SpoilerMap) == 0 {
 		return
 	}
 
 	// Fetches info from the server and puts it in debPre
-	debPre, err := s.GuildRoles(config.ServerID)
+	debPre, err := s.GuildRoles(m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -38,7 +38,7 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Pushes the refreshed positions to the server
-	_, err = s.GuildRoleReorder(config.ServerID, spoilerRoles)
+	_, err = s.GuildRoleReorder(m.GuildID, spoilerRoles)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -50,7 +50,7 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 	spoilerRoles = nil
 
 	// Fetches the refreshed info from the server and puts it in deb
-	deb, err := s.GuildRoles(config.ServerID)
+	deb, err := s.GuildRoles(m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -69,15 +69,15 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.MapMutex.Lock()
 	}
 	for i := 0; i < len(deb); i++ {
-		_, ok := misc.SpoilerMap[deb[i].ID]
+		_, ok := misc.GuildMap[m.GuildID].SpoilerMap[deb[i].ID]
 		if ok {
-			spoilerRoles = append(spoilerRoles, misc.SpoilerMap[deb[i].ID])
+			spoilerRoles = append(spoilerRoles, misc.GuildMap[m.GuildID].SpoilerMap[deb[i].ID])
 			if deb[i].Position < misc.OptinAbovePosition {
 				controlNum++
 			}
 		} else if !ok &&
 			deb[i].Position <= misc.OptinAbovePosition &&
-			deb[i].ID != config.ServerID {
+			deb[i].ID != m.GuildID {
 			underSpoilerRoles = append(underSpoilerRoles, deb[i])
 		}
 	}
@@ -106,7 +106,7 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 		rolesOrdered = append(spoilerRoles, underSpoilerRoles...)
 
 		//Pushes the ordered role list to the server
-		_, err = s.GuildRoleReorder(config.ServerID, rolesOrdered)
+		_, err = s.GuildRoleReorder(m.GuildID, rolesOrdered)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err)
 			return
@@ -115,14 +115,14 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 		time.Sleep(time.Millisecond * 333)
 
 		// Fetches info from the server and puts it in debPost
-		debPost, err := s.GuildRoles(config.ServerID)
+		debPost, err := s.GuildRoles(m.GuildID)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err)
 			return
 		}
 
 		// Refreshes deb
-		deb, err = s.GuildRoles(config.ServerID)
+		deb, err = s.GuildRoles(m.GuildID)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err)
 			return
@@ -140,14 +140,14 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		for i := 0; i < len(spoilerRoles); i++ {
 			spoilerRoles[i].Position = misc.OptinAbovePosition + len(spoilerRoles) - i
-			misc.SpoilerMap[spoilerRoles[i].ID].Position = spoilerRoles[i].Position
+			misc.GuildMap[m.GuildID].SpoilerMap[spoilerRoles[i].ID].Position = spoilerRoles[i].Position
 		}
 		if m.Author.ID != s.State.User.ID {
 			misc.MapMutex.Unlock()
 		}
 
 		// Pushes the sorted list to the server
-		_, err = s.GuildRoleReorder(config.ServerID, spoilerRoles)
+		_, err = s.GuildRoleReorder(m.GuildID, spoilerRoles)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err)
 			return

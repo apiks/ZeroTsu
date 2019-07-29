@@ -51,9 +51,9 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Pulls info on user
-	userMem, err := s.State.Member(config.ServerID, userID)
+	userMem, err := s.State.Member(m.GuildID, userID)
 	if err != nil {
-		userMem, err = s.GuildMember(config.ServerID, userID)
+		userMem, err = s.GuildMember(m.GuildID, userID)
 		if err != nil {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in the server. Cannot verify user until they rejoin the server.")
 			if err != nil {
@@ -69,7 +69,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Add reddit username in map
 	misc.MapMutex.Lock()
-	if misc.MemberInfoMap[userID] != nil {
+	if misc.GuildMap[m.GuildID].MemberInfoMap[userID] != nil {
 
 		// Stores time of verification
 		t := time.Now()
@@ -77,8 +77,8 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		ver := t.Format("2006-01-02 15:04:05") + " " + z
 
 		// Sets verification variables
-		misc.MemberInfoMap[userID].RedditUsername = redditUsername
-		misc.MemberInfoMap[userID].VerifiedDate = ver
+		misc.GuildMap[m.GuildID].MemberInfoMap[userID].RedditUsername = redditUsername
+		misc.GuildMap[m.GuildID].MemberInfoMap[userID].VerifiedDate = ver
 	} else {
 
 		// Initializes user in memberInfo.json
@@ -90,16 +90,16 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		ver := t.Format("2006-01-02 15:04:05") + " " + z
 
 		// Sets verification variables
-		misc.MemberInfoMap[userID].RedditUsername = redditUsername
-		misc.MemberInfoMap[userID].VerifiedDate = ver
+		misc.GuildMap[m.GuildID].MemberInfoMap[userID].RedditUsername = redditUsername
+		misc.GuildMap[m.GuildID].MemberInfoMap[userID].VerifiedDate = ver
 	}
 	misc.MapMutex.Unlock()
 
 	// Writes modified memberInfo map to storage
-	misc.MemberInfoWrite(misc.MemberInfoMap)
+	misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 
 	// Puts all server roles in roles
-	roles, err := s.GuildRoles(config.ServerID)
+	roles, err := s.GuildRoles(m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -113,7 +113,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Assigns verified role to user
-	err = s.GuildMemberRoleAdd(config.ServerID, userID, roleID)
+	err = s.GuildMemberRoleAdd(m.GuildID, userID, roleID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -122,7 +122,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Stores time of verification
 	t := time.Now()
 	// Adds to verified stats
-	misc.VerifiedStats[t.Format(misc.DateFormat)]++
+	misc.GuildMap[m.GuildID].VerifiedStats[t.Format(misc.DateFormat)]++
 
 	err = verifyEmbed(s, m, userMem, redditUsername)
 	if err != nil {
@@ -140,7 +140,7 @@ func verifyEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.Memb
 
 	// Sets punishment embed color
 	embedMess.Color = 0x00ff00
-	embedMess.Title = fmt.Sprintf("Successfuly verified %v#%v with /u/%v", mem.User.Username, mem.User.Discriminator, username)
+	embedMess.Title = fmt.Sprintf("Successfully verified %v#%v with /u/%v", mem.User.Username, mem.User.Discriminator, username)
 
 	// Sends embed in channel
 	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
@@ -178,10 +178,10 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Remove reddit username from map
 	misc.MapMutex.Lock()
-	if _, ok := misc.MemberInfoMap[userID]; ok {
+	if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
 		// Sets verification variables
-		misc.MemberInfoMap[userID].RedditUsername = ""
-		misc.MemberInfoMap[userID].VerifiedDate = ""
+		misc.GuildMap[m.GuildID].MemberInfoMap[userID].RedditUsername = ""
+		misc.GuildMap[m.GuildID].MemberInfoMap[userID].VerifiedDate = ""
 	} else {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in memberInfo. Cannot unverify user until they join the server.")
 		if err != nil {
@@ -198,11 +198,11 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Writes modified memberInfo map to storage
-	misc.MemberInfoWrite(misc.MemberInfoMap)
+	misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	misc.MapMutex.Unlock()
 
 	// Puts all server roles in roles
-	roles, err := s.GuildRoles(config.ServerID)
+	roles, err := s.GuildRoles(m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err)
 		return
@@ -216,7 +216,7 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Removes verified role from user
-	err = s.GuildMemberRoleRemove(config.ServerID, userID, roleID)
+	err = s.GuildMemberRoleRemove(m.GuildID, userID, roleID)
 	if err != nil {
 		return
 	}
@@ -224,7 +224,7 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Stores time of verification
 	t := time.Now()
 	// Removes from verified stats
-	misc.VerifiedStats[t.Format(misc.DateFormat)]--
+	misc.GuildMap[m.GuildID].VerifiedStats[t.Format(misc.DateFormat)]--
 
 	err = unverifyEmbed(s, m, commandStrings[1])
 	if err != nil {
@@ -242,7 +242,7 @@ func unverifyEmbed(s *discordgo.Session, m *discordgo.Message, mem string) error
 
 	// Sets punishment embed color
 	embedMess.Color = 0x00ff00
-	embedMess.Title = fmt.Sprintf("Successfuly unverified %v", mem)
+	embedMess.Title = fmt.Sprintf("Successfully unverified %v", mem)
 
 	// Sends embed in channel
 	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)

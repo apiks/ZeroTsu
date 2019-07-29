@@ -36,28 +36,17 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 	if len(m.Attachments) == 0 {
 		return
 	}
-	// Checks if it's within the /r/anime server
-	ch, err := s.State.Channel(m.ChannelID)
-	if err != nil {
-		ch, err = s.Channel(m.ChannelID)
-		if err != nil {
-			return
-		}
-	}
-	if ch.GuildID != config.ServerID {
-		return
-	}
 	// Pulls info on message author
-	mem, err := s.State.Member(config.ServerID, m.Author.ID)
+	mem, err := s.State.Member(m.GuildID, m.Author.ID)
 	if err != nil {
-		mem, err = s.GuildMember(config.ServerID, m.Author.ID)
+		mem, err = s.GuildMember(m.GuildID, m.Author.ID)
 		if err != nil {
 			return
 		}
 	}
 	// Checks if user is mod before checking the message
 	s.RWMutex.RLock()
-	if misc.HasPermissions(mem) {
+	if misc.HasPermissions(mem, m.GuildID) {
 		s.RWMutex.RUnlock()
 		return
 	}

@@ -60,7 +60,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Pulls server channels and checks if it's a valid channel
-	channels, err := s.GuildChannels(config.ServerID)
+	channels, err := s.GuildChannels(m.GuildID)
 	if err != nil {
 		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
