@@ -113,8 +113,8 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 					}
 				}
 			}
+			MapMutex.Unlock()
 		}
-		MapMutex.Unlock()
 	}
 }
 
