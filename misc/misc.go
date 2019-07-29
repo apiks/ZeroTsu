@@ -21,9 +21,6 @@ import (
 const (
 	UserAgent  			= "script:github.com/r-anime/zerotsu:v1.0.0 (by /u/thechosenapiks, /u/geo1088)"
 	DateFormat 			= "2006-01-02"
-	ToleranceLevel 		= 10
-	PixelSampleSize 	= 10000
-	CorrectPixelLimit	= 9000
 )
 
 var (
@@ -439,13 +436,11 @@ func GetBannedUsers() {
 			}
 			if flag {
 				flag = false
-				MapMutex.Unlock()
 				continue
 			}
 			if user.UnbanDate == "_Never_" ||
 				user.UnbanDate == "" ||
 				user.UnbanDate == "No ban" {
-				MapMutex.Unlock()
 				continue
 			}
 			date, err := time.Parse(time.RFC3339, user.UnbanDate)
@@ -456,7 +451,6 @@ func GetBannedUsers() {
 					if err != nil {
 						fmt.Println("in getBannedUsers date err")
 						fmt.Println(err)
-						MapMutex.Unlock()
 						continue
 					}
 				}
