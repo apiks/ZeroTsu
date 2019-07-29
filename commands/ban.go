@@ -87,23 +87,21 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls info on user as mem
 	userMem, err := s.State.Member(m.GuildID, mem.ID)
 	if err != nil {
-		userMem, err = s.GuildMember(m.GuildID, mem.ID)
-		if err != nil {
-			return
-		}
+		userMem, _ = s.GuildMember(m.GuildID, mem.ID)
 	}
-
 	// Checks if user has a privileged role
-	if misc.HasPermissions(userMem, m.GuildID) {
-		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Target user has a privileged role. Cannot ban.")
-		if err != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+	if userMem != nil {
+		if misc.HasPermissions(userMem, m.GuildID) {
+			_, err = s.ChannelMessageSend(m.ChannelID, "Error: Target user has a privileged role. Cannot ban.")
 			if err != nil {
+				_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+				if err != nil {
+					return
+				}
 				return
 			}
 			return
 		}
-		return
 	}
 
 	// Checks if user is in memberInfo and handles them
