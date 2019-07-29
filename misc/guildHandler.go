@@ -432,16 +432,18 @@ func RaffleRemove(raffle string, guildID string) error {
 			break
 		}
 	}
-	MapMutex.Unlock()
 	if !raffleExists {
+		MapMutex.Unlock()
 		return fmt.Errorf("Error: No such raffle exists")
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.Marshal(GuildMap[guildID].Raffles)
 	if err != nil {
+		MapMutex.Unlock()
 		return err
 	}
+	MapMutex.Unlock()
 
 	// Writes to file
 	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/raffles.json", guildID), marshaledStruct, 0644)
