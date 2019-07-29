@@ -197,7 +197,7 @@ func raffleLeaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if such a raffle exists and removes the user ID from it if so
 	misc.MapMutex.Lock()
 	for _, raffle := range misc.RafflesSlice {
-		if raffle.Name == commandStrings[1] {
+		if raffle.Name == strings.ToLower(commandStrings[1]) {
 			raffleExists = true
 
 			// Checks if the user already joined that raffle and removes him if so
@@ -269,7 +269,7 @@ func craffleCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	temp.Name = commandStrings[2]
+	temp.Name = strings.ToLower(commandStrings[2])
 	temp.ParticipantIDs = nil
 
 	// Checks if that raffle already exists in the raffles slice
