@@ -74,6 +74,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 			return
 		}
+		return
 	}
 
 	// Checks if user has a privileged role
