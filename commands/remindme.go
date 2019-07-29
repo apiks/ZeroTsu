@@ -150,7 +150,7 @@ func viewRemindMe(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(m.Content, " ")
 
 	if len(commandStrings) != 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "reminds")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "reminds`")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -228,7 +228,7 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(m.Content, " ")
 
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removeremind [ID]")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removeremind [ID]`")
 		if err != nil {
 			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -317,7 +317,7 @@ func init() {
 	add(&command{
 		execute:  remindMeCommand,
 		trigger:  "remindme",
-		aliases:  []string{"remind", "setremind"},
+		aliases:  []string{"remind", "setremind", "addremind"},
 		desc:     "Reminds you of the message after the command after a period of time. Either messages you or pings you if it cannot.",
 		elevated: false,
 		category: "normal",
@@ -325,7 +325,7 @@ func init() {
 	add(&command{
 		execute:  viewRemindMe,
 		trigger:  "viewreminds",
-		aliases:  []string{"viewremindmes", "viewremindme", "viewremind"},
+		aliases:  []string{"viewremindmes", "viewremindme", "viewremind", "reminds"},
 		desc:     "Shows you what reminds you have currently set.",
 		elevated: false,
 		category: "normal",
@@ -333,7 +333,7 @@ func init() {
 	add(&command{
 		execute:  removeRemindMe,
 		trigger:  "removeremind",
-		aliases:  []string{"removeremindme", "deleteremind", "deleteremindme"},
+		aliases:  []string{"removeremindme", "deleteremind", "deleteremindme", "killremind"},
 		desc:     "Removes a previously set remindme.",
 		elevated: false,
 		category: "normal",
