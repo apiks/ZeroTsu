@@ -153,19 +153,16 @@ func UnbanEmbed(s *discordgo.Session, user *UserInfo, mod string) error {
 func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(20 * time.Minute).C {
 
+		MapMutex.Lock()
 		for _, guild := range e.Guilds {
-
-			MapMutex.Lock()
 
 			// Writes emoji stats to disk
 			_, err := EmojiStatsWrite(GuildMap[guild.ID].EmojiStats, guild.ID)
 			if err != nil {
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
-					MapMutex.Unlock()
 					continue
 				}
-				MapMutex.Unlock()
 				continue
 			}
 
@@ -174,10 +171,8 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			if err != nil {
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
-					MapMutex.Unlock()
 					continue
 				}
-				MapMutex.Unlock()
 				continue
 			}
 
@@ -186,10 +181,8 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			if err != nil {
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
-					MapMutex.Unlock()
 					continue
 				}
-				MapMutex.Unlock()
 				continue
 			}
 
@@ -201,10 +194,8 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			if err != nil {
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
-					MapMutex.Unlock()
 					continue
 				}
-				MapMutex.Unlock()
 				continue
 			}
 			// Fetches all server roles
@@ -212,10 +203,8 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			if err != nil {
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
-					MapMutex.Unlock()
 					continue
 				}
-				MapMutex.Unlock()
 				continue
 			}
 			// Updates optin role stat
@@ -234,13 +223,10 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			if err != nil {
 				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
-					MapMutex.Unlock()
 					continue
 				}
-				MapMutex.Unlock()
 				continue
 			}
-			MapMutex.Unlock()
 
 			// Clears up spoilerRoles.json
 			err = cleanSpoilerRoles(s, guild.ID)
@@ -252,6 +238,7 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 				continue
 			}
 		}
+		MapMutex.Unlock()
 	}
 }
 
