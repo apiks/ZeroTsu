@@ -151,7 +151,7 @@ func UnbanEmbed(s *discordgo.Session, user *UserInfo, mod string) error {
 
 // Periodic 20min events
 func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
-	for range time.NewTicker(20 * time.Second).C {
+	for range time.NewTicker(20 * time.Minute).C {
 
 		MapMutex.Lock()
 		for _, guild := range e.Guilds {
