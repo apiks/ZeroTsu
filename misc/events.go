@@ -687,11 +687,14 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 
 	// Checks if the user is verified
+	MapMutex.Lock()
 	if _, ok := GuildMap[u.GuildID].MemberInfoMap[u.User.ID]; ok {
 		if GuildMap[u.GuildID].MemberInfoMap[u.User.ID].RedditUsername != "" {
+			MapMutex.Unlock()
 			return
 		}
 	}
+	MapMutex.Unlock()
 
 	// Checks if they're using a default avatar
 	if u.User.Avatar != "" {
