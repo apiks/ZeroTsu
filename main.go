@@ -25,6 +25,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	// Load all guild info
+	misc.LoadGuilds()
 
 	Start()
 
@@ -52,70 +54,14 @@ func main() {
 
 // Starts BOT and its Handlers
 func Start() {
+
 	goBot, err := discordgo.New("Bot " + config.Token)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	// Reads all spoiler roles created with create command from spoilerRoles.json
-	misc.SpoilerRolesRead()
-
-	// Reads filters.json from storage at bot start
-	misc.FiltersRead()
-
-	// Reads messrequirements.json from storage at bot start
-	misc.MessRequirementRead()
-
-	// Reads memberInfo.json from storage at bot start
-	misc.MemberInfoRead()
-
 	// Reads all banned users from memberInfo on bot start
 	misc.GetBannedUsers()
-
-	// Reads ongoing votes from VoteInfo.json at bot start. Depreciated
-	commands.VoteInfoRead()
-
-	// Reads set react joins from reactChannelJoin.json. Disabled if using Kaguya
-	if config.Kaguya != "true" {
-		commands.ReactInfoRead()
-	}
-
-	// Reads all the rss threads from rssThreads.json
-	misc.RssThreadsRead()
-
-	// Reads all the timer rss threads from rssThreadsCheck.json
-	misc.RssThreadsTimerRead()
-
-	// Reads all the user created temp channels from userTempCha.json
-	commands.TempChaRead()
-
-	// Reads saved emoji stats from emojiStats.json
-	misc.EmojiStatsRead()
-
-	// Reads saved channel stats from channelStats.json
-	misc.ChannelStatsRead()
-
-	// Reads user gain stats from userGainStats.json
-	misc.UserChangeStatsRead()
-
-	// Reads remindMes from remindMe.json
-	misc.RemindMeRead()
-
-	// Reads raffles from raffles.json
-	misc.RafflesRead()
-
-	// Reads waifus from waifus.json
-	if config.Waifus == "true" {
-		misc.WaifusRead()
-
-		// Reads waifu trades from waifutrades.json
-		misc.WaifuTradesRead()
-	}
-
-	if config.Website != "" {
-		// Reads all currently saved verified stats
-		misc.VerifiedStatsRead()
-	}
 
 	// Updates schedule command print message on load
 	commands.UpdateAnimeSchedule()
@@ -146,9 +92,6 @@ func Start() {
 		goBot.AddHandler(commands.MessageAttachmentsHandler)
 	}
 
-	//Converter
-	//goBot.AddHandler(commands.ConverterHandler)
-
 	if config.Kaguya != "true" {
 		// React Channel Join Handler. Disabled if using Kaguya
 		goBot.AddHandler(commands.ReactJoinHandler)
@@ -169,12 +112,12 @@ func Start() {
 	goBot.AddHandler(web.VerifiedRoleAdd)
 	goBot.AddHandler(web.VerifiedAlready)
 
-	// Emoji Stats
+	// Emoji ChannelStats
 	goBot.AddHandler(commands.OnMessageEmoji)
 	goBot.AddHandler(commands.OnMessageEmojiReact)
 	goBot.AddHandler(commands.OnMessageEmojiUnreact)
 
-	// Channel Stats
+	// Channel ChannelStats
 	goBot.AddHandler(commands.OnMessageChannel)
 	goBot.AddHandler(commands.DailyStatsTimer)
 
@@ -213,8 +156,8 @@ func Start() {
 
 	err = goBot.Open()
 	if err != nil {
-		fmt.Println(err)
+		panic("Critical error: BOT cannot start.")
 	}
 
-	fmt.Println("Bot is running!")
+	fmt.Println("BOT is running!")
 }
