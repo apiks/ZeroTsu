@@ -82,7 +82,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	} else {
 
 		// Initializes user in memberInfo.json
-		misc.InitializeUser(userMem)
+		misc.InitializeUser(userMem, m.GuildID)
 
 		// Stores time of verification
 		t := time.Now()

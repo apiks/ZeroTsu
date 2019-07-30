@@ -716,7 +716,7 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	// Adds a bool to memberInfo that it's a suspected spambot account in case they try to reverify
 	if _, ok := GuildMap[u.GuildID].MemberInfoMap[u.User.ID]; !ok {
-		InitializeUser(u.Member)
+		InitializeUser(u.Member, u.GuildID)
 	}
 	tempMem = *GuildMap[u.GuildID].MemberInfoMap[u.User.ID]
 	tempMem.SuspectedSpambot = true

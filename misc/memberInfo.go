@@ -58,14 +58,14 @@ type Punishment struct {
 }
 
 // Initializes user in memberInfo if he doesn't exist there
-func InitializeUser(u *discordgo.Member) {
+func InitializeUser(u *discordgo.Member, guildID string) {
 
 	// Stores time of joining
 	t := time.Now()
 	z, _ := t.Zone()
 	join := t.Format("2006-01-02 15:04:05") + " " + z
 
-	GuildMap[u.GuildID].MemberInfoMap[u.User.ID] = &UserInfo{
+	GuildMap[guildID].MemberInfoMap[u.User.ID] = &UserInfo{
 		ID:       u.User.ID,
 		Discrim:  u.User.Discriminator,
 		Username: u.User.Username,
@@ -105,7 +105,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
 
 		// Initializes the first user of memberInfo
-		InitializeUser(user)
+		InitializeUser(user, e.GuildID)
 
 		flag = true
 		initialized = true
@@ -131,7 +131,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	if !flag {
 
 		// Initializes the new user
-		InitializeUser(user)
+		InitializeUser(user, e.GuildID)
 		initialized = true
 
 		// Encrypts id

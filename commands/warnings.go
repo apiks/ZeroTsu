@@ -75,7 +75,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 		}
 		// Initializes user if he doesn't exist in memberInfo but is in server
-		misc.InitializeUser(userMem)
+		misc.InitializeUser(userMem, m.GuildID)
 	}
 	misc.MapMutex.Unlock()
 
@@ -181,7 +181,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 		}
 		// Initializes user if he doesn't exist in memberInfo but is in server
-		misc.InitializeUser(userMem)
+		misc.InitializeUser(userMem, m.GuildID)
 	}
 
 	// Appends warning to user in memberInfo

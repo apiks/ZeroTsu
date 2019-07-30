@@ -88,7 +88,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		// Initializes user if he doesn't exist and is in server
-		misc.InitializeUser(mem)
+		misc.InitializeUser(mem, m.GuildID)
 		user = misc.GuildMap[m.GuildID].MemberInfoMap[userID]
 		misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	}
@@ -350,7 +350,7 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		// Initializes user if he doesn't exist and is in server
-		misc.InitializeUser(mem)
+		misc.InitializeUser(mem, m.GuildID)
 		user = misc.GuildMap[m.GuildID].MemberInfoMap[userID]
 		misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	}

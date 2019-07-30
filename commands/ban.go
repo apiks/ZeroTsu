@@ -127,7 +127,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 		}
 		// Initializes user if he doesn't exist in memberInfo but is in server
-		misc.InitializeUser(userMem)
+		misc.InitializeUser(userMem, m.GuildID)
 	}
 
 	// Adds ban date to memberInfo and checks if perma
