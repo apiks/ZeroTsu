@@ -876,7 +876,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 						delete(verifyMap, userID)
 						continue
 					}
-					misc.InitializeUser(user)
+					misc.InitializeUser(user, config.ServerID)
 					misc.WriteMemberInfo(misc.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
 				}
 				delete(verifyMap, userID)
