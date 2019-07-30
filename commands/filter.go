@@ -574,7 +574,7 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID
 	embedFieldChannel.Name = "Channel:"
 
 	// Sets field content
-	embedFieldFilter.Value = fmt.Sprintf("**__%v**__", removals)
+	embedFieldFilter.Value = fmt.Sprintf("**%v**", removals)
 	embedFieldMessage.Value = fmt.Sprintf("`%v`", content)
 	embedFieldChannel.Value = misc.ChMentionID(channelID)
 
