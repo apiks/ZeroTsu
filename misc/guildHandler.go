@@ -146,7 +146,18 @@ type WaifuTrade struct {
 	AccepteeID		string				`json:"AccepteeID"`
 }
 
+// Loads all guilds in the database/guilds folder
 func LoadGuilds() {
+
+	// Creates missing "database" and "guilds" folder if they don't exist
+	if _, err := os.Stat("database"); os.IsNotExist(err) {
+		os.Mkdir("database", 0777)
+	}
+	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		os.Mkdir(dbPath, 0777)
+		return
+	}
+
 	folders, err := ioutil.ReadDir(dbPath)
 	if err != nil {
 		log.Panicln(err)
