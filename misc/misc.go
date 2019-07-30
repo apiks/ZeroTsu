@@ -28,7 +28,7 @@ var (
 	OptinUnderPosition int
 	SpoilerPerms       = discordgo.PermissionSendMessages + discordgo.PermissionReadMessages + discordgo.PermissionReadMessageHistory
 
-	startTime 		time.Time
+	StartTime time.Time
 )
 
 type Filter struct {
@@ -646,5 +646,5 @@ func CreationTime(ID string) (t time.Time, err error) {
 }
 
 func Uptime() time.Duration {
-	return time.Since(startTime)
+	return time.Since(StartTime)
 }

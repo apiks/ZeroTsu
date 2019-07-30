@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/gorilla/mux"
@@ -158,6 +159,9 @@ func Start() {
 	if err != nil {
 		panic("Critical error: BOT cannot start.")
 	}
+
+	// Start tracking uptime from here
+	misc.StartTime = time.Now()
 
 	fmt.Println("BOT is running!")
 }

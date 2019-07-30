@@ -46,9 +46,6 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		}
 	}
 
-	// Start tracking uptime from here
-	startTime = time.Now()
-
 	for range time.NewTicker(30 * time.Second).C {
 
 		// Checks whether it has to post rss thread and handle remindMes
