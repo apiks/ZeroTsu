@@ -79,6 +79,73 @@ type ReactJoin struct {
 	RoleEmojiMap []map[string][]string `json:"roleEmoji"`
 }
 
+type Filter struct {
+	Filter 	string	`json:"Filter"`
+}
+
+type MessRequirement struct {
+	Phrase 		string	`json:"Phrase"`
+	Type 		string	`json:"Type"`
+	Channel		string	`json:"Channel"`
+	LastUserID	string
+}
+
+type RssThread struct {
+	Thread  string `json:"Thread"`
+	Channel string `json:"Channel"`
+	Author  string `json:"Author"`
+}
+
+type RssThreadCheck struct {
+	Thread string    `json:"Thread"`
+	Date   time.Time `json:"Date"`
+	ChannelID string `json:"ChannelID"`
+}
+
+type Emoji struct {
+	ID          	   string `json:"id"`
+	Name               string `json:"name"`
+	MessageUsage       int    `json:"messageUsage"`
+	UniqueMessageUsage int    `json:"uniqueMessages"`
+	Reactions          int    `json:"reactions"`
+}
+
+type Channel struct {
+	ChannelID 	  string
+	Name 		  string
+	Messages  	  map[string]int
+	RoleCount 	  map[string]int `json:",omitempty"`
+	Optin     	  bool
+	Exists    	  bool
+}
+
+type RemindMeSlice struct {
+	RemindMeSlice []RemindMe
+}
+
+type RemindMe struct {
+	Message			string
+	Date			time.Time
+	CommandChannel	string
+	RemindID		int
+}
+
+type Raffle struct {
+	Name			string		`json:"Name"`
+	ParticipantIDs	[]string	`json:"ParticipantIDs"`
+	ReactMessageID	string		`json:"ReactMessageID"`
+}
+
+type Waifu struct {
+	Name			string				`json:"Name"`
+}
+
+type WaifuTrade struct {
+	TradeID			string				`json:"TradeID"`
+	InitiatorID		string				`json:"InitiatorID"`
+	AccepteeID		string				`json:"AccepteeID"`
+}
+
 func LoadGuilds() {
 	folders, err := ioutil.ReadDir(dbPath)
 	if err != nil {
@@ -828,7 +895,7 @@ func IOReadDir(root string) ([]string, error) {
 	return files, nil
 }
 
-// Initializes db files
+// Initializes a guild's DB files
 func initDB(guildID string) {
 	path := fmt.Sprintf("%v/%v", dbPath, guildID)
 	if _, err := os.Stat(path); os.IsNotExist(err) {

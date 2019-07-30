@@ -31,78 +31,6 @@ var (
 	StartTime time.Time
 )
 
-type Filter struct {
-	Filter 	string	`json:"Filter"`
-}
-
-type MessRequirement struct {
-	Phrase 		string	`json:"Phrase"`
-	Type 		string	`json:"Type"`
-	Channel		string	`json:"Channel"`
-	LastUserID	string
-}
-
-type RssThread struct {
-	Thread  string `json:"Thread"`
-	Channel string `json:"Channel"`
-	Author  string `json:"Author"`
-}
-
-type RssThreadCheck struct {
-	Thread string    `json:"Thread"`
-	Date   time.Time `json:"Date"`
-	ChannelID string `json:"ChannelID"`
-}
-
-type Emoji struct {
-	ID          	   string `json:"id"`
-	Name               string `json:"name"`
-	MessageUsage       int    `json:"messageUsage"`
-	UniqueMessageUsage int    `json:"uniqueMessages"`
-	Reactions          int    `json:"reactions"`
-}
-
-type Channel struct {
-	ChannelID 	  string
-	Name 		  string
-	Messages  	  map[string]int
-	RoleCount 	  map[string]int `json:",omitempty"`
-	Optin     	  bool
-	Exists    	  bool
-}
-
-type RemindMeSlice struct {
-	RemindMeSlice []RemindMe
-}
-
-type RemindMe struct {
-	Message			string
-	Date			time.Time
-	CommandChannel	string
-	RemindID		int
-}
-
-type Raffle struct {
-	Name			string		`json:"Name"`
-	ParticipantIDs	[]string	`json:"ParticipantIDs"`
-	ReactMessageID	string		`json:"ReactMessageID"`
-}
-
-type Waifu struct {
-	Name			string				`json:"Name"`
-}
-
-type WaifuTrade struct {
-	TradeID			string				`json:"TradeID"`
-	InitiatorID		string				`json:"InitiatorID"`
-	AccepteeID		string				`json:"AccepteeID"`
-}
-
-type Coordinates struct {
-	X	int		`json:"X"`
-	Y	int		`json:"Y"`
-}
-
 //// HasPermissions sees if a user has elevated permissions in a given server
 //func HasPermissions(m *discordgo.Member, guildID string) bool {
 //	for _, r := range m.Roles {
@@ -363,7 +291,7 @@ func CommandErrorHandler(s *discordgo.Session, m *discordgo.Message, err error) 
 
 // SplitLongMessage takes a message and splits it if it's longer than 1900. By Kagumi
 func SplitLongMessage(message string) (split []string) {
-	const maxLength = 1950
+	const maxLength = 1900
 	if len(message) > maxLength {
 		partitions := len(message) / maxLength
 		if math.Mod(float64(len(message)), maxLength) > 0 {
@@ -384,7 +312,7 @@ func SplitLongMessage(message string) (split []string) {
 	return
 }
 
-// Returns a string that shows where the error occured exactly
+// Returns a string that shows where the error occurred exactly
 func ErrorLocation(err error) string {
 	_, file, line, _ := runtime.Caller(1)
 	errorLocation := fmt.Sprintf("Error is in file [%v] near line %v", file, line)
