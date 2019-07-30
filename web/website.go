@@ -801,8 +801,8 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 		}
 	}()
 
-	// Checks every 5 seconds if a user in the verifyMap needs to be given the role, also clears UserCookieMap if expiry date has passed
-	for range time.NewTicker(5 * time.Second).C {
+	// Checks every 10 seconds if a user in the verifyMap needs to be given the role, also clears UserCookieMap if expiry date has passed
+	for range time.NewTicker(10 * time.Second).C {
 
 		misc.MapMutex.Lock()
 		if len(verifyMap) != 0 {
