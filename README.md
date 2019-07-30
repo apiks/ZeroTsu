@@ -78,7 +78,7 @@ How to install:
   "DiscordSecret": "DiscordBOTSecret"
 }
 ```
-4. Make an empty folder called "database"
+4. Make an empty folder called "database" and another folder called "guilds" inside of it
 5. Set your "ZeroTsuToken" environment variable to the BOT token (either hidden on the system env or in config.go ReadConfig func with os.Setenv("ZeroTsuToken", "TOKEN"))
 6. Compile in your favorite IDE or compiler with "go build" (or type "set GOOS=[Preferred OS]" to change OS first (like linux) and then "go build".)
 7. Invite BOT to server and give it an admin role
