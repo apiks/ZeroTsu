@@ -34,6 +34,8 @@
 
 * RemindMe feature where it either messages you or pings you with a message you've set after a period of time you've set
 
+* Optional Waifu system where you can add names to a list, and each user can roll for a name only once. Users can trade them.
+
 <br/>
 
 How to install:
