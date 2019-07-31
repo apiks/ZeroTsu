@@ -1000,7 +1000,7 @@ func init() {
 	//	trigger:  "helpplain",
 	//	desc:     "Prints all available commands in plain text.",
 	//	category: "normal",
-	//})d
+	//})
 	add(&command{
 		execute:  helpChannelCommand,
 		trigger:  "hchannel",
