@@ -13,6 +13,10 @@ import (
 // Handles playing message view or change
 func playingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 
+	if m.Author.ID != config.OwnerID {
+		return
+	}
+
 	misc.MapMutex.Lock()
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
@@ -34,12 +38,15 @@ func playingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Changes and writes new playing message to storage
+	misc.MapMutex.Lock()
 	config.PlayingMsg = commandStrings[1]
 	err := config.WriteConfig()
 	if err != nil {
+		misc.MapMutex.Unlock()
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
+	misc.MapMutex.Unlock()
 
 	// Refreshes playing message
 	err = s.UpdateStatus(0, config.PlayingMsg)
@@ -63,7 +70,5 @@ func init() {
 		execute:  playingMsgCommand,
 		trigger:  "playingmsg",
 		desc:     "Views or changes the current BOT playing message.",
-		elevated: true,
-		category: "misc",
 	})
 }

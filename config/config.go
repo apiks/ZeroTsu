@@ -14,6 +14,7 @@ var (
 	BotID        			string
 	ServerID     			string
 	BotLogID     			string
+	OwnerID					string
 	Website					string
 	PlayingMsg				string
 	RedditAppName			string
@@ -29,6 +30,7 @@ type configStruct struct {
 	BotID        			string   		`json:"BotID"`
 	ServerID     			string   		`json:"ServerID"`
 	BotLogID     			string   		`json:"BotLogID"`
+	OwnerID					string			`json:"OwnerID"`
 	Website		 			string	 		`json:"Website"`
 	VoteChannelCategoryID 	string 			`json:"VoteChannelCategoryID"`
 	Kaguya					string			`json:"Kaguya"`
@@ -62,6 +64,7 @@ func ReadConfig() error {
 	BotID = config.BotID
 	ServerID = config.ServerID
 	BotLogID = config.BotLogID
+	OwnerID = config.OwnerID
 	Website = config.Website
 	PlayingMsg = config.PlayingMsg
 
@@ -106,6 +109,7 @@ func WriteConfig() error {
 	config.BotID = BotID
 	config.ServerID = ServerID
 	config.BotLogID = BotLogID
+	config.OwnerID = OwnerID
 	config.Website = Website
 	config.PlayingMsg = PlayingMsg
 
