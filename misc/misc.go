@@ -609,3 +609,125 @@ func CreationTime(ID string) (t time.Time, err error) {
 func Uptime() time.Duration {
 	return time.Since(StartTime)
 }
+
+// Checks if optins exist and creates them if they don't
+func OptInsHandler(s *discordgo.Session, guildID string) error {
+
+	var (
+		optInUnderExists bool
+		optInAboveExists bool
+		err				 error
+	)
+
+	// Saves guild roles
+	roles, err := s.GuildRoles(guildID)
+	if err != nil {
+		return err
+	}
+
+	MapMutex.Lock()
+	guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
+
+	// Checks if optins exist
+	if GuildMap[guildID].GuildConfig.OptInUnder.ID != "" {
+		for _, role := range roles {
+			if role.ID == GuildMap[guildID].GuildConfig.OptInUnder.ID {
+				optInUnderExists = true
+				break
+			}
+		}
+	}
+	if GuildMap[guildID].GuildConfig.OptInAbove.ID != "" {
+		for _, role := range roles {
+			if role.ID == GuildMap[guildID].GuildConfig.OptInAbove.ID {
+				optInAboveExists = true
+				break
+			}
+		}
+	}
+
+	MapMutex.Unlock()
+
+	if optInUnderExists && optInAboveExists {
+		return err
+	}
+
+	// Handles opt-in-under
+	if !optInUnderExists {
+		var optIn OptinRole
+
+		_, _ = s.ChannelMessageSend(guildBotLog, "Necessary opt-in-under role not detected. Trying to create it.")
+
+		// Creates opt-in-under role
+		role, err := s.GuildRoleCreate(guildID)
+		if err != nil {
+			return fmt.Errorf("Error: Could not create necessary opt-in roles. Please make sure I have role creation permissions.")
+		}
+		// Edits the new role
+		role, err = s.GuildRoleEdit(guildID, role.ID, "opt-in-under/DO-NOT-DELETE", 65280, false, 0, false)
+		if err != nil {
+			return fmt.Errorf("Error: Could not edit the new opt-in role. Please make sure I have the necessary role edit permissions.")
+		}
+
+		// Sets values
+		optIn.ID = role.ID
+		optIn.Name = role.Name
+		optIn.Position = 5
+
+		// Saves the new opt-in guild data
+		MapMutex.Lock()
+		GuildMap[guildID].GuildConfig.OptInUnder = optIn
+		MapMutex.Unlock()
+	}
+	// Handles opt-in-above
+	if !optInAboveExists {
+		var optIn OptinRole
+
+		_, _ = s.ChannelMessageSend(guildBotLog, "Necessary opt-in-above role not detected. Trying to create it.")
+
+		// Creates opt-in-above role
+		role, err := s.GuildRoleCreate(guildID)
+		if err != nil {
+			return fmt.Errorf("Error: Could not create necessary opt-in roles. Please make sure I have role creation permissions.")
+		}
+		// Edits the new role
+		role, err = s.GuildRoleEdit(guildID, role.ID, "opt-in-above/DO-NOT-DELETE", 65280, false, 0, false)
+		if err != nil {
+			return fmt.Errorf("Error: Could not edit the new opt-in role. Please make sure I have the necessary role edit permissions.")
+		}
+
+		// Sets values
+		optIn.ID = role.ID
+		optIn.Name = role.Name
+		optIn.Position = 2
+
+		// Saves the new opt-in guild data
+		MapMutex.Lock()
+		GuildMap[guildID].GuildConfig.OptInAbove = optIn
+		MapMutex.Unlock()
+	}
+
+	// Reorders the optin roles with space inbetween them
+	deb, err := s.GuildRoles(guildID)
+	if err != nil {
+		return err
+	}
+	MapMutex.Lock()
+	for i, role := range deb {
+		if role.ID == GuildMap[guildID].GuildConfig.OptInUnder.ID {
+			deb[i].Position = GuildMap[guildID].GuildConfig.OptInUnder.Position
+		}
+		if role.ID == GuildMap[guildID].GuildConfig.OptInAbove.ID {
+			deb[i].Position = GuildMap[guildID].GuildConfig.OptInAbove.Position
+		}
+	}
+	_, err = s.GuildRoleReorder(guildID, deb)
+	if err != nil {
+		MapMutex.Unlock()
+		return err
+	}
+	GuildSettingsWrite(GuildMap[guildID].GuildConfig, guildID)
+	MapMutex.Unlock()
+
+	return err
+}

@@ -166,6 +166,13 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
+	// Confirms whether optins exist
+	err = misc.OptInsHandler(s, m.GuildID)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		return
+	}
+
 	// Updates opt-in-under and opt-in-above position for use later in isChannelUsable func
 	misc.MapMutex.Lock()
 	for i := 0; i < len(deb); i++ {

@@ -48,7 +48,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"create [name] OPTIONAL[type] [categoryID] [description; must have at least one other non-name parameter]`\n\nThree type of parameters exist: `airing`, `temp` and `optin`. `Optin` is the default one. Temp gets auto-deleted after three hours of inactivity.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"create [name] OPTIONAL[type] [categoryID] [description; must have at least one other non-name parameter]`\n\nFour type of parameters exist: `airing`, `temp`, `general` and `optin`. `Optin` is the default one. Temp gets auto-deleted after three hours of inactivity.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -61,6 +61,19 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	command := strings.Replace(messageLowercase, guildPrefix+"create ", "", 1)
 	commandStrings = strings.Split(command, " ")
+
+	// Confirms whether optins exist
+	if m.Author.ID == s.State.User.ID {
+		misc.MapMutex.Unlock()
+	}
+	err := misc.OptInsHandler(s, m.GuildID)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		return
+	}
+	if m.Author.ID == s.State.User.ID {
+		misc.MapMutex.Lock()
+	}
 
 	// Checks if [category] and [type] exist and assigns them if they do and removes them from slice and command string
 	for i := 0; i < len(commandStrings); i++ {
@@ -195,14 +208,14 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		err = s.ChannelPermissionSet(newCha.ID, goodRole.ID, "role", misc.SpoilerPerms, 0)
 		if err != nil {
 			if m.Author.ID != s.State.User.ID {
-				misc.MapMutex.Lock()
+				misc.MapMutex.Unlock()
 			}
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 	}
 	if m.Author.ID != s.State.User.ID {
-		misc.MapMutex.Lock()
+		misc.MapMutex.Unlock()
 	}
 
 	time.Sleep(100 * time.Millisecond)

@@ -34,6 +34,19 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.MapMutex.Unlock()
 	}
 
+	// Confirms whether optins exist
+	if m.Author.ID == s.State.User.ID {
+		misc.MapMutex.Unlock()
+	}
+	err := misc.OptInsHandler(s, m.GuildID)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		return
+	}
+	if m.Author.ID == s.State.User.ID {
+		misc.MapMutex.Lock()
+	}
+
 	// Fetches info from the server and puts it in debPre
 	debPre, err := s.GuildRoles(m.GuildID)
 	if err != nil {
@@ -181,7 +194,7 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 	} else {
-		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Spoiler roles already sorted.")
+		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Spoiler roles already sorted or the spoiler roles are above the opt-in-above (in which case please move them manually.)")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {

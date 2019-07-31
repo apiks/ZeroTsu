@@ -821,6 +821,13 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
+	// Confirms whether optins exist
+	err = misc.OptInsHandler(s, m.GuildID)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		return
+	}
+
 	// Updates the position of opt-in-under and opt-in-above position
 	misc.MapMutex.Lock()
 	for i := 0; i < len(deb); i++ {
@@ -1015,6 +1022,13 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 		_, _ = s.ChannelMessageSend(dm.ID, "You're already out of " + chanMention + "")
+		return
+	}
+
+	// Confirms whether optins exist
+	err = misc.OptInsHandler(s, m.GuildID)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
