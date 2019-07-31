@@ -35,7 +35,7 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}()
 
-	if m.GuildID == "" {
+	if m.GuildID == "" || m.Author == nil {
 		return
 	}
 
@@ -126,7 +126,7 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 		}
 	}()
 
-	if m.GuildID == "" {
+	if m.GuildID == "" || m.Author == nil {
 		return
 	}
 
@@ -212,7 +212,7 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 		}
 	}()
 
-	if r.GuildID == "" {
+	if r.GuildID == "" || r.UserID == "" {
 		return
 	}
 
