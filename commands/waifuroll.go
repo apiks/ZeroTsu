@@ -683,8 +683,21 @@ func showOwners(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Iterates through each waifu and member, increasing the waifuNum each time it detects a user with that waifu, and saves it to the messsage
+	// Checks if there are any waifus
 	misc.MapMutex.Lock()
+	if len(misc.GuildMap[m.GuildID].Waifus) == 0 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no waifus.")
+		if err != nil {
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
+
+	// Iterates through each waifu and member, increasing the waifuNum each time it detects a user with that waifu, and saves it to the messsage
 	for _, waifu := range misc.GuildMap[m.GuildID].Waifus {
 		for _, member := range misc.GuildMap[m.GuildID].MemberInfoMap {
 			if member.Waifu.Name == waifu.Name {
