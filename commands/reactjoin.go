@@ -876,6 +876,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 		_, _ = s.ChannelMessageSend(dm.ID, success)
+		return
 	}
 	misc.MapMutex.Unlock()
 }
@@ -1073,6 +1074,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 		_, _ = s.ChannelMessageSend(dm.ID, success)
+		return
 	}
 	misc.MapMutex.Unlock()
 }
