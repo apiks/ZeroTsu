@@ -904,7 +904,7 @@ func voteModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	} else if len(commandStrings) > 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vvotemodule [true/false]`"))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vvotemodule [true/false]`", guildPrefix))
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -989,7 +989,7 @@ func waifuModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	} else if len(commandStrings) > 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vwaifumodule [true/false]`"))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vwaifumodule [true/false]`", guildPrefix))
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -1074,7 +1074,7 @@ func reactModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	} else if len(commandStrings) > 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vreactmodule [true/false]`"))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vreactmodule [true/false]`", guildPrefix))
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
@@ -1160,7 +1160,7 @@ func attachmentRemovalCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	} else if len(commandStrings) > 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vattachmentremoval [true/false]`"))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vattachmentremoval [true/false]`", guildPrefix))
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
