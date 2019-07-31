@@ -20,7 +20,7 @@
 
 * Regex-facilitated filter for phrases.
 
-* Full spoiler/opt-in/hidden channel support with reaction based role-giving or just join/leave commands. Tracks hidden channels between two dummy roles (disabled by default in favor of Kaguya BOT)
+* Full spoiler/opt-in/hidden channel support with reaction based role-giving or just join/leave commands. Tracks hidden channels between two dummy roles.
 
 * Sort all BOT created optin/spoiler roles between the two dummy roles alphabetically
 
@@ -30,7 +30,7 @@
 
 * BOT say/edit commands that any mod can use to send or edit important messages with the BOT, or pretend they're a ROBOT
 
-* Automatically give a channel to a user when they join a voice channel, and remove it when they leave using a role named "voice"
+* Automatically give roles to a user when they join a voice channel, and remove them when they leave it. Fully customizable with multiple roles per voice channel and vice versa.
 
 * RemindMe feature where it either messages you or pings you with a message you've set after a period of time you've set
 
