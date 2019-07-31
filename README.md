@@ -40,35 +40,13 @@
 
 How to install:
 1. Download in a folder.
-2. Edit config.json with your own values. Use only one for each, except for CommandRoles. Everything is required unless stated otherwise:
-
-       BotPrefix is the character that needs to be used before every command
+2. Edit config.json with your own values. Everything is required unless stated otherwise:
 
        BotID is the ID of the BOT you are using
 
        ServerID is the ID of the server the BOT is going to be managing
 
-       BotLogID is the ID of the channel in which the bot will dump errors, timed events, punishments and other things
-
-       CommandRoles are the admin/mod/bot role IDs
-
-       OptInUnder is the name of the top dummy role for spoiler/opt-in/hidden channels
-
-       OptInAbove is the name of the bottom dummy role for spoiler/opt-in/hidden channels
-
-       VoiceChaID is the ID of the voice channel you want the bot to track and give the "voice" role to. Leave empty if not using it
-
        Website is the address/ip+:port of the website. Leave empty if not using it
-
-       ModCategoryID is the ID of a mod category if it exists. Leave empty if it doesn't exist
-
-       VoteChannelCategoryID is the category ID of the category in which the channel created from a user channel creation vote is put
-	   
-	   Waifus is whether to enable the waifu commands. Use "true" to turn it on. Otherwise leave empty or "false"
-	   
-	   Kaguya is whether to enable the reacts commands. Use "true" to disable them. otherwise leave empty or "false" to turn them on. Kaguya is the other bot that goes with this one for react purposes to avoid rate limitation.
-	   
-	   MsgAttachRemoval is whether to enable attachment removal of all file extensions except images, gifs and videos. Use "true" to enable, otherwise leave empty or "false" to turn it off.
 	   
 	   PlayingMsg is whatever "Playing" message you want the BOT to display. Leave empty to disable (can only be disabled from here.)
 
@@ -82,8 +60,9 @@ How to install:
 ```
 4. Set your "ZeroTsuToken" environment variable to the BOT token (either hidden on the system env or in config.go ReadConfig func with os.Setenv("ZeroTsuToken", "TOKEN"))
 5. Compile in your favorite IDE or compiler with "go build" (or type "set GOOS=[Preferred OS]" to change OS first (like linux) and then "go build".)
-6. Invite BOT to server and give it an admin role
+6. Invite BOT to server and give it an admin role or equivalent
 7. Start the BOT as admin and use
+8. Use the .hset command to set up the bot for your server
 
 <br/>
 
