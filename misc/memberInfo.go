@@ -87,9 +87,14 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
+			log.Println(rec)
 			log.Println("Recovery in OnMemberJoinGuild")
 		}
 	}()
+
+	if e.GuildID == "" {
+		return
+	}
 
 	// Pulls info on user if possible
 	user, err := s.GuildMember(e.GuildID, e.User.ID)
@@ -228,9 +233,14 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
+			log.Println(rec)
 			log.Println("Recovery in OnMemberUpdate")
 		}
 	}()
+
+	if e.GuildID == "" {
+		return
+	}
 
 	MapMutex.Lock()
 	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
@@ -310,9 +320,14 @@ func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
+			log.Println(rec)
 			log.Println("Recovery in OnPresenceUpdate")
 		}
 	}()
+
+	if e.GuildID == "" {
+		return
+	}
 
 	MapMutex.Lock()
 	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
