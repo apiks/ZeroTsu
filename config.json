@@ -1,22 +1,8 @@
 {
-  "BotPrefix": ".",
-  "BotID": "432579417974374400",
-  "ServerID": "267799767843602452",
-  "BotLogID": "284412480833191936",
-  "CommandRoles": [
-  	"267800874112253952", 
-  	"269230373253283840",
-  	"268192148464074752",
-  	"284324662282944512"
-    ],
-  "OptInUnder": "-- opt-ins under here --",
-  "OptInAbove": "-- opt-ins above here --",
-  "VoiceChaID": "292337346806808576",
-  "Website": "142.93.21.75:8080",
-  "ModCategoryID": "360994750796529665",
-  "VoteChannelCategoryID": "363756332920340481",
-  "Waifus": "false",
-  "Kaguya": "true",
-  "MsgAttachRemoval": "true",
-  "PlayingMsg": "with her darling"
+	"BotID": "432579417974374400",
+	"ServerID": "267799767843602452",
+	"BotLogID": "284412480833191936",
+	"Website": "discord.r-anime.moe",
+	"PlayingMsg": "with her darling",
+	"OwnerID": "128312718779219968"
 }
