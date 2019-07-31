@@ -62,7 +62,7 @@ func addWaifu(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Adds the waifu to the slice and writes to storage
-	temp.Name = strings.ToLower(commandStrings[1])
+	temp.Name = commandStrings[1]
 	misc.GuildMap[m.GuildID].Waifus = append(misc.GuildMap[m.GuildID].Waifus, temp)
 	err := misc.WaifusWrite(misc.GuildMap[m.GuildID].Waifus, m.GuildID)
 	if err != nil {
@@ -107,7 +107,7 @@ func removeWaifu(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if such a waifu already exists and removes it if so
 	misc.MapMutex.Lock()
 	for i, waifu := range misc.GuildMap[m.GuildID].Waifus {
-		if waifu.Name == strings.ToLower(commandStrings[1]) {
+		if strings.ToLower(waifu.Name) == strings.ToLower(commandStrings[1]) {
 			misc.GuildMap[m.GuildID].Waifus = append(misc.GuildMap[m.GuildID].Waifus[:i], misc.GuildMap[m.GuildID].Waifus[i+1:]...)
 			err := misc.WaifusWrite(misc.GuildMap[m.GuildID].Waifus, m.GuildID)
 			if err != nil {
