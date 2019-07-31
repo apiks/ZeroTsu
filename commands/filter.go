@@ -39,10 +39,6 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	misc.MapMutex.Lock()
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
-
 	// Checks if it's the bot that sent the message
 	if m.Author.ID == s.State.User.ID {
 		return
@@ -92,6 +88,11 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Sends embed mod message
 	err = FilterEmbed(s, m.Message, removals, m.ChannelID)
 	if err != nil {
+
+		misc.MapMutex.Lock()
+		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+		misc.MapMutex.Unlock()
+
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			return
@@ -104,8 +105,7 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if err != nil {
 		return
 	}
-	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message `%v` was removed for using: _%v_ \n\n" +
-		"Using such words makes me disappointed in you, darling.", mLowercase, removals))
+	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message `%v` was removed for using: _%v_ \n\n", mLowercase, removals))
 }
 
 // Handles filter in an onEdit basis
@@ -129,10 +129,6 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	if m.GuildID == "" {
 		return
 	}
-
-	misc.MapMutex.Lock()
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
 
 	// Checks if it's the bot that sent the message
 	if m.Author.ID == s.State.User.ID {
@@ -183,6 +179,11 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	// Sends embed mod message
 	err = FilterEmbed(s, m.Message, removals, m.ChannelID)
 	if err != nil {
+
+		misc.MapMutex.Lock()
+		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+		misc.MapMutex.Unlock()
+
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			return
@@ -195,8 +196,7 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	if err != nil {
 		return
 	}
-	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message `%v` was removed for using: _%v_ \n\n" +
-		"Using such words makes me disappointed in you, darling.", mLowercase, removals))
+	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message `%v` was removed for using: _%v_ \n\n", mLowercase, removals))
 }
 
 // Filters reactions that contain a filtered phrase
@@ -215,10 +215,6 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 	if r.GuildID == "" {
 		return
 	}
-
-	misc.MapMutex.Lock()
-	guildBotLog := misc.GuildMap[r.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
 
 	// Checks if it's the bot that sent the message
 	if r.UserID == s.State.User.ID {
@@ -248,6 +244,11 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 	// Deletes the reaction that was sent if it has a filtered phrase
 	err = s.MessageReactionRemove(r.ChannelID, r.MessageID, r.Emoji.APIName(), r.UserID)
 	if err != nil {
+
+		misc.MapMutex.Lock()
+		guildBotLog := misc.GuildMap[r.GuildID].GuildConfig.BotLog.ID
+		misc.MapMutex.Unlock()
+
 		_, _ = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 	}
 }
