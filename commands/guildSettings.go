@@ -1223,8 +1223,7 @@ func pingMessageCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildPingMessage := misc.GuildMap[m.GuildID].GuildConfig.PingMessage
 	misc.MapMutex.Unlock()
 
-	mLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(mLowercase, " ", 2)
+	commandStrings := strings.SplitN(m.Content, " ", 2)
 
 	// Displays current prefix
 	if len(commandStrings) == 1 {

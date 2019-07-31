@@ -355,12 +355,18 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
+			log.Println(rec)
 			log.Println("Recovery in VoiceRoleHandler")
 		}
 	}()
 
+	if v.GuildID == "" {
+		return
+	}
+
 	MapMutex.Lock()
 	if len(GuildMap[v.GuildID].GuildConfig.VoiceChas) == 0 {
+		MapMutex.Unlock()
 		return
 	} else {
 		voiceChannels = GuildMap[v.GuildID].GuildConfig.VoiceChas
@@ -413,6 +419,10 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 
 // Print fluff message on bot ping
 func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
+	if m.GuildID == "" {
+		return
+	}
+
 	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) && m.Author.ID == "128312718779219968" {
 		MapMutex.Lock()
 		guildBotLog := GuildMap[m.GuildID].GuildConfig.BotLog.ID
@@ -526,6 +536,11 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 // If there's a manual ban handle it correctly
 func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
+
+	if e.GuildID == "" {
+		return
+	}
+
 	MapMutex.Lock()
 	guildBotLog := GuildMap[e.GuildID].GuildConfig.BotLog.ID
 
@@ -547,6 +562,7 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
+			log.Println(rec)
 			log.Println("Recovery in remindMeHandler")
 		}
 	}()
@@ -613,9 +629,14 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
+			log.Println(rec)
 			log.Println("Recovery in GuildJoin")
 		}
 	}()
+
+	if u.GuildID == "" {
+		return
+	}
 
 	MapMutex.Lock()
 	guildBotLog := GuildMap[u.GuildID].GuildConfig.BotLog.ID
@@ -658,9 +679,14 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
+			log.Println(rec)
 			log.Println("Recovery in SpambotJoin")
 		}
 	}()
+
+	if u.GuildID == "" {
+		return
+	}
 
 	MapMutex.Lock()
 	guildBotLog := GuildMap[u.GuildID].GuildConfig.BotLog.ID
