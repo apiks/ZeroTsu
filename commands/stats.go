@@ -2,16 +2,14 @@ package commands
 
 import (
 	"fmt"
+	"log"
 	"sort"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
 )
-
-var dailyFlag bool
 
 // Adds to message count on every message for that channel
 func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -22,17 +20,23 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
-			if err != nil {
-				return
-			}
+			log.Println(rec)
+			log.Println("Recovery in OnMessageChannel")
 		}
 	}()
+
+	if m.GuildID == "" {
+		return
+	}
+
+	misc.MapMutex.Lock()
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
 
 	// Pull channel info
 	channel, err := s.State.Channel(m.ChannelID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -50,7 +54,7 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Fetches all guild users
 		guild, err := s.Guild(m.GuildID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -61,7 +65,7 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Fetches all server roles
 		roles, err := s.GuildRoles(m.GuildID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -103,10 +107,13 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		optinChannelTotal  int
 		flag			   bool
 	)
+
 	t := time.Now()
 
-	// Fixes channels without ID param
 	misc.MapMutex.Lock()
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+
+	// Fixes channels without ID param
 	for id := range misc.GuildMap[m.GuildID].ChannelStats {
 		if misc.GuildMap[m.GuildID].ChannelStats[id].ChannelID == "" {
 			misc.GuildMap[m.GuildID].ChannelStats[id].ChannelID = id
@@ -118,7 +125,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	if flag {
 		_, err := misc.ChannelStatsWrite(misc.GuildMap[m.GuildID].ChannelStats, m.GuildID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -155,23 +162,25 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	// Fetches info on server roles from the server and puts it in deb
 	deb, err := s.GuildRoles(m.GuildID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
 	// Updates opt-in-under and opt-in-above position for use later in isChannelUsable func
+	misc.MapMutex.Lock()
 	for i := 0; i < len(deb); i++ {
-		if deb[i].Name == config.OptInUnder {
-			misc.OptinUnderPosition = deb[i].Position
-		} else if deb[i].Name == config.OptInAbove {
-			misc.OptinAbovePosition = deb[i].Position
+		if deb[i].ID == misc.GuildMap[m.GuildID].GuildConfig.OptInUnder.ID {
+			misc.GuildMap[m.GuildID].GuildConfig.OptInUnder.Position = deb[i].Position
+		} else if deb[i].ID == misc.GuildMap[m.GuildID].GuildConfig.OptInAbove.ID {
+			misc.GuildMap[m.GuildID].GuildConfig.OptInAbove.Position = deb[i].Position
 		}
 	}
+	misc.MapMutex.Unlock()
 
 	// Pull guild info
 	guild, err := s.State.Guild(m.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -234,7 +243,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	for j := 0; j < len(msgs); j++ {
 		_, err := s.ChannelMessageSend(m.ChannelID, msgs[j])
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -302,12 +311,14 @@ func OnMemberJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
-			if err != nil {
-				return
-			}
+			log.Println(rec)
+			log.Println("Recovery in OnMemberJoin")
 		}
 	}()
+
+	if u.GuildID == "" {
+		return
+	}
 
 	t := time.Now()
 	misc.MapMutex.Lock()
@@ -320,12 +331,14 @@ func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
-			if err != nil {
-				return
-			}
+			log.Println(rec)
+			log.Println("Recovery in OnMemberRemoval")
 		}
 	}()
+
+	if u.GuildID == "" {
+		return
+	}
 
 	t := time.Now()
 	misc.MapMutex.Lock()
@@ -338,13 +351,10 @@ func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 func isChannelUsable(channel misc.Channel, guild *discordgo.Guild) (misc.Channel, bool) {
 
 	// Checks if channel exists and if it's optin
-	for guildIndex, guildChannel := range guild.Channels {
-		if guildChannel.ParentID == config.ModCategoryID && guildChannel.ID == channel.ChannelID {
-			return channel, false
-		}
+	for guildIndex := range guild.Channels {
 		for roleIndex := range guild.Roles {
-			if guild.Roles[roleIndex].Position < misc.OptinUnderPosition &&
-				guild.Roles[roleIndex].Position > misc.OptinAbovePosition &&
+			if guild.Roles[roleIndex].Position < misc.GuildMap[guild.ID].GuildConfig.OptInUnder.Position &&
+				guild.Roles[roleIndex].Position > misc.GuildMap[guild.ID].GuildConfig.OptInAbove.Position &&
 				guild.Channels[guildIndex].Name == guild.Roles[roleIndex].Name {
 				channel.Optin = true
 				break
@@ -379,7 +389,7 @@ func splitStatMessages (msgs []string, message string) ([]string, string) {
 }
 
 // Posts daily stats and update schedule command
-func dailyStats(s *discordgo.Session) {
+func dailyStats(s *discordgo.Session, e *discordgo.Ready) {
 
 	var (
 		message discordgo.Message
@@ -389,10 +399,8 @@ func dailyStats(s *discordgo.Session) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
-			if err != nil {
-				return
-			}
+			log.Println(rec)
+			log.Println("Recovery in dailyStats")
 		}
 	}()
 
@@ -400,37 +408,54 @@ func dailyStats(s *discordgo.Session) {
 	hour := t.Hour()
 	minute := t.Minute()
 
-	if hour == 23 && minute == 59 && !dailyFlag {
-		_, err := s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Update for **%v %v, %v**", t.Month(), t.Day(), t.Year()))
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+	for _, guild := range e.Guilds {
+
+		misc.MapMutex.Lock()
+		guildPrefix := misc.GuildMap[guild.ID].GuildConfig.Prefix
+		guildBotLog := misc.GuildMap[guild.ID].GuildConfig.BotLog.ID
+		guildDailyStats := misc.GuildMap[guild.ID].GuildConfig.DailyStats
+		misc.MapMutex.Unlock()
+
+		if hour == 23 && minute == 59 && !guildDailyStats {
+			_, err := s.ChannelMessageSend(guildBotLog, fmt.Sprintf("Update for **%v %v, %v**", t.Month(), t.Day(), t.Year()))
 			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+				if err != nil {
+					return
+				}
 				return
 			}
-			return
+
+			author.ID = s.State.User.ID
+			message.GuildID = guild.ID
+			message.Author = &author
+			message.Content = guildPrefix + "stats"
+			message.ChannelID = guildBotLog
+			guildDailyStats = true
+			showStats(s, &message)
+			misc.MapMutex.Lock()
+			misc.GuildMap[guild.ID].GuildConfig.DailyStats = true
+			misc.GuildSettingsWrite(misc.GuildMap[guild.ID].GuildConfig, guild.ID)
+			misc.MapMutex.Unlock()
 		}
-
-
-		author.ID = s.State.User.ID
-		message.Author = &author
-		message.Content = config.BotPrefix + "stats"
-		message.ChannelID = config.BotLogID
-		showStats(s, &message)
-		dailyFlag = true
-	}
-
-	if hour == 0 && minute == 0 && dailyFlag {
-		dailyFlag = false
+		if hour == 0 && minute == 0 && guildDailyStats {
+			misc.MapMutex.Lock()
+			misc.GuildMap[guild.ID].GuildConfig.DailyStats = false
+			misc.GuildSettingsWrite(misc.GuildMap[guild.ID].GuildConfig, guild.ID)
+			misc.MapMutex.Unlock()
+		}
 	}
 
 	// Update daily anime schedule command
-	UpdateAnimeSchedule()
+	if hour == 0 && minute == 0 {
+		UpdateAnimeSchedule()
+	}
 }
 
 // Daily stat update timer
 func DailyStatsTimer(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(40 * time.Second).C {
-		dailyStats(s)
+		dailyStats(s, e)
 	}
 }
 

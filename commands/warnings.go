@@ -7,7 +7,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
@@ -19,14 +18,19 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		warningTimestamp misc.Punishment
 	)
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
 
 	if len(commandStrings) != 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"addwarning [@user, userID, or username#discrim] [warning]`\n\n" +
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"addwarning [@user, userID, or username#discrim] [warning]`\n\n" +
 			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -37,7 +41,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	userID, err := misc.GetUserID(s, m, commandStrings)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
@@ -48,7 +52,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Fetches user
 	mem, err := s.User(userID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
@@ -62,7 +66,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 			if err != nil {
 				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot warn user until they join the server.")
 				if err != nil {
-					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+					_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 					if err != nil {
 						misc.MapMutex.Unlock()
 						return
@@ -86,8 +90,8 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Adds timestamp for that warning
 	t, err := m.Timestamp.Parse()
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
 		misc.MapMutex.Unlock()
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 	warningTimestamp.Timestamp = t
@@ -102,7 +106,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Sends warning embed message to channel
 	err = WarningEmbed(s, m, mem, warning, m.ChannelID, true)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -118,14 +122,19 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		warningTimestamp misc.Punishment
 	)
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
 
 	if len(commandStrings) != 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"issuewarning [@user, userID, or username#discrim] [warning]`\n" +
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"issuewarning [@user, userID, or username#discrim] [warning]`\n" +
 			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -137,13 +146,13 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls the guild name early on purpose
 	guild, err := s.Guild(m.GuildID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
 	userID, err := misc.GetUserID(s, m, commandStrings)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
@@ -154,7 +163,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Fetches user
 	mem, err := s.User(userID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
@@ -168,7 +177,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 			if err != nil {
 				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot warn user until they join the server.")
 				if err != nil {
-					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+					_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 					if err != nil {
 						misc.MapMutex.Unlock()
 						return
@@ -190,8 +199,8 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Adds timestamp for that warning
 	t, err := m.Timestamp.Parse()
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
 		misc.MapMutex.Unlock()
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 	warningTimestamp.Timestamp = t
@@ -213,7 +222,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Sends warning embed message to channel
 	err = WarningEmbed(s, m, mem, warning, m.ChannelID, false)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}

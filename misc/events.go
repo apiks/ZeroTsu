@@ -2,6 +2,7 @@ package misc
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"net/http"
 	"regexp"
@@ -32,19 +33,13 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		MapMutex.Lock()
 		err := cleanSpoilerRoles(s, guild.ID)
 		if err != nil {
-			_, _ = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+			_, _ = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 		}
 		MapMutex.Unlock()
 	}
 
 
-	err := s.UpdateStatus(0, config.PlayingMsg)
-	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-		if err != nil {
-			fmt.Println(err.Error() + "\n" + ErrorLocation(err))
-		}
-	}
+	_ = s.UpdateStatus(0, config.PlayingMsg)
 
 	for range time.NewTicker(30 * time.Second).C {
 
@@ -70,7 +65,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 						// Fetches all server bans so it can check if the user is banned there (whether he's been manually unbanned for example)
 						bans, err := s.GuildBans(guild.ID)
 						if err != nil {
-							_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+							_, err = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 							if err != nil {
 								continue
 							}
@@ -86,7 +81,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 							// Unbans user if possible
 							err = s.GuildBanDelete(guild.ID, user.ID)
 							if err != nil {
-								_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+								_, err = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 								if err != nil {
 									continue
 								}
@@ -105,7 +100,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 						BannedUsersWrite(GuildMap[guild.ID].BannedUsers, guild.ID)
 
 						// Sends an embed message to bot-log
-						_ = UnbanEmbed(s, user, "")
+						_ = UnbanEmbed(s, user, "", GuildMap[guild.ID].GuildConfig.BotLog.ID)
 						break
 					}
 				}
@@ -115,12 +110,13 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	}
 }
 
-func UnbanEmbed(s *discordgo.Session, user *UserInfo, mod string) error {
+func UnbanEmbed(s *discordgo.Session, user *UserInfo, mod string, botLog string) error {
 
 	var (
 		embedMess          discordgo.MessageEmbed
 		embed    		   []*discordgo.MessageEmbedField
 	)
+
 	// Sets timestamp of unban
 	t := time.Now()
 	now := t.Format(time.RFC3339)
@@ -139,7 +135,7 @@ func UnbanEmbed(s *discordgo.Session, user *UserInfo, mod string) error {
 	embedMess.Fields = embed
 
 	// Sends embed in bot-log
-	_, err := s.ChannelMessageSendEmbed(config.BotLogID, &embedMess)
+	_, err := s.ChannelMessageSendEmbed(botLog, &embedMess)
 	if err != nil {
 		return err
 	}
@@ -153,10 +149,12 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 		MapMutex.Lock()
 		for _, guild := range e.Guilds {
 
+			guildBotLog := GuildMap[guild.ID].GuildConfig.BotLog.ID
+
 			// Writes emoji stats to disk
 			_, err := EmojiStatsWrite(GuildMap[guild.ID].EmojiStats, guild.ID)
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
 					continue
 				}
@@ -166,7 +164,7 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			// Writes user gain stats to disk
 			_, err = UserChangeStatsWrite(GuildMap[guild.ID].UserChangeStats, guild.ID)
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
 					continue
 				}
@@ -176,7 +174,7 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			// Writes verified stats to disk
 			err = VerifiedStatsWrite(GuildMap[guild.ID].VerifiedStats, guild.ID)
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
 					continue
 				}
@@ -189,7 +187,7 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			// Fetches all guild users
 			guild, err := s.Guild(guild.ID)
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
 					continue
 				}
@@ -198,7 +196,7 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			// Fetches all server roles
 			roles, err := s.GuildRoles(guild.ID)
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
 					continue
 				}
@@ -218,7 +216,7 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			// Writes channel stats to disk
 			_, err = ChannelStatsWrite(GuildMap[guild.ID].ChannelStats, guild.ID)
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
 					continue
 				}
@@ -228,7 +226,7 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			// Clears up spoilerRoles.json
 			err = cleanSpoilerRoles(s, guild.ID)
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
 					continue
 				}
@@ -274,7 +272,7 @@ func RSSParser(s *discordgo.Session, guildID string) {
 			// Removes the fact that the thread had been posted already
 			err = RssThreadsTimerRemove(GuildMap[guildID].RssThreadChecks[p].Thread, GuildMap[guildID].RssThreadChecks[p].Date, GuildMap[guildID].RssThreadChecks[p].ChannelID, guildID)
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+				_, err = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error() + "\n" + ErrorLocation(err))
 				if err != nil {
 					MapMutex.Unlock()
 					return
@@ -310,12 +308,12 @@ func RSSParser(s *discordgo.Session, guildID string) {
 					if valid {
 						message, err := s.ChannelMessageSend(GuildMap[guildID].RssThreads[j].Channel, item.Link)
 						if err != nil {
-							_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+							_, _ = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error() + "\n" + ErrorLocation(err))
 							continue
 						}
 						pins, err := s.ChannelMessagesPinned(message.ChannelID)
 						if err != nil {
-							_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+							_, _ = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error() + "\n" + ErrorLocation(err))
 							continue
 						}
 						if len(pins) != 0 {
@@ -327,7 +325,7 @@ func RSSParser(s *discordgo.Session, guildID string) {
 											strings.Contains(strings.ToLower(pin.Content), "[rewatch]") {
 											err = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
 											if err != nil {
-												_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+												_, _ = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error() + "\n" + ErrorLocation(err))
 												continue
 											}
 										}
@@ -337,7 +335,7 @@ func RSSParser(s *discordgo.Session, guildID string) {
 						}
 						err = s.ChannelMessagePin(message.ChannelID, message.ID)
 						if err != nil {
-							_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+							_, _ = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error() + "\n" + ErrorLocation(err))
 						}
 					}
 				}
@@ -350,88 +348,79 @@ func RSSParser(s *discordgo.Session, guildID string) {
 // Adds the voice role whenever a user joins the config voice chat
 func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 
-	var roleIDString string
+	var voiceChannels []VoiceCha
+	var noRemovalRoles []Role
+	var dontRemove bool
 
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string) + "\n" + ErrorLocation(rec.(error)))
-			if err != nil {
-				return
-			}
+			log.Println("Recovery in VoiceRoleHandler")
 		}
 	}()
 
-	if config.VoiceChaID == "" {
+	MapMutex.Lock()
+	if len(GuildMap[v.GuildID].GuildConfig.VoiceChas) == 0 {
 		return
+	} else {
+		voiceChannels = GuildMap[v.GuildID].GuildConfig.VoiceChas
 	}
+	guildBotLog := GuildMap[v.GuildID].GuildConfig.BotLog.ID
+	MapMutex.Unlock()
 
-	m, err := s.State.Member(v.GuildID, v.UserID)
-	if err != nil {
-		m, err = s.GuildMember(v.GuildID, v.UserID)
-		if err != nil {
-			return
-		}
-	}
+	// Goes through each guild voice channel and removes/adds roles
+	for _, cha := range voiceChannels {
+		for _, chaRole := range cha.Roles {
 
-	// Fetches role ID
-	guildRoles, err := s.GuildRoles(m.GuildID)
-	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
-		if err != nil {
-			return
-		}
-		return
-	}
-	for roleID := range guildRoles {
-		if guildRoles[roleID].Name == "voice" {
-			roleIDString = guildRoles[roleID].ID
-		}
-	}
+			// Resets value
+			dontRemove = false
 
-	s.RWMutex.Lock()
-	if v.ChannelID == config.VoiceChaID {
-		// Adds role
-		for _, role := range m.Roles {
-			if role == roleIDString {
-				s.RWMutex.Unlock()
-				return
+			// Adds role
+			if v.ChannelID == cha.ID {
+				err := s.GuildMemberRoleAdd(v.GuildID, v.UserID, chaRole.ID)
+				if err != nil {
+					_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
+					if err != nil {
+						return
+					}
+					return
+				}
+				noRemovalRoles = append(noRemovalRoles, chaRole)
 			}
-		}
-		err = s.GuildMemberRoleAdd(v.GuildID, v.UserID, roleIDString)
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+
+			// Checks if this role should be removable
+			for _, role := range noRemovalRoles {
+				if chaRole.ID == role.ID {
+					dontRemove = true
+				}
+			}
+			if dontRemove {
+				continue
+			}
+
+			// Removes role
+			err := s.GuildMemberRoleRemove(v.GuildID, v.UserID, chaRole.ID)
 			if err != nil {
-				s.RWMutex.Unlock()
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + ErrorLocation(err))
+				if err != nil {
+					return
+				}
 				return
 			}
-			s.RWMutex.Unlock()
-			return
 		}
-		s.RWMutex.Unlock()
-		return
 	}
-
-	// Removes role
-	err = s.GuildMemberRoleRemove(v.GuildID, v.UserID, roleIDString)
-	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
-		if err != nil {
-			s.RWMutex.Unlock()
-			return
-		}
-		s.RWMutex.Unlock()
-		return
-	}
-	s.RWMutex.Unlock()
 }
 
 // Print fluff message on bot ping
 func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) && m.Author.ID == "128312718779219968" {
+		MapMutex.Lock()
+		guildBotLog := GuildMap[m.GuildID].GuildConfig.BotLog.ID
+		MapMutex.Unlock()
+
 		_, err := s.ChannelMessageSend(m.ChannelID, "Professor!")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -440,11 +429,15 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) && m.Author.ID == "66207186417627136" {
+		MapMutex.Lock()
+		guildBotLog := GuildMap[m.GuildID].GuildConfig.BotLog.ID
+		MapMutex.Unlock()
+
 		randomNum := rand.Intn(5)
 		if randomNum == 0 {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Bug hunter!")
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + ErrorLocation(err))
 				if err != nil {
 					return
 				}
@@ -455,7 +448,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if randomNum == 1 {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Player!")
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + ErrorLocation(err))
 				if err != nil {
 					return
 				}
@@ -466,7 +459,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if randomNum == 2 {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Big brain!")
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + ErrorLocation(err))
 				if err != nil {
 					return
 				}
@@ -477,7 +470,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if randomNum == 3 {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Poster expert!")
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
 					return
 				}
@@ -488,7 +481,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if randomNum == 4 {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Idiot!")
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
 					return
 				}
@@ -499,9 +492,13 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) && darlingTrigger > 10 {
+		MapMutex.Lock()
+		guildBotLog := GuildMap[m.GuildID].GuildConfig.BotLog.ID
+		MapMutex.Unlock()
+
 		_, err := s.ChannelMessageSend(m.ChannelID, "Daaarling~")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -511,9 +508,13 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) {
+		MapMutex.Lock()
+		guildBotLog := GuildMap[m.GuildID].GuildConfig.BotLog.ID
+		MapMutex.Unlock()
+
 		_, err := s.ChannelMessageSend(m.ChannelID, "Baka!")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -526,6 +527,8 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 // If there's a manual ban handle it correctly
 func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
 	MapMutex.Lock()
+	guildBotLog := GuildMap[e.GuildID].GuildConfig.BotLog.ID
+
 	for i := 0; i < len(GuildMap[e.GuildID].BannedUsers); i++ {
 		if GuildMap[e.GuildID].BannedUsers[i].ID == e.User.ID {
 			MapMutex.Unlock()
@@ -533,7 +536,7 @@ func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
 		}
 	}
 	MapMutex.Unlock()
-	_, err := s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("%v#%v was manually permabanned. ID: %v", e.User.Username, e.User.Discriminator, e.User.ID))
+	_, err := s.ChannelMessageSend(guildBotLog, fmt.Sprintf("%v#%v was manually permabanned. ID: %v", e.User.Username, e.User.Discriminator, e.User.ID))
 	if err != nil {
 		return
 	}
@@ -544,10 +547,7 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string) + "\n" + ErrorLocation(rec.(error)))
-			if err != nil {
-				return
-			}
+			log.Println("Recovery in remindMeHandler")
 		}
 	}()
 
@@ -571,7 +571,7 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 						pingMessage := fmt.Sprintf("<@%v> Remindme: %v", userID, remindMeObject.Message)
 						_, err = s.ChannelMessageSend(remindMeObject.CommandChannel, pingMessage)
 						if err != nil {
-							_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+							_, err = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 							if err != nil {
 								MapMutex.Unlock()
 								return
@@ -591,7 +591,7 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 				}
 				_, err = RemindMeWrite(GuildMap[guildID].RemindMes, guildID)
 				if err != nil {
-					_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+					_, err = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 					if err != nil {
 						MapMutex.Unlock()
 						return
@@ -613,16 +613,17 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
-			if err != nil {
-				return
-			}
+			log.Println("Recovery in GuildJoin")
 		}
 	}()
 
+	MapMutex.Lock()
+	guildBotLog := GuildMap[u.GuildID].GuildConfig.BotLog.ID
+	MapMutex.Unlock()
+
 	creationDate, err := CreationTime(u.User.ID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -633,7 +634,7 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	if u.GuildID == "267799767843602452" {
 		_, err = s.ChannelMessageSend("566233292026937345", fmt.Sprintf("User joined the server: %v\nAccount age: %v", u.User.Mention(), creationDate.String()))
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -657,17 +658,18 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
-			if err != nil {
-				return
-			}
+			log.Println("Recovery in SpambotJoin")
 		}
 	}()
+
+	MapMutex.Lock()
+	guildBotLog := GuildMap[u.GuildID].GuildConfig.BotLog.ID
+	MapMutex.Unlock()
 
 	// Fetches date of account creation and checks if it's younger than 3 days
 	creationDate, err := CreationTime(u.User.ID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -736,7 +738,7 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	// Bans the suspected account
 	err = s.GuildBanCreateWithReason(u.GuildID, u.User.ID, "Autoban Spambot Account", 0)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -744,7 +746,7 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 
 	// Botlog message
-	_, _ = s.ChannelMessageSend(config.BotLogID, fmt.Sprintf("Suspected spambot was banned. User: <@!%v>", u.User.ID))
+	_, _ = s.ChannelMessageSend(guildBotLog, fmt.Sprintf("Suspected spambot was banned. User: <@!%v>", u.User.ID))
 }
 
 // Cleans spoilerroles.json
@@ -752,10 +754,12 @@ func cleanSpoilerRoles(s *discordgo.Session, guildID string) error {
 
 	var shouldDelete bool
 
+	guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
+
 	// Pulls all of the server roles
 	roles, err := s.GuildRoles(guildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + ErrorLocation(err))
 		if err != nil {
 			return err
 		}

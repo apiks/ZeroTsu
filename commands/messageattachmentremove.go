@@ -2,12 +2,12 @@ package commands
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
@@ -15,6 +15,7 @@ var (
 	whitelist = [...]string{"png", "gif", "gifv",
 		"jpeg", "jpg", "bmp", "tif", "tiff", "webm", "webps", "webp",
 		"mp4", "ogg", "wmv", "3gp", "avi", "flv", "wav"}
+	whitelistString = ".png, .gif, .gifv, .jpeg, .jpg, .bmp, .tif, .tiff, .webm, .webps, .webp, .mp4, .ogg, .wmv, .3gp, .avi, .flv, .wav"
 )
 
 // Checks messages with uploads if they're uploading a whitelisted file type. If not it removes them
@@ -23,12 +24,23 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
-			if err != nil {
-				fmt.Println(rec)
-			}
+			log.Println(rec)
+			log.Println("Recovery in MessageAttachmentsHandler")
 		}
 	}()
+
+	if m.GuildID == "" {
+		return
+	}
+
+	misc.MapMutex.Lock()
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	guildFileFilter := misc.GuildMap[m.GuildID].GuildConfig.FileFilter
+	misc.MapMutex.Unlock()
+
+	if !guildFileFilter {
+		return
+	}
 
 	if m.Author.ID == s.State.User.ID {
 		return
@@ -45,12 +57,9 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		}
 	}
 	// Checks if user is mod before checking the message
-	s.RWMutex.RLock()
-	if misc.HasPermissions(mem, m.GuildID) {
-		s.RWMutex.RUnlock()
+	if HasElevatedPermissions(s, mem.User.ID, m.GuildID) {
 		return
 	}
-	s.RWMutex.RUnlock()
 
 	// Iterates through all the attachments (since more than one can be posted in one go)
 	// and checks if it's an allowed file type. If it isn't sends error message for each file
@@ -62,7 +71,7 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		// Deletes the message that was sent if has a non-whitelisted attachment
 		err = s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -72,7 +81,7 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		now := time.Now().Format("2006-01-02 15:04:05")
 
 		// Prints success in bot-log channel
-		_, _ = s.ChannelMessageSend(config.BotLogID, m.Author.Mention() + " had their message removed for uploading non-whitelisted `" +
+		_, _ = s.ChannelMessageSend(guildBotLog, m.Author.Mention() + " had their message removed for uploading non-whitelisted `" +
 			attachment.Filename + "` in " + "<#" + m.ChannelID + "> on [_" + now + "_]")
 
 		// Sends a message to the user in their DMs if possible
@@ -80,7 +89,7 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		if err != nil {
 			return
 		}
-		_, _ = s.ChannelMessageSend(dm.ID, "Your message upload `" + attachment.Filename + "` was removed for using a non-whitelisted file type. Only gif, image and webm file extensions are allowed.")
+		_, _ = s.ChannelMessageSend(dm.ID, "Your message upload `" + attachment.Filename + "` was removed for using a non-whitelisted file type.\n\nAllowed file types: `" + whitelistString + "`")
 	}
 
 }

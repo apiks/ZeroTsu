@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/bwmarrin/discordgo"
-	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
 	"log"
 	"net/http"
@@ -27,6 +26,10 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 		day = -1
 		printMessage string
 	)
+
+	misc.MapMutex.Lock()
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
 
 	command := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(command, " ", 2)
@@ -57,7 +60,7 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 		if day < 0 || day > 6 {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot parse that day.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 				if err != nil {
 					return
 				}
@@ -69,10 +72,15 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 		printMessage = getDaySchedule(day)
 	}
 
+	// Add AnimeSchedule.net
+	if m.GuildID != "267799767843602452" {
+		printMessage += "\n\nFull Week: <https://AnimeSchedule.net>"
+	}
+
 	// Print the daily schedule
 	_, err := s.ChannelMessageSend(m.ChannelID, printMessage)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}

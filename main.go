@@ -88,18 +88,14 @@ func Start() {
 	// React Filter
 	goBot.AddHandler(commands.FilterReactsHandler)
 
-	// Deletes non-whitelisted attachments if set to true
-	if config.MsgAttachRemoval == "true" {
-		goBot.AddHandler(commands.MessageAttachmentsHandler)
-	}
+	// Deletes non-whitelisted attachments
+	goBot.AddHandler(commands.MessageAttachmentsHandler)
 
-	if config.Kaguya != "true" {
-		// React Channel Join Handler. Disabled if using Kaguya
-		goBot.AddHandler(commands.ReactJoinHandler)
+	// React Channel Join Handler
+	goBot.AddHandler(commands.ReactJoinHandler)
 
-		// React Channel Remove Handler. Disabled if using Kaguya
-		goBot.AddHandler(commands.ReactRemoveHandler)
-	}
+	// React Channel Remove Handler
+	goBot.AddHandler(commands.ReactRemoveHandler)
 
 	// Channel Vote Timer
 	goBot.AddHandler(commands.ChannelVoteTimer)

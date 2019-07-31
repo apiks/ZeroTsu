@@ -14,8 +14,6 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-
-	"github.com/r-anime/ZeroTsu/config"
 )
 
 var (
@@ -87,10 +85,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string) + "\n" + ErrorLocation(rec.(error)))
-			if err != nil {
-				fmt.Println(rec)
-			}
+			log.Println("Recovery in OnMemberJoinGuild")
 		}
 	}()
 
@@ -231,10 +226,7 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string) + "\n" + ErrorLocation(rec.(error)))
-			if err != nil {
-				fmt.Println(rec)
-			}
+			log.Println("Recovery in OnMemberUpdate")
 		}
 	}()
 
@@ -316,10 +308,7 @@ func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string) + "\n" + ErrorLocation(rec.(error)))
-			if err != nil {
-				fmt.Println(rec)
-			}
+			log.Println("Recovery in OnPresenceUpdate")
 		}
 	}()
 

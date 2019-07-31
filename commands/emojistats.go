@@ -2,12 +2,12 @@ package commands
 
 import (
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
@@ -17,24 +17,26 @@ func OnMessageEmoji(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
-			if err != nil {
-				return
-			}
+			log.Println(rec)
+			log.Println("Recovery in OnMessageEmoji")
 		}
 	}()
 
+	if m.GuildID == "" {
+		return
+	}
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
-	// Checks if it's within config server
-	if m.GuildID != m.GuildID {
-		return
-	}
+
+	misc.MapMutex.Lock()
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	// Pulls the entire guild structure so we can check guild emojis from it later
 	guild, err := s.Guild(m.GuildID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m.Message, err)
+		misc.CommandErrorHandler(s, m.Message, err, guildBotLog)
 	}
 
 	// If a message contains a server emoji it tracks it
@@ -70,21 +72,23 @@ func OnMessageEmojiReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
-			if err != nil {
-				return
-			}
+			log.Println(rec)
+			log.Println("Recovery in OnMessageEmojiReact")
 		}
 	}()
 
-	// Checks if it's within the /r/anime server
-	if r.GuildID != r.GuildID {
+	if r.GuildID == "" {
 		return
 	}
+
+	misc.MapMutex.Lock()
+	guildBotLog := misc.GuildMap[r.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	// Pulls the entire guild structure so we can check guild emojis from it later
 	guild, err := s.Guild(r.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -120,17 +124,23 @@ func OnMessageEmojiUnreact(s *discordgo.Session, r *discordgo.MessageReactionRem
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, rec.(string))
-			if err != nil {
-				return
-			}
+			log.Println(rec)
+			log.Println("Recovery in OnMessageEmojiUnreact")
 		}
 	}()
+
+	if r.GuildID == "" {
+		return
+	}
+
+	misc.MapMutex.Lock()
+	guildBotLog := misc.GuildMap[r.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
 
 	// Pulls the entire guild structure so we can check guild emojis from it later
 	guild, err := s.Guild(r.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -172,6 +182,8 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 	// Merges duplicates and returns that as a map
 	misc.MapMutex.Lock()
 	printEmojiMap = mergeDuplicates(m.GuildID)
+
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
 	// Sorts emojis by their message use from the above map
 	emojis := make([]*misc.Emoji, len(printEmojiMap))
@@ -228,7 +240,7 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 	for j := 0; j < len(msgs); j++ {
 		_, err := s.ChannelMessageSend(m.ChannelID, msgs[j])
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}

@@ -6,7 +6,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
@@ -24,17 +23,16 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 		author  		discordgo.User
 	)
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "killchannel [channel]`")
-		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
-			return
-		}
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "killchannel [channel]`")
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
@@ -43,10 +41,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 	if channelID == "" && channelName == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such channel exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 		return
@@ -62,7 +57,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 					err := misc.RssThreadsTimerRemove(rssTimer.Thread, rssTimer.Date, rssTimer.ChannelID, m.GuildID)
 					if err != nil {
 						misc.MapMutex.Unlock()
-						misc.CommandErrorHandler(s, m, err)
+						misc.CommandErrorHandler(s, m, err, guildBotLog)
 						return
 					}
 					break
@@ -81,7 +76,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 				_, err := misc.RssThreadsRemove(thread.Thread, thread.Author, m.GuildID)
 				if err != nil {
 					misc.MapMutex.Unlock()
-					misc.CommandErrorHandler(s, m, err)
+					misc.CommandErrorHandler(s, m, err, guildBotLog)
 					return
 				}
 				break
@@ -102,10 +97,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 	// Fetches channel role ID by finding it amongst all server roles
 	roles, err := s.GuildRoles(m.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 	for _, role := range roles {
@@ -127,7 +119,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 						message.ID = messageID
 						message.GuildID = m.GuildID
 						message.Author = &author
-						message.Content = fmt.Sprintf("%vremovereact %v %v", config.BotPrefix, messageID, emoji)
+						message.Content = fmt.Sprintf("%vremovereact %v %v", guildPrefix, messageID, emoji)
 						misc.MapMutex.Unlock()
 						removeReactJoinCommand(s, &message)
 						misc.MapMutex.Lock()
@@ -142,7 +134,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 	if roleID != "" {
 		err = s.GuildRoleDelete(m.GuildID, roleID)
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err)
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 	}
@@ -150,7 +142,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 	// Removes the channel
 	_, err = s.ChannelDelete(channelID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
@@ -159,10 +151,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 	}
 	_, err = s.ChannelMessageSend(m.ChannelID, "Success: Channel `" + channelName + "` was successfuly deleted!")
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 }
@@ -178,15 +167,17 @@ func deleteCategory(s *discordgo.Session, m *discordgo.Message) {
 		author  		discordgo.User
 	)
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "killcategory [category]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "killcategory [category]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 		return
@@ -197,10 +188,7 @@ func deleteCategory(s *discordgo.Session, m *discordgo.Message) {
 	if categoryID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such category exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 		return
@@ -209,10 +197,7 @@ func deleteCategory(s *discordgo.Session, m *discordgo.Message) {
 	if strings.ToLower(categoryName) == "general" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Not allowed to delete the general category. Please try something else.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 		return
@@ -220,17 +205,14 @@ func deleteCategory(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, "Starting channel deletion. For categories with a lot of channels you will have to wait more. A message will be sent when it is done.")
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
 	for loopFlag {
 		channels, err := s.GuildChannels(m.GuildID)
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err)
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 		for _, channel := range channels {
@@ -241,7 +223,7 @@ func deleteCategory(s *discordgo.Session, m *discordgo.Message) {
 				message.GuildID = m.GuildID
 				message.Author = &author
 				message.ChannelID = m.ChannelID
-				message.Content = fmt.Sprintf("%vkillchannel %v", config.BotPrefix, channel.ID)
+				message.Content = fmt.Sprintf("%vkillchannel %v", guildPrefix, channel.ID)
 				deleteChannel(s, &message)
 				break
 			} else {
@@ -255,7 +237,7 @@ func deleteCategory(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err = s.ChannelDelete(categoryID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
@@ -264,10 +246,7 @@ func deleteCategory(s *discordgo.Session, m *discordgo.Message) {
 	}
 	_, err = s.ChannelMessageSend(m.ChannelID, "Success: Category `" + categoryName + "` was successfuly deleted!")
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 }
@@ -283,15 +262,17 @@ func deleteChannelReacts(s *discordgo.Session, m *discordgo.Message) {
 		author  		discordgo.User
 	)
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "killchannelreacts [channel]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "killchannelreacts [channel]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 		return
@@ -302,10 +283,7 @@ func deleteChannelReacts(s *discordgo.Session, m *discordgo.Message) {
 	if channelID == "" && channelName == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such channel exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 		return
@@ -327,7 +305,7 @@ func deleteChannelReacts(s *discordgo.Session, m *discordgo.Message) {
 						message.ID = messageID
 						message.GuildID = m.GuildID
 						message.Author = &author
-						message.Content = fmt.Sprintf("%vremovereact %v %v", config.BotPrefix, messageID, emoji)
+						message.Content = fmt.Sprintf("%vremovereact %v %v", guildPrefix, messageID, emoji)
 						misc.MapMutex.Unlock()
 						removeReactJoinCommand(s, &message)
 						misc.MapMutex.Lock()
@@ -343,10 +321,7 @@ func deleteChannelReacts(s *discordgo.Session, m *discordgo.Message) {
 	}
 	_, err := s.ChannelMessageSend(m.ChannelID, "Success: Channel `" + channelName + "`'s set react joins were removed!")
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 }
@@ -361,15 +336,17 @@ func deleteCategoryReacts(s *discordgo.Session, m *discordgo.Message) {
 		author  		discordgo.User
 	)
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "killcategoryreacts [category]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "killcategoryreacts [category]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 		return
@@ -380,10 +357,7 @@ func deleteCategoryReacts(s *discordgo.Session, m *discordgo.Message) {
 	if categoryID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such category exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 		return
@@ -391,16 +365,13 @@ func deleteCategoryReacts(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, "Starting channel react deletion. For categories with a lot of channels you will have to wait more. A message will be sent when it is done.")
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
 	channels, err := s.GuildChannels(m.GuildID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 	for _, channel := range channels {
@@ -410,7 +381,7 @@ func deleteCategoryReacts(s *discordgo.Session, m *discordgo.Message) {
 			message.GuildID = m.GuildID
 			message.Author = &author
 			message.ChannelID = m.ChannelID
-			message.Content = fmt.Sprintf("%vkillchannelreacts %v", config.BotPrefix, channel.ID)
+			message.Content = fmt.Sprintf("%vkillchannelreacts %v", guildPrefix, channel.ID)
 			deleteChannelReacts(s, &message)
 		}
 	}
@@ -420,10 +391,7 @@ func deleteCategoryReacts(s *discordgo.Session, m *discordgo.Message) {
 	}
 	_, err = s.ChannelMessageSend(m.ChannelID, "Success: Category `" + categoryName + "`'s set react joins were removed!")
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 }
@@ -449,7 +417,7 @@ func init() {
 		execute:  deleteChannelReacts,
 		trigger:  "killchannelreacts",
 		aliases:  []string{"removechannelreacts", "removechannelreact", "killchannelreact", "deletechannelreact", "deletechannelreacts"},
-		desc:     "Removes all reacts linked to a specific channel.",
+		desc:     "Removes all reacts linked to a specific channel. [REACTS]",
 		elevated: true,
 		category: "reacts",
 	})
@@ -457,7 +425,7 @@ func init() {
 		execute:  deleteCategoryReacts,
 		trigger:  "killcategoryreacts",
 		aliases:  []string{"removecategoryreacts", "removecategoryreact", "killcategoryreact", "deletecategoryreact", "deletecategoryreacts"},
-		desc:     "Removes all reacts linked to a specific category.",
+		desc:     "Removes all reacts linked to a specific category. [REACTS]",
 		elevated: true,
 		category: "reacts",
 	})

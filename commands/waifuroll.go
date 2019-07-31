@@ -10,7 +10,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/misc"
-	"github.com/r-anime/ZeroTsu/config"
 )
 
 type waifuOwners struct {
@@ -24,12 +23,17 @@ func addWaifu(s *discordgo.Session, m *discordgo.Message) {
 
 	var temp misc.Waifu
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "addwaifu [waifu]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "addwaifu [waifu]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -44,7 +48,7 @@ func addWaifu(s *discordgo.Session, m *discordgo.Message) {
 		if waifu.Name == strings.ToLower(commandStrings[1]) {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: That waifu already exists.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 				if err != nil {
 					misc.MapMutex.Unlock()
 					return
@@ -62,7 +66,7 @@ func addWaifu(s *discordgo.Session, m *discordgo.Message) {
 	misc.GuildMap[m.GuildID].Waifus = append(misc.GuildMap[m.GuildID].Waifus, temp)
 	err := misc.WaifusWrite(misc.GuildMap[m.GuildID].Waifus, m.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			misc.MapMutex.Unlock()
 			return
@@ -74,19 +78,24 @@ func addWaifu(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err = s.ChannelMessageSend(m.ChannelID, "Success! Added waifu `" + commandStrings[1] + "` to waifu list.")
 	if err != nil {
-		_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, _ = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 	}
 }
 
 // Removes a waifu from the waifu list
 func removeWaifu(s *discordgo.Session, m *discordgo.Message) {
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removewaifu [waifu]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "removewaifu [waifu]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -102,7 +111,7 @@ func removeWaifu(s *discordgo.Session, m *discordgo.Message) {
 			misc.GuildMap[m.GuildID].Waifus = append(misc.GuildMap[m.GuildID].Waifus[:i], misc.GuildMap[m.GuildID].Waifus[i+1:]...)
 			err := misc.WaifusWrite(misc.GuildMap[m.GuildID].Waifus, m.GuildID)
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 				if err != nil {
 					misc.MapMutex.Unlock()
 					return
@@ -112,7 +121,7 @@ func removeWaifu(s *discordgo.Session, m *discordgo.Message) {
 			}
 			_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed waifu `" + commandStrings[1] + "` from waifu list.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 				if err != nil {
 					misc.MapMutex.Unlock()
 					return
@@ -128,20 +137,26 @@ func removeWaifu(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such waifu found.")
 	if err != nil {
-		_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, _ = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 	}
 }
 
 // Shows the current list of waifus
 func viewWaifus(s *discordgo.Session, m *discordgo.Message) {
+
 	var message string
+
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
 
 	commandStrings := strings.Split(m.Content, " ")
 
 	if len(commandStrings) != 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "viewwaifus`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "viewwaifus`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -154,7 +169,7 @@ func viewWaifus(s *discordgo.Session, m *discordgo.Message) {
 	if len(misc.GuildMap[m.GuildID].Waifus) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no waifus.")
 		if err != nil {
-			_, err := s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err := s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -178,7 +193,7 @@ func viewWaifus(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, message)
 	if err != nil {
-		_, _ = s.ChannelMessageSend(config.BotLogID, err.Error())
+		_, _ = s.ChannelMessageSend(guildBotLog, err.Error())
 	}
 }
 
@@ -191,12 +206,17 @@ func rollWaifu(s *discordgo.Session, m *discordgo.Message) {
 		waifuRoll 			misc.Waifu
 	)
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	commandStrings := strings.Split(m.Content, " ")
 
 	if len(commandStrings) != 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "rollwaifu`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "rollwaifu`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -207,23 +227,21 @@ func rollWaifu(s *discordgo.Session, m *discordgo.Message) {
 
 	misc.MapMutex.Lock()
 	_, ok := misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID];if !ok {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You are not in memberInfo and therefore not allowed to roll a waifu. Please notify a mod.")
+		// Fetch user and initialize him
+		member, err := s.State.Member(m.GuildID, m.Author.ID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
-			if err != nil {
+			if member, err = s.GuildMember(m.GuildID, m.Author.ID); err != nil {
 				misc.MapMutex.Unlock()
+				misc.CommandErrorHandler(s, m, err, m.GuildID)
 				return
 			}
-			misc.MapMutex.Unlock()
-			return
 		}
-		misc.MapMutex.Unlock()
-		return
+		misc.InitializeUser(member, m.GuildID)
 	}
 	if misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID].Waifu.Name != "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: More than one waifu will ruin your laifu.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -236,6 +254,21 @@ func rollWaifu(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	waifuLen = len(misc.GuildMap[m.GuildID].Waifus)
+	if waifuLen == 0 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no waifus to roll.")
+		if err != nil {
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				misc.MapMutex.Unlock()
+				return
+			}
+			misc.MapMutex.Unlock()
+			return
+		}
+		misc.MapMutex.Unlock()
+		return
+	}
+
 	randomWaifuIndex = rand.Intn(waifuLen)
 	waifuRoll = misc.GuildMap[m.GuildID].Waifus[randomWaifuIndex]
 	misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID].Waifu = waifuRoll
@@ -244,19 +277,24 @@ func rollWaifu(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, "Your assigned waifu is " + waifuRoll.Name + "! Congratulations!")
 	if err != nil {
-		_, _ = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, _ = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 	}
 }
 
 // Posts what the user's assigned waifu is
 func myWaifu(s *discordgo.Session, m *discordgo.Message) {
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	commandStrings := strings.Split(m.Content, " ")
 
 	if len(commandStrings) != 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "mywaifu`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "mywaifu`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -269,7 +307,7 @@ func myWaifu(s *discordgo.Session, m *discordgo.Message) {
 	_, ok := misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID];if !ok {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You are not in memberInfo and therefore not allowed to roll a waifu. Please notify a mod.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -281,9 +319,9 @@ func myWaifu(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 	if misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID].Waifu.Name == "" {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You don't have a waifu. Please roll one with `" + config.BotPrefix + "rollwaifu`!")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You don't have a waifu. Please roll one with `" + guildPrefix + "rollwaifu`!")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -296,7 +334,7 @@ func myWaifu(s *discordgo.Session, m *discordgo.Message) {
 	}
 	_, err := s.ChannelMessageSend(m.ChannelID, "Your waifu is " + misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID].Waifu.Name +"! I hope you two live a happy life!")
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			misc.MapMutex.Unlock()
 			return
@@ -312,12 +350,17 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 
 	var temp misc.WaifuTrade
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	commandStrings := strings.Split(m.Content, " ")
 
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"tradewaifu [@user, userID or username#discrim]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"tradewaifu [@user, userID or username#discrim]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -329,7 +372,7 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls userID from 2nd parameter of commandStrings
 	userID, err := misc.GetUserID(s, m, commandStrings)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
@@ -337,7 +380,7 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 	_, ok := misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID];if !ok {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You are not in memberInfo and therefore not allowed to roll a waifu. Please notify a mod.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -349,9 +392,9 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 	if misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID].Waifu.Name == "" {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You don't have a waifu. Please roll one with `" + config.BotPrefix + "rollwaifu` before initiating a trade!")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You don't have a waifu. Please roll one with `" + guildPrefix + "rollwaifu` before initiating a trade!")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -366,7 +409,7 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 	_, ok = misc.GuildMap[m.GuildID].MemberInfoMap[userID];if !ok {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Target user is not in memberInfo and therefore not allowed to roll have a waifu. Please notify a mod.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -380,7 +423,7 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 	if misc.GuildMap[m.GuildID].MemberInfoMap[userID].Waifu.Name == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Target user doesn't have a waifu. Please wait for them to roll for one before initiating a trade!")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -398,7 +441,7 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 	misc.GuildMap[m.GuildID].WaifuTrades = append(misc.GuildMap[m.GuildID].WaifuTrades, temp)
 	err = misc.WaifuTradesWrite(misc.GuildMap[m.GuildID].WaifuTrades, m.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			misc.MapMutex.Unlock()
 			return
@@ -408,9 +451,9 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Waifu trade with ID %v initiated between <@%v> with waifu %v and <@%v> with waifu %v. <@%v> if you agree to " +
-		"exchange your waifu for his, please type `%vaccepttrade %v`! To cancel the trade by either side type `%vcanceltrade %v`", temp.TradeID, temp.InitiatorID, misc.GuildMap[m.GuildID].MemberInfoMap[temp.InitiatorID].Waifu.Name, userID, misc.GuildMap[m.GuildID].MemberInfoMap[userID].Waifu.Name, userID, config.BotPrefix, temp.TradeID, config.BotPrefix , temp.TradeID))
+		"exchange your waifu for his, please type `%vaccepttrade %v`! To cancel the trade by either side type `%vcanceltrade %v`", temp.TradeID, temp.InitiatorID, misc.GuildMap[m.GuildID].MemberInfoMap[temp.InitiatorID].Waifu.Name, userID, misc.GuildMap[m.GuildID].MemberInfoMap[userID].Waifu.Name, userID, guildPrefix, temp.TradeID, guildPrefix , temp.TradeID))
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			misc.MapMutex.Unlock()
 			return
@@ -426,12 +469,17 @@ func acceptTrade(s *discordgo.Session, m *discordgo.Message) {
 
 	var flag bool
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	commandStrings := strings.Split(m.Content, " ")
 
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"accepttrade [TradeID]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"accepttrade [TradeID]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -444,7 +492,7 @@ func acceptTrade(s *discordgo.Session, m *discordgo.Message) {
 	if len(misc.GuildMap[m.GuildID].WaifuTrades) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no ongoing trades.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -461,7 +509,7 @@ func acceptTrade(s *discordgo.Session, m *discordgo.Message) {
 			if trade.AccepteeID != m.Author.ID {
 				_, err := s.ChannelMessageSend(m.ChannelID, "Error: You are not the one who has permissions to accept this trade.")
 				if err != nil {
-					_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+					_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 					if err != nil {
 						misc.MapMutex.Unlock()
 						return
@@ -482,7 +530,7 @@ func acceptTrade(s *discordgo.Session, m *discordgo.Message) {
 			misc.GuildMap[m.GuildID].WaifuTrades = append(misc.GuildMap[m.GuildID].WaifuTrades[:i], misc.GuildMap[m.GuildID].WaifuTrades[i+1:]...)
 			err := misc.WaifuTradesWrite(misc.GuildMap[m.GuildID].WaifuTrades, m.GuildID)
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
 					misc.MapMutex.Unlock()
 					return
@@ -498,7 +546,7 @@ func acceptTrade(s *discordgo.Session, m *discordgo.Message) {
 	if !flag {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such trade exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -509,7 +557,7 @@ func acceptTrade(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, "Success! Traded waifus in trade with ID " + commandStrings[1])
 	if err != nil {
-		_, _ = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 	}
 }
 
@@ -518,12 +566,17 @@ func cancelTrade(s *discordgo.Session, m *discordgo.Message) {
 
 	var flag bool
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	commandStrings := strings.Split(m.Content, " ")
 
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"canceltrade [TradeID]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"canceltrade [TradeID]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -536,7 +589,7 @@ func cancelTrade(s *discordgo.Session, m *discordgo.Message) {
 	if len(misc.GuildMap[m.GuildID].WaifuTrades) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no ongoing trades.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -554,7 +607,7 @@ func cancelTrade(s *discordgo.Session, m *discordgo.Message) {
 				trade.InitiatorID != m.Author.ID {
 				_, err := s.ChannelMessageSend(m.ChannelID, "Error: You are not someone who has permissions to cancel this trade.")
 				if err != nil {
-					_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+					_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 					if err != nil {
 						misc.MapMutex.Unlock()
 						return
@@ -570,7 +623,7 @@ func cancelTrade(s *discordgo.Session, m *discordgo.Message) {
 			misc.GuildMap[m.GuildID].WaifuTrades = append(misc.GuildMap[m.GuildID].WaifuTrades[:i], misc.GuildMap[m.GuildID].WaifuTrades[i+1:]...)
 			err := misc.WaifuTradesWrite(misc.GuildMap[m.GuildID].WaifuTrades, m.GuildID)
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
 					misc.MapMutex.Unlock()
 					return
@@ -586,7 +639,7 @@ func cancelTrade(s *discordgo.Session, m *discordgo.Message) {
 	if !flag {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such trade exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -597,7 +650,7 @@ func cancelTrade(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, "Success! Cancelled trade with ID " + commandStrings[1])
 	if err != nil {
-		_, _ = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 	}
 }
 
@@ -611,12 +664,17 @@ func showOwners(s *discordgo.Session, m *discordgo.Message) {
 		owner		waifuOwners
 	)
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	commandStrings := strings.Split(m.Content, " ")
 
 	if len(commandStrings) != 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"owners`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"owners`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -653,7 +711,7 @@ func showOwners(s *discordgo.Session, m *discordgo.Message) {
 	for _, message := range messages {
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, _ = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		}
 	}
 }
@@ -676,7 +734,7 @@ func init() {
 		execute:  addWaifu,
 		trigger:  "addwaifu",
 		aliases:  []string{"addwife"},
-		desc:     "Adds a waifu to the waifu list.",
+		desc:     "Adds a waifu to the waifu list. [WAIFU]",
 		elevated: true,
 		category: "waifus",
 	})
@@ -684,7 +742,7 @@ func init() {
 		execute:  removeWaifu,
 		trigger:  "removewaifu",
 		aliases:  []string{"removewife", "deletewaifu", "deletewife"},
-		desc:     "Removes a waifu from the waifu list.",
+		desc:     "Removes a waifu from the waifu list. [WAIFU]",
 		elevated: true,
 		category: "waifus",
 	})
@@ -692,7 +750,7 @@ func init() {
 		execute:  viewWaifus,
 		trigger:  "viewwaifus",
 		aliases:  []string{"showwaifus", "vwaifus", "waifulist", "listwaifu", "waifus"},
-		desc:     "Shows the current list of waifus.",
+		desc:     "Shows the current list of waifus. [WAIFU]",
 		elevated: true,
 		category: "waifus",
 	})
@@ -700,42 +758,42 @@ func init() {
 		execute:  rollWaifu,
 		trigger:  "rollwaifu",
 		aliases:  []string{"rollwife", "wiferoll", "waifuroll"},
-		desc:     "Rolls a random waifu.",
+		desc:     "Rolls a random waifu. [WAIFU]",
 		category: "waifus",
 	})
 	add(&command{
 		execute:  myWaifu,
 		trigger:  "waifu",
 		aliases:  []string{"mywaifu", "mywife", "showwaifu", "waifushow", "viewwaifu", "viewwife"},
-		desc:     "Shows what your assigned waifu is.",
+		desc:     "Shows what your assigned waifu is. [WAIFU]",
 		category: "waifus",
 	})
 	add(&command{
 		execute:  tradeWaifu,
 		trigger:  "tradewaifu",
 		aliases:  []string{"tradewife", "sellwaifu", "starttrade", "tradestart"},
-		desc:     "Trades two waifus between two users if both agree.",
+		desc:     "Trades two waifus between two users if both agree. [WAIFU]",
 		category: "waifus",
 	})
 	add(&command{
 		execute:  acceptTrade,
 		trigger:  "accepttrade",
 		aliases:  []string{"tradeaccept", "buywaifu"},
-		desc:     "Accepts a proposed waifu trade.",
+		desc:     "Accepts a proposed waifu trade. [WAIFU]",
 		category: "waifus",
 	})
 	add(&command{
 		execute:  cancelTrade,
 		trigger:  "canceltrade",
 		aliases:  []string{"tradecancel", "stoptrade", "tradestop"},
-		desc:     "Cancels a proposed waifu trade.",
+		desc:     "Cancels a proposed waifu trade. [WAIFU]",
 		category: "waifus",
 	})
 	add(&command{
 		execute:  showOwners,
 		trigger:  "owners",
 		aliases:  []string{"showowners", "viewowners", "tradestop"},
-		desc:     "Prints all waifus and how many owners they have.",
+		desc:     "Prints all waifus and how many owners they have. [WAIFU]",
 		elevated: true,
 		category: "waifus",
 	})

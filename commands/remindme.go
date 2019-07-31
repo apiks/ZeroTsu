@@ -7,7 +7,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
@@ -20,12 +19,17 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 		dummySlice misc.RemindMeSlice
 	)
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	// Checks if message contains filtered words, which would not be allowed as a remind
 	badWordExists, _ := isFiltered(s, m)
 	if badWordExists {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Usage of server filtered words in the remind command is not allowed.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -37,10 +41,10 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(m.Content, " ", 3)
 
 	if len(commandStrings) < 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "remindme [time] [message]` \n\n"+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "remindme [time] [message]` \n\n"+
 			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -54,7 +58,7 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid time given.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -65,7 +69,7 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	if perma {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot use that time. Please use another.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -99,7 +103,7 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice = append(misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice, remindMeObject)
 	_, err = misc.RemindMeWrite(misc.GuildMap[m.GuildID].RemindMes, m.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			misc.MapMutex.Unlock()
 			return
@@ -111,7 +115,7 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err = s.ChannelMessageSend(m.ChannelID, "Success! You will be reminded of the message on _" + Date.Format("2006-01-02 15:04 MST") + "_.")
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -130,11 +134,15 @@ func viewRemindMe(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if the user has any reminds
 	misc.MapMutex.Lock()
+
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+
 	_, ok := misc.GuildMap[m.GuildID].RemindMes[userID]
 	if !ok {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No saved reminds for you found.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -150,9 +158,9 @@ func viewRemindMe(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(m.Content, " ")
 
 	if len(commandStrings) != 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "reminds`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "reminds`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -176,7 +184,7 @@ func viewRemindMe(s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: The message size of all of the reminds is too big to display." +
 			" Please wait them out or never use this command again.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -188,7 +196,7 @@ func viewRemindMe(s *discordgo.Session, m *discordgo.Message) {
 	for _, remind := range remindMes {
 		_, err := s.ChannelMessageSend(m.ChannelID, remind)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -208,11 +216,15 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if the user has any reminds
 	misc.MapMutex.Lock()
+
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+
 	_, ok := misc.GuildMap[m.GuildID].RemindMes[userID]
 	if !ok {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No saved reminds found for you to delete.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -228,9 +240,9 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(m.Content, " ")
 
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removeremind [ID]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "removeremind [ID]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -243,7 +255,7 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Please input only a number as the second parameter.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -268,7 +280,7 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 
 			_, err := misc.RemindMeWrite(misc.GuildMap[m.GuildID].RemindMes, m.GuildID)
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 				if err != nil {
 					misc.MapMutex.Unlock()
 					return
@@ -285,7 +297,7 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 	if flag {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sucesss: Deleted remind with ID %v.", remindID))
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -295,7 +307,7 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 	}
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: No such remind with that ID found."))
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}

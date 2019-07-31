@@ -7,7 +7,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
@@ -29,14 +28,19 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 	z, _ := time.Now().Zone()
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	commandStrings := strings.SplitN(m.Content, " ", 4)
 
 	if len(commandStrings) != 4 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "ban [@user, userID, or username#discrim] [time] [reason]` format. \n\n"+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "ban [@user, userID, or username#discrim] [time] [reason]` format. \n\n"+
 			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes. Use 0d for permanent.\n" +
 			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -47,7 +51,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	userID, err := misc.GetUserID(s, m, commandStrings)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 	length = commandStrings[2]
@@ -64,11 +68,11 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	if !validSlice {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid length. \n Usage: `" + config.BotPrefix + "ban [@user or userID] [time] [reason]` format. \n\n"+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid length. \n Usage: `" + guildPrefix + "ban [@user or userID] [time] [reason]` format. \n\n"+
 			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes. Use 0d for permanent.\n" +
 			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -80,7 +84,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Fetches user
 	mem, err := s.User(userID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
@@ -91,10 +95,10 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	// Checks if user has a privileged role
 	if userMem != nil {
-		if misc.HasPermissions(userMem, m.GuildID) {
+		if HasElevatedPermissions(s, userMem.User.ID, m.GuildID) {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: Target user has a privileged role. Cannot ban.")
 			if err != nil {
-				_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+				_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
 					return
 				}
@@ -114,7 +118,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 			if err != nil {
 				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot ban user until they join the server.")
 				if err != nil {
-					_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+					_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 					if err != nil {
 						misc.MapMutex.Unlock()
 						return
@@ -136,7 +140,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid time given.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -159,7 +163,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Adds timestamp for that ban
 	t, err := m.Timestamp.Parse()
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		misc.MapMutex.Unlock()
 		return
 	}
@@ -175,7 +179,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls the guild name early on purpose
 	guild, err := s.Guild(m.GuildID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
@@ -226,21 +230,24 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Bans the user
 	err = s.GuildBanCreateWithReason(m.GuildID, userID, reason, 0)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
 	// Sends embed bot-log message
-	err = BanEmbed(s, m, mem, reason, UnbanDate, perma, config.BotLogID)
+	err = BanEmbed(s, m, mem, reason, UnbanDate, perma, guildBotLog)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return
+		}
 		return
 	}
 
 	// Sends embed channel message
 	err = BanEmbed(s, m, mem, reason, UnbanDate, perma, m.ChannelID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 }

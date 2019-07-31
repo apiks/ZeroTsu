@@ -6,7 +6,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
@@ -15,13 +14,18 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var channelID string
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	command := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(command, " ", 3)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "say OPTIONAL[channelID] [message]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "say OPTIONAL[channelID] [message]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -39,10 +43,10 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Sends the message to the channel the original message was in. Else continues to custom channel ID
 	if channelID == "" {
-		message := strings.TrimPrefix(m.Content, config.BotPrefix + "say ")
+		message := strings.TrimPrefix(m.Content, guildPrefix + "say ")
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -50,7 +54,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		err = s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -62,7 +66,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls server channels and checks if it's a valid channel
 	channels, err := s.GuildChannels(m.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -77,7 +81,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 	if channelID == "1" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid channel.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -86,10 +90,10 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	message := strings.TrimPrefix(m.Content, config.BotPrefix + "say " + channelID)
+	message := strings.TrimPrefix(m.Content, guildPrefix + "say " + channelID)
 	_, err = s.ChannelMessageSend(channelID, message)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -98,7 +102,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err = s.ChannelMessageSend(m.ChannelID, "Success! Message sent.")
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -109,12 +113,17 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 // Edits a message sent by the bot with another message
 func editCommand(s *discordgo.Session, m *discordgo.Message) {
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	commandStrings := strings.SplitN(m.Content, " ", 4)
 
 	if len(commandStrings) < 4 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "edit [channelID] [messageID] [message]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "edit [channelID] [messageID] [message]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -128,7 +137,7 @@ func editCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings[1]) < 17 || err != nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid channel.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -141,7 +150,7 @@ func editCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings[2]) < 17 || err != nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid message.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -162,7 +171,7 @@ func editCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err = s.ChannelMessageSend(m.ChannelID, "Success! Selected message edited.")
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}

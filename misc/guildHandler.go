@@ -52,9 +52,40 @@ type guildInfo struct {
 
 // Guild settings for misc things
 type GuildSettings struct {
-	Prefix			string			`json:"Prefix"`
-	BotLogID		string			`json:"BotLogID"`
-	CommandRoles 	[]string 		`json:"CommandRoles"`
+	Prefix              string     `json:"Prefix"`
+	BotLog              Cha        `json:"BotLogID"`
+	CommandRoles        []Role     `json:"CommandRoles"`
+	OptInUnder          OptinRole  `json:"OptInUnder"`
+	OptInAbove          OptinRole  `json:"OptInAbove"`
+	VoiceChas           []VoiceCha `json:"VoiceChas"`
+	VoteModule          bool       `json:"VoteModule"`
+	VoteChannelCategory Cha        `json:"VoteChannelCategory"`
+	WaifuModule         bool       `json:"WaifuModule"`
+	ReactsModule        bool       `json:"ReactsModule"`
+	FileFilter          bool       `json:"FileFilter"`
+	DailyStats			bool	   `json:"DailyStats"`
+}
+
+type Role struct {
+	Name	string	`json:"Name"`
+	ID		string	`json:"ID"`
+}
+
+type VoiceCha struct {
+	Name	string	`json:"Name"`
+	ID		string	`json:"ID"`
+	Roles	[]Role	`json:"Roles"`
+}
+
+type Cha struct {
+	Name	string	`json:"Name"`
+	ID		string	`json:"ID"`
+}
+
+type OptinRole struct {
+	Name		string	`json:"Name"`
+	ID			string	`json:"ID"`
+	Position	int		`json:"Position"`
 }
 
 // VoteInfo is the in memory storage of each vote channel's info
@@ -137,13 +168,13 @@ type Raffle struct {
 }
 
 type Waifu struct {
-	Name			string				`json:"Name"`
+	Name			string		`json:"Name"`
 }
 
 type WaifuTrade struct {
-	TradeID			string				`json:"TradeID"`
-	InitiatorID		string				`json:"InitiatorID"`
-	AccepteeID		string				`json:"AccepteeID"`
+	TradeID			string		`json:"TradeID"`
+	InitiatorID		string		`json:"InitiatorID"`
+	AccepteeID		string		`json:"AccepteeID"`
 }
 
 // Loads all guilds in the database/guilds folder
@@ -176,6 +207,7 @@ func LoadGuilds() {
 
 		GuildMap[folderName] = &guildInfo{
 			GuildID:             folderName,
+			GuildConfig:		 GuildSettings{Prefix: ".", VoteModule: false, WaifuModule: false, ReactsModule: true, FileFilter: false},
 			BannedUsers:         nil,
 			Filters:             nil,
 			MessageRequirements: nil,
@@ -236,11 +268,11 @@ func LoadGuildFile(guildID string, file string) {
 	case "raffles.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].Raffles)
 	case "waifus.json":
-		if config.Waifus == "true" {
+		if GuildMap[guildID].GuildConfig.WaifuModule {
 			_ = json.Unmarshal(infoByte, &GuildMap[guildID].Waifus)
 		}
 	case "waifuTrades.json":
-		if config.Waifus == "true" {
+		if GuildMap[guildID].GuildConfig.WaifuModule {
 			_ = json.Unmarshal(infoByte, &GuildMap[guildID].WaifuTrades)
 		}
 	case "memberInfo.json":
@@ -262,7 +294,7 @@ func LoadGuildFile(guildID string, file string) {
 	case "tempCha.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].TempChaMap)
 	case "reactJoin.json":
-		if config.Kaguya != "true" {
+		if GuildMap[guildID].GuildConfig.ReactsModule {
 			_ = json.Unmarshal(infoByte, &GuildMap[guildID].ReactJoinMap)
 		}
 	case "guildSettings.json":
@@ -892,6 +924,22 @@ func RssThreadsTimerRemove(thread string, date time.Time, channelID string, guil
 	return nil
 }
 
+// Writes guild settings to guildSettings.json
+func GuildSettingsWrite(info GuildSettings, guildID string) {
+
+	// Turns info map into byte ready to be pushed to file
+	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
+	if err != nil {
+		return
+	}
+
+	// Writes to file
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/guildSettings.json", guildID), MarshaledStruct, 0644)
+	if err != nil {
+		return
+	}
+}
+
 // Reads and returns the names of every file in that directory
 func IOReadDir(root string) ([]string, error) {
 	var files []string
@@ -943,5 +991,6 @@ func writeAll(guildID string) {
 	_ = WaifusWrite(GuildMap[guildID].Waifus, guildID)
 	_ = WaifuTradesWrite(GuildMap[guildID].WaifuTrades, guildID)
 	BannedUsersWrite(GuildMap[guildID].BannedUsers, guildID)
+	GuildSettingsWrite(GuildMap[guildID].GuildConfig, guildID)
 	MapMutex.Unlock()
 }

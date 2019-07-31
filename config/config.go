@@ -11,22 +11,11 @@ import (
 
 var (
 	Token        			string
-	BotPrefix    			string
 	BotID        			string
 	ServerID     			string
 	BotLogID     			string
-	CommandRoles 			[]string
-	OptInUnder   			string
-	OptInAbove   			string
-	VoiceChaID   			string
 	Website					string
-	ModCategoryID			string
-	VoteChannelCategoryID 	string
-	Waifus					string
-	Kaguya					string
-	MsgAttachRemoval		string
 	PlayingMsg				string
-
 	RedditAppName			string
 	RedditAppSecret			string
 	DiscordAppSecret		string
@@ -37,18 +26,11 @@ var (
 
 type configStruct struct {
 	Token        			string   		`json:"-"`
-	BotPrefix    			string   		`json:"BotPrefix"`
 	BotID        			string   		`json:"BotID"`
 	ServerID     			string   		`json:"ServerID"`
 	BotLogID     			string   		`json:"BotLogID"`
-	CommandRoles 			[]string 		`json:"CommandRoles"`
-	OptInUnder   			string   		`json:"OptInUnder"`
-	OptInAbove   			string   		`json:"OptInAbove"`
-	VoiceChaID   			string   		`json:"VoiceChaID"`
 	Website		 			string	 		`json:"Website"`
-	ModCategoryID			string	 		`json:"ModCategoryID"`
 	VoteChannelCategoryID 	string 			`json:"VoteChannelCategoryID"`
-	Waifus					string			`json:"Waifus"`
 	Kaguya					string			`json:"Kaguya"`
 	MsgAttachRemoval		string			`json:"MsgAttachRemoval"`
 	PlayingMsg				string			`json:"PlayingMsg"`
@@ -77,20 +59,10 @@ func ReadConfig() error {
 		panic(err)
 	}
 
-	BotPrefix = config.BotPrefix
 	BotID = config.BotID
 	ServerID = config.ServerID
 	BotLogID = config.BotLogID
-	CommandRoles = config.CommandRoles
-	OptInUnder = config.OptInUnder
-	OptInAbove = config.OptInAbove
-	VoiceChaID = config.VoiceChaID
 	Website = config.Website
-	ModCategoryID = config.ModCategoryID
-	VoteChannelCategoryID = config.VoteChannelCategoryID
-	Waifus = config.Waifus
-	Kaguya = config.Kaguya
-	MsgAttachRemoval = config.MsgAttachRemoval
 	PlayingMsg = config.PlayingMsg
 
 	// Takes the bot token from the environment variable. Reason is to avoid pushing token to github
@@ -131,20 +103,10 @@ func ReadConfigSecrets() error {
 func WriteConfig() error {
 
 	// Updates all values
-	config.BotPrefix = BotPrefix
 	config.BotID = BotID
 	config.ServerID = ServerID
 	config.BotLogID = BotLogID
-	config.CommandRoles = CommandRoles
-	config.OptInUnder = OptInUnder
-	config.OptInAbove = OptInAbove
-	config.VoiceChaID = VoiceChaID
 	config.Website = Website
-	config.ModCategoryID = ModCategoryID
-	config.VoteChannelCategoryID = VoteChannelCategoryID
-	config.Waifus = Waifus
-	config.Kaguya = Kaguya
-	config.MsgAttachRemoval = MsgAttachRemoval
 	config.PlayingMsg = PlayingMsg
 
 	// Turns the config struct to bytes

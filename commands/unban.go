@@ -7,7 +7,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
@@ -16,14 +15,19 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var banFlag = false
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) < 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"unban [@user, userID, or username#discrim]` format.\n\n" +
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"unban [@user, userID, or username#discrim]` format.\n\n" +
 			"Note: this command supports username#discrim where username contains spaces.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -34,13 +38,13 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	userID, err := misc.GetUserID(s, m, commandStrings)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
 	user, err := s.User(userID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
@@ -49,7 +53,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(misc.GuildMap[m.GuildID].BannedUsers) == 0 {
 		_, err = s.ChannelMessageSend(m.ChannelID, "No bans found.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -75,7 +79,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 	if !banFlag {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%v#%v__ is not banned.", user.Username, user.Discriminator))
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -87,7 +91,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Removes the ban
 	err = s.GuildBanDelete(m.GuildID, userID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
@@ -105,7 +109,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%v#%v__ has been unbanned.", user.Username, user.Discriminator))
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -114,7 +118,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Sends an embed message to bot-log
 	misc.MapMutex.Lock()
-	err = misc.UnbanEmbed(s, misc.GuildMap[m.GuildID].MemberInfoMap[userID], m.Author.Username)
+	err = misc.UnbanEmbed(s, misc.GuildMap[m.GuildID].MemberInfoMap[userID], m.Author.Username, guildBotLog)
 	misc.MapMutex.Unlock()
 }
 

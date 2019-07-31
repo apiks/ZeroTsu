@@ -5,7 +5,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
@@ -17,13 +16,18 @@ func setRssCommand(s *discordgo.Session, m *discordgo.Message) {
 		thread string
 	)
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "setrss OPTIONAL[/u/author] [thread name]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "setrss OPTIONAL[/u/author] [thread name]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -35,11 +39,11 @@ func setRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	if strings.Contains(commandStrings[1], "/u/") ||
 		strings.Contains(commandStrings[1], "u/") {
 		author = commandStrings[1]
-		thread = strings.Replace(messageLowercase, config.BotPrefix+"setrss "+commandStrings[1]+" ", "", 1)
+		thread = strings.Replace(messageLowercase, guildPrefix+"setrss "+commandStrings[1]+" ", "", 1)
 
 	} else {
 		// Removes the command from the string so we only have the set string which it'll check
-		thread = strings.Replace(messageLowercase, config.BotPrefix+"setrss ", "", 1)
+		thread = strings.Replace(messageLowercase, guildPrefix+"setrss ", "", 1)
 		author = "/u/AutoLovepon"
 	}
 
@@ -49,10 +53,12 @@ func setRssCommand(s *discordgo.Session, m *discordgo.Message) {
 func setRssThread(s *discordgo.Session, m *discordgo.Message, thread string, author string) {
 
 	misc.MapMutex.Lock()
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+
 	threadExists, err := misc.RssThreadsWrite(thread, m.ChannelID, author, m.GuildID)
 	if err != nil {
 		misc.MapMutex.Unlock()
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 	misc.MapMutex.Unlock()
@@ -60,7 +66,7 @@ func setRssThread(s *discordgo.Session, m *discordgo.Message, thread string, aut
 	if threadExists == false {
 		_, err := s.ChannelMessageSend(m.ChannelID, "`" + thread + "` has been added to the rss thread list.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -69,7 +75,7 @@ func setRssThread(s *discordgo.Session, m *discordgo.Message, thread string, aut
 	} else {
 		_, err := s.ChannelMessageSend(m.ChannelID, "`" + thread + "` is already on the rss thread list.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -86,26 +92,33 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 		thread string
 	)
 
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+
 	if len(misc.GuildMap[m.GuildID].RssThreads) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error. There are no set rss threads.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
+				misc.MapMutex.Unlock()
 				return
 			}
+			misc.MapMutex.Unlock()
 			return
 		}
+		misc.MapMutex.Unlock()
 		return
 	}
+	misc.MapMutex.Unlock()
 
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) == 1 {
-
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + config.BotPrefix + "removerss OPTIONAL[/u/author] [thread name]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "removerss OPTIONAL[/u/author] [thread name]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -117,10 +130,10 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	if strings.Contains(commandStrings[1], "/u/") ||
 		strings.Contains(commandStrings[1], "u/") {
 		author = commandStrings[1]
-		thread = strings.Replace(messageLowercase, config.BotPrefix+"removerss "+commandStrings[1]+" ", "", 1)
+		thread = strings.Replace(messageLowercase, guildPrefix+"removerss "+commandStrings[1]+" ", "", 1)
 	} else {
 		// Removes the command from the string so we only have the set string which it'll check
-		thread = strings.Replace(messageLowercase, config.BotPrefix+"removerss ", "", 1)
+		thread = strings.Replace(messageLowercase, guildPrefix+"removerss ", "", 1)
 		author = "/u/AutoLovepon"
 	}
 
@@ -129,7 +142,7 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	threadExists, err := misc.RssThreadsRemove(thread, author, m.GuildID)
 	if err != nil {
 		misc.MapMutex.Unlock()
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 	misc.MapMutex.Unlock()
@@ -137,7 +150,7 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	if threadExists {
 		_, err := s.ChannelMessageSend(m.ChannelID, "`" + thread + "` has been removed from the rss thread list.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -148,7 +161,7 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err = s.ChannelMessageSend(m.ChannelID, "Error: Thread does not exist in RSS list.")
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -161,16 +174,21 @@ func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var threads string
 
-	if len(misc.GuildMap[m.GuildID].RssThreads) == 0 {
+	misc.MapMutex.Lock()
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
+	if len(misc.GuildMap[m.GuildID].RssThreads) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no set RSS threads.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
+				misc.MapMutex.Unlock()
 				return
 			}
+			misc.MapMutex.Unlock()
 			return
 		}
+		misc.MapMutex.Unlock()
 		return
 	}
 
@@ -179,8 +197,9 @@ func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
 		if len(threads) > 1850 {
 			_, err := s.ChannelMessageSend(m.ChannelID, threads)
 			if err != nil {
-				_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
+					misc.MapMutex.Unlock()
 					return
 				}
 			}
@@ -195,10 +214,11 @@ func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
 				misc.GuildMap[m.GuildID].RssThreads[i].Author + "`\n"
 		}
 	}
+	misc.MapMutex.Unlock()
 
 	_, err := s.ChannelMessageSend(m.ChannelID, threads)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}

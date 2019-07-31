@@ -6,7 +6,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
@@ -20,13 +19,22 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 		chaEdit          discordgo.ChannelEdit
 	)
 
+	if m.Author.ID != s.State.User.ID {
+		misc.MapMutex.Lock()
+	}
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	if m.Author.ID != s.State.User.ID {
+		misc.MapMutex.Unlock()
+	}
+
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"sortcategory [category]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"sortcategory [category]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -38,7 +46,7 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Fetches all channels from the server and puts it in deb
 	deb, err := s.GuildChannels(m.GuildID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
@@ -59,7 +67,7 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	if categoryID == "" {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Invalid Category")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -83,18 +91,18 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 		chaEdit.Position = categoryPosition + i + 1
 		_, err = s.ChannelEditComplex(categoryChannels[i].ID, &chaEdit)
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err)
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 	}
 
-	if m.Author.ID == config.BotID {
+	if m.Author.ID == s.State.User.ID {
 		return
 	}
 
 	_, err = s.ChannelMessageSend(m.ChannelID, "Category `"+commandStrings[1]+"` sorted")
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}

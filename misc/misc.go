@@ -12,8 +12,6 @@ import (
 	"unicode"
 
 	"github.com/bwmarrin/discordgo"
-
-	"github.com/r-anime/ZeroTsu/config"
 )
 
 // File for misc. functions, commands and variables.
@@ -24,36 +22,10 @@ const (
 )
 
 var (
-	OptinAbovePosition int
-	OptinUnderPosition int
 	SpoilerPerms       = discordgo.PermissionSendMessages + discordgo.PermissionReadMessages + discordgo.PermissionReadMessageHistory
 
 	StartTime time.Time
 )
-
-//// HasPermissions sees if a user has elevated permissions in a given server
-//func HasPermissions(m *discordgo.Member, guildID string) bool {
-//	for _, r := range m.Roles {
-//		for _, goodRole := range GuildMap[guildID].GuildConfig.CommandRoles {
-//			if r == goodRole {
-//				return true
-//			}
-//		}
-//	}
-//	return false
-//}
-
-// HasPermissions sees if a user has elevated permissions in a given server
-func HasPermissions(m *discordgo.Member, guildID string) bool {
-	for _, r := range m.Roles {
-		for _, goodRole := range config.CommandRoles {
-			if r == goodRole {
-				return true
-			}
-		}
-	}
-	return false
-}
 
 // Sorts roles alphabetically
 type SortRoleByAlphabet []*discordgo.Role
@@ -282,10 +254,13 @@ func ChMentionID(channelID string) string {
 }
 
 // Sends error message to channel command is in. If that throws an error send error message to bot log channel
-func CommandErrorHandler(s *discordgo.Session, m *discordgo.Message, err error) {
+func CommandErrorHandler(s *discordgo.Session, m *discordgo.Message, err error, botLogID string) {
 	_, err = s.ChannelMessageSend(m.ChannelID, err.Error())
 	if err != nil {
-		_, _ = s.ChannelMessageSend(config.BotLogID, err.Error())
+		if botLogID == "" {
+			return
+		}
+		_, _ = s.ChannelMessageSend(botLogID, err.Error())
 	}
 }
 
@@ -469,6 +444,10 @@ func ChannelParser(s *discordgo.Session, channel string, guildID string) (string
 		flag		bool
 	)
 
+	MapMutex.Lock()
+	guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
+	MapMutex.Unlock()
+
 	// If it's a channel ping remove <# and > from it to get the channel ID
 	if strings.Contains(channel, "#") {
 		channelID = strings.TrimPrefix(channel,"<#")
@@ -484,7 +463,7 @@ func ChannelParser(s *discordgo.Session, channel string, guildID string) (string
 	// Find the channelID if it doesn't exists via channel name, else find the channel name
 	channels, err := s.GuildChannels(guildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + ErrorLocation(err))
 		if err != nil {
 			return channelID, channelName
 		}
@@ -521,6 +500,10 @@ func CategoryParser(s *discordgo.Session, category string, guildID string) (stri
 		flag			bool
 	)
 
+	MapMutex.Lock()
+	guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
+	MapMutex.Unlock()
+
 	// Check if it's an ID by length and save the ID if so
 	_, err := strconv.Atoi(category)
 	if len(category) >= 17 && err == nil {
@@ -530,7 +513,7 @@ func CategoryParser(s *discordgo.Session, category string, guildID string) (stri
 	// Find the categoryID if it doesn't exists via category name, else find the category name
 	channels, err := s.GuildChannels(guildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + ErrorLocation(err))
 		if err != nil {
 			return categoryID, categoryID
 		}
@@ -560,6 +543,56 @@ func CategoryParser(s *discordgo.Session, category string, guildID string) (stri
 	}
 
 	return categoryID, categoryName
+}
+
+// Parses a string for a role and returns its ID and name
+func RoleParser(s *discordgo.Session, role string, guildID string) (string, string) {
+	var (
+		roleID 		string
+		roleName 	string
+		flag		bool
+	)
+
+	MapMutex.Lock()
+	guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
+	MapMutex.Unlock()
+
+	// Check if it's an ID by length and save the ID if so
+	_, err := strconv.Atoi(role)
+	if len(role) >= 17 && err == nil {
+		roleID = role
+	}
+
+	// Find the roleID if it doesn't exists via role name, else find the role name
+	roles, err := s.GuildRoles(guildID)
+	if err != nil {
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + ErrorLocation(err))
+		if err != nil {
+			return roleID, roleName
+		}
+		return roleID, roleName
+	}
+	for _, roleIteration := range roles {
+		if roleID == "" {
+			if strings.ToLower(roleIteration.Name) == strings.ToLower(role) {
+				roleID = roleIteration.ID
+				roleName = roleIteration.Name
+				flag = true
+				break
+			}
+		}
+		if roleIteration.ID == roleID {
+			roleName = roleIteration.Name
+			flag = true
+			break
+		}
+	}
+
+	if !flag {
+		return "", ""
+	}
+
+	return roleID, roleName
 }
 
 // Snowflake creation date calculator

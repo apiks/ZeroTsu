@@ -7,7 +7,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
@@ -36,13 +35,22 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		channelEdit     discordgo.ChannelEdit
 	)
 
+	if m.Author.ID != s.State.User.ID {
+		misc.MapMutex.Lock()
+	}
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	if m.Author.ID != s.State.User.ID {
+		misc.MapMutex.Unlock()
+	}
+
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+config.BotPrefix+"create [name] OPTIONAL[type] [categoryID] [description; must have at least one other non-name parameter]`\n\nThree type of parameters exist: `airing`, `temp` and `optin`. `Optin` is the default one. Temp gets auto-deleted after three hours of inactivity.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"create [name] OPTIONAL[type] [categoryID] [description; must have at least one other non-name parameter]`\n\nThree type of parameters exist: `airing`, `temp` and `optin`. `Optin` is the default one. Temp gets auto-deleted after three hours of inactivity.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -51,7 +59,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	command := strings.Replace(messageLowercase, config.BotPrefix+"create ", "", 1)
+	command := strings.Replace(messageLowercase, guildPrefix+"create ", "", 1)
 	commandStrings = strings.Split(command, " ")
 
 	// Checks if [category] and [type] exist and assigns them if they do and removes them from slice and command string
@@ -125,7 +133,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Creates the new channel of type text
 	newCha, err := s.GuildChannelCreate(m.GuildID, command, 0)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
@@ -134,7 +142,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Creates the new role
 	newRole, err := s.GuildRoleCreate(m.GuildID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
@@ -144,7 +152,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Edits the new role with proper hyphenated name
 	_, err = s.GuildRoleEdit(m.GuildID, newRole.ID, roleName, 0, false, 0, false)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
@@ -166,7 +174,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls info on server roles
 	deb, err := s.GuildRoles(m.GuildID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err)
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 	// Finds ID of Muted role and Airing role
@@ -179,13 +187,22 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Assigns channel permission overwrites
-	for _, goodRole := range config.CommandRoles {
+	if m.Author.ID != s.State.User.ID {
+		misc.MapMutex.Lock()
+	}
+	for _, goodRole := range misc.GuildMap[m.GuildID].GuildConfig.CommandRoles {
 		// Mod perms
-		err = s.ChannelPermissionSet(newCha.ID, goodRole, "role", misc.SpoilerPerms, 0)
+		err = s.ChannelPermissionSet(newCha.ID, goodRole.ID, "role", misc.SpoilerPerms, 0)
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err)
+			if m.Author.ID != s.State.User.ID {
+				misc.MapMutex.Lock()
+			}
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
+	}
+	if m.Author.ID != s.State.User.ID {
+		misc.MapMutex.Lock()
 	}
 
 	time.Sleep(100 * time.Millisecond)
@@ -194,13 +211,13 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Everyone perms
 		err = s.ChannelPermissionSet(newCha.ID, m.GuildID, "role", 0, misc.SpoilerPerms)
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err)
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 		// Spoiler role perms
 		err = s.ChannelPermissionSet(newCha.ID, newRole.ID, "role", misc.SpoilerPerms, 0)
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err)
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 		time.Sleep(100 * time.Millisecond)
@@ -210,7 +227,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	if muted != "" {
 		err = s.ChannelPermissionSet(newCha.ID, muted, "role", 0, discordgo.PermissionSendMessages)
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err)
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 	}
@@ -221,7 +238,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	if channel.Type == "airing" && airing != "" {
 		err = s.ChannelPermissionSet(newCha.ID, airing, "role", misc.SpoilerPerms, 0)
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err)
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 		time.Sleep(100 * time.Millisecond)
@@ -232,7 +249,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		descriptionEdit.Topic = channel.Description
 		_, err = s.ChannelEditComplex(newCha.ID, &descriptionEdit)
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err)
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 		time.Sleep(100 * time.Millisecond)
@@ -251,7 +268,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		for _, v := range misc.GuildMap[m.GuildID].VoteInfoMap {
 			if roleName == v.Channel {
-				if !hasElevatedPermissions(s, v.User, m.GuildID) {
+				if !HasElevatedPermissions(s, v.User.ID, m.GuildID) {
 					temp.Elevated = false
 					break
 				}
@@ -271,7 +288,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Pulls info on server channel
 		chaAll, err := s.GuildChannels(m.GuildID)
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err)
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 		for i := 0; i < len(chaAll); i++ {
@@ -291,7 +308,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Pushes new parentID to channel
 		_, err = s.ChannelEditComplex(newCha.ID, &channelEdit)
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err)
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 	}
@@ -300,7 +317,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	if m.Author.ID != s.State.User.ID {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Channel and role `"+roleName+"` created. If opt-in please sort in the roles list. Sort category separately.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(config.BotLogID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
 		}
 	}
 }
