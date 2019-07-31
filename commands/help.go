@@ -7,6 +7,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/misc"
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 // Command categories in sorted form and map form(map for descriptions)
@@ -18,27 +19,33 @@ var (
 // Prints pretty help command
 func helpEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	var admin bool
+	var (
+		elevated bool
+		admin	 bool
+	)
+
+	misc.MapMutex.Lock()
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
 
 	// Checks for mod perms and handles accordingly
 	if HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
-		admin = true
+		elevated = true
+	}
+	admin, err := MemberIsAdmin(s, m.GuildID, m.Author.ID, discordgo.PermissionAdministrator)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 	}
 
-	err := helpEmbed(s, m, admin)
+	err = helpEmbed(s, m, elevated, admin)
 	if err != nil {
-
-		misc.MapMutex.Lock()
-		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-		misc.MapMutex.Unlock()
-
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 }
 
 // Embed message for general all-purpose help message
-func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
+func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin bool) error {
 
 	var (
 		embedMess          discordgo.MessageEmbed
@@ -72,21 +79,25 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
 
 	// Sets permission field
 	permission.Name = "Permission Level:"
-	if admin {
+	if m.Author.ID == config.OwnerID {
+		permission.Value = "_Owner_"
+	} else if admin {
 		permission.Value = "_Admin_"
+	} else if elevated {
+		permission.Value = "_Mod_"
 	} else {
 		permission.Value = "_User_"
 	}
 	permission.Inline = true
 
-	// Sets usage field if admin
-	if admin {
+	// Sets usage field if elevated
+	if elevated {
 		// Sets footer field
 		embedFooter.Text = fmt.Sprintf("Usage: Pick a category with %vhcategory", guildPrefix)
 		embedMess.Footer = &embedFooter
 	}
 
-	if !admin {
+	if !elevated {
 		// Sets commands field
 		userCommands.Name = "Command:"
 		userCommands.Inline = true
@@ -113,7 +124,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
 		embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
 		embedMess.Footer = &embedFooter
 	} else {
-		// Sets admin commands field
+		// Sets elevated commands field
 		adminCategories.Name = "Categories:"
 		adminCategories.Inline = true
 
@@ -130,6 +141,9 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
 					continue
 				}
 			}
+			if categoriesSorted[i] == "Settings" && !admin {
+				continue
+			}
 			adminCategories.Value += fmt.Sprintf("%v - %v\n", categoriesSorted[i], categoriesMap[categoriesSorted[i]])
 		}
 		misc.MapMutex.Unlock()
@@ -138,7 +152,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, admin bool) error {
 	// Adds the fields to embed slice (because embedMess.Fields requires slice input)
 	embed = append(embed, &user)
 	embed = append(embed, &permission)
-	if admin {
+	if elevated {
 		embed = append(embed, &adminCategories)
 	} else {
 		embed = append(embed, &userCommands)
@@ -1061,6 +1075,7 @@ func init() {
 		aliases:  []string{"h[set]", "hsetting", "h[setting]", "h[settings]", "hset", "hsets", "hsetts", "hsett"},
 		desc:     "Print all server setting commands.",
 		elevated: true,
+		admin: 	  true,
 	})
 
 	misc.MapMutex.Lock()

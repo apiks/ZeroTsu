@@ -8,6 +8,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/misc"
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 var (
@@ -24,6 +25,7 @@ type command struct {
 	commandCount int
 	deleteAfter  bool
 	elevated     bool
+	admin		 bool
 	category	 string
 }
 
@@ -75,6 +77,10 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if cmd.elevated && !HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
 		return
 	}
+	admin, _ := MemberIsAdmin(s, m.GuildID, m.Author.ID, discordgo.PermissionAdministrator)
+	if cmd.admin && !admin {
+		return
+	}
 	if cmd.trigger == "votecategory" ||
 		cmd.trigger == "startvote" {
 		if !guildVoteModule {
@@ -103,6 +109,10 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 // Checks if a user has the admin permissions or is a privileged role
 func HasElevatedPermissions(s *discordgo.Session, userID string, guildID string) bool {
+	if userID == config.OwnerID {
+		return true
+	}
+
 	mem, err := s.State.Member(guildID, userID)
 	if err != nil {
 		mem, err = s.GuildMember(guildID, userID)
@@ -111,7 +121,7 @@ func HasElevatedPermissions(s *discordgo.Session, userID string, guildID string)
 		}
 	}
 
-	isAdmin, err := MemberIsAdmin(s, guildID, mem, discordgo.PermissionAdministrator)
+	isAdmin, err := MemberIsAdmin(s, guildID, mem.User.ID, discordgo.PermissionAdministrator)
 	if err != nil {
 		log.Println(err.Error())
 	}
@@ -123,10 +133,10 @@ func HasElevatedPermissions(s *discordgo.Session, userID string, guildID string)
 }
 
 // Checks if member has admin permissions
-func MemberIsAdmin(s *discordgo.Session, guildID string, mem *discordgo.Member, permission int) (bool, error) {
-	member, err := s.State.Member(guildID, mem.User.ID)
+func MemberIsAdmin(s *discordgo.Session, guildID string, userID string, permission int) (bool, error) {
+	member, err := s.State.Member(guildID, userID)
 	if err != nil {
-		if member, err = s.GuildMember(guildID, mem.User.ID); err != nil {
+		if member, err = s.GuildMember(guildID, userID); err != nil {
 			return false, err
 		}
 	}

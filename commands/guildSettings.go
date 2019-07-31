@@ -1263,6 +1263,7 @@ func init() {
 		aliases:  []string{"setcommandrole"},
 		desc:     "Adds a privileged role",
 		elevated: true,
+		admin: true,
 		category: "settings",
 	})
 	add(&command{
@@ -1271,6 +1272,7 @@ func init() {
 		aliases:  []string{"killcommandrole"},
 		desc:     "Removes a privileged role",
 		elevated: true,
+		admin: true,
 		category: "settings",
 	})
 	add(&command{
@@ -1279,6 +1281,7 @@ func init() {
 		aliases:  []string{"vcommandroles", "viewcommandrole", "commandrole", "viewcommandroles", "showcommandroles"},
 		desc:     "Prints all privileged roles",
 		elevated: true,
+		admin: true,
 		category: "settings",
 	})
 	add(&command{
@@ -1286,6 +1289,7 @@ func init() {
 		trigger:  "prefix",
 		desc:     "Views or changes the current prefix.",
 		elevated: true,
+		admin: true,
 		category: "settings",
 	})
 	add(&command{
@@ -1293,6 +1297,7 @@ func init() {
 		trigger:  "botlog",
 		desc:     "Views or changes the current Bot Log.",
 		elevated: true,
+		admin: true,
 		category: "settings",
 	})
 	add(&command{
@@ -1300,6 +1305,7 @@ func init() {
 		trigger:  "optinunder",
 		desc:     "Views or changes the current `Opt In Under` role.",
 		elevated: true,
+		admin: true,
 		category: "settings",
 	})
 	add(&command{
@@ -1307,6 +1313,7 @@ func init() {
 		trigger:  "optinabove",
 		desc:     "Views or changes the current `Opt In Above` role.",
 		elevated: true,
+		admin: true,
 		category: "settings",
 	})
 	add(&command{
@@ -1315,6 +1322,7 @@ func init() {
 		aliases:  []string{"addvoicechannelrole", "addvoicecharole", "addvoicerole", "addvoicerole", "addvoicechannelrole", "addvoicerole"},
 		desc:     "Sets a voice channel as one that will give users the specified role when they join it",
 		elevated: true,
+		admin: true,
 		category: "settings",
 	})
 	add(&command{
@@ -1323,6 +1331,7 @@ func init() {
 		aliases:  []string{"removevoicechannelrole", "removevoicechannelrole", "killvoicecharole", "killvoicechannelrole", "killvoicechannelidrole", "removevoicechannelidrole", "removevoicecharole", "removevoicerole", "removevoicerole", "killvoice"},
 		desc:     "Stops a voice channel from giving its associated role on user join",
 		elevated: true,
+		admin: true,
 		category: "settings",
 	})
 	add(&command{
@@ -1331,6 +1340,7 @@ func init() {
 		aliases:  []string{"vvoicerole", "viewvoicechannels", "viewvoicechannel", "viewvoicechaids", "viewvoicechannelids", "viewvoivechannelid", "viewvoicecharole", "voicerole", "voicechannelroles", "viewvoicecharoles", "voice", "voices"},
 		desc:     "Prints all set voice channels and their associated roles",
 		elevated: true,
+		admin: true,
 		category: "settings",
 	})
 	add(&command{
@@ -1338,6 +1348,7 @@ func init() {
 		trigger:  "votecategory",
 		desc:     "Views or changes the current Vote Category where non-admin temp vote channels will be auto placed and sorted [VOTE]",
 		elevated: true,
+		admin: true,
 		category: "settings",
 	})
 	add(&command{
@@ -1346,6 +1357,7 @@ func init() {
 		aliases:  []string{"votemod"},
 		desc:     "Vote Module. [VOTE]",
 		elevated: true,
+		admin: true,
 		category: "settings",
 	})
 	add(&command{
@@ -1354,6 +1366,7 @@ func init() {
 		aliases:  []string{"waifumod"},
 		desc:     "Waifu Module. [WAIFU]",
 		elevated: true,
+		admin: true,
 		category: "settings",
 	})
 	add(&command{
@@ -1362,6 +1375,7 @@ func init() {
 		aliases:  []string{"reactumod", "reactsmodule", "reactsmod"},
 		desc:     "React Module. [REACTS]",
 		elevated: true,
+		admin: true,
 		category: "settings",
 	})
 	add(&command{
@@ -1370,6 +1384,7 @@ func init() {
 		aliases:  []string{"attachremove", "attachmentremove", "attachremoval", "fileremove", "fileremoval", "filefilter", "filesfilter"},
 		desc:     "Auto-delete non-whitelisted file attachments",
 		elevated: true,
+		admin: true,
 		category: "settings",
 	})
 	add(&command{
@@ -1377,6 +1392,7 @@ func init() {
 		trigger:  "pingmessage",
 		desc:     "Views or changes the current ping message.",
 		elevated: true,
+		admin: true,
 		category: "settings",
 	})
 }
