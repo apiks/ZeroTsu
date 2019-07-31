@@ -9,6 +9,7 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
+// Adds a role to the command role list
 func addCommandRole(s *discordgo.Session, m *discordgo.Message) {
 
 	var role misc.Role
@@ -81,6 +82,7 @@ func addCommandRole(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
+// Removes a role from the command role list
 func removeCommandRole(s *discordgo.Session, m *discordgo.Message) {
 
 	var roleExists bool
@@ -162,6 +164,7 @@ func removeCommandRole(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
+// Prints all command roles
 func viewCommandRoles(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
@@ -1211,6 +1214,49 @@ func attachmentRemovalCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
+// Handles ping message view or change
+func pingMessageCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	guildPingMessage := misc.GuildMap[m.GuildID].GuildConfig.PingMessage
+	misc.MapMutex.Unlock()
+
+	mLowercase := strings.ToLower(m.Content)
+	commandStrings := strings.SplitN(mLowercase, " ", 2)
+
+	// Displays current prefix
+	if len(commandStrings) == 1 {
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current ping message is: `%v` \n\n To change ping message please use `%vpingmessage [new ping]`", guildPingMessage, guildPrefix))
+		if err != nil {
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
+
+	// Changes and writes new ping message to storage
+	misc.MapMutex.Lock()
+	misc.GuildMap[m.GuildID].GuildConfig.PingMessage = commandStrings[1]
+	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	misc.MapMutex.Unlock()
+
+	guildPingMessage = commandStrings[1]
+
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New ping message is: `%v`", guildPingMessage))
+	if err != nil {
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		if err != nil {
+			return
+		}
+		return
+	}
+}
+
 func init() {
 	add(&command{
 		execute:  addCommandRole,
@@ -1322,8 +1368,15 @@ func init() {
 	add(&command{
 		execute:  attachmentRemovalCommand,
 		trigger:  "attachmentremoval",
-		aliases:  []string{"attachremove", "attachmentremove", "attachremoval", "fileremove", "fileremoval"},
+		aliases:  []string{"attachremove", "attachmentremove", "attachremoval", "fileremove", "fileremoval", "filefilter", "filesfilter"},
 		desc:     "Auto-delete non-whitelisted file attachments",
+		elevated: true,
+		category: "settings",
+	})
+	add(&command{
+		execute:  pingMessageCommand,
+		trigger:  "pingmessage",
+		desc:     "Views or changes the current ping message.",
 		elevated: true,
 		category: "settings",
 	})
