@@ -141,8 +141,10 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 					continue
 				}
 			}
-			if categoriesSorted[i] == "Settings" && !admin {
-				continue
+			if categoriesSorted[i] == "Settings"  {
+				if !admin && m.Author.ID != config.OwnerID {
+					continue
+				}
 			}
 			adminCategories.Value += fmt.Sprintf("%v - %v\n", categoriesSorted[i], categoriesMap[categoriesSorted[i]])
 		}
@@ -1075,7 +1077,7 @@ func init() {
 		aliases:  []string{"h[set]", "hsetting", "h[setting]", "h[settings]", "hset", "hsets", "hsetts", "hsett"},
 		desc:     "Print all server setting commands.",
 		elevated: true,
-		admin: 	  true,
+		admin:	  true,
 	})
 
 	misc.MapMutex.Lock()
