@@ -1060,9 +1060,9 @@ func reactModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Displays current module setting
 	if len(commandStrings) == 1 {
 		if !guildReactsModule {
-			message = fmt.Sprintf("Waifus module is disabled. Please use `%vreactmodule true` to enable it.", guildPrefix)
+			message = fmt.Sprintf("Reacts module is disabled. Please use `%vreactmodule true` to enable it.", guildPrefix)
 		} else {
-			message = fmt.Sprintf("Waifus module is enabled. Please use `%vreactmodule false` to disable it.", guildPrefix)
+			message = fmt.Sprintf("Reacts module is enabled. Please use `%vreactmodule false` to disable it.", guildPrefix)
 		}
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
