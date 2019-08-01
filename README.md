@@ -48,7 +48,9 @@ How to install:
 
        Website is the address/ip+:port of the website. Leave empty if not using it
 	   
-	   PlayingMsg is whatever "Playing" message you want the BOT to display. Leave empty to disable (can only be disabled from here.)
+	   PlayingMsg is whatever "Playing" message you want the BOT to display. Owner can change it with the playingmsg command.
+	   
+	   OwnerID is the user ID of the person with Owner level BOT permissions
 
 3. Make a file called configsecrets.json in the folder config.json is in and set this up the following way. It's for verification and optional IF Website value above is empty or if it gives you an error:
 ```javascript
