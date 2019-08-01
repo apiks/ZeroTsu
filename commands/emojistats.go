@@ -41,11 +41,11 @@ func OnMessageEmoji(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// If a message contains a server emoji it tracks it
 	for _, emoji := range guild.Emojis {
-		if strings.Contains(m.Content, "<:" + emoji.APIName() + ">") {
+		if strings.Contains(m.Content, "<:"+emoji.APIName()+">") {
 			var emojiStatsVar misc.Emoji
 
 			// Counts emoji usages in a message
-			emojiCount := strings.Count(m.Content, "<:" + emoji.APIName() + ">")
+			emojiCount := strings.Count(m.Content, "<:"+emoji.APIName()+">")
 
 			// If Emoji stat doesn't exist create it
 			misc.MapMutex.Lock()
@@ -88,7 +88,7 @@ func OnMessageEmojiReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 	// Pulls the entire guild structure so we can check guild emojis from it later
 	guild, err := s.Guild(r.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -140,7 +140,7 @@ func OnMessageEmojiUnreact(s *discordgo.Session, r *discordgo.MessageReactionRem
 	// Pulls the entire guild structure so we can check guild emojis from it later
 	guild, err := s.Guild(r.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -174,9 +174,9 @@ func OnMessageEmojiUnreact(s *discordgo.Session, r *discordgo.MessageReactionRem
 func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		msgs 			[]string
+		msgs          []string
 		printEmojiMap = make(map[string]*misc.Emoji)
-		guildFlag		bool
+		guildFlag     bool
 	)
 
 	// Merges duplicates and returns that as a map
@@ -240,7 +240,7 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 	for j := 0; j < len(msgs); j++ {
 		_, err := s.ChannelMessageSend(m.ChannelID, msgs[j])
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -275,13 +275,12 @@ func lineSpaceFormatEmoji(name string, printEmojiMap map[string]*misc.Emoji) str
 func mergeDuplicates(guildID string) map[string]*misc.Emoji {
 
 	var (
-		duplicateMap = 	make(map[string]string)
-		uniqueTotal 	int
-		reactTotal 		int
-		msgTotal 		int
+		duplicateMap  = make(map[string]string)
+		uniqueTotal   int
+		reactTotal    int
+		msgTotal      int
 		printEmojiMap = make(map[string]*misc.Emoji)
 	)
-
 
 	// Fetches the IDs of all of the emojis that have at least one duplicate in duplicateMap
 	for _, emoji := range misc.GuildMap[guildID].EmojiStats {

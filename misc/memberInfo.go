@@ -19,28 +19,28 @@ import (
 )
 
 var (
-	MapMutex         sync.Mutex
-	Key              = []byte("VfBhgLzmD4QH3W94pjgdbH8Tyv2HPRzq")
+	MapMutex sync.Mutex
+	Key      = []byte("VfBhgLzmD4QH3W94pjgdbH8Tyv2HPRzq")
 )
 
 // UserInfo is the in memory storage of each user's information
 type UserInfo struct {
-	ID             		string   			`json:"id"`
-	Discrim        		string   			`json:"discrim"`
-	Username       		string   			`json:"username"`
-	Nickname       		string   			`json:"nickname,omitempty"`
-	PastUsernames  		[]string 			`json:"pastUsernames,omitempty"`
-	PastNicknames  		[]string 			`json:"pastNicknames,omitempty"`
-	Warnings       		[]string 			`json:"warnings,omitempty"`
-	Kicks          		[]string 			`json:"kicks,omitempty"`
-	Bans           		[]string 			`json:"bans,omitempty"`
-	JoinDate       		string   			`json:"joinDate"`
-	RedditUsername 		string   			`json:"redditUser,omitempty"`
-	VerifiedDate   		string   			`json:"verifiedDate,omitempty"`
-	UnbanDate      		string   			`json:"unbanDate,omitempty"`
-	Timestamps 	   		[]Punishment		`json:"timestamps,omitempty"`
-	Waifu		   		Waifu				`json:"waifu,omitempty"`
-	SuspectedSpambot	bool
+	ID               string       `json:"id"`
+	Discrim          string       `json:"discrim"`
+	Username         string       `json:"username"`
+	Nickname         string       `json:"nickname,omitempty"`
+	PastUsernames    []string     `json:"pastUsernames,omitempty"`
+	PastNicknames    []string     `json:"pastNicknames,omitempty"`
+	Warnings         []string     `json:"warnings,omitempty"`
+	Kicks            []string     `json:"kicks,omitempty"`
+	Bans             []string     `json:"bans,omitempty"`
+	JoinDate         string       `json:"joinDate"`
+	RedditUsername   string       `json:"redditUser,omitempty"`
+	VerifiedDate     string       `json:"verifiedDate,omitempty"`
+	UnbanDate        string       `json:"unbanDate,omitempty"`
+	Timestamps       []Punishment `json:"timestamps,omitempty"`
+	Waifu            Waifu        `json:"waifu,omitempty"`
+	SuspectedSpambot bool
 }
 
 // Creates a struct type in which we'll hold every banned user
@@ -52,9 +52,9 @@ type BannedUsers struct {
 
 // Struct where we'll hold punishment timestamps
 type Punishment struct {
-	Punishment string 					`json:"punishment"`
-	Type	   string					`json:"type"`
-	Timestamp  time.Time				`json:"timestamp"`
+	Punishment string    `json:"punishment"`
+	Type       string    `json:"type"`
+	Timestamp  time.Time `json:"timestamp"`
 }
 
 // Initializes user in memberInfo if he doesn't exist there
@@ -81,7 +81,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	var (
 		flag        = false
 		initialized = false
-		writeFlag	= false
+		writeFlag   = false
 	)
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -118,7 +118,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		// Sends verification message to user in DMs if possible
 		if config.Website != "" {
 			dm, _ := s.UserChannelCreate(user.User.ID)
-			_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
+			_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n"+
 				"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
 		}
 
@@ -142,7 +142,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		// Sends verification message to user in DMs if possible
 		if config.Website != "" {
 			dm, _ := s.UserChannelCreate(user.User.ID)
-			_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n" +
+			_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n"+
 				"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
 		}
 	}

@@ -10,38 +10,38 @@ import (
 // File for BOT, server, channel and role info
 
 var (
-	Token        			string
-	BotID        			string
-	ServerID     			string
-	BotLogID     			string
-	OwnerID					string
-	Website					string
-	PlayingMsg				string
-	RedditAppName			string
-	RedditAppSecret			string
-	DiscordAppSecret		string
+	Token            string
+	BotID            string
+	ServerID         string
+	BotLogID         string
+	OwnerID          string
+	Website          string
+	PlayingMsg       string
+	RedditAppName    string
+	RedditAppSecret  string
+	DiscordAppSecret string
 
-	config 					*configStruct
-	configsecrets 			*configSecrets
+	config        *configStruct
+	configsecrets *configSecrets
 )
 
 type configStruct struct {
-	Token        			string   		`json:"-"`
-	BotID        			string   		`json:"BotID"`
-	ServerID     			string   		`json:"ServerID"`
-	BotLogID     			string   		`json:"BotLogID"`
-	OwnerID					string			`json:"OwnerID"`
-	Website		 			string	 		`json:"Website"`
-	VoteChannelCategoryID 	string 			`json:"VoteChannelCategoryID"`
-	Kaguya					string			`json:"Kaguya"`
-	MsgAttachRemoval		string			`json:"MsgAttachRemoval"`
-	PlayingMsg				string			`json:"PlayingMsg"`
+	Token                 string `json:"-"`
+	BotID                 string `json:"BotID"`
+	ServerID              string `json:"ServerID"`
+	BotLogID              string `json:"BotLogID"`
+	OwnerID               string `json:"OwnerID"`
+	Website               string `json:"Website"`
+	VoteChannelCategoryID string `json:"VoteChannelCategoryID"`
+	Kaguya                string `json:"Kaguya"`
+	MsgAttachRemoval      string `json:"MsgAttachRemoval"`
+	PlayingMsg            string `json:"PlayingMsg"`
 }
 
 type configSecrets struct {
-	RedditAppName			string	`json:"RedditName"`
-	RedditAppSecret			string	`json:"RedditSecret"`
-	DiscordAppSecret		string	`json:"DiscordSecret"`
+	RedditAppName    string `json:"RedditName"`
+	RedditAppSecret  string `json:"RedditSecret"`
+	DiscordAppSecret string `json:"DiscordSecret"`
 }
 
 // Loads config.json values

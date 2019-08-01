@@ -25,7 +25,7 @@ func setRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "setrss OPTIONAL[/u/author] [thread name]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"setrss OPTIONAL[/u/author] [thread name]`")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -64,7 +64,7 @@ func setRssThread(s *discordgo.Session, m *discordgo.Message, thread string, aut
 	misc.MapMutex.Unlock()
 
 	if threadExists == false {
-		_, err := s.ChannelMessageSend(m.ChannelID, "`" + thread + "` has been added to the rss thread list.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "`"+thread+"` has been added to the rss thread list.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -73,7 +73,7 @@ func setRssThread(s *discordgo.Session, m *discordgo.Message, thread string, aut
 			return
 		}
 	} else {
-		_, err := s.ChannelMessageSend(m.ChannelID, "`" + thread + "` is already on the rss thread list.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "`"+thread+"` is already on the rss thread list.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -116,7 +116,7 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "removerss OPTIONAL[/u/author] [thread name]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"removerss OPTIONAL[/u/author] [thread name]`")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -148,7 +148,7 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.MapMutex.Unlock()
 
 	if threadExists {
-		_, err := s.ChannelMessageSend(m.ChannelID, "`" + thread + "` has been removed from the rss thread list.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "`"+thread+"` has been removed from the rss thread list.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {

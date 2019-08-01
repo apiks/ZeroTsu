@@ -8,23 +8,23 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/misc"
 	"github.com/r-anime/ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/misc"
 )
 
 // Sends memberInfo user information to channel
 func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		pastUsernames 		string
-		pastNicknames 		string
-		warnings      		string
-		kicks         		string
-		bans          		string
-		unbanDate     		string
-		splitMessage 		[]string
-		isInsideGuild = 	true
-		creationDate		time.Time
+		pastUsernames string
+		pastNicknames string
+		warnings      string
+		kicks         string
+		bans          string
+		unbanDate     string
+		splitMessage  []string
+		isInsideGuild = true
+		creationDate  time.Time
 	)
 
 	misc.MapMutex.Lock()
@@ -36,10 +36,10 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(messageLowercase, " ", 2)
 
 	if len(commandStrings) < 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"whois [@user, userID, or username#discrim]`\n\n" +
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"whois [@user, userID, or username#discrim]`\n\n"+
 			"Note: this command supports username#discrim where username contains spaces.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -69,7 +69,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		if mem == nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot whois until user joins the server.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
 					misc.MapMutex.Unlock()
 					return
@@ -83,7 +83,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err = s.ChannelMessageSend(m.ChannelID, "User not found in memberInfo. Initializing user and whoising.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -186,7 +186,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Fetches account creation time
 	creationDate, err = misc.CreationTime(userID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -254,7 +254,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	if splitMessage == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -267,7 +267,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: cannot send whois message.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
 					return
 				}
@@ -321,7 +321,7 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) != 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"timestamps [@user, userID, or username#discrim]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -350,7 +350,7 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 		if mem == nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot timestamp until they rejoin server.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
 					misc.MapMutex.Unlock()
 					return
@@ -372,7 +372,7 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(user.Timestamps) == 0 {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: No saved timestamps for that user.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -398,7 +398,7 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 	for index := range msgs {
 		_, err = s.ChannelMessageSend(m.ChannelID, msgs[index])
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -407,7 +407,6 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 	}
-
 
 	misc.MapMutex.Unlock()
 }

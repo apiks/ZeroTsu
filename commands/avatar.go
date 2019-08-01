@@ -67,9 +67,9 @@ func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func init() {
 	add(&command{
-		execute: avatarCommand,
-		trigger: "avatar",
-		desc:    "Show user avatar. Add [@mention] or [userID] to specify a user.",
-		category:"normal",
+		execute:  avatarCommand,
+		trigger:  "avatar",
+		desc:     "Show user avatar. Add [@mention] or [userID] to specify a user.",
+		category: "normal",
 	})
 }

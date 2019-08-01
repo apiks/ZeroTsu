@@ -23,7 +23,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(command, " ", 3)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "say OPTIONAL[channelID] [message]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"say OPTIONAL[channelID] [message]`")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -43,7 +43,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Sends the message to the channel the original message was in. Else continues to custom channel ID
 	if channelID == "" {
-		message := strings.TrimPrefix(m.Content, guildPrefix + "say ")
+		message := strings.TrimPrefix(m.Content, guildPrefix+"say ")
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -90,7 +90,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	message := strings.TrimPrefix(m.Content, guildPrefix + "say " + channelID)
+	message := strings.TrimPrefix(m.Content, guildPrefix+"say "+channelID)
 	_, err = s.ChannelMessageSend(channelID, message)
 	if err != nil {
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -121,7 +121,7 @@ func editCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(m.Content, " ", 4)
 
 	if len(commandStrings) < 4 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "edit [channelID] [messageID] [message]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"edit [channelID] [messageID] [message]`")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -181,19 +181,19 @@ func editCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func init() {
 	add(&command{
-		execute:  sayCommand,
-		trigger:  "say",
-		desc:     "Sends message from bot in command channel",
-		elevated: true,
+		execute:     sayCommand,
+		trigger:     "say",
+		desc:        "Sends message from bot in command channel",
+		elevated:    true,
 		deleteAfter: false,
-		category: "misc",
+		category:    "misc",
 	})
 	add(&command{
-		execute:  editCommand,
-		trigger:  "edit",
-		desc:     "Edits a message sent by the bot with another message",
-		elevated: true,
+		execute:     editCommand,
+		trigger:     "edit",
+		desc:        "Edits a message sent by the bot with another message",
+		elevated:    true,
 		deleteAfter: false,
-		category: "misc",
+		category:    "misc",
 	})
 }

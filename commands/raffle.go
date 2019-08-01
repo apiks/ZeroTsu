@@ -25,9 +25,9 @@ func raffleParticipateCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "jraffle [raffle name]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"jraffle [raffle name]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -47,7 +47,7 @@ func raffleParticipateCommand(s *discordgo.Session, m *discordgo.Message) {
 				if ID == m.Author.ID {
 					_, err := s.ChannelMessageSend(m.ChannelID, "You've already joined that raffle!")
 					if err != nil {
-						_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+						_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 						if err != nil {
 							misc.MapMutex.Unlock()
 							return
@@ -73,7 +73,7 @@ func raffleParticipateCommand(s *discordgo.Session, m *discordgo.Message) {
 	if !raffleExists {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such raffle exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -82,9 +82,9 @@ func raffleParticipateCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	_, err := s.ChannelMessageSend(m.ChannelID, "Success! You have entered raffle `" + commandStrings[1] + "`")
+	_, err := s.ChannelMessageSend(m.ChannelID, "Success! You have entered raffle `"+commandStrings[1]+"`")
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -126,7 +126,7 @@ func RaffleReactJoin(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 			misc.GuildMap[r.GuildID].Raffles[i].ParticipantIDs = append(misc.GuildMap[r.GuildID].Raffles[i].ParticipantIDs, r.UserID)
 			err := misc.RafflesWrite(misc.GuildMap[r.GuildID].Raffles, r.GuildID)
 			if err != nil {
-				_, err := s.ChannelMessageSend(guildBotLog, err.Error() +"\n" + misc.ErrorLocation(err))
+				_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
 					misc.MapMutex.Unlock()
 					return
@@ -177,7 +177,7 @@ func RaffleReactLeave(s *discordgo.Session, r *discordgo.MessageReactionRemove) 
 			}
 			err := misc.RafflesWrite(misc.GuildMap[r.GuildID].Raffles, r.GuildID)
 			if err != nil {
-				_, err := s.ChannelMessageSend(guildBotLog, err.Error() +"\n" + misc.ErrorLocation(err))
+				_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
 					misc.MapMutex.Unlock()
 					return
@@ -207,9 +207,9 @@ func raffleLeaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "lraffle [raffle name]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"lraffle [raffle name]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -235,7 +235,7 @@ func raffleLeaveCommand(s *discordgo.Session, m *discordgo.Message) {
 			if !userInRaffle {
 				_, err := s.ChannelMessageSend(m.ChannelID, "You're not in that raffle!")
 				if err != nil {
-					_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+					_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 					if err != nil {
 						misc.MapMutex.Unlock()
 						return
@@ -253,7 +253,7 @@ func raffleLeaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	if !raffleExists {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such raffle exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -262,9 +262,9 @@ func raffleLeaveCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	_, err := s.ChannelMessageSend(m.ChannelID, "Success! You have left raffle `" + commandStrings[1] + "`")
+	_, err := s.ChannelMessageSend(m.ChannelID, "Success! You have left raffle `"+commandStrings[1]+"`")
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -287,10 +287,10 @@ func craffleCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) != 3 ||
 		(commandStrings[1] != "true" &&
 			commandStrings[1] != "false") {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "craffle [react bool] [raffle name] `\n\n" +
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"craffle [react bool] [raffle name] `\n\n"+
 			"Type `true` or `false` in `[react bool]` parameter to indicate whether you want users to be able to react to join the raffle. (default react emoji is slot machine.)")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -308,7 +308,7 @@ func craffleCommand(s *discordgo.Session, m *discordgo.Message) {
 		if sliceRaffle.Name == temp.Name {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Such a raffle already exists.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
 					misc.MapMutex.Unlock()
 					return
@@ -323,9 +323,9 @@ func craffleCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.MapMutex.Unlock()
 
 	if commandStrings[1] == "true" {
-		message, err := s.ChannelMessageSend(m.ChannelID, "Raffle `" + temp.Name + "` is now active. ")
+		message, err := s.ChannelMessageSend(m.ChannelID, "Raffle `"+temp.Name+"` is now active. ")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -333,7 +333,7 @@ func craffleCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		err = s.MessageReactionAdd(message.ChannelID, message.ID, "🎰")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -369,9 +369,9 @@ func craffleCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	misc.MapMutex.Unlock()
 
-	_, err = s.ChannelMessageSend(m.ChannelID, "Raffle `" + temp.Name + "` is now active. Please use `" + guildPrefix + "jraffle " + temp.Name + "` to join the raffle.")
+	_, err = s.ChannelMessageSend(m.ChannelID, "Raffle `"+temp.Name+"` is now active. Please use `"+guildPrefix+"jraffle "+temp.Name+"` to join the raffle.")
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -382,9 +382,9 @@ func craffleCommand(s *discordgo.Session, m *discordgo.Message) {
 // Picks a random winner from those participating in the raffle
 func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 	var (
-		winnerIndex 	int
-		winnerID		string
-		winnerMention 	string
+		winnerIndex   int
+		winnerID      string
+		winnerMention string
 	)
 
 	misc.MapMutex.Lock()
@@ -395,9 +395,9 @@ func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "rafflewinner [raffle name]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"rafflewinner [raffle name]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -424,7 +424,7 @@ func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 	if winnerID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such raffle exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -435,7 +435,7 @@ func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 	if winnerID == "none" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There is nobody to pick from to win in that raffle.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -451,9 +451,9 @@ func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 		winnerMention = misc.MentionParser(s, winnerMention, m.GuildID)
 	}
 
-	_, err = s.ChannelMessageSend(m.ChannelID, "**" + commandStrings[1] + "** winner is " + winnerMention + "! Congratulations!")
+	_, err = s.ChannelMessageSend(m.ChannelID, "**"+commandStrings[1]+"** winner is "+winnerMention+"! Congratulations!")
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -472,9 +472,9 @@ func removeRaffleCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(strings.ToLower(m.Content), " ", 2)
 
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "removeraffle [raffle name]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"removeraffle [raffle name]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -487,7 +487,7 @@ func removeRaffleCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, err.Error())
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -496,9 +496,9 @@ func removeRaffleCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed raffle `" + commandStrings[1] + "`.")
+	_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed raffle `"+commandStrings[1]+"`.")
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -519,9 +519,9 @@ func viewRafflesCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(m.Content, " ")
 
 	if len(commandStrings) != 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "vraffle`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"vraffle`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -534,7 +534,7 @@ func viewRafflesCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(misc.GuildMap[m.GuildID].Raffles) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no raffles.")
 		if err != nil {
-			_, err := s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -564,49 +564,49 @@ func viewRafflesCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func init() {
 	add(&command{
-		execute: raffleParticipateCommand,
-		aliases: []string{"joinraffle", "enterraffle"},
-		trigger: "jraffle",
-		desc:    "Allows you to participate in a raffle.",
-		category:"raffles",
+		execute:  raffleParticipateCommand,
+		aliases:  []string{"joinraffle", "enterraffle"},
+		trigger:  "jraffle",
+		desc:     "Allows you to participate in a raffle.",
+		category: "raffles",
 	})
 	add(&command{
-		execute: raffleLeaveCommand,
-		aliases: []string{"leaveraffle"},
-		trigger: "lraffle",
-		desc:    "Removes you from a raffle.",
-		category:"raffles",
+		execute:  raffleLeaveCommand,
+		aliases:  []string{"leaveraffle"},
+		trigger:  "lraffle",
+		desc:     "Removes you from a raffle.",
+		category: "raffles",
 	})
 	add(&command{
-		execute: craffleCommand,
-		aliases: []string{"createraffle", "addraffle", "setraffle"},
-		trigger: "craffle",
-		desc:    "Create a raffle.",
+		execute:  craffleCommand,
+		aliases:  []string{"createraffle", "addraffle", "setraffle"},
+		trigger:  "craffle",
+		desc:     "Create a raffle.",
 		elevated: true,
-		category:"raffles",
+		category: "raffles",
 	})
 	add(&command{
-		execute: raffleWinnerCommand,
-		aliases: []string{"pickrafflewin", "pickrafflewinner", "rafflewin", "winraffle", "raffwin"},
-		trigger: "rafflewinner",
-		desc:    "Picks a random winner from those participating in a raffle.",
+		execute:  raffleWinnerCommand,
+		aliases:  []string{"pickrafflewin", "pickrafflewinner", "rafflewin", "winraffle", "raffwin"},
+		trigger:  "rafflewinner",
+		desc:     "Picks a random winner from those participating in a raffle.",
 		elevated: true,
-		category:"raffles",
+		category: "raffles",
 	})
 	add(&command{
-		execute: removeRaffleCommand,
-		aliases: []string{"deleteraffle", "killraffle"},
-		trigger: "removeraffle",
-		desc:    "Removes a previously set raffle.",
+		execute:  removeRaffleCommand,
+		aliases:  []string{"deleteraffle", "killraffle"},
+		trigger:  "removeraffle",
+		desc:     "Removes a previously set raffle.",
 		elevated: true,
-		category:"raffles",
+		category: "raffles",
 	})
 	add(&command{
-		execute: viewRafflesCommand,
-		aliases: []string{"vraffles", "vraffle", "viewraffle", "raffles"},
-		trigger: "viewraffles",
-		desc:    "Shows existing raffles.",
+		execute:  viewRafflesCommand,
+		aliases:  []string{"vraffles", "vraffle", "viewraffle", "raffles"},
+		trigger:  "viewraffles",
+		desc:     "Shows existing raffles.",
 		elevated: true,
-		category:"raffles",
+		category: "raffles",
 	})
 }

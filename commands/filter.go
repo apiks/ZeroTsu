@@ -13,18 +13,18 @@ import (
 )
 
 var (
-	spamFilterMap 		= make(map[string]int)
-	spamFilterIsBroken	bool
+	spamFilterMap      = make(map[string]int)
+	spamFilterIsBroken bool
 )
 
 // Handles filter in an onMessage basis
 func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	var (
-		mLowercase		string
-		badWordsSlice 	[]string
-		badWordExists 	bool
-		removals      	string
+		mLowercase    string
+		badWordsSlice []string
+		badWordExists bool
+		removals      string
 	)
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -93,7 +93,7 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		misc.MapMutex.Unlock()
 
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -112,10 +112,10 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 
 	var (
-		mLowercase		string
-		badWordsSlice 	[]string
-		badWordExists 	bool
-		removals      	string
+		mLowercase    string
+		badWordsSlice []string
+		badWordExists bool
+		removals      string
 	)
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -184,7 +184,7 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		misc.MapMutex.Unlock()
 
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -202,7 +202,7 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 // Filters reactions that contain a filtered phrase
 func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 
-	var badReactExists	bool
+	var badReactExists bool
 
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
@@ -249,26 +249,26 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 		guildBotLog := misc.GuildMap[r.GuildID].GuildConfig.BotLog.ID
 		misc.MapMutex.Unlock()
 
-		_, _ = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 	}
 }
 
 // Checks if the message is supposed to be filtered
-func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string){
+func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 
 	var (
-		mLowercase					string
-		mentions					string
-		userID						string
+		mLowercase string
+		mentions   string
+		userID     string
 
-		mentionCheck           		[]string
+		mentionCheck []string
 
-		badPhraseSlice         		[]string
-		badPhraseCheckMentions 		[]string
-		badPhraseCheck         		[]string
+		badPhraseSlice         []string
+		badPhraseCheckMentions []string
+		badPhraseCheck         []string
 
-		messRequireCheckMentions	[]string
-		messRequireCheck			[]string
+		messRequireCheckMentions []string
+		messRequireCheck         []string
 	)
 
 	mLowercase = strings.ToLower(m.Content)
@@ -380,7 +380,7 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string){
 // Checks if the React is supposed to be filtered
 func isFilteredReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) bool {
 
-	var reactName	string
+	var reactName string
 
 	// Iterates through all the filters to see if the react contained a filtered phrase
 	misc.MapMutex.Lock()
@@ -418,8 +418,8 @@ func isFilteredReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) bool
 func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		mLowercase		string
-		commandStrings	[]string
+		mLowercase     string
+		commandStrings []string
 	)
 
 	misc.MapMutex.Lock()
@@ -433,7 +433,7 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vfilter [phrase]`\n\n[phrase] is either regex expression (preferable) or just a simple string.", guildPrefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -445,7 +445,7 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Writes the phrase to filters.json and checks if the requirement was already in storage
 	err := misc.FiltersWrite(commandStrings[1], m.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -454,7 +454,7 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been added to the filter list.", commandStrings[1]))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -466,8 +466,8 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		mLowercase		string
-		commandStrings	[]string
+		mLowercase     string
+		commandStrings []string
 	)
 
 	misc.MapMutex.Lock()
@@ -476,7 +476,7 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(misc.GuildMap[m.GuildID].Filters) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no filters.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -497,7 +497,7 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vunfilter [phrase]`\n\n[phrase] is the filter phrase that was used when creating a filter.", guildPrefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -509,7 +509,7 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Removes phrase from storage and memory
 	err := misc.FiltersRemove(commandStrings[1], m.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -518,7 +518,7 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been removed from the filter list.", commandStrings[1]))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -537,7 +537,7 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(misc.GuildMap[m.GuildID].Filters) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no filters.")
 		if err != nil {
-			_, err := s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -572,16 +572,16 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID string) error {
 
 	var (
-		embedMess      		discordgo.MessageEmbed
-		embedThumbnail 		discordgo.MessageEmbedThumbnail
+		embedMess      discordgo.MessageEmbed
+		embedThumbnail discordgo.MessageEmbedThumbnail
 
 		// Embed slice and its fields
-		embedField        	[]*discordgo.MessageEmbedField
-		embedFieldFilter  	discordgo.MessageEmbedField
-		embedFieldMessage 	discordgo.MessageEmbedField
-		embedFieldChannel 	discordgo.MessageEmbedField
+		embedField        []*discordgo.MessageEmbedField
+		embedFieldFilter  discordgo.MessageEmbedField
+		embedFieldMessage discordgo.MessageEmbedField
+		embedFieldChannel discordgo.MessageEmbedField
 
-		content				string
+		content string
 	)
 
 	misc.MapMutex.Lock()
@@ -640,11 +640,11 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID
 func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		mLowercase				string
-		commandStrings			[]string
-		channelID				string
-		requirementType			string
-		phrase					string
+		mLowercase      string
+		commandStrings  []string
+		channelID       string
+		requirementType string
+		phrase          string
 	)
 
 	misc.MapMutex.Lock()
@@ -656,10 +656,10 @@ func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings = strings.SplitN(mLowercase, " ", 4)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vmrequire [channel]* [type]* [phrase]`\n\n" +
-			"`[channel]` is a ping or ID to the channel where the requirement will only be done.\n" +
-			"`[type]` can either be soft or hard. Soft means a user must mention the phrase in their first message and is okay until someone else types a message. Hard means all messages must contain that phrase. Defaults to soft.\n" +
-			"`[phrase]` is either regex expression (preferable) or just a simple string.\n\n" +
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vmrequire [channel]* [type]* [phrase]`\n\n"+
+			"`[channel]` is a ping or ID to the channel where the requirement will only be done.\n"+
+			"`[type]` can either be soft or hard. Soft means a user must mention the phrase in their first message and is okay until someone else types a message. Hard means all messages must contain that phrase. Defaults to soft.\n"+
+			"`[phrase]` is either regex expression (preferable) or just a simple string.\n\n"+
 			"***** is optional.", guildPrefix))
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
@@ -726,10 +726,10 @@ func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 func removeMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		mLowercase		string
-		commandStrings	[]string
-		channelID		string
-		phrase			string
+		mLowercase     string
+		commandStrings []string
+		channelID      string
+		phrase         string
 	)
 
 	misc.MapMutex.Lock()
@@ -738,7 +738,7 @@ func removeMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(misc.GuildMap[m.GuildID].MessageRequirements) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no message requirements.")
 		if err != nil {
-			_, err := s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -757,10 +757,10 @@ func removeMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings = strings.SplitN(mLowercase, " ", 3)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vunmrequire [channel]* [phrase]`\n\n[channel] is the channel for which that message requirement was set.\n" +
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vunmrequire [channel]* [phrase]`\n\n[channel] is the channel for which that message requirement was set.\n"+
 			"`[phrase]` is the phrase that was used when creating a message requirement.\n\n ***** are optional.", guildPrefix))
 		if err != nil {
-			_, err := s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -806,7 +806,7 @@ func viewMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(misc.GuildMap[m.GuildID].MessageRequirements) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no message requirements.")
 		if err != nil {
-			_, err := s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -951,7 +951,7 @@ func init() {
 	add(&command{
 		execute:  addMessRequirementCommand,
 		trigger:  "mrequire",
-		aliases:  []string{ "messrequire", "setmrequire", "setmessrequire", "setmessagerequire", "addmrequire", "messagerequire", "messrequire", "addmessrequire", "addmessagereqyure"},
+		aliases:  []string{"messrequire", "setmrequire", "setmessrequire", "setmessagerequire", "addmrequire", "messagerequire", "messrequire", "addmessrequire", "addmessagereqyure"},
 		desc:     "Adds a phrase to the message requirement list where it will remove messages that do not contain it.",
 		elevated: true,
 		category: "filters",

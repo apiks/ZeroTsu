@@ -44,7 +44,7 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	// Pulls all of the server roles
 	roles, err := s.GuildRoles(r.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -86,7 +86,7 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 						// Gives the role
 						err := s.GuildMemberRoleAdd(r.GuildID, r.UserID, serverRole.ID)
 						if err != nil {
-							_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+							_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 							if err != nil {
 								misc.MapMutex.Unlock()
 								return
@@ -135,7 +135,7 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 	// Pulls all of the server roles
 	roles, err := s.GuildRoles(r.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -177,7 +177,7 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 						// Removes the role
 						err := s.GuildMemberRoleRemove(r.GuildID, r.UserID, serverRole.ID)
 						if err != nil {
-							_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+							_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 							if err != nil {
 								misc.MapMutex.Unlock()
 								return
@@ -194,7 +194,7 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 }
 
 // Sets react joins per specific message and emote
-func setReactJoinCommand (s *discordgo.Session, m *discordgo.Message) {
+func setReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var roleExists bool
 
@@ -314,11 +314,11 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
 		messageExists bool
-		validEmoji =  false
+		validEmoji    = false
 
 		messageID     string
 		emojiRegexAPI []string
-		emojiAPI	  []string
+		emojiAPI      []string
 	)
 
 	misc.MapMutex.Lock()
@@ -633,7 +633,7 @@ func SaveReactJoin(messageID string, role string, emoji string, guildID string) 
 
 	var (
 		temp        misc.ReactJoin
-		emojiExists  = false
+		emojiExists = false
 	)
 
 	// Uses this if the message already has a set emoji react
@@ -686,13 +686,13 @@ func SaveReactJoin(messageID string, role string, emoji string, guildID string) 
 func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		roleID         string
-		name           string
-		chanMention    string
-		topic		   string
+		roleID      string
+		name        string
+		chanMention string
+		topic       string
 
 		hasRoleAlready bool
-		roleExists	   bool
+		roleExists     bool
 	)
 
 	// Pulls info on message author
@@ -713,9 +713,9 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "join [channel/role]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"join [channel/role]`")
 		if err != nil {
-			_, err := s.ChannelMessageSend(guildPrefix, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err := s.ChannelMessageSend(guildPrefix, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -892,12 +892,12 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		roleID         string
-		name           string
-		chanMention    string
+		roleID      string
+		name        string
+		chanMention string
 
 		hasRoleAlready bool
-		roleExists	   bool
+		roleExists     bool
 	)
 
 	// Pulls info on message author
@@ -918,7 +918,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "leave [channel/role]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"leave [channel/role]`")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildPrefix, err.Error())
 			if err != nil {
@@ -966,7 +966,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 			if err != nil {
 				return
 			}
-			_, _ = s.ChannelMessageSend(dm.ID, "You cannot leave "+name + " using this command.")
+			_, _ = s.ChannelMessageSend(dm.ID, "You cannot leave "+name+" using this command.")
 			return
 		}
 	}
@@ -981,7 +981,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 		}
 	}
-	if !roleExists  {
+	if !roleExists {
 		// Sends error message to user in DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
@@ -1021,7 +1021,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			return
 		}
-		_, _ = s.ChannelMessageSend(dm.ID, "You're already out of " + chanMention + "")
+		_, _ = s.ChannelMessageSend(dm.ID, "You're already out of "+chanMention+"")
 		return
 	}
 
@@ -1119,19 +1119,19 @@ func init() {
 		category: "reacts",
 	})
 	add(&command{
-		execute:  joinCommand,
-		trigger:  "join",
-		aliases:  []string{"joinchannel"},
-		desc:     "Join a spoiler channel.",
+		execute:     joinCommand,
+		trigger:     "join",
+		aliases:     []string{"joinchannel"},
+		desc:        "Join a spoiler channel.",
 		deleteAfter: true,
-		category: "normal",
+		category:    "normal",
 	})
 	add(&command{
-		execute:  leaveCommand,
-		trigger:  "leave",
-		aliases:  []string{"leavechannel"},
-		desc:     "Leave a spoiler channel.",
+		execute:     leaveCommand,
+		trigger:     "leave",
+		aliases:     []string{"leavechannel"},
+		desc:        "Leave a spoiler channel.",
 		deleteAfter: true,
-		category: "normal",
+		category:    "normal",
 	})
 }

@@ -8,8 +8,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/misc"
 	"github.com/r-anime/ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/misc"
 )
 
 // Adds to message count on every message for that channel
@@ -106,7 +106,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		msgs               []string
 		normalChannelTotal int
 		optinChannelTotal  int
-		flag			   bool
+		flag               bool
 	)
 
 	t := time.Now()
@@ -387,7 +387,7 @@ func isChannelUsable(channel misc.Channel, guild *discordgo.Guild) (misc.Channel
 }
 
 // Splits the stat messages into blocks
-func splitStatMessages (msgs []string, message string) ([]string, string) {
+func splitStatMessages(msgs []string, message string) ([]string, string) {
 	const maxMsgLength = 1700
 	if len(message) > maxMsgLength {
 		msgs = append(msgs, message)
@@ -470,7 +470,7 @@ func DailyStatsTimer(s *discordgo.Session, e *discordgo.Ready) {
 // Adds channel stats command to the commandHandler
 func init() {
 	add(&command{
-		execute:   showStats,
+		execute:  showStats,
 		trigger:  "stats",
 		aliases:  []string{"channelstats", "channels"},
 		desc:     "Prints all channel stats.",

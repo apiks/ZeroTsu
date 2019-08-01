@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	GuildMap = make(map[string]*guildInfo)
-	dbPath = "database/guilds"
+	GuildMap  = make(map[string]*guildInfo)
+	dbPath    = "database/guilds"
 	fileNames = [...]string{"bannedUsers.json", "filters.json", "messReqs.json", "spoilerRoles.json", "rssThreads.json",
 		"rssThreadCheck.json", "raffles.json", "waifus.json", "waifuTrades.json", "memberInfo.json", "emojiStats.json",
 		"channelStats.json", "userChangeStats.json", "verifiedStats.json", "remindMes.json", "voteInfo.json", "tempCha.json",
@@ -24,30 +24,30 @@ var (
 )
 
 type guildInfo struct {
-	GuildID 			string
-	GuildConfig			GuildSettings
+	GuildID     string
+	GuildConfig GuildSettings
 
-	BannedUsers			[]BannedUsers
-	Filters 			[]Filter
+	BannedUsers         []BannedUsers
+	Filters             []Filter
 	MessageRequirements []MessRequirement
-	SpoilerRoles		[]discordgo.Role
-	RssThreads			[]RssThread
-	RssThreadChecks		[]RssThreadCheck
-	Raffles 			[]Raffle
-	Waifus				[]Waifu
-	WaifuTrades			[]WaifuTrade
+	SpoilerRoles        []discordgo.Role
+	RssThreads          []RssThread
+	RssThreadChecks     []RssThreadCheck
+	Raffles             []Raffle
+	Waifus              []Waifu
+	WaifuTrades         []WaifuTrade
 
-	MemberInfoMap		map[string]*UserInfo
-	SpoilerMap			map[string]*discordgo.Role
-	EmojiStats 			map[string]*Emoji
-	ChannelStats 		map[string]*Channel
-	UserChangeStats 	map[string]int
-	VerifiedStats 		map[string]int
-	RemindMes			map[string]*RemindMeSlice
-	VoteInfoMap			map[string]*VoteInfo
-	TempChaMap 			map[string]*TempChaInfo
-	ReactJoinMap		map[string]*ReactJoin
-	EmojiRoleMap		map[string][]string
+	MemberInfoMap   map[string]*UserInfo
+	SpoilerMap      map[string]*discordgo.Role
+	EmojiStats      map[string]*Emoji
+	ChannelStats    map[string]*Channel
+	UserChangeStats map[string]int
+	VerifiedStats   map[string]int
+	RemindMes       map[string]*RemindMeSlice
+	VoteInfoMap     map[string]*VoteInfo
+	TempChaMap      map[string]*TempChaInfo
+	ReactJoinMap    map[string]*ReactJoin
+	EmojiRoleMap    map[string][]string
 }
 
 // Guild settings for misc things
@@ -63,30 +63,30 @@ type GuildSettings struct {
 	WaifuModule         bool       `json:"WaifuModule"`
 	ReactsModule        bool       `json:"ReactsModule"`
 	FileFilter          bool       `json:"FileFilter"`
-	DailyStats			bool	   `json:"DailyStats"`
-	PingMessage			string	   `json:"PingMessage"`
+	DailyStats          bool       `json:"DailyStats"`
+	PingMessage         string     `json:"PingMessage"`
 }
 
 type Role struct {
-	Name	string	`json:"Name"`
-	ID		string	`json:"ID"`
+	Name string `json:"Name"`
+	ID   string `json:"ID"`
 }
 
 type VoiceCha struct {
-	Name	string	`json:"Name"`
-	ID		string	`json:"ID"`
-	Roles	[]Role	`json:"Roles"`
+	Name  string `json:"Name"`
+	ID    string `json:"ID"`
+	Roles []Role `json:"Roles"`
 }
 
 type Cha struct {
-	Name	string	`json:"Name"`
-	ID		string	`json:"ID"`
+	Name string `json:"Name"`
+	ID   string `json:"ID"`
 }
 
 type OptinRole struct {
-	Name		string	`json:"Name"`
-	ID			string	`json:"ID"`
-	Position	int		`json:"Position"`
+	Name     string `json:"Name"`
+	ID       string `json:"ID"`
+	Position int    `json:"Position"`
 }
 
 // VoteInfo is the in memory storage of each vote channel's info
@@ -98,13 +98,13 @@ type VoteInfo struct {
 	Description  string             `json:"Description,omitempty"`
 	VotesReq     int                `json:"VotesReq"`
 	MessageReact *discordgo.Message `json:"MessageReact"`
-	User		 *discordgo.User	`json:"User"`
+	User         *discordgo.User    `json:"User"`
 }
 
 type TempChaInfo struct {
-	CreationDate	time.Time		`json:"CreationDate"`
-	RoleName		string			`json:"RoleName"`
-	Elevated		bool			`json:"Elevated"`
+	CreationDate time.Time `json:"CreationDate"`
+	RoleName     string    `json:"RoleName"`
+	Elevated     bool      `json:"Elevated"`
 }
 
 type ReactJoin struct {
@@ -112,14 +112,14 @@ type ReactJoin struct {
 }
 
 type Filter struct {
-	Filter 	string	`json:"Filter"`
+	Filter string `json:"Filter"`
 }
 
 type MessRequirement struct {
-	Phrase 		string	`json:"Phrase"`
-	Type 		string	`json:"Type"`
-	Channel		string	`json:"Channel"`
-	LastUserID	string
+	Phrase     string `json:"Phrase"`
+	Type       string `json:"Type"`
+	Channel    string `json:"Channel"`
+	LastUserID string
 }
 
 type RssThread struct {
@@ -129,13 +129,13 @@ type RssThread struct {
 }
 
 type RssThreadCheck struct {
-	Thread string    `json:"Thread"`
-	Date   time.Time `json:"Date"`
-	ChannelID string `json:"ChannelID"`
+	Thread    string    `json:"Thread"`
+	Date      time.Time `json:"Date"`
+	ChannelID string    `json:"ChannelID"`
 }
 
 type Emoji struct {
-	ID          	   string `json:"id"`
+	ID                 string `json:"id"`
 	Name               string `json:"name"`
 	MessageUsage       int    `json:"messageUsage"`
 	UniqueMessageUsage int    `json:"uniqueMessages"`
@@ -143,12 +143,12 @@ type Emoji struct {
 }
 
 type Channel struct {
-	ChannelID 	  string
-	Name 		  string
-	Messages  	  map[string]int
-	RoleCount 	  map[string]int `json:",omitempty"`
-	Optin     	  bool
-	Exists    	  bool
+	ChannelID string
+	Name      string
+	Messages  map[string]int
+	RoleCount map[string]int `json:",omitempty"`
+	Optin     bool
+	Exists    bool
 }
 
 type RemindMeSlice struct {
@@ -156,26 +156,26 @@ type RemindMeSlice struct {
 }
 
 type RemindMe struct {
-	Message			string
-	Date			time.Time
-	CommandChannel	string
-	RemindID		int
+	Message        string
+	Date           time.Time
+	CommandChannel string
+	RemindID       int
 }
 
 type Raffle struct {
-	Name			string		`json:"Name"`
-	ParticipantIDs	[]string	`json:"ParticipantIDs"`
-	ReactMessageID	string		`json:"ReactMessageID"`
+	Name           string   `json:"Name"`
+	ParticipantIDs []string `json:"ParticipantIDs"`
+	ReactMessageID string   `json:"ReactMessageID"`
 }
 
 type Waifu struct {
-	Name			string		`json:"Name"`
+	Name string `json:"Name"`
 }
 
 type WaifuTrade struct {
-	TradeID			string		`json:"TradeID"`
-	InitiatorID		string		`json:"InitiatorID"`
-	AccepteeID		string		`json:"AccepteeID"`
+	TradeID     string `json:"TradeID"`
+	InitiatorID string `json:"InitiatorID"`
+	AccepteeID  string `json:"AccepteeID"`
 }
 
 // Loads all guilds in the database/guilds folder
@@ -208,7 +208,7 @@ func LoadGuilds() {
 
 		GuildMap[folderName] = &guildInfo{
 			GuildID:             folderName,
-			GuildConfig:		 GuildSettings{Prefix: ".", VoteModule: false, WaifuModule: false, ReactsModule: true, FileFilter: false, PingMessage:"Hmm? Do you want some honey, darling? Open wide~~"},
+			GuildConfig:         GuildSettings{Prefix: ".", VoteModule: false, WaifuModule: false, ReactsModule: true, FileFilter: false, PingMessage: "Hmm? Do you want some honey, darling? Open wide~~"},
 			BannedUsers:         nil,
 			Filters:             nil,
 			MessageRequirements: nil,
@@ -225,10 +225,10 @@ func LoadGuilds() {
 			UserChangeStats:     make(map[string]int),
 			VerifiedStats:       make(map[string]int),
 			RemindMes:           make(map[string]*RemindMeSlice),
-			VoteInfoMap:		 make(map[string]*VoteInfo),
-			TempChaMap:			 make(map[string]*TempChaInfo),
-			ReactJoinMap:   	 make(map[string]*ReactJoin),
-			EmojiRoleMap: 		 make(map[string][]string),
+			VoteInfoMap:         make(map[string]*VoteInfo),
+			TempChaMap:          make(map[string]*TempChaInfo),
+			ReactJoinMap:        make(map[string]*ReactJoin),
+			EmojiRoleMap:        make(map[string][]string),
 		}
 		for _, file := range files {
 			LoadGuildFile(folderName, file)
@@ -314,7 +314,7 @@ func WriteMemberInfo(info map[string]*UserInfo, guildID string) {
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/memberInfo.json", guildID), MarshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/memberInfo.json", guildID), MarshaledStruct, 0644)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -331,7 +331,7 @@ func EmojiStatsWrite(emojiStats map[string]*Emoji, guildID string) (bool, error)
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/emojiStats.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/emojiStats.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return false, err
 	}
@@ -349,7 +349,7 @@ func ChannelStatsWrite(channelStats map[string]*Channel, guildID string) (bool, 
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/channelStats.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/channelStats.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return false, err
 	}
@@ -367,7 +367,7 @@ func UserChangeStatsWrite(userStats map[string]int, guildID string) (bool, error
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/userChangeStats.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/userChangeStats.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return false, err
 	}
@@ -385,13 +385,14 @@ func VerifiedStatsWrite(verifiedStats map[string]int, guildID string) error {
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/verifiedStats.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/verifiedStats.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
 
 	return nil
 }
+
 // Writes RemindMe notes to remindMes.json
 func RemindMeWrite(remindMe map[string]*RemindMeSlice, guildID string) (bool, error) {
 
@@ -402,7 +403,7 @@ func RemindMeWrite(remindMe map[string]*RemindMeSlice, guildID string) (bool, er
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/remindMes.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/remindMes.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return false, err
 	}
@@ -420,7 +421,7 @@ func VoteInfoWrite(info map[string]*VoteInfo, guildID string) {
 	}
 
 	//Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/voteInfo.json", guildID), MarshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/voteInfo.json", guildID), MarshaledStruct, 0644)
 	if err != nil {
 		return
 	}
@@ -436,7 +437,7 @@ func TempChaWrite(info map[string]*TempChaInfo, guildID string) {
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/tempCha.json", guildID), MarshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/tempCha.json", guildID), MarshaledStruct, 0644)
 	if err != nil {
 		return
 	}
@@ -452,7 +453,7 @@ func ReactJoinWrite(info map[string]*ReactJoin, guildID string) {
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/reactJoin.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/reactJoin.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return
 	}
@@ -468,7 +469,7 @@ func RafflesWrite(raffle []Raffle, guildID string) error {
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/raffles.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/raffles.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
@@ -486,7 +487,7 @@ func WaifusWrite(waifu []Waifu, guildID string) error {
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/waifus.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/waifus.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
@@ -504,7 +505,7 @@ func WaifuTradesWrite(trade []WaifuTrade, guildID string) error {
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/waifuTrades.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/waifuTrades.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
@@ -520,7 +521,7 @@ func BannedUsersWrite(bannedUsers []BannedUsers, guildID string) {
 		return
 	}
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/bannedUsers.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/bannedUsers.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return
 	}
@@ -557,7 +558,7 @@ func RaffleRemove(raffle string, guildID string) error {
 	MapMutex.Unlock()
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/raffles.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/raffles.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
@@ -568,7 +569,7 @@ func RaffleRemove(raffle string, guildID string) error {
 // Adds string "phrase" to filters.json and memory
 func FiltersWrite(phrase string, guildID string) error {
 
-	var filterStruct = 	Filter{phrase}
+	var filterStruct = Filter{phrase}
 
 	// Appends the new filtered phrase to a slice of all of the old ones if it doesn't exist
 	MapMutex.Lock()
@@ -591,7 +592,7 @@ func FiltersWrite(phrase string, guildID string) error {
 	MapMutex.Unlock()
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/filters.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/filters.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
@@ -602,7 +603,7 @@ func FiltersWrite(phrase string, guildID string) error {
 // Removes string "phrase" from filters.json and memory
 func FiltersRemove(phrase string, guildID string) error {
 
-	var filterExists	bool
+	var filterExists bool
 
 	// Deletes the filtered phrase if it finds it exists
 	MapMutex.Lock()
@@ -629,7 +630,7 @@ func FiltersRemove(phrase string, guildID string) error {
 	MapMutex.Unlock()
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/filters.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/filters.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
@@ -640,7 +641,7 @@ func FiltersRemove(phrase string, guildID string) error {
 // Adds string "phrase" to messReqs.json and memory
 func MessRequirementWrite(phrase string, channel string, filterType string, guildID string) error {
 
-	var MessRequirementStruct = MessRequirement{phrase,filterType, channel, ""}
+	var MessRequirementStruct = MessRequirement{phrase, filterType, channel, ""}
 
 	// Appends the new phrase to a slice of all of the old ones if it doesn't exist
 	MapMutex.Lock()
@@ -663,7 +664,7 @@ func MessRequirementWrite(phrase string, channel string, filterType string, guil
 	MapMutex.Unlock()
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/messReqs.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/messReqs.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
@@ -674,11 +675,11 @@ func MessRequirementWrite(phrase string, channel string, filterType string, guil
 // Removes string "phrase" from messReqs.json and memory
 func MessRequirementRemove(phrase string, channelID string, guildID string) error {
 
-	var phraseExists	bool
+	var phraseExists bool
 
 	// Deletes the filtered phrase if it finds it exists
 	MapMutex.Lock()
-	for i, requirement:= range GuildMap[guildID].MessageRequirements {
+	for i, requirement := range GuildMap[guildID].MessageRequirements {
 		if requirement.Phrase == phrase {
 			if channelID != "" {
 				if requirement.Channel != channelID {
@@ -706,7 +707,7 @@ func MessRequirementRemove(phrase string, channelID string, guildID string) erro
 	MapMutex.Unlock()
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/messReqs.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/messReqs.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
@@ -717,7 +718,7 @@ func MessRequirementRemove(phrase string, channelID string, guildID string) erro
 // Writes spoilerRoles map to spoilerRoles.json
 func SpoilerRolesWrite(SpoilerMapWrite map[string]*discordgo.Role, guildID string) {
 
-	var roleExists  bool
+	var roleExists bool
 
 	// Appends the new spoiler role to a slice of all of the old ones if it doesn't exist
 	if len(GuildMap[guildID].SpoilerRoles) == 0 {
@@ -749,7 +750,7 @@ func SpoilerRolesWrite(SpoilerMapWrite map[string]*discordgo.Role, guildID strin
 	}
 
 	// Writes to file
-	_ = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/spoilerRoles.json", guildID), marshaledStruct, 0644)
+	_ = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/spoilerRoles.json", guildID), marshaledStruct, 0644)
 }
 
 // Deletes a role from spoilerRoles map to spoilerRoles.json
@@ -771,7 +772,7 @@ func SpoilerRolesDelete(roleID string, guildID string) {
 	}
 
 	// Writes to file
-	_ = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/spoilerRoles.json", guildID), marshaledStruct, 0644)
+	_ = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/spoilerRoles.json", guildID), marshaledStruct, 0644)
 }
 
 // Writes string "thread" to rssThreadsCheck.json
@@ -780,8 +781,8 @@ func RssThreadsWrite(thread string, channel string, author string, guildID strin
 	thread = strings.ToLower(thread)
 
 	var (
-		threadStruct = 	RssThread{thread, channel, author}
-		err				error
+		threadStruct = RssThread{thread, channel, author}
+		err          error
 	)
 
 	// Appends the new thread to a slice of all of the old ones if it doesn't exist
@@ -800,7 +801,7 @@ func RssThreadsWrite(thread string, channel string, author string, guildID strin
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/rssThreads.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/rssThreads.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return false, err
 	}
@@ -847,7 +848,7 @@ func RssThreadsRemove(thread string, author string, guildID string) (bool, error
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/rssThreads.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/rssThreads.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return true, err
 	}
@@ -860,7 +861,7 @@ func RssThreadsTimerWrite(thread string, date time.Time, channelID string, guild
 
 	thread = strings.ToLower(thread)
 
-	var threadCheckStruct= RssThreadCheck{thread, date, channelID}
+	var threadCheckStruct = RssThreadCheck{thread, date, channelID}
 
 	// Appends the new thread to a slice of all of the old ones if it doesn't exist
 	for p := 0; p < len(GuildMap[guildID].RssThreadChecks); p++ {
@@ -879,7 +880,7 @@ func RssThreadsTimerWrite(thread string, date time.Time, channelID string, guild
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/rssThreadCheck.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/rssThreadCheck.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return false
 	}
@@ -893,8 +894,8 @@ func RssThreadsTimerRemove(thread string, date time.Time, channelID string, guil
 	thread = strings.ToLower(thread)
 
 	var (
-		threadExists= false
-		threadCheckStruct= RssThreadCheck{thread, date, channelID}
+		threadExists      = false
+		threadCheckStruct = RssThreadCheck{thread, date, channelID}
 	)
 
 	// Deletes the thread if it finds it exists
@@ -917,7 +918,7 @@ func RssThreadsTimerRemove(thread string, date time.Time, channelID string, guil
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/rssThreadCheck.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/rssThreadCheck.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
@@ -935,7 +936,7 @@ func GuildSettingsWrite(info GuildSettings, guildID string) {
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath + "/%v/guildSettings.json", guildID), MarshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/guildSettings.json", guildID), MarshaledStruct, 0644)
 	if err != nil {
 		return
 	}
@@ -962,7 +963,7 @@ func initDB(guildID string) {
 		os.Mkdir(path, 0777)
 	}
 	for _, name := range fileNames {
-		file, err := os.OpenFile(fmt.Sprintf("%v/%v/%v",dbPath, guildID , name), os.O_RDONLY|os.O_CREATE, 0666)
+		file, err := os.OpenFile(fmt.Sprintf("%v/%v/%v", dbPath, guildID, name), os.O_RDONLY|os.O_CREATE, 0666)
 		if err != nil {
 			log.Println(err)
 			continue

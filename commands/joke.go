@@ -11,12 +11,13 @@ import (
 )
 
 const jokeURL = "https://official-joke-api.herokuapp.com/random_joke"
+
 var myClient = &http.Client{Timeout: 10 * time.Second}
 
 type Joke struct {
-	ID int `json:"id"`
-	JokeType string `json:"type"`
-	Setup string `json:"setup"`
+	ID        int    `json:"id"`
+	JokeType  string `json:"type"`
+	Setup     string `json:"setup"`
 	Punchline string `json:"punchline"`
 }
 
@@ -47,7 +48,7 @@ func jokeCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	_, err = s.ChannelMessageSend(m.ChannelID, joke.Setup + "\n\n" + joke.Punchline)
+	_, err = s.ChannelMessageSend(m.ChannelID, joke.Setup+"\n\n"+joke.Punchline)
 	if err != nil {
 		misc.MapMutex.Lock()
 		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
@@ -59,9 +60,9 @@ func jokeCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func init() {
 	add(&command{
-		execute: jokeCommand,
-		trigger: "joke",
-		desc:    "Print a joke",
+		execute:  jokeCommand,
+		trigger:  "joke",
+		desc:     "Print a joke",
 		category: "normal",
 	})
 }

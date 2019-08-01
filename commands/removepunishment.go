@@ -23,7 +23,7 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if there's enough parameters
 	if len(commandStrings) != 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "removewarning [@user, userID, or username#discrim] [warning index]`\n\n" +
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"removewarning [@user, userID, or username#discrim] [warning index]`\n\n"+
 			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -112,7 +112,7 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	err = removePunishmentEmbed(s, m, punishment)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -133,7 +133,7 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if there's enough parameters (command, user and index.) Else prints error message
 	if len(commandStrings) != 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "removekick [@user, userID, or username#discrim] [kick index]`\n\n" +
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"removekick [@user, userID, or username#discrim] [kick index]`\n\n"+
 			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -222,7 +222,7 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	err = removePunishmentEmbed(s, m, punishment)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -243,7 +243,7 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if there's enough parameters (command, user and index. Else prints error message
 	if len(commandStrings) < 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `" + guildPrefix + "removeban [@user, userID, or username#discrim] [ban index]`\n\n" +
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"removeban [@user, userID, or username#discrim] [ban index]`\n\n"+
 			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -332,7 +332,7 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	err = removePunishmentEmbed(s, m, punishment)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -342,7 +342,7 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func removePunishmentEmbed(s *discordgo.Session, m *discordgo.Message, punishment string) error {
 
-	var embedMess      discordgo.MessageEmbed
+	var embedMess discordgo.MessageEmbed
 
 	// Sets punishment embed color
 	embedMess.Color = 0x00ff00

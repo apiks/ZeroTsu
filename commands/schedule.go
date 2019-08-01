@@ -14,7 +14,7 @@ import (
 var AnimeSchedule = make(map[int][]ShowAirTime)
 
 type ShowAirTime struct {
-	Name 	string
+	Name    string
 	AirTime string
 }
 
@@ -22,8 +22,8 @@ type ShowAirTime struct {
 func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		currentDay = int(time.Now().Weekday())
-		day = -1
+		currentDay   = int(time.Now().Weekday())
+		day          = -1
 		printMessage string
 	)
 
@@ -60,7 +60,7 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 		if day < 0 || day > 6 {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot parse that day.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
 					return
 				}
@@ -80,7 +80,7 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Print the daily schedule
 	_, err := s.ChannelMessageSend(m.ChannelID, printMessage)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -92,11 +92,11 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 func getDaySchedule(weekday int) string {
 	var (
 		printMessage = fmt.Sprintf("**__%v:__**\n\n", time.Weekday(weekday).String())
-		DST = isTimeDST(time.Now())
-		JST *time.Location
-		BST *time.Location
-		PDT *time.Location
-		PST *time.Location
+		DST          = isTimeDST(time.Now())
+		JST          *time.Location
+		BST          *time.Location
+		PDT          *time.Location
+		PST          *time.Location
 	)
 
 	// Set timezones based on DST
@@ -148,7 +148,7 @@ func getDaySchedule(weekday int) string {
 // Updates the anime schedule map
 func processEachShow(index int, element *goquery.Selection) {
 	var (
-		day int
+		day  int
 		show ShowAirTime
 	)
 
@@ -243,9 +243,9 @@ func isTimeDST(t time.Time) bool {
 
 func init() {
 	add(&command{
-		execute: scheduleCommand,
-		trigger: "schedule",
-		desc:    "Print anime air times SUBBED. Add a day to specify a day",
-		category:"normal",
+		execute:  scheduleCommand,
+		trigger:  "schedule",
+		desc:     "Print anime air times SUBBED. Add a day to specify a day",
+		category: "normal",
 	})
 }

@@ -25,7 +25,7 @@ func addCommandRole(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"addocommandrole [Role ID]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -39,7 +39,7 @@ func addCommandRole(s *discordgo.Session, m *discordgo.Message) {
 	if role.ID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such role exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -54,7 +54,7 @@ func addCommandRole(s *discordgo.Session, m *discordgo.Message) {
 		if commandRole.ID == role.ID {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: That role is already a command role.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
 					misc.MapMutex.Unlock()
 					return
@@ -74,7 +74,7 @@ func addCommandRole(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Role `%v` is now a privileged role.", role.Name))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -98,7 +98,7 @@ func removeCommandRole(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"removecommandrole [Role ID]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -112,7 +112,7 @@ func removeCommandRole(s *discordgo.Session, m *discordgo.Message) {
 	if roleID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such role exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -133,7 +133,7 @@ func removeCommandRole(s *discordgo.Session, m *discordgo.Message) {
 	if !roleExists {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such role in the command role list.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -156,7 +156,7 @@ func removeCommandRole(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Role `%v` has been removed from the command role list.", roleName))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -168,7 +168,7 @@ func removeCommandRole(s *discordgo.Session, m *discordgo.Message) {
 func viewCommandRoles(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		message string
+		message      string
 		splitMessage []string
 	)
 
@@ -182,7 +182,7 @@ func viewCommandRoles(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) != 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"commandroles`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -195,7 +195,7 @@ func viewCommandRoles(s *discordgo.Session, m *discordgo.Message) {
 	if len(misc.GuildMap[m.GuildID].GuildConfig.CommandRoles) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no privileged command roles.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -221,7 +221,7 @@ func viewCommandRoles(s *discordgo.Session, m *discordgo.Message) {
 	if splitMessage == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -234,7 +234,7 @@ func viewCommandRoles(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: cannot send commandroles message.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
 					return
 				}
@@ -259,7 +259,7 @@ func prefixCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current prefix is: `%v` \n\n To change prefix please use `%vprefix [new prefix]`", guildPrefix, guildPrefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -278,7 +278,7 @@ func prefixCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New prefix is: `%v`", guildPrefix))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -309,7 +309,7 @@ func botLogCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -323,7 +323,7 @@ func botLogCommand(s *discordgo.Session, m *discordgo.Message) {
 	if chaID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such channel exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -341,7 +341,7 @@ func botLogCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Bot Log is: `%v - %v`", chaName, chaID))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -373,7 +373,7 @@ func optInUnderCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -387,7 +387,7 @@ func optInUnderCommand(s *discordgo.Session, m *discordgo.Message) {
 	if roleID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such role exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -405,7 +405,7 @@ func optInUnderCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! 'Opt In Under' role is: `%v - %v`", roleName, roleID))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -437,7 +437,7 @@ func optInAboveCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -458,7 +458,7 @@ func optInAboveCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! 'Opt In Above' role is: `%v - %v`", roleName, roleID))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -470,9 +470,9 @@ func optInAboveCommand(s *discordgo.Session, m *discordgo.Message) {
 func addVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		cha  	misc.VoiceCha
-		role 	misc.Role
-		merge	bool
+		cha   misc.VoiceCha
+		role  misc.Role
+		merge bool
 	)
 
 	misc.MapMutex.Lock()
@@ -568,7 +568,6 @@ func addVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
-
 	// Adds the voice channel and role to the guild voice channels
 	if !merge {
 		cha.Roles = append(cha.Roles, role)
@@ -579,7 +578,7 @@ func addVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Channel `%v` will now give role `%v` when a user joins and take it away when they leave.", cha.Name, role.Name))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -591,14 +590,14 @@ func addVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		message 		string
+		message string
 
 		roleExistsInCmd bool
-		chaExists 		bool
-		chaDeleted 		bool
+		chaExists       bool
+		chaDeleted      bool
 
-		cha 			misc.VoiceCha
-		role 			misc.Role
+		cha  misc.VoiceCha
+		role misc.Role
 	)
 
 	misc.MapMutex.Lock()
@@ -612,7 +611,7 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"removevoice [channel ID] [role]*`\n\n***** is optional")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -626,7 +625,7 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 	if cha.ID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such channel exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -653,7 +652,6 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 		roleExistsInCmd = true
 	}
 
-
 	// Checks if that channel exists in the voice channel list
 	misc.MapMutex.Lock()
 	for _, voiceCha := range misc.GuildMap[m.GuildID].GuildConfig.VoiceChas {
@@ -666,7 +664,7 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 	if !chaExists {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such voice channel has been set.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -705,7 +703,6 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
-
 	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	misc.MapMutex.Unlock()
 
@@ -717,7 +714,7 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, message)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -729,7 +726,7 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 func viewVoiceChaRoles(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		message string
+		message      string
 		splitMessage []string
 	)
 
@@ -743,7 +740,7 @@ func viewVoiceChaRoles(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) != 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"voiceroles`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -756,7 +753,7 @@ func viewVoiceChaRoles(s *discordgo.Session, m *discordgo.Message) {
 	if len(misc.GuildMap[m.GuildID].GuildConfig.VoiceChas) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no set voice channel roles.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				misc.MapMutex.Unlock()
 				return
@@ -786,7 +783,7 @@ func viewVoiceChaRoles(s *discordgo.Session, m *discordgo.Message) {
 	if splitMessage == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -799,7 +796,7 @@ func viewVoiceChaRoles(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: cannot send voice channel roles message.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
 					return
 				}
@@ -833,7 +830,7 @@ func voteCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -847,7 +844,7 @@ func voteCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	if catID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such category exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -865,7 +862,7 @@ func voteCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Vote Category is: `%v - %v`", catName, catID))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -899,7 +896,7 @@ func voteModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -909,7 +906,7 @@ func voteModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	} else if len(commandStrings) > 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vvotemodule [true/false]`", guildPrefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -932,7 +929,7 @@ func voteModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	} else {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid value. Please use `true` or `false`.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -940,7 +937,6 @@ func voteModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
-
 
 	// Changes and writes module bool to guild
 	misc.MapMutex.Lock()
@@ -950,7 +946,7 @@ func voteModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, message)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -984,7 +980,7 @@ func waifuModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -994,7 +990,7 @@ func waifuModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	} else if len(commandStrings) > 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vwaifumodule [true/false]`", guildPrefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -1017,7 +1013,7 @@ func waifuModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	} else {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid value. Please use `true` or `false`.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -1025,7 +1021,6 @@ func waifuModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
-
 
 	// Changes and writes module bool to guild
 	misc.MapMutex.Lock()
@@ -1035,7 +1030,7 @@ func waifuModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, message)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -1069,7 +1064,7 @@ func reactModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -1079,7 +1074,7 @@ func reactModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	} else if len(commandStrings) > 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vreactmodule [true/false]`", guildPrefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -1102,7 +1097,7 @@ func reactModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	} else {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid value. Please use `true` or `false`.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -1110,7 +1105,6 @@ func reactModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
-
 
 	// Changes and writes module bool to guild
 	misc.MapMutex.Lock()
@@ -1120,7 +1114,7 @@ func reactModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, message)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -1132,8 +1126,8 @@ func reactModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 func attachmentRemovalCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		message string
-		module  bool
+		message   string
+		module    bool
 		whitelist = ".png, .gif, .gifv, .jpeg, .jpg, .bmp, .tif, .tiff, .webm, .webps, .webp, .mp4, .ogg, .wmv, .3gp, .avi, .flv, .wav"
 	)
 
@@ -1155,7 +1149,7 @@ func attachmentRemovalCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -1165,7 +1159,7 @@ func attachmentRemovalCommand(s *discordgo.Session, m *discordgo.Message) {
 	} else if len(commandStrings) > 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vattachmentremoval [true/false]`", guildPrefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -1188,7 +1182,7 @@ func attachmentRemovalCommand(s *discordgo.Session, m *discordgo.Message) {
 	} else {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid value. Please use `true` or `false`.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -1196,7 +1190,6 @@ func attachmentRemovalCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
-
 
 	// Changes and writes module bool to guild
 	misc.MapMutex.Lock()
@@ -1206,7 +1199,7 @@ func attachmentRemovalCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, message)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -1229,7 +1222,7 @@ func pingMessageCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current ping message is: `%v` \n\n To change ping message please use `%vpingmessage [new ping]`", guildPingMessage, guildPrefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -1248,7 +1241,7 @@ func pingMessageCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New ping message is: `%v`", guildPingMessage))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -1263,7 +1256,7 @@ func init() {
 		aliases:  []string{"setcommandrole"},
 		desc:     "Adds a privileged role",
 		elevated: true,
-		admin: true,
+		admin:    true,
 		category: "settings",
 	})
 	add(&command{
@@ -1272,7 +1265,7 @@ func init() {
 		aliases:  []string{"killcommandrole"},
 		desc:     "Removes a privileged role",
 		elevated: true,
-		admin: true,
+		admin:    true,
 		category: "settings",
 	})
 	add(&command{
@@ -1281,7 +1274,7 @@ func init() {
 		aliases:  []string{"vcommandroles", "viewcommandrole", "commandrole", "viewcommandroles", "showcommandroles"},
 		desc:     "Prints all privileged roles",
 		elevated: true,
-		admin: true,
+		admin:    true,
 		category: "settings",
 	})
 	add(&command{
@@ -1289,7 +1282,7 @@ func init() {
 		trigger:  "prefix",
 		desc:     "Views or changes the current prefix.",
 		elevated: true,
-		admin: true,
+		admin:    true,
 		category: "settings",
 	})
 	add(&command{
@@ -1297,7 +1290,7 @@ func init() {
 		trigger:  "botlog",
 		desc:     "Views or changes the current Bot Log.",
 		elevated: true,
-		admin: true,
+		admin:    true,
 		category: "settings",
 	})
 	add(&command{
@@ -1305,7 +1298,7 @@ func init() {
 		trigger:  "optinunder",
 		desc:     "Views or changes the current `Opt In Under` role.",
 		elevated: true,
-		admin: true,
+		admin:    true,
 		category: "settings",
 	})
 	add(&command{
@@ -1313,7 +1306,7 @@ func init() {
 		trigger:  "optinabove",
 		desc:     "Views or changes the current `Opt In Above` role.",
 		elevated: true,
-		admin: true,
+		admin:    true,
 		category: "settings",
 	})
 	add(&command{
@@ -1322,7 +1315,7 @@ func init() {
 		aliases:  []string{"addvoicechannelrole", "addvoicecharole", "addvoicerole", "addvoicerole", "addvoicechannelrole", "addvoicerole"},
 		desc:     "Sets a voice channel as one that will give users the specified role when they join it",
 		elevated: true,
-		admin: true,
+		admin:    true,
 		category: "settings",
 	})
 	add(&command{
@@ -1331,7 +1324,7 @@ func init() {
 		aliases:  []string{"removevoicechannelrole", "removevoicechannelrole", "killvoicecharole", "killvoicechannelrole", "killvoicechannelidrole", "removevoicechannelidrole", "removevoicecharole", "removevoicerole", "removevoicerole", "killvoice"},
 		desc:     "Stops a voice channel from giving its associated role on user join",
 		elevated: true,
-		admin: true,
+		admin:    true,
 		category: "settings",
 	})
 	add(&command{
@@ -1340,7 +1333,7 @@ func init() {
 		aliases:  []string{"vvoicerole", "viewvoicechannels", "viewvoicechannel", "viewvoicechaids", "viewvoicechannelids", "viewvoivechannelid", "viewvoicecharole", "voicerole", "voicechannelroles", "viewvoicecharoles", "voice", "voices"},
 		desc:     "Prints all set voice channels and their associated roles",
 		elevated: true,
-		admin: true,
+		admin:    true,
 		category: "settings",
 	})
 	add(&command{
@@ -1348,7 +1341,7 @@ func init() {
 		trigger:  "votecategory",
 		desc:     "Views or changes the current Vote Category where non-admin temp vote channels will be auto placed and sorted [VOTE]",
 		elevated: true,
-		admin: true,
+		admin:    true,
 		category: "settings",
 	})
 	add(&command{
@@ -1357,7 +1350,7 @@ func init() {
 		aliases:  []string{"votemod"},
 		desc:     "Vote Module. [VOTE]",
 		elevated: true,
-		admin: true,
+		admin:    true,
 		category: "settings",
 	})
 	add(&command{
@@ -1366,7 +1359,7 @@ func init() {
 		aliases:  []string{"waifumod"},
 		desc:     "Waifu Module. [WAIFU]",
 		elevated: true,
-		admin: true,
+		admin:    true,
 		category: "settings",
 	})
 	add(&command{
@@ -1375,7 +1368,7 @@ func init() {
 		aliases:  []string{"reactumod", "reactsmodule", "reactsmod"},
 		desc:     "React Module. [REACTS]",
 		elevated: true,
-		admin: true,
+		admin:    true,
 		category: "settings",
 	})
 	add(&command{
@@ -1384,7 +1377,7 @@ func init() {
 		aliases:  []string{"attachremove", "attachmentremove", "attachremoval", "fileremove", "fileremoval", "filefilter", "filesfilter"},
 		desc:     "Auto-delete non-whitelisted file attachments",
 		elevated: true,
-		admin: true,
+		admin:    true,
 		category: "settings",
 	})
 	add(&command{
@@ -1392,7 +1385,7 @@ func init() {
 		trigger:  "pingmessage",
 		desc:     "Views or changes the current ping message.",
 		elevated: true,
-		admin: true,
+		admin:    true,
 		category: "settings",
 	})
 }

@@ -7,8 +7,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/misc"
 	"github.com/r-anime/ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/misc"
 )
 
 var (
@@ -25,8 +25,8 @@ type command struct {
 	commandCount int
 	deleteAfter  bool
 	elevated     bool
-	admin		 bool
-	category	 string
+	admin        bool
+	category     string
 }
 
 func add(c *command) {

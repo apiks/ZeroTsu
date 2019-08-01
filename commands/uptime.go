@@ -15,7 +15,7 @@ func uptimeCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I've been online for %s.", misc.Uptime()))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -25,9 +25,9 @@ func uptimeCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func init() {
 	add(&command{
-		execute: uptimeCommand,
-		trigger: "uptime",
-		desc:    "Print how long I've been on for.",
-		category:"normal",
+		execute:  uptimeCommand,
+		trigger:  "uptime",
+		desc:     "Print how long I've been on for.",
+		category: "normal",
 	})
 }

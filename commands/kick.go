@@ -13,9 +13,9 @@ import (
 func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		userID 			string
-		reason 			string
-		kickTimestamp 	misc.Punishment
+		userID        string
+		reason        string
+		kickTimestamp misc.Punishment
 	)
 
 	misc.MapMutex.Lock()
@@ -26,10 +26,10 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(m.Content, " ", 3)
 
 	if len(commandStrings) != 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Please use `"+guildPrefix+"kick [@user, userID, or username#discrim] [reason]` format.\n\n" +
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Please use `"+guildPrefix+"kick [@user, userID, or username#discrim] [reason]` format.\n\n"+
 			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
-			_, err := s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -50,10 +50,10 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Fetches user from server
 	mem, err := s.User(userID)
 	if err != nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid user. Please use `"+guildPrefix+"kick [@user, userID, or username#discrim] [reason]` format.\n\n" +
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid user. Please use `"+guildPrefix+"kick [@user, userID, or username#discrim] [reason]` format.\n\n"+
 			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
-			_, err := s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -69,7 +69,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server. Cannot kick user until user joins the server.")
 			if err != nil {
-				_, err := s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+				_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
 
 					return
@@ -128,7 +128,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Sends message to user DMs if possible
 	dm, _ := s.UserChannelCreate(mem.ID)
-	_, _ = s.ChannelMessageSend(dm.ID, "You have been kicked from " + guild.Name + ":\n**" + reason + "**")
+	_, _ = s.ChannelMessageSend(dm.ID, "You have been kicked from "+guild.Name+":\n**"+reason+"**")
 
 	// Kicks the user from the server with a reason
 	err = s.GuildMemberDeleteWithReason(m.GuildID, mem.ID, reason)
@@ -140,7 +140,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Sends embed bot-log message
 	err = KickEmbed(s, m, mem, reason, guildBotLog)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -150,7 +150,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Sends embed channel message
 	err = KickEmbed(s, m, mem, reason, m.ChannelID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -212,7 +212,7 @@ func init() {
 	add(&command{
 		execute:  kickCommand,
 		trigger:  "kick",
-		aliases: []string{"k", "yeet"},
+		aliases:  []string{"k", "yeet"},
 		desc:     "Kicks a user from the server and logs reason.",
 		elevated: true,
 		category: "punishment",

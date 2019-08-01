@@ -18,14 +18,14 @@ var inChanCreation bool
 func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		peopleNum= 7
+		peopleNum        = 7
 		descriptionSlice []string
 		voteChannel      channel
-		controlNumVote= 0
-		controlNumUser= 0
-		controlNum= 0
-		typeFlag		 bool
-		admin			 bool
+		controlNumVote   = 0
+		controlNumUser   = 0
+		controlNum       = 0
+		typeFlag         bool
+		admin            bool
 	)
 
 	misc.MapMutex.Lock()
@@ -62,7 +62,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 
-		command := strings.Replace(messageLowercase, guildPrefix + "startvote ", "", -1)
+		command := strings.Replace(messageLowercase, guildPrefix+"startvote ", "", -1)
 		commandStrings = strings.Split(command, " ")
 
 		// Checks if [category] and [type] exist and assigns them if they do and removes them from slice

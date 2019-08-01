@@ -7,8 +7,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/misc"
 	"github.com/r-anime/ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/misc"
 )
 
 // Verifies a user with a reddit username and gives them the verified role
@@ -141,7 +141,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func verifyEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.Member, username string) error {
 
-	var embedMess      discordgo.MessageEmbed
+	var embedMess discordgo.MessageEmbed
 
 	// Sets punishment embed color
 	embedMess.Color = 0x00ff00
@@ -248,7 +248,7 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func unverifyEmbed(s *discordgo.Session, m *discordgo.Message, mem string) error {
 
-	var embedMess      discordgo.MessageEmbed
+	var embedMess discordgo.MessageEmbed
 
 	// Sets punishment embed color
 	embedMess.Color = 0x00ff00

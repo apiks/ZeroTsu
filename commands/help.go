@@ -6,14 +6,14 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/misc"
 	"github.com/r-anime/ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/misc"
 )
 
 // Command categories in sorted form and map form(map for descriptions)
 var (
 	categoriesSorted = [...]string{"Channel", "Filters", "Misc", "Normal", "Punishment", "Reacts", "Rss", "Stats", "Raffles", "Waifus", "Settings"}
-	categoriesMap = make(map[string]string)
+	categoriesMap    = make(map[string]string)
 )
 
 // Prints pretty help command
@@ -21,7 +21,7 @@ func helpEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
 		elevated bool
-		admin	 bool
+		admin    bool
 	)
 
 	misc.MapMutex.Lock()
@@ -48,18 +48,18 @@ func helpEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin bool) error {
 
 	var (
-		embedMess          discordgo.MessageEmbed
-		embedFooter	   	   discordgo.MessageEmbedFooter
+		embedMess   discordgo.MessageEmbed
+		embedFooter discordgo.MessageEmbedFooter
 
 		// Embed slice and its fields
-		embed              []*discordgo.MessageEmbedField
-		user               discordgo.MessageEmbedField
-		permission         discordgo.MessageEmbedField
-		userCommands       discordgo.MessageEmbedField
-		adminCategories	   discordgo.MessageEmbedField
+		embed           []*discordgo.MessageEmbedField
+		user            discordgo.MessageEmbedField
+		permission      discordgo.MessageEmbedField
+		userCommands    discordgo.MessageEmbedField
+		adminCategories discordgo.MessageEmbedField
 
 		// Slice for sorting
-		commands		   []string
+		commands []string
 	)
 
 	misc.MapMutex.Lock()
@@ -141,7 +141,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 					continue
 				}
 			}
-			if categoriesSorted[i] == "Settings"  {
+			if categoriesSorted[i] == "Settings" {
 				if !admin && m.Author.ID != config.OwnerID {
 					continue
 				}
@@ -190,15 +190,15 @@ func helpChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 func helpChannelEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	var (
-		embedMess          discordgo.MessageEmbed
-		embedFooter	   	   discordgo.MessageEmbedFooter
+		embedMess   discordgo.MessageEmbed
+		embedFooter discordgo.MessageEmbedFooter
 
 		// Embed slice and its fields
-		embed    		   []*discordgo.MessageEmbedField
-		commandsField  	   discordgo.MessageEmbedField
+		embed         []*discordgo.MessageEmbedField
+		commandsField discordgo.MessageEmbedField
 
 		// Slice for sorting
-		commands		   []string
+		commands []string
 	)
 
 	misc.MapMutex.Lock()
@@ -263,15 +263,15 @@ func helpFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 func helpFiltersEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	var (
-		embedMess          discordgo.MessageEmbed
-		embedFooter	   	   discordgo.MessageEmbedFooter
+		embedMess   discordgo.MessageEmbed
+		embedFooter discordgo.MessageEmbedFooter
 
 		// Embed slice and its fields
-		embed    		   []*discordgo.MessageEmbedField
-		commandsField  	   discordgo.MessageEmbedField
+		embed         []*discordgo.MessageEmbedField
+		commandsField discordgo.MessageEmbedField
 
 		// Slice for sorting
-		commands		   []string
+		commands []string
 	)
 
 	misc.MapMutex.Lock()
@@ -336,15 +336,15 @@ func helpMiscCommand(s *discordgo.Session, m *discordgo.Message) {
 func helpMiscEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	var (
-		embedMess          discordgo.MessageEmbed
-		embedFooter	   	   discordgo.MessageEmbedFooter
+		embedMess   discordgo.MessageEmbed
+		embedFooter discordgo.MessageEmbedFooter
 
 		// Embed slice and its fields
-		embed    		   []*discordgo.MessageEmbedField
-		commandsField  	   discordgo.MessageEmbedField
+		embed         []*discordgo.MessageEmbedField
+		commandsField discordgo.MessageEmbedField
 
 		// Slice for sorting
-		commands		   []string
+		commands []string
 	)
 
 	misc.MapMutex.Lock()
@@ -408,15 +408,15 @@ func helpNormalCommand(s *discordgo.Session, m *discordgo.Message) {
 // Mod command help page embed
 func helpNormalEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	var (
-		embedMess          discordgo.MessageEmbed
-		embedFooter	   	   discordgo.MessageEmbedFooter
+		embedMess   discordgo.MessageEmbed
+		embedFooter discordgo.MessageEmbedFooter
 
 		// Embed slice and its fields
-		embed    		   []*discordgo.MessageEmbedField
-		commandsField  	   discordgo.MessageEmbedField
+		embed         []*discordgo.MessageEmbedField
+		commandsField discordgo.MessageEmbedField
 
 		// Slice for sorting
-		commands		   []string
+		commands []string
 	)
 
 	misc.MapMutex.Lock()
@@ -481,15 +481,15 @@ func helpPunishmentCommand(s *discordgo.Session, m *discordgo.Message) {
 func helpPunishmentEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	var (
-		embedMess          discordgo.MessageEmbed
-		embedFooter	   	   discordgo.MessageEmbedFooter
+		embedMess   discordgo.MessageEmbed
+		embedFooter discordgo.MessageEmbedFooter
 
 		// Embed slice and its fields
-		embed    		   []*discordgo.MessageEmbedField
-		commandsField  	   discordgo.MessageEmbedField
+		embed         []*discordgo.MessageEmbedField
+		commandsField discordgo.MessageEmbedField
 
 		// Slice for sorting
-		commands		   []string
+		commands []string
 	)
 
 	misc.MapMutex.Lock()
@@ -560,15 +560,15 @@ func helpReactsCommand(s *discordgo.Session, m *discordgo.Message) {
 func helpReactsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	var (
-		embedMess          discordgo.MessageEmbed
-		embedFooter	   	   discordgo.MessageEmbedFooter
+		embedMess   discordgo.MessageEmbed
+		embedFooter discordgo.MessageEmbedFooter
 
 		// Embed slice and its fields
-		embed    		   []*discordgo.MessageEmbedField
-		commandsField  	   discordgo.MessageEmbedField
+		embed         []*discordgo.MessageEmbedField
+		commandsField discordgo.MessageEmbedField
 
 		// Slice for sorting
-		commands		   []string
+		commands []string
 	)
 
 	misc.MapMutex.Lock()
@@ -633,15 +633,15 @@ func helpRssCommand(s *discordgo.Session, m *discordgo.Message) {
 func helpRssEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	var (
-		embedMess          discordgo.MessageEmbed
-		embedFooter	   	   discordgo.MessageEmbedFooter
+		embedMess   discordgo.MessageEmbed
+		embedFooter discordgo.MessageEmbedFooter
 
 		// Embed slice and its fields
-		embed    		   []*discordgo.MessageEmbedField
-		commandsField  	   discordgo.MessageEmbedField
+		embed         []*discordgo.MessageEmbedField
+		commandsField discordgo.MessageEmbedField
 
 		// Slice for sorting
-		commands		   []string
+		commands []string
 	)
 
 	misc.MapMutex.Lock()
@@ -706,15 +706,15 @@ func helpStatsCommand(s *discordgo.Session, m *discordgo.Message) {
 func helpStatsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	var (
-		embedMess          discordgo.MessageEmbed
-		embedFooter	   	   discordgo.MessageEmbedFooter
+		embedMess   discordgo.MessageEmbed
+		embedFooter discordgo.MessageEmbedFooter
 
 		// Embed slice and its fields
-		embed    		   []*discordgo.MessageEmbedField
-		commandsField  	   discordgo.MessageEmbedField
+		embed         []*discordgo.MessageEmbedField
+		commandsField discordgo.MessageEmbedField
 
 		// Slice for sorting
-		commands		   []string
+		commands []string
 	)
 
 	misc.MapMutex.Lock()
@@ -779,15 +779,15 @@ func helpRaffleCommand(s *discordgo.Session, m *discordgo.Message) {
 func helpRaffleEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	var (
-		embedMess          discordgo.MessageEmbed
-		embedFooter	   	   discordgo.MessageEmbedFooter
+		embedMess   discordgo.MessageEmbed
+		embedFooter discordgo.MessageEmbedFooter
 
 		// Embed slice and its fields
-		embed    		   []*discordgo.MessageEmbedField
-		commandsField  	   discordgo.MessageEmbedField
+		embed         []*discordgo.MessageEmbedField
+		commandsField discordgo.MessageEmbedField
 
 		// Slice for sorting
-		commands		   []string
+		commands []string
 	)
 
 	misc.MapMutex.Lock()
@@ -858,15 +858,15 @@ func helpWaifuCommand(s *discordgo.Session, m *discordgo.Message) {
 func helpWaifuEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	var (
-		embedMess          discordgo.MessageEmbed
-		embedFooter	   	   discordgo.MessageEmbedFooter
+		embedMess   discordgo.MessageEmbed
+		embedFooter discordgo.MessageEmbedFooter
 
 		// Embed slice and its fields
-		embed    		   []*discordgo.MessageEmbedField
-		commandsField  	   discordgo.MessageEmbedField
+		embed         []*discordgo.MessageEmbedField
+		commandsField discordgo.MessageEmbedField
 
 		// Slice for sorting
-		commands		   []string
+		commands []string
 	)
 
 	misc.MapMutex.Lock()
@@ -931,15 +931,15 @@ func helpGuildSettingsCommand(s *discordgo.Session, m *discordgo.Message) {
 func helpGuildSettingsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	var (
-		embedMess          discordgo.MessageEmbed
-		embedFooter	   	   discordgo.MessageEmbedFooter
+		embedMess   discordgo.MessageEmbed
+		embedFooter discordgo.MessageEmbedFooter
 
 		// Embed slice and its fields
-		embed    		   []*discordgo.MessageEmbedField
-		commandsField  	   discordgo.MessageEmbedField
+		embed         []*discordgo.MessageEmbedField
+		commandsField discordgo.MessageEmbedField
 
 		// Slice for sorting
-		commands		   []string
+		commands []string
 	)
 
 	misc.MapMutex.Lock()
@@ -985,7 +985,6 @@ func helpGuildSettingsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	}
 	return err
 }
-
 
 func init() {
 	add(&command{
@@ -1077,7 +1076,7 @@ func init() {
 		aliases:  []string{"h[set]", "hsetting", "h[setting]", "h[settings]", "hset", "hsets", "hsetts", "hsett"},
 		desc:     "Print all server setting commands.",
 		elevated: true,
-		admin:	  true,
+		admin:    true,
 	})
 
 	misc.MapMutex.Lock()

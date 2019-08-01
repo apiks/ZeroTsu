@@ -11,10 +11,10 @@ import (
 )
 
 type channel struct {
-	Name		string
-	Category	string
-	Type		string
-	Description	string
+	Name        string
+	Category    string
+	Type        string
+	Description string
 }
 
 // Creates a named channel and a named role with parameters and checks for mod perms
@@ -50,7 +50,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"create [name] OPTIONAL[type] [categoryID] [description; must have at least one other non-name parameter]`\n\nFour type of parameters exist: `airing`, `temp`, `general` and `optin`. `Optin` is the default one. Temp gets auto-deleted after three hours of inactivity.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -330,7 +330,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	if m.Author.ID != s.State.User.ID {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Channel and role `"+roleName+"` created. If opt-in please sort in the roles list. Sort category separately.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		}
 	}
 }

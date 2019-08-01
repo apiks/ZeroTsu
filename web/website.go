@@ -25,7 +25,7 @@ var (
 	SafeCookieMap = SafeUserCookieMap{userCookieMap: make(map[string]*User)}
 
 	// Map that keeps all user IDs that have successfuly verified but have not been given the role
-	verifyMap     = make(map[string]string)
+	verifyMap = make(map[string]string)
 )
 
 type Access struct {
@@ -37,43 +37,43 @@ type Access struct {
 }
 
 type User struct {
-	Cookie                	string    		`json:"cookie"`
-	Expiry                	time.Time 		`json:"expiry"`
-	RedditName            	string    		`json:"name"`
-	AccCreation           	float64   		`json:"created_utc"`
-	ID                    	string			`json:"id"`
-	UsernameDiscrim       	string			`json:"usernamediscrim"`
-	RedditVerifiedStatus	bool			`json:"redditverifiedstatus"`
-	DiscordVerifiedStatus 	bool			`json:"redditverifiedstatus"`
-	Error                 	string			`json:"error"`
-	Username              	string			`json:"username"`
-	Discriminator         	string			`json:"discriminator"`
-	AccOldEnough          	bool			`json:"accoldenough"`
-	Code                  	string			`json:"code"`
+	Cookie                string    `json:"cookie"`
+	Expiry                time.Time `json:"expiry"`
+	RedditName            string    `json:"name"`
+	AccCreation           float64   `json:"created_utc"`
+	ID                    string    `json:"id"`
+	UsernameDiscrim       string    `json:"usernamediscrim"`
+	RedditVerifiedStatus  bool      `json:"redditverifiedstatus"`
+	DiscordVerifiedStatus bool      `json:"redditverifiedstatus"`
+	Error                 string    `json:"error"`
+	Username              string    `json:"username"`
+	Discriminator         string    `json:"discriminator"`
+	AccOldEnough          bool      `json:"accoldenough"`
+	Code                  string    `json:"code"`
 }
 
 // Mutex safe userCookieMap. DO NOT USE LOCAL MUX WITH GLOBAL MUTEX
 type SafeUserCookieMap struct {
-	userCookieMap	map[string]*User
-	mux				sync.Mutex
+	userCookieMap map[string]*User
+	mux           sync.Mutex
 }
 
 type UserBan struct {
-	IsBanned	bool	`json:"user_is_banned"`
+	IsBanned bool `json:"user_is_banned"`
 }
 
 type RAnimeJson struct {
 	Data struct {
-		UserIsBanned              bool          `json:"user_is_banned"`
+		UserIsBanned bool `json:"user_is_banned"`
 	} `json:"data"`
 }
 
 type ChannelStats struct {
-	Name string
-	Dates []string
-	Messages []int
+	Name          string
+	Dates         []string
+	Messages      []int
 	TotalMessages int
-	DailyAverage int
+	DailyAverage  int
 }
 
 type ChannelPick struct {
@@ -84,9 +84,9 @@ type ChannelPick struct {
 }
 
 type UserChangeStats struct {
-	Dates			[]string
-	DailyAverage 	int
-	Change			[]int
+	Dates        []string
+	DailyAverage int
+	Change       []int
 }
 
 // Sorting by date. By Kagumi
@@ -217,7 +217,6 @@ func ChannelStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	pick.Stats = stats
 
-
 	// Loads the html & css stats files
 	t, err := template.ParseFiles("./web/assets/channelstats.html")
 	if err == nil {
@@ -232,10 +231,10 @@ func ChannelStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 func UserChangeStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 
 	var (
-		dateLabels    	[]string
-		changeCount  	[]int
-		stats         	UserChangeStats
-		totalChange		int
+		dateLabels  []string
+		changeCount []int
+		stats       UserChangeStats
+		totalChange int
 	)
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -263,7 +262,6 @@ func UserChangeStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 		stats.DailyAverage = totalChange / len(dateLabels)
 	}
 
-
 	// Loads the html & css stats files
 	t, err := template.ParseFiles("./web/assets/userchangestats.html")
 	if err == nil {
@@ -289,12 +287,12 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var (
-		errorVar 			string
-		state    			string
-		code     			string
-		id       			string
-		tempUser 			User
-		verified 			bool
+		errorVar string
+		state    string
+		code     string
+		id       string
+		tempUser User
+		verified bool
 	)
 
 	defer func() {
@@ -730,8 +728,8 @@ func getDiscordUsernameDiscrim(code string) (string, string, string, error) {
 func Verify(cookieValue *http.Cookie, r *http.Request) error {
 
 	var (
-		temp 	misc.UserInfo
-		userID 	string
+		temp   misc.UserInfo
+		userID string
 	)
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -789,7 +787,7 @@ func Verify(cookieValue *http.Cookie, r *http.Request) error {
 func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 
 	var (
-		roleID string
+		roleID      string
 		userInGuild bool
 	)
 

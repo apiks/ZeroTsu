@@ -28,7 +28,7 @@ func playingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current playing message is: `%v` \n\n To change the message please use `%vplayingmsg [new message]`", config.PlayingMsg, guildPrefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -57,7 +57,7 @@ func playingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New playing message is: `%v`", config.PlayingMsg))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -67,8 +67,8 @@ func playingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func init() {
 	add(&command{
-		execute:  playingMsgCommand,
-		trigger:  "playingmsg",
-		desc:     "Views or changes the current BOT playing message.",
+		execute: playingMsgCommand,
+		trigger: "playingmsg",
+		desc:    "Views or changes the current BOT playing message.",
 	})
 }

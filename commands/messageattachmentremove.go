@@ -71,7 +71,7 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		// Deletes the message that was sent if has a non-whitelisted attachment
 		err = s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -81,15 +81,15 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		now := time.Now().Format("2006-01-02 15:04:05")
 
 		// Prints success in bot-log channel
-		_, _ = s.ChannelMessageSend(guildBotLog, m.Author.Mention() + " had their message removed for uploading non-whitelisted `" +
-			attachment.Filename + "` in " + "<#" + m.ChannelID + "> on [_" + now + "_]")
+		_, _ = s.ChannelMessageSend(guildBotLog, m.Author.Mention()+" had their message removed for uploading non-whitelisted `"+
+			attachment.Filename+"` in "+"<#"+m.ChannelID+"> on [_"+now+"_]")
 
 		// Sends a message to the user in their DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 			return
 		}
-		_, _ = s.ChannelMessageSend(dm.ID, "Your message upload `" + attachment.Filename + "` was removed for using a non-whitelisted file type.\n\nAllowed file types: `" + whitelistString + "`")
+		_, _ = s.ChannelMessageSend(dm.ID, "Your message upload `"+attachment.Filename+"` was removed for using a non-whitelisted file type.\n\nAllowed file types: `"+whitelistString+"`")
 	}
 
 }

@@ -17,12 +17,12 @@ import (
 // File for misc. functions, commands and variables.
 
 const (
-	UserAgent  			= "script:github.com/r-anime/zerotsu:v1.0.0 (by /u/thechosenapiks, /u/geo1088)"
-	DateFormat 			= "2006-01-02"
+	UserAgent  = "script:github.com/r-anime/zerotsu:v1.0.0 (by /u/thechosenapiks, /u/geo1088)"
+	DateFormat = "2006-01-02"
 )
 
 var (
-	SpoilerPerms       = discordgo.PermissionSendMessages + discordgo.PermissionReadMessages + discordgo.PermissionReadMessageHistory
+	SpoilerPerms = discordgo.PermissionSendMessages + discordgo.PermissionReadMessages + discordgo.PermissionReadMessageHistory
 
 	StartTime time.Time
 )
@@ -174,7 +174,7 @@ func ResolveTimeFromString(given string) (ret time.Time, perma bool, err error) 
 // Resolves a userID from a userID, Mention or username#discrim
 func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string) (string, error) {
 
-	var err 	error
+	var err error
 
 	if len(messageSlice) < 2 {
 		err = fmt.Errorf("Error: No @user, userID or username#discrim detected.")
@@ -298,7 +298,7 @@ func ErrorLocation(err error) string {
 func GetRoleUserAmount(guild *discordgo.Guild, roles []*discordgo.Role, roleName string) int {
 
 	var (
-		users int
+		users  int
 		roleID string
 	)
 
@@ -325,7 +325,7 @@ func GetRoleUserAmount(guild *discordgo.Guild, roles []*discordgo.Role, roleName
 func GetBannedUsers() {
 	var (
 		bannedUserInfo BannedUsers
-		flag bool
+		flag           bool
 	)
 
 	MapMutex.Lock()
@@ -372,10 +372,10 @@ func GetBannedUsers() {
 func MentionParser(s *discordgo.Session, m string, guildID string) string {
 
 	var (
-		mentions				string
-		userID					string
-		userMentionCheck		[]string
-		channelMentionCheck		[]string
+		mentions            string
+		userID              string
+		userMentionCheck    []string
+		channelMentionCheck []string
 	)
 
 	if strings.Contains(m, "<@") {
@@ -439,9 +439,9 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 // Parses a string for a channel and returns its ID and name
 func ChannelParser(s *discordgo.Session, channel string, guildID string) (string, string) {
 	var (
-		channelID 	string
+		channelID   string
 		channelName string
-		flag		bool
+		flag        bool
 	)
 
 	MapMutex.Lock()
@@ -450,8 +450,8 @@ func ChannelParser(s *discordgo.Session, channel string, guildID string) (string
 
 	// If it's a channel ping remove <# and > from it to get the channel ID
 	if strings.Contains(channel, "#") {
-		channelID = strings.TrimPrefix(channel,"<#")
-		channelID = strings.TrimSuffix(channelID,">")
+		channelID = strings.TrimPrefix(channel, "<#")
+		channelID = strings.TrimSuffix(channelID, ">")
 	}
 
 	// Check if it's an ID by length and save the ID if so
@@ -463,7 +463,7 @@ func ChannelParser(s *discordgo.Session, channel string, guildID string) (string
 	// Find the channelID if it doesn't exists via channel name, else find the channel name
 	channels, err := s.GuildChannels(guildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 		if err != nil {
 			return channelID, channelName
 		}
@@ -495,9 +495,9 @@ func ChannelParser(s *discordgo.Session, channel string, guildID string) (string
 // Parses a string for a category and returns its ID and name
 func CategoryParser(s *discordgo.Session, category string, guildID string) (string, string) {
 	var (
-		categoryID 		string
-		categoryName 	string
-		flag			bool
+		categoryID   string
+		categoryName string
+		flag         bool
 	)
 
 	MapMutex.Lock()
@@ -513,7 +513,7 @@ func CategoryParser(s *discordgo.Session, category string, guildID string) (stri
 	// Find the categoryID if it doesn't exists via category name, else find the category name
 	channels, err := s.GuildChannels(guildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 		if err != nil {
 			return categoryID, categoryID
 		}
@@ -548,9 +548,9 @@ func CategoryParser(s *discordgo.Session, category string, guildID string) (stri
 // Parses a string for a role and returns its ID and name
 func RoleParser(s *discordgo.Session, role string, guildID string) (string, string) {
 	var (
-		roleID 		string
-		roleName 	string
-		flag		bool
+		roleID   string
+		roleName string
+		flag     bool
 	)
 
 	MapMutex.Lock()
@@ -566,7 +566,7 @@ func RoleParser(s *discordgo.Session, role string, guildID string) (string, stri
 	// Find the roleID if it doesn't exists via role name, else find the role name
 	roles, err := s.GuildRoles(guildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 		if err != nil {
 			return roleID, roleName
 		}
@@ -616,7 +616,7 @@ func OptInsHandler(s *discordgo.Session, guildID string) error {
 	var (
 		optInUnderExists bool
 		optInAboveExists bool
-		err				 error
+		err              error
 	)
 
 	// Saves guild roles

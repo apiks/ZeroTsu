@@ -14,7 +14,7 @@ import (
 func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		warning 		 string
+		warning          string
 		warningTimestamp misc.Punishment
 	)
 
@@ -27,10 +27,10 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
 
 	if len(commandStrings) != 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"addwarning [@user, userID, or username#discrim] [warning]`\n\n" +
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"addwarning [@user, userID, or username#discrim] [warning]`\n\n"+
 			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -66,7 +66,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 			if err != nil {
 				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot warn user until they join the server.")
 				if err != nil {
-					_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+					_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 					if err != nil {
 						misc.MapMutex.Unlock()
 						return
@@ -106,7 +106,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Sends warning embed message to channel
 	err = WarningEmbed(s, m, mem, warning, m.ChannelID, true)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -118,7 +118,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		warning string
+		warning          string
 		warningTimestamp misc.Punishment
 	)
 
@@ -131,10 +131,10 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
 
 	if len(commandStrings) != 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"issuewarning [@user, userID, or username#discrim] [warning]`\n" +
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"issuewarning [@user, userID, or username#discrim] [warning]`\n"+
 			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
 			}
@@ -177,7 +177,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 			if err != nil {
 				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot warn user until they join the server.")
 				if err != nil {
-					_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+					_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 					if err != nil {
 						misc.MapMutex.Unlock()
 						return
@@ -217,12 +217,12 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		return
 	}
-	_, _ = s.ChannelMessageSend(dm.ID, "You have been warned on " + guild.Name + ":\n`" + warning + "`")
+	_, _ = s.ChannelMessageSend(dm.ID, "You have been warned on "+guild.Name+":\n`"+warning+"`")
 
 	// Sends warning embed message to channel
 	err = WarningEmbed(s, m, mem, warning, m.ChannelID, false)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error() + "\n" + misc.ErrorLocation(err))
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -237,9 +237,9 @@ func WarningEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.Use
 		embedThumbnail discordgo.MessageEmbedThumbnail
 
 		// Embed slice and its fields
-		embedField         []*discordgo.MessageEmbedField
-		embedFieldUserID   discordgo.MessageEmbedField
-		embedFieldReason   discordgo.MessageEmbedField
+		embedField       []*discordgo.MessageEmbedField
+		embedFieldUserID discordgo.MessageEmbedField
+		embedFieldReason discordgo.MessageEmbedField
 	)
 	t := time.Now()
 
