@@ -8,6 +8,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/misc"
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 // Verifies a user with a reddit username and gives them the verified role
@@ -259,18 +260,20 @@ func unverifyEmbed(s *discordgo.Session, m *discordgo.Message, mem string) error
 }
 
 func init() {
-	add(&command{
-		execute:  verifyCommand,
-		trigger:  "verify",
-		desc:     "Verifies a user with a reddit username.",
-		elevated: true,
-		category: "misc",
-	})
-	add(&command{
-		execute:  unverifyCommand,
-		trigger:  "unverify",
-		desc:     "Unverifies a user.",
-		elevated: true,
-		category: "misc",
-	})
+	if config.Website != "" {
+		add(&command{
+			execute:  verifyCommand,
+			trigger:  "verify",
+			desc:     "Verifies a user with a reddit username.",
+			elevated: true,
+			category: "misc",
+		})
+		add(&command{
+			execute:  unverifyCommand,
+			trigger:  "unverify",
+			desc:     "Unverifies a user.",
+			elevated: true,
+			category: "misc",
+		})
+	}
 }

@@ -172,13 +172,15 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			}
 
 			// Writes verified stats to disk
-			err = VerifiedStatsWrite(GuildMap[guild.ID].VerifiedStats, guild.ID)
-			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
+			if config.Website != "" {
+				err = VerifiedStatsWrite(GuildMap[guild.ID].VerifiedStats, guild.ID)
 				if err != nil {
+					_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
+					if err != nil {
+						continue
+					}
 					continue
 				}
-				continue
 			}
 
 			// Writes memberInfo to disk

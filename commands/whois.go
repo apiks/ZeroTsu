@@ -198,8 +198,11 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		"\n\n**Past Usernames:** " + pastUsernames +
 		"\n\n**Past Nicknames:** " + pastNicknames + "\n\n**Warnings:** " + warnings +
 		"\n\n**Kicks:** " + kicks + "\n\n**Bans:** " + bans +
-		"\n\n**Join Date:** " + user.JoinDate + "\n\n**Verification Date:** " +
-		user.VerifiedDate + "\n\n**Account Creation Date:** " + creationDate.String()
+		"\n\n**Join Date:** " + user.JoinDate
+	if config.Website != "" {
+		message += "\n\n**Verification Date:** " + user.VerifiedDate
+	}
+	message += "\n\n**Account Creation Date:** " + creationDate.String()
 
 	// Sets reddit Username if it exists
 	if config.Website != "" {

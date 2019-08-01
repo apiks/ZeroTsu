@@ -9,6 +9,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/misc"
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 // Adds to message count on every message for that channel
@@ -232,7 +233,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	message += fmt.Sprintf("\nOpt-in Total: %d\n\n------\n", optinChannelTotal)
 	message += fmt.Sprintf("\nGrand Total Messages: %d\n\n", optinChannelTotal+normalChannelTotal)
 	message += fmt.Sprintf("\nDaily User Change: %d\n\n", misc.GuildMap[m.GuildID].UserChangeStats[t.Format(misc.DateFormat)])
-	if len(misc.GuildMap[m.GuildID].VerifiedStats) != 0 {
+	if len(misc.GuildMap[m.GuildID].VerifiedStats) != 0 && config.Website != "" {
 		message += fmt.Sprintf("\nDaily Verified Change: %d\n\n", misc.GuildMap[m.GuildID].VerifiedStats[t.Format(misc.DateFormat)])
 	}
 	misc.MapMutex.Unlock()
