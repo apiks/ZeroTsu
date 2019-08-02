@@ -115,6 +115,12 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 						continue
 					}
 				}
+				if config.Website == "" {
+					if commandMap[commands[i]].trigger == "verify" ||
+						commandMap[commands[i]].trigger == "unverify" {
+						continue
+					}
+				}
 				userCommands.Value += fmt.Sprintf("`%v` - %v\n", commands[i], commandMap[commands[i]].desc)
 			}
 		}
@@ -128,7 +134,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 		adminCategories.Name = "Categories:"
 		adminCategories.Inline = true
 
-		// Iterates through categories and their descriptions and adds them to the embed. Special behavior for waifus and reacts based on config
+		// Iterates through categories and their descriptions and adds them to the embed. Special behavior for waifus and reacts and settings based on settings
 		misc.MapMutex.Lock()
 		for i := 0; i < len(categoriesSorted); i++ {
 			if categoriesSorted[i] == "Waifus" {

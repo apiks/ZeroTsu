@@ -16,6 +16,10 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var roleID string
 
+	if config.Website == "" {
+		return
+	}
+
 	misc.MapMutex.Lock()
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
@@ -155,6 +159,10 @@ func verifyEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.Memb
 // Unverifies a user
 func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
+	if config.Website == "" {
+		return
+	}
+
 	var roleID string
 
 	misc.MapMutex.Lock()
@@ -260,20 +268,18 @@ func unverifyEmbed(s *discordgo.Session, m *discordgo.Message, mem string) error
 }
 
 func init() {
-	if config.Website != "" {
-		add(&command{
-			execute:  verifyCommand,
-			trigger:  "verify",
-			desc:     "Verifies a user with a reddit username.",
-			elevated: true,
-			category: "misc",
-		})
-		add(&command{
-			execute:  unverifyCommand,
-			trigger:  "unverify",
-			desc:     "Unverifies a user.",
-			elevated: true,
-			category: "misc",
-		})
-	}
+	add(&command{
+		execute:  verifyCommand,
+		trigger:  "verify",
+		desc:     "Verifies a user with a reddit username.",
+		elevated: true,
+		category: "misc",
+	})
+	add(&command{
+		execute:  unverifyCommand,
+		trigger:  "unverify",
+		desc:     "Unverifies a user.",
+		elevated: true,
+		category: "misc",
+	})
 }
