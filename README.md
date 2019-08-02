@@ -50,7 +50,7 @@ How to install:
 	   
 	   PlayingMsg is whatever "Playing" message you want the BOT to display. Owner can change it with the playingmsg command.
 	   
-	   OwnerID is the user ID of the person with Owner level BOT permissions
+	   OwnerID is the user ID of the person with Owner level BOT permissions. Optional
 
 3. Make a file called configsecrets.json in the folder config.json is in and set this up the following way. It's for verification and optional IF Website value above is empty or if it gives you an error:
 ```javascript
