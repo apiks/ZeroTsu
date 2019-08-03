@@ -42,13 +42,15 @@ How to install:
 1. Download in a folder.
 2. Edit config.json with your own values. Everything is required unless stated otherwise:
 
-       BotID is the ID of the BOT you are using
+       BotID is the ID of the BOT you are using the website. Needed if using Website, otherwise Optional
 
-       ServerID is the ID of the server the BOT is going to be managing
+       ServerID is the ID of the server the BOT is going to using the website on. Needed if using Website, otherwise Optional
+       
+       BotLogID is the ID of the server on which you're using website's bot log channel. Needed if using Website, otherwise Optional
 
-       Website is the address/ip+:port of the website. Leave empty if not using it
+       Website is the address/ip+:port of the website. Optional
 	   
-	   PlayingMsg is whatever "Playing" message you want the BOT to display. Owner can change it with the playingmsg command.
+	   PlayingMsg is whatever "Playing" message you want the BOT to display. Owner can change it with the playingmsg command. Optional
 	   
 	   OwnerID is the user ID of the person with Owner level BOT permissions. Optional
 
