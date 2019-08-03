@@ -736,20 +736,3 @@ func OptInsHandler(s *discordgo.Session, guildID string) error {
 
 	return err
 }
-
-// Reads all images in the images folder and puts it in a global slice
-func ReadImages() {
-	files, err := ioutil.ReadDir("images")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	for _, f := range files {
-		img, err := os.Open("images/" + f.Name())
-		if err != nil {
-			continue
-		}
-		ImageSlice = append(ImageSlice, img)
-	}
-}
