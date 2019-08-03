@@ -40,7 +40,7 @@
 
 How to install:
 1. Download in a folder.
-2. Edit config.json with your own values. Everything is required unless stated otherwise:
+2. Edit config.json with your own values. This is mostly if you're using the Website Verification which requires more setup
 
        BotID is the ID of the BOT you are using the website. Needed if using Website, otherwise Optional
 
