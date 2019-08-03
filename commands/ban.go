@@ -103,6 +103,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 			misc.MapMutex.Unlock()
 			return
 		}
+		misc.MapMutex.Unlock()
 	}
 
 	// Checks if user is in memberInfo and handles them
