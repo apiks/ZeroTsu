@@ -6,15 +6,15 @@
 
 * Show avatar for a target user. Works for people not in the server
 
-* Extensive member system that tracks past member usernames, nicknames, mod-issued warnings, kicks, bans, reddit verification, verification date, whether in the server, timestamps for punishments, server join date
+* Extensive member system that tracks past member usernames, nicknames, mod-issued warnings, kicks, bans, optional reddit verification and verification date, whether in the server, timestamps for punishments, server join date
 
-* Punishment system where you can issue warnings, kick or ban people for a set period of time with the bot and log that using the member system, or remove those punishments and unban. Also shows timestamps for all of those
+* Punishment system where you can issue warnings, kick or ban people for a set period of time with the bot and log that using the member system, or remove those punishments and unban. Also shows timestamps for all of those. Automatically unbans for temp bans.
 
 * Website verification system for reddit account linking and confirmation before being able to use the server
 
 * Automated channel creation with various parameters you can give it to make them hidden (opt-in), temporary (auto deletes after a set period of time) and other
 
-* Automated channel creation via non-mod started vote for a temp (auto deleted) channel with a minimum requirement of votes and hard cap of 3 at a time
+* Optional automated channel creation via non-mod started vote for a temp (auto deleted) channel with a minimum requirement of votes and hard cap of 3 at a time
 
 * Tracks server emoji stats as well as message stats for general and opt-in channels. User gain/loss per day
 
