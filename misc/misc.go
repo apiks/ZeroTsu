@@ -2,10 +2,8 @@ package misc
 
 import (
 	"fmt"
-	"io/ioutil"
 	"math"
 	"net/http"
-	"os"
 	"regexp"
 	"runtime"
 	"strconv"
