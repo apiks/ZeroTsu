@@ -54,7 +54,7 @@ How to install:
 	   
 	   OwnerID is the user ID of the person with Owner level BOT permissions. Optional
 
-3. Make a file called configsecrets.json in the folder config.json is in and set this up the following way. It's for verification and optional IF Website value above is empty or if it gives you an error:
+3. Make a file called configsecrets.json in the folder config.json is in and set this up the following way. It's for Website/Verification. Skip it if not using that, or use it if you receive an error about it missing
 ```javascript
 {
   "RedditName": "redditAppName",
