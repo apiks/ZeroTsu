@@ -31,19 +31,18 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.MapMutex.Lock()
 
 	if !misc.GuildMap[m.GuildID].GuildConfig.VoteModule {
+		misc.MapMutex.Unlock()
 		return
 	}
 
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	guildVoteCategory := misc.GuildMap[m.GuildID].GuildConfig.VoteChannelCategory.ID
-	misc.MapMutex.Unlock()
 
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	// Checks if the message author is an admin or not and saves it, to save operations down the line
-	misc.MapMutex.Lock()
 	if HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
 		admin = true
 	}

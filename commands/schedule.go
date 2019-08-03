@@ -27,10 +27,6 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 		printMessage string
 	)
 
-	misc.MapMutex.Lock()
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
-
 	command := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(command, " ", 2)
 
@@ -60,6 +56,11 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 		if day < 0 || day > 6 {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot parse that day.")
 			if err != nil {
+
+				misc.MapMutex.Lock()
+				guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+				misc.MapMutex.Unlock()
+
 				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
 					return
@@ -80,6 +81,11 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Print the daily schedule
 	_, err := s.ChannelMessageSend(m.ChannelID, printMessage)
 	if err != nil {
+
+		misc.MapMutex.Lock()
+		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+		misc.MapMutex.Unlock()
+
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
 			return

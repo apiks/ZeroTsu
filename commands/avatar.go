@@ -44,7 +44,7 @@ func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Pulls userID from 2nd parameter of commandStrings
-	userID, err := misc.GetUserID(s, m, commandStrings)
+	userID, err := misc.GetUserID(m, commandStrings)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return

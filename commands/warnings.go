@@ -39,7 +39,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	userID, err := misc.GetUserID(s, m, commandStrings)
+	userID, err := misc.GetUserID(m, commandStrings)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
@@ -49,42 +49,34 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if the warning contains a mention and finds the actual name instead of ID
 	warning = misc.MentionParser(s, warning, m.GuildID)
 
-	// Fetches user
-	mem, err := s.User(userID)
+	// Pulls info on user
+	userMem, err := s.State.Member(m.GuildID, userID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return
+		userMem, _ = s.GuildMember(m.GuildID, userID)
 	}
 
 	// Checks if user is in memberInfo and handles them
 	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; !ok || len(misc.GuildMap[m.GuildID].MemberInfoMap) == 0 {
-		// Pulls info on user if they're in the server
-		userMem, err := s.State.Member(m.GuildID, mem.ID)
-		if err != nil {
-			userMem, err = s.GuildMember(m.GuildID, mem.ID)
+		if userMem != nil {
+			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot warn user until they join the server.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot warn user until they join the server.")
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
-					_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-					if err != nil {
-						misc.MapMutex.Unlock()
-						return
-					}
 					misc.MapMutex.Unlock()
 					return
 				}
 				misc.MapMutex.Unlock()
 				return
 			}
+			misc.MapMutex.Unlock()
+			return
 		}
 		// Initializes user if he doesn't exist in memberInfo but is in server
 		misc.InitializeUser(userMem, m.GuildID)
 	}
-	misc.MapMutex.Unlock()
 
 	// Appends warning to user in memberInfo
-	misc.MapMutex.Lock()
 	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings, warning)
 
 	// Adds timestamp for that warning
@@ -104,7 +96,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.MapMutex.Unlock()
 
 	// Sends warning embed message to channel
-	err = WarningEmbed(s, m, mem, warning, m.ChannelID, true)
+	err = WarningEmbed(s, m, userMem.User, warning, m.ChannelID, true)
 	if err != nil {
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
@@ -150,7 +142,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	userID, err := misc.GetUserID(s, m, commandStrings)
+	userID, err := misc.GetUserID(m, commandStrings)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
@@ -160,34 +152,28 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if the warning contains a mention and finds the actual name instead of ID
 	warning = misc.MentionParser(s, warning, m.GuildID)
 
-	// Fetches user
-	mem, err := s.User(userID)
+	// Pulls info on user
+	userMem, err := s.State.Member(m.GuildID, userID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return
+		userMem, _ = s.GuildMember(m.GuildID, userID)
 	}
 
 	// Checks if user is in memberInfo and handles them
 	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; !ok || len(misc.GuildMap[m.GuildID].MemberInfoMap) == 0 {
-		// Pulls info on user if they're in the server
-		userMem, err := s.State.Member(m.GuildID, mem.ID)
-		if err != nil {
-			userMem, err = s.GuildMember(m.GuildID, mem.ID)
+		if userMem != nil {
+			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot warn user until they join the server.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot warn user until they join the server.")
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
-					_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-					if err != nil {
-						misc.MapMutex.Unlock()
-						return
-					}
 					misc.MapMutex.Unlock()
 					return
 				}
 				misc.MapMutex.Unlock()
 				return
 			}
+			misc.MapMutex.Unlock()
+			return
 		}
 		// Initializes user if he doesn't exist in memberInfo but is in server
 		misc.InitializeUser(userMem, m.GuildID)
@@ -220,7 +206,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	_, _ = s.ChannelMessageSend(dm.ID, "You have been warned on "+guild.Name+":\n`"+warning+"`")
 
 	// Sends warning embed message to channel
-	err = WarningEmbed(s, m, mem, warning, m.ChannelID, false)
+	err = WarningEmbed(s, m, userMem.User, warning, m.ChannelID, false)
 	if err != nil {
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {

@@ -38,7 +38,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	userID, err := misc.GetUserID(s, m, commandStrings)
+	userID, err := misc.GetUserID(m, commandStrings)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return

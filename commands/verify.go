@@ -43,20 +43,10 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Pulls userID from 2nd parameter of commandStrings, else print error
-	userID, err := misc.GetUserID(s, m, commandStrings)
+	userID, err := misc.GetUserID(m, commandStrings)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
-	}
-
-	// Pulls the reddit username from the third parameter
-	redditUsername := commandStrings[2]
-
-	// Trims the reddit username if it's done with /u/ or u/
-	if strings.HasPrefix(redditUsername, "/u/") {
-		redditUsername = strings.TrimPrefix(redditUsername, "/u/")
-	} else if strings.HasPrefix(redditUsername, "u/") {
-		redditUsername = strings.TrimPrefix(redditUsername, "u/")
 	}
 
 	// Pulls info on user
@@ -76,6 +66,16 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
+	// Pulls the reddit username from the third parameter
+	redditUsername := commandStrings[2]
+
+	// Trims the reddit username if it's done with /u/ or u/
+	if strings.HasPrefix(redditUsername, "/u/") {
+		redditUsername = strings.TrimPrefix(redditUsername, "/u/")
+	} else if strings.HasPrefix(redditUsername, "u/") {
+		redditUsername = strings.TrimPrefix(redditUsername, "u/")
+	}
+
 	// Add reddit username in map
 	misc.MapMutex.Lock()
 	if misc.GuildMap[m.GuildID].MemberInfoMap[userID] != nil {
@@ -88,7 +88,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Sets verification variables
 		misc.GuildMap[m.GuildID].MemberInfoMap[userID].RedditUsername = redditUsername
 		misc.GuildMap[m.GuildID].MemberInfoMap[userID].VerifiedDate = ver
-	} else {
+	} else if userMem != nil {
 
 		// Initializes user in memberInfo.json
 		misc.InitializeUser(userMem, m.GuildID)
@@ -134,6 +134,10 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.MapMutex.Lock()
 	misc.GuildMap[m.GuildID].VerifiedStats[t.Format(misc.DateFormat)]++
 	misc.MapMutex.Unlock()
+
+	if userMem == nil {
+		return
+	}
 
 	err = verifyEmbed(s, m, userMem, redditUsername)
 	if err != nil {
@@ -190,7 +194,7 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Pulls userID from 2nd parameter of commandStrings, else print error
-	userID, err := misc.GetUserID(s, m, commandStrings)
+	userID, err := misc.GetUserID(m, commandStrings)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return

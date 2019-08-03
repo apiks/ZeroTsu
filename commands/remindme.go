@@ -91,12 +91,10 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	} else {
 		remindMeObject.RemindID = 1
 	}
-	misc.MapMutex.Unlock()
 	remindMeObject.Date = Date
 	remindMeObject.Message = commandStrings[2]
 
 	// Adds the above object to the remindMe map where all of the remindMes are kept and writes them to disk
-	misc.MapMutex.Lock()
 	if !flag {
 		misc.GuildMap[m.GuildID].RemindMes[userID] = &dummySlice
 	}

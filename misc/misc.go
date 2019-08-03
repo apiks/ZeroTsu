@@ -2,8 +2,10 @@ package misc
 
 import (
 	"fmt"
+	"io/ioutil"
 	"math"
 	"net/http"
+	"os"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -17,8 +19,8 @@ import (
 // File for misc. functions, commands and variables.
 
 const (
-	UserAgent  = "script:github.com/r-anime/zerotsu:v1.0.0 (by /u/thechosenapiks, /u/geo1088)"
-	DateFormat = "2006-01-02"
+	UserAgent         = "script:github.com/r-anime/zerotsu:v1.0.0 (by /u/thechosenapiks, /u/geo1088)"
+	DateFormat        = "2006-01-02"
 )
 
 var (
@@ -124,7 +126,7 @@ func (c *UserAgentTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 func ListenForDeletedRoleHandler(s *discordgo.Session, g *discordgo.GuildRoleDelete) {
 
 	MapMutex.Lock()
-	if GuildMap[g.GuildID].SpoilerMap[g.RoleID] != nil {
+	if GuildMap[g.GuildID].SpoilerMap[g.RoleID] == nil {
 		MapMutex.Unlock()
 		return
 	}
@@ -172,7 +174,7 @@ func ResolveTimeFromString(given string) (ret time.Time, perma bool, err error) 
 }
 
 // Resolves a userID from a userID, Mention or username#discrim
-func GetUserID(s *discordgo.Session, m *discordgo.Message, messageSlice []string) (string, error) {
+func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
 
 	var err error
 
@@ -444,10 +446,6 @@ func ChannelParser(s *discordgo.Session, channel string, guildID string) (string
 		flag        bool
 	)
 
-	MapMutex.Lock()
-	guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
-	MapMutex.Unlock()
-
 	// If it's a channel ping remove <# and > from it to get the channel ID
 	if strings.Contains(channel, "#") {
 		channelID = strings.TrimPrefix(channel, "<#")
@@ -463,6 +461,11 @@ func ChannelParser(s *discordgo.Session, channel string, guildID string) (string
 	// Find the channelID if it doesn't exists via channel name, else find the channel name
 	channels, err := s.GuildChannels(guildID)
 	if err != nil {
+
+		MapMutex.Lock()
+		guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
+		MapMutex.Unlock()
+
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 		if err != nil {
 			return channelID, channelName
@@ -500,10 +503,6 @@ func CategoryParser(s *discordgo.Session, category string, guildID string) (stri
 		flag         bool
 	)
 
-	MapMutex.Lock()
-	guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
-	MapMutex.Unlock()
-
 	// Check if it's an ID by length and save the ID if so
 	_, err := strconv.Atoi(category)
 	if len(category) >= 17 && err == nil {
@@ -513,6 +512,11 @@ func CategoryParser(s *discordgo.Session, category string, guildID string) (stri
 	// Find the categoryID if it doesn't exists via category name, else find the category name
 	channels, err := s.GuildChannels(guildID)
 	if err != nil {
+
+		MapMutex.Lock()
+		guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
+		MapMutex.Unlock()
+
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 		if err != nil {
 			return categoryID, categoryID
@@ -553,10 +557,6 @@ func RoleParser(s *discordgo.Session, role string, guildID string) (string, stri
 		flag     bool
 	)
 
-	MapMutex.Lock()
-	guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
-	MapMutex.Unlock()
-
 	// Check if it's an ID by length and save the ID if so
 	_, err := strconv.Atoi(role)
 	if len(role) >= 17 && err == nil {
@@ -566,6 +566,11 @@ func RoleParser(s *discordgo.Session, role string, guildID string) (string, stri
 	// Find the roleID if it doesn't exists via role name, else find the role name
 	roles, err := s.GuildRoles(guildID)
 	if err != nil {
+
+		MapMutex.Lock()
+		guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
+		MapMutex.Unlock()
+
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 		if err != nil {
 			return roleID, roleName
@@ -730,4 +735,21 @@ func OptInsHandler(s *discordgo.Session, guildID string) error {
 	MapMutex.Unlock()
 
 	return err
+}
+
+// Reads all images in the images folder and puts it in a global slice
+func ReadImages() {
+	files, err := ioutil.ReadDir("images")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for _, f := range files {
+		img, err := os.Open("images/" + f.Name())
+		if err != nil {
+			continue
+		}
+		ImageSlice = append(ImageSlice, img)
+	}
 }

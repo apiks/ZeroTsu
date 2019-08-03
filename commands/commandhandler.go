@@ -91,15 +91,19 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 	}
-	misc.MapMutex.Lock()
-	if cmd.elevated && !HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
+	if cmd.elevated {
+		misc.MapMutex.Lock()
+		if !HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
+			misc.MapMutex.Unlock()
+			return
+		}
 		misc.MapMutex.Unlock()
-		return
 	}
-	misc.MapMutex.Unlock()
-	admin, _ := MemberIsAdmin(s, m.GuildID, m.Author.ID, discordgo.PermissionAdministrator)
-	if cmd.admin && !admin {
-		return
+	if cmd.admin {
+		admin, _ := MemberIsAdmin(s, m.GuildID, m.Author.ID, discordgo.PermissionAdministrator)
+		if !admin {
+			return
+		}
 	}
 	cmd.execute(s, m.Message)
 	cmd.commandCount++

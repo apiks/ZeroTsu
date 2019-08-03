@@ -29,26 +29,26 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	}
 
 	// Clean up SpoilerRoles.json in each guild
+	MapMutex.Lock()
 	for _, guild := range e.Guilds {
-		MapMutex.Lock()
 		err := cleanSpoilerRoles(s, guild.ID)
 		if err != nil {
 			_, _ = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 		}
-		MapMutex.Unlock()
 	}
+	MapMutex.Unlock()
 
 	_ = s.UpdateStatus(0, config.PlayingMsg)
 
 	for range time.NewTicker(30 * time.Second).C {
 
 		// Checks whether it has to post rss thread and handle remindMes
+		MapMutex.Lock()
 		for _, guild := range e.Guilds {
 			RSSParser(s, guild.ID)
 			remindMeHandler(s, guild.ID)
 
 			// Goes through bannedUsers.json if it's not empty and unbans if needed
-			MapMutex.Lock()
 			if len(GuildMap[guild.ID].BannedUsers) != 0 {
 				t := time.Now()
 				for index, user := range GuildMap[guild.ID].BannedUsers {
@@ -104,8 +104,8 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 					}
 				}
 			}
-			MapMutex.Unlock()
 		}
+		MapMutex.Unlock()
 	}
 }
 
@@ -185,15 +185,6 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			// Writes memberInfo to disk
 			WriteMemberInfo(GuildMap[guild.ID].MemberInfoMap, guild.ID)
 
-			// Fetches all guild users
-			guild, err := s.Guild(guild.ID)
-			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					continue
-				}
-				continue
-			}
 			// Fetches all server roles
 			roles, err := s.GuildRoles(guild.ID)
 			if err != nil {
@@ -243,12 +234,9 @@ func RSSParser(s *discordgo.Session, guildID string) {
 
 	var exists bool
 
-	MapMutex.Lock()
 	if len(GuildMap[guildID].RssThreads) == 0 {
-		MapMutex.Unlock()
 		return
 	}
-	MapMutex.Unlock()
 
 	// Pulls the feed from /r/anime and puts it in feed variable
 	fp := gofeed.NewParser()
@@ -263,7 +251,6 @@ func RSSParser(s *discordgo.Session, guildID string) {
 	hours := time.Hour * 16
 
 	// Removes a thread if more than 16 hours have passed
-	MapMutex.Lock()
 	for p := 0; p < len(GuildMap[guildID].RssThreadChecks); p++ {
 		// Calculates if it's time to remove
 		dateRemoval := GuildMap[guildID].RssThreadChecks[p].Date.Add(hours)
@@ -275,10 +262,8 @@ func RSSParser(s *discordgo.Session, guildID string) {
 			if err != nil {
 				_, err = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
-					MapMutex.Unlock()
 					return
 				}
-				MapMutex.Unlock()
 				return
 			}
 		}
@@ -343,7 +328,6 @@ func RSSParser(s *discordgo.Session, guildID string) {
 			}
 		}
 	}
-	MapMutex.Unlock()
 }
 
 // Adds the voice role whenever a user joins the config voice chat
@@ -569,7 +553,6 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 	}()
 
 	t := time.Now()
-	MapMutex.Lock()
 	for userID, remindMeSlice := range GuildMap[guildID].RemindMes {
 		for index, remindMeObject := range remindMeSlice.RemindMeSlice {
 
@@ -590,10 +573,8 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 						if err != nil {
 							_, err = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 							if err != nil {
-								MapMutex.Unlock()
 								return
 							}
-							MapMutex.Unlock()
 							return
 						}
 					}
@@ -610,17 +591,14 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 				if err != nil {
 					_, err = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 					if err != nil {
-						MapMutex.Unlock()
 						return
 					}
-					MapMutex.Unlock()
 					return
 				}
 				break
 			}
 		}
 	}
-	MapMutex.Unlock()
 }
 
 // Sends a message to a channel to log whenever a user joins. Intended use was to catch spambots
@@ -639,12 +617,13 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
-	MapMutex.Lock()
-	guildBotLog := GuildMap[u.GuildID].GuildConfig.BotLog.ID
-	MapMutex.Unlock()
-
 	creationDate, err := CreationTime(u.User.ID)
 	if err != nil {
+
+		MapMutex.Lock()
+		guildBotLog := GuildMap[u.GuildID].GuildConfig.BotLog.ID
+		MapMutex.Unlock()
+
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 		if err != nil {
 			return
@@ -656,6 +635,11 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	if u.GuildID == "267799767843602452" {
 		_, err = s.ChannelMessageSend("566233292026937345", fmt.Sprintf("User joined the server: %v\nAccount age: %v", u.User.Mention(), creationDate.String()))
 		if err != nil {
+
+			MapMutex.Lock()
+			guildBotLog := GuildMap[u.GuildID].GuildConfig.BotLog.ID
+			MapMutex.Unlock()
+
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 			if err != nil {
 				return

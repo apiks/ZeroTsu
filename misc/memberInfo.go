@@ -78,10 +78,11 @@ func InitializeUser(u *discordgo.Member, guildID string) {
 // Also updates discriminator
 // Also verifies them if they're already verified in memberinfo
 func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
+
 	var (
-		flag        = false
-		initialized = false
-		writeFlag   = false
+		flag        bool
+		initialized bool
+		writeFlag   bool
 	)
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -217,12 +218,14 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	}
 
 	// Saves the updates to memberInfoMap and writes to disk if need be
-	if writeFlag {
-		MapMutex.Lock()
-		GuildMap[e.GuildID].MemberInfoMap[user.User.ID] = existingUser
-		WriteMemberInfo(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
-		MapMutex.Unlock()
+	if !writeFlag {
+		return
 	}
+
+	MapMutex.Lock()
+	GuildMap[e.GuildID].MemberInfoMap[user.User.ID] = existingUser
+	WriteMemberInfo(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
+	MapMutex.Unlock()
 }
 
 // OnMemberUpdate listens for member updates to compare usernames, nicknames and discrim
@@ -467,8 +470,8 @@ func DuplicateUsernamesAndNicknamesCleanup() {
 		}
 		MapMutex.Lock()
 		DuplicateRecursion(f.Name())
-		MapMutex.Unlock()
 		WriteMemberInfo(GuildMap[f.Name()].MemberInfoMap, f.Name())
+		MapMutex.Unlock()
 	}
 
 	fmt.Println("FINISHED WITH DUPLICATES")
