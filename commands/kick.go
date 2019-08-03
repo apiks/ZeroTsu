@@ -47,31 +47,15 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if the reason contains a mention and finds the actual name instead of ID
 	reason = misc.MentionParser(s, reason, m.GuildID)
 
-	// Fetches user from server
-	mem, err := s.User(userID)
-	if err != nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid user. Please use `"+guildPrefix+"kick [@user, userID, or username#discrim] [reason]` format.\n\n"+
-			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
-		if err != nil {
-			_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
-			return
-		}
-		return
-	}
-
 	// Pulls info on user
-	userMem, err := s.State.Member(m.GuildID, mem.ID)
+	userMem, err := s.State.Member(m.GuildID, userID)
 	if err != nil {
-		userMem, err = s.GuildMember(m.GuildID, mem.ID)
+		userMem, err = s.GuildMember(m.GuildID, userID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server. Cannot kick user until user joins the server.")
+			_, err = s.ChannelMessageSend(m.ChannelID, "Error: Invalid user or user not found in server. Cannot kick user.")
 			if err != nil {
 				_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
-
 					return
 				}
 				return
@@ -82,19 +66,24 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if user has a privileged role
+	misc.MapMutex.Lock()
 	if HasElevatedPermissions(s, userMem.User.ID, m.GuildID) {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Target user has a privileged role. Cannot kick.")
 		if err != nil {
 			_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
+				misc.MapMutex.Unlock()
 				return
 			}
+			misc.MapMutex.Unlock()
 			return
 		}
+		misc.MapMutex.Unlock()
 		return
 	}
+	misc.MapMutex.Unlock()
 
-	// Fetches the guild Name
+	// Fetches the guild for the Name
 	guild, err := s.Guild(m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
@@ -113,32 +102,32 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Adds timestamp for that kick
 	t, err := m.Timestamp.Parse()
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		misc.MapMutex.Unlock()
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 	kickTimestamp.Timestamp = t
 	kickTimestamp.Punishment = reason
 	kickTimestamp.Type = "Kick"
 	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, kickTimestamp)
-	misc.MapMutex.Unlock()
 
 	// Writes memberInfo.json
 	misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+	misc.MapMutex.Unlock()
 
 	// Sends message to user DMs if possible
-	dm, _ := s.UserChannelCreate(mem.ID)
+	dm, _ := s.UserChannelCreate(userID)
 	_, _ = s.ChannelMessageSend(dm.ID, "You have been kicked from "+guild.Name+":\n**"+reason+"**")
 
 	// Kicks the user from the server with a reason
-	err = s.GuildMemberDeleteWithReason(m.GuildID, mem.ID, reason)
+	err = s.GuildMemberDeleteWithReason(m.GuildID, userID, reason)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
 	// Sends embed bot-log message
-	err = KickEmbed(s, m, mem, reason, guildBotLog)
+	err = KickEmbed(s, m, userMem.User, reason, guildBotLog)
 	if err != nil {
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
@@ -148,7 +137,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sends embed channel message
-	err = KickEmbed(s, m, mem, reason, m.ChannelID)
+	err = KickEmbed(s, m, userMem.User, reason, m.ChannelID)
 	if err != nil {
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {

@@ -51,10 +51,13 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 	}
+	misc.MapMutex.Lock()
 	// Checks if user is mod or bot before checking the message
 	if HasElevatedPermissions(s, mem.User.ID, m.GuildID) {
+		misc.MapMutex.Unlock()
 		return
 	}
+	misc.MapMutex.Unlock()
 
 	mLowercase = strings.ToLower(m.Content)
 
@@ -143,9 +146,12 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 		}
 	}
 	// Checks if user is mod or bot before checking the message
+	misc.MapMutex.Lock()
 	if HasElevatedPermissions(s, mem.User.ID, m.GuildID) {
+		misc.MapMutex.Unlock()
 		return
 	}
+	misc.MapMutex.Unlock()
 
 	mLowercase = strings.ToLower(m.Content)
 
@@ -229,9 +235,12 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 		}
 	}
 	// Checks if user is mod or bot before checking the message
+	misc.MapMutex.Lock()
 	if HasElevatedPermissions(s, mem.User.ID, r.GuildID) {
+		misc.MapMutex.Unlock()
 		return
 	}
+	misc.MapMutex.Unlock()
 
 	// Checks if the react should be filtered
 	badReactExists = isFilteredReact(s, r)
@@ -858,9 +867,12 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 	// Checks if user is mod or bot before checking the message
+	misc.MapMutex.Lock()
 	if HasElevatedPermissions(s, mem.User.ID, m.GuildID) {
+		misc.MapMutex.Unlock()
 		return
 	}
+	misc.MapMutex.Unlock()
 
 	// Counter for how many rapidly sent user messages a user has
 	misc.MapMutex.Lock()
@@ -874,7 +886,7 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Stops filter if there is an unusual high size of messages to be deleted from a user (i.e. discord lags)
 	if spamFilterMap[m.Author.ID] > 15 {
-		_, err = s.ChannelMessageSend(guildBotLog, "Error: Spam filter has been disabled due to massive overflow of requests.")
+		_, err = s.ChannelMessageSend(guildBotLog, "Error: My spam filter has been disabled due to massive overflow of requests.")
 		if err != nil {
 			spamFilterIsBroken = true
 			misc.MapMutex.Unlock()

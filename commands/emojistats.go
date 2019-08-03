@@ -37,6 +37,7 @@ func OnMessageEmoji(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guild, err := s.Guild(m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m.Message, err, guildBotLog)
+		return
 	}
 
 	// If a message contains a server emoji it tracks it

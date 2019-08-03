@@ -57,9 +57,12 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		}
 	}
 	// Checks if user is mod before checking the message
+	misc.MapMutex.Lock()
 	if HasElevatedPermissions(s, mem.User.ID, m.GuildID) {
+		misc.MapMutex.Unlock()
 		return
 	}
+	misc.MapMutex.Unlock()
 
 	// Iterates through all the attachments (since more than one can be posted in one go)
 	// and checks if it's an allowed file type. If it isn't sends error message for each file

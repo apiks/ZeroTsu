@@ -367,6 +367,7 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 		user = misc.GuildMap[m.GuildID].MemberInfoMap[userID]
 		misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	}
+	misc.MapMutex.Unlock()
 
 	// Check if timestamps exist
 	if len(user.Timestamps) == 0 {
@@ -374,13 +375,10 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
-				misc.MapMutex.Unlock()
 				return
 			}
-			misc.MapMutex.Unlock()
 			return
 		}
-		misc.MapMutex.Unlock()
 		return
 	}
 
@@ -400,15 +398,11 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
-				misc.MapMutex.Unlock()
 				return
 			}
-			misc.MapMutex.Unlock()
 			return
 		}
 	}
-
-	misc.MapMutex.Unlock()
 }
 
 func init() {

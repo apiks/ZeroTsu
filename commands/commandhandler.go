@@ -42,6 +42,7 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Println(rec)
+			log.Println("Recovery in HandleCommand")
 		}
 	}()
 
@@ -74,13 +75,6 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 	}
-	if cmd.elevated && !HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
-		return
-	}
-	admin, _ := MemberIsAdmin(s, m.GuildID, m.Author.ID, discordgo.PermissionAdministrator)
-	if cmd.admin && !admin {
-		return
-	}
 	if cmd.trigger == "votecategory" ||
 		cmd.trigger == "startvote" {
 		if !guildVoteModule {
@@ -96,6 +90,16 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if !guildReactsModule {
 			return
 		}
+	}
+	misc.MapMutex.Lock()
+	if cmd.elevated && !HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
+		misc.MapMutex.Unlock()
+		return
+	}
+	misc.MapMutex.Unlock()
+	admin, _ := MemberIsAdmin(s, m.GuildID, m.Author.ID, discordgo.PermissionAdministrator)
+	if cmd.admin && !admin {
+		return
 	}
 	cmd.execute(s, m.Message)
 	cmd.commandCount++
@@ -118,6 +122,7 @@ func HasElevatedPermissions(s *discordgo.Session, userID string, guildID string)
 		mem, err = s.GuildMember(guildID, userID)
 		if err != nil {
 			log.Println(err)
+			return false
 		}
 	}
 

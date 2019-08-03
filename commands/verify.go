@@ -102,10 +102,10 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.GuildMap[m.GuildID].MemberInfoMap[userID].RedditUsername = redditUsername
 		misc.GuildMap[m.GuildID].MemberInfoMap[userID].VerifiedDate = ver
 	}
-	misc.MapMutex.Unlock()
 
 	// Writes modified memberInfo map to storage
 	misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+	misc.MapMutex.Unlock()
 
 	// Puts all server roles in roles
 	roles, err := s.GuildRoles(m.GuildID)
@@ -131,7 +131,9 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Stores time of verification
 	t := time.Now()
 	// Adds to verified stats
+	misc.MapMutex.Lock()
 	misc.GuildMap[m.GuildID].VerifiedStats[t.Format(misc.DateFormat)]++
+	misc.MapMutex.Unlock()
 
 	err = verifyEmbed(s, m, userMem, redditUsername)
 	if err != nil {
@@ -242,7 +244,9 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Stores time of verification
 	t := time.Now()
 	// Removes from verified stats
+	misc.MapMutex.Lock()
 	misc.GuildMap[m.GuildID].VerifiedStats[t.Format(misc.DateFormat)]--
+	misc.MapMutex.Unlock()
 
 	err = unverifyEmbed(s, m, commandStrings[1])
 	if err != nil {

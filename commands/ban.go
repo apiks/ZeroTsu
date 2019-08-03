@@ -81,29 +81,26 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Fetches user
-	mem, err := s.User(userID)
+	// Pulls info on user
+	userMem, err := s.State.Member(m.GuildID, userID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return
-	}
-
-	// Pulls info on user as mem
-	userMem, err := s.State.Member(m.GuildID, mem.ID)
-	if err != nil {
-		userMem, _ = s.GuildMember(m.GuildID, mem.ID)
+		userMem, _ = s.GuildMember(m.GuildID, userID)
 	}
 	// Checks if user has a privileged role
 	if userMem != nil {
+		misc.MapMutex.Lock()
 		if HasElevatedPermissions(s, userMem.User.ID, m.GuildID) {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: Target user has a privileged role. Cannot ban.")
 			if err != nil {
 				_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
+					misc.MapMutex.Unlock()
 					return
 				}
+				misc.MapMutex.Unlock()
 				return
 			}
+			misc.MapMutex.Unlock()
 			return
 		}
 	}
@@ -111,24 +108,19 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if user is in memberInfo and handles them
 	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; !ok || len(misc.GuildMap[m.GuildID].MemberInfoMap) == 0 {
-		// Pulls info on user if they're in the server
-		userMem, err := s.State.Member(m.GuildID, mem.ID)
-		if err != nil {
-			userMem, err = s.GuildMember(m.GuildID, mem.ID)
+		// Returns if they're not in the server and memberInfo
+		if userMem == nil {
+			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot ban user until they join the server.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot ban user until they join the server.")
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
-					_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-					if err != nil {
-						misc.MapMutex.Unlock()
-						return
-					}
 					misc.MapMutex.Unlock()
 					return
 				}
 				misc.MapMutex.Unlock()
 				return
 			}
+			return
 		}
 		// Initializes user if he doesn't exist in memberInfo but is in server
 		misc.InitializeUser(userMem, m.GuildID)
@@ -163,8 +155,8 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Adds timestamp for that ban
 	t, err := m.Timestamp.Parse()
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		misc.MapMutex.Unlock()
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 	banTimestamp.Timestamp = t
@@ -185,7 +177,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Saves the details in temp
 	temp.ID = userID
-	temp.User = mem.Username
+	temp.User = userMem.User.Username
 
 	if perma {
 		temp.UnbanDate = time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
@@ -235,7 +227,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sends embed bot-log message
-	err = BanEmbed(s, m, mem, reason, UnbanDate, perma, guildBotLog)
+	err = BanEmbed(s, m, userMem.User, reason, UnbanDate, perma, guildBotLog)
 	if err != nil {
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
@@ -245,7 +237,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sends embed channel message
-	err = BanEmbed(s, m, mem, reason, UnbanDate, perma, m.ChannelID)
+	err = BanEmbed(s, m, userMem.User, reason, UnbanDate, perma, m.ChannelID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return

@@ -48,12 +48,14 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 	for _, role := range roles {
 		if strings.ToLower(role.Name) == strings.ToLower(cha.Name) &&
 			role.ID != m.GuildID {
+			misc.MapMutex.Lock()
 			for roleID := range misc.GuildMap[m.GuildID].SpoilerMap {
 				if role.ID == roleID {
 					roleID = role.ID
 					break
 				}
 			}
+			misc.MapMutex.Unlock()
 		}
 		if strings.ToLower(role.Name) == "airing" {
 			airingID = role.ID
@@ -124,8 +126,10 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 			if err != nil {
 				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
+					misc.MapMutex.Unlock()
 					return
 				}
+				misc.MapMutex.Unlock()
 				return
 			}
 		}
@@ -185,12 +189,14 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	for _, role := range roles {
 		if strings.ToLower(role.Name) == strings.ToLower(cha.Name) &&
 			role.ID != m.GuildID {
+			misc.MapMutex.Lock()
 			for rolID := range misc.GuildMap[m.GuildID].SpoilerMap {
 				if role.ID == rolID {
 					roleID = role.ID
 					break
 				}
 			}
+			misc.MapMutex.Unlock()
 		}
 		if strings.ToLower(role.Name) == "airing" {
 			airingID = role.ID
@@ -250,8 +256,12 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 		for _, modRole := range misc.GuildMap[m.GuildID].GuildConfig.CommandRoles {
 			err = s.ChannelPermissionSet(m.ChannelID, modRole.ID, "role", discordgo.PermissionAll, 0)
 			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+				if err != nil {
+					misc.MapMutex.Unlock()
+					return
+				}
 				misc.MapMutex.Unlock()
-				misc.CommandErrorHandler(s, m, err, guildBotLog)
 				return
 			}
 		}

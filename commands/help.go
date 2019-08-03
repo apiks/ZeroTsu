@@ -26,12 +26,12 @@ func helpEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	misc.MapMutex.Lock()
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
 
 	// Checks for mod perms and handles accordingly
 	if HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
 		elevated = true
 	}
+	misc.MapMutex.Unlock()
 	admin, err := MemberIsAdmin(s, m.GuildID, m.Author.ID, discordgo.PermissionAdministrator)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)

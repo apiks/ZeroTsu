@@ -43,9 +43,11 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	// Checks if the message author is an admin or not and saves it, to save operations down the line
+	misc.MapMutex.Lock()
 	if HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
 		admin = true
 	}
+	misc.MapMutex.Unlock()
 
 	if admin {
 		if len(commandStrings) == 1 {

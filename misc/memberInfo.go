@@ -521,7 +521,6 @@ func UsernameCleanup(s *discordgo.Session, e *discordgo.Ready) {
 			progress++
 			fmt.Printf("%v out of %v \n", progress, len(GuildMap[guild.ID].MemberInfoMap))
 		}
-		MapMutex.Unlock()
 
 		path := "database/guilds"
 		folders, err := ioutil.ReadDir(path)
@@ -536,6 +535,7 @@ func UsernameCleanup(s *discordgo.Session, e *discordgo.Ready) {
 			WriteMemberInfo(GuildMap[guild.ID].MemberInfoMap, f.Name())
 		}
 	}
+	MapMutex.Unlock()
 
 	fmt.Println("FINISHED WITH USERNAMES")
 }

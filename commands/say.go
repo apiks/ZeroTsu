@@ -164,6 +164,10 @@ func editCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		_, err = s.ChannelMessageSend(m.ChannelID, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
 			return
 		}
 		return
