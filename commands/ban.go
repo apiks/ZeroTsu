@@ -121,6 +121,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 				misc.MapMutex.Unlock()
 				return
 			}
+			misc.MapMutex.Unlock()
 			return
 		}
 		// Initializes user if he doesn't exist in memberInfo but is in server

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -43,7 +43,7 @@ func main() {
 		r.HandleFunc("/channelstats/", web.ChannelStatsPageHandler)
 		r.HandleFunc("/userchangestats", web.UserChangeStatsPageHandler)
 		r.HandleFunc("/userchangestats/", web.UserChangeStatsPageHandler)
-		err := http.ListenAndServe(":8080", r)
+		err := http.ListenAndServe(":3000", r)
 		if err != nil {
 			panic(err)
 		}
@@ -58,7 +58,7 @@ func Start() {
 
 	goBot, err := discordgo.New("Bot " + config.Token)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	// Reads all banned users from memberInfo on bot start
@@ -66,6 +66,8 @@ func Start() {
 
 	// Updates schedule command print message on load
 	commands.UpdateAnimeSchedule()
+
+	//misc.ReadImages()
 
 	// Cleans up duplicate usernames and nicknames (Run once per cleanup, keep off unless needed)
 	//misc.DuplicateUsernamesAndNicknamesCleanup()
@@ -90,6 +92,9 @@ func Start() {
 
 	// Deletes non-whitelisted attachments
 	goBot.AddHandler(commands.MessageAttachmentsHandler)
+
+	//Converter
+	//goBot.AddHandler(commands.ConverterHandler)
 
 	// React Channel Join Handler
 	goBot.AddHandler(commands.ReactJoinHandler)
@@ -159,5 +164,5 @@ func Start() {
 	// Start tracking uptime from here
 	misc.StartTime = time.Now()
 
-	fmt.Println("BOT is running!")
+	log.Println("BOT is running!")
 }
