@@ -23,6 +23,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	var (
 		muted            string
 		airing           string
+		tmute			 string
 		roleName         string
 		descriptionSlice []string
 		fixed            bool
@@ -196,6 +197,8 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 			muted = deb[i].ID
 		} else if channel.Type == "airing" && deb[i].Name == "airing" {
 			airing = deb[i].ID
+		} else if deb[i].Name == "t-mute" {
+			tmute = deb[i].ID
 		}
 	}
 
@@ -239,6 +242,13 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Muted perms
 	if muted != "" {
 		err = s.ChannelPermissionSet(newCha.ID, muted, "role", 0, discordgo.PermissionSendMessages)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return
+		}
+	}
+	if tmute != "" {
+		err = s.ChannelPermissionSet(newCha.ID, tmute, "role", 0, discordgo.PermissionSendMessages)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
