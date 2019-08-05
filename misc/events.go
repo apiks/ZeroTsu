@@ -404,17 +404,24 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 
 // Print fluff message on bot ping
 func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
+
+	log.Println("in")
+
 	if m.GuildID == "" {
+		log.Println("return")
 		return
 	}
 
-	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) && m.Author.ID == "128312718779219968" {
-		MapMutex.Lock()
-		guildBotLog := GuildMap[m.GuildID].GuildConfig.BotLog.ID
-		MapMutex.Unlock()
+	log.Println(m.Content)
 
+	if (m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID)) && m.Author.ID == "128312718779219968" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Professor!")
 		if err != nil {
+
+			MapMutex.Lock()
+			guildBotLog := GuildMap[m.GuildID].GuildConfig.BotLog.ID
+			MapMutex.Unlock()
+
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 			if err != nil {
 				return
@@ -423,7 +430,8 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		return
 	}
-	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) && m.Author.ID == "66207186417627136" {
+
+	if (m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID)) && m.Author.ID == "66207186417627136" {
 		MapMutex.Lock()
 		guildBotLog := GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		MapMutex.Unlock()
@@ -486,13 +494,79 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		return
 	}
-	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) && darlingTrigger > 10 {
+
+	if (m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID)) && m.Author.ID == "365245718866427904" {
 		MapMutex.Lock()
 		guildBotLog := GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		MapMutex.Unlock()
 
+		randomNum := rand.Intn(5)
+		if randomNum == 0 {
+			_, err := s.ChannelMessageSend(m.ChannelID, "Begone ethot.")
+			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
+				if err != nil {
+					return
+				}
+				return
+			}
+			return
+		}
+		if randomNum == 1 {
+			_, err := s.ChannelMessageSend(m.ChannelID, "Humph!")
+			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
+				if err != nil {
+					return
+				}
+				return
+			}
+			return
+		}
+		if randomNum == 2 {
+			_, err := s.ChannelMessageSend(m.ChannelID, "Wannabe ethot.")
+			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
+				if err != nil {
+					return
+				}
+				return
+			}
+			return
+		}
+		if randomNum == 3 {
+			_, err := s.ChannelMessageSend(m.ChannelID, "Not even worth my time.")
+			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
+				if err != nil {
+					return
+				}
+				return
+			}
+			return
+		}
+		if randomNum == 4 {
+			_, err := s.ChannelMessageSend(m.ChannelID, "Okay, maybe you're not that bad.")
+			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
+				if err != nil {
+					return
+				}
+				return
+			}
+			return
+		}
+		return
+	}
+
+	if (m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID)) && darlingTrigger > 10 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Daaarling~")
 		if err != nil {
+
+			MapMutex.Lock()
+			guildBotLog := GuildMap[m.GuildID].GuildConfig.BotLog.ID
+			MapMutex.Unlock()
+
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 			if err != nil {
 				return
@@ -502,13 +576,15 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		darlingTrigger = 0
 		return
 	}
-	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) {
-		MapMutex.Lock()
-		guildBotLog := GuildMap[m.GuildID].GuildConfig.BotLog.ID
-		MapMutex.Unlock()
 
+	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Baka!")
 		if err != nil {
+
+			MapMutex.Lock()
+			guildBotLog := GuildMap[m.GuildID].GuildConfig.BotLog.ID
+			MapMutex.Unlock()
+
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 			if err != nil {
 				return
