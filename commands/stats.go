@@ -31,6 +31,10 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	misc.MapMutex.Lock()
+	if misc.GuildMap[m.GuildID] == nil {
+		misc.MapMutex.Unlock()
+		return
+	}
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
 
@@ -46,11 +50,6 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Sets channel params if it didn't exist before in database
 	misc.MapMutex.Lock()
-	if misc.GuildMap[m.GuildID] == nil {
-		misc.MapMutex.Unlock()
-		return
-	}
-
 	if _, ok := misc.GuildMap[m.GuildID].ChannelStats[m.ChannelID]; !ok {
 		// Fetches all guild users
 		guild, err := s.Guild(m.GuildID)
@@ -217,13 +216,15 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	message += "\n\nOpt-in Name:                     ([Daily Messages] | [Total Messages] | [Role Members]) \n\n"
 
 	for _, channel := range channels {
+
+		// Checks if channel exists and sets optin status
+		channel, ok := isChannelUsable(*channel, guild)
+		if !ok {
+			continue
+		}
+
 		if channel.Optin {
 
-			// Checks if channel exists and sets optin status
-			channel, ok := isChannelUsable(*channel, guild)
-			if !ok {
-				continue
-			}
 			// Formats  and splits message
 			message += lineSpaceFormatChannel(channel.ChannelID, true, m.GuildID)
 			msgs, message = splitStatMessages(msgs, message)
@@ -478,3 +479,4 @@ func init() {
 		category: "stats",
 	})
 }
+
