@@ -405,14 +405,9 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 // Print fluff message on bot ping
 func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 
-	log.Println("in")
-
 	if m.GuildID == "" {
-		log.Println("return")
 		return
 	}
-
-	log.Println(m.Content)
 
 	if (m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID)) && m.Author.ID == "128312718779219968" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Professor!")
