@@ -577,7 +577,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) {
+	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Baka!")
 		if err != nil {
 
