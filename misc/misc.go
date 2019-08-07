@@ -2,7 +2,6 @@ package misc
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"math"
 	"net/http"
