@@ -299,7 +299,6 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 				if len(misc.GuildMap[m.GuildID].MemberInfoMap) != 0 {
 					if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
 						mentions += " " + strings.ToLower(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Nickname)
-						misc.MapMutex.Unlock()
 						continue
 					}
 				}
