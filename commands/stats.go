@@ -352,6 +352,12 @@ func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 	t := time.Now()
 	misc.MapMutex.Lock()
 	misc.GuildMap[u.GuildID].UserChangeStats[t.Format(misc.DateFormat)]--
+	_, err := misc.UserChangeStatsWrite(misc.GuildMap[u.GuildID].UserChangeStats, u.GuildID)
+	if err != nil {
+		log.Println(err)
+		misc.MapMutex.Unlock()
+		return
+	}
 	misc.MapMutex.Unlock()
 }
 
@@ -416,13 +422,12 @@ func dailyStats(s *discordgo.Session, e *discordgo.Ready) {
 	hour := t.Hour()
 	minute := t.Minute()
 
+	misc.MapMutex.Lock()
 	for _, guild := range e.Guilds {
 
-		misc.MapMutex.Lock()
 		guildPrefix := misc.GuildMap[guild.ID].GuildConfig.Prefix
 		guildBotLog := misc.GuildMap[guild.ID].GuildConfig.BotLog.ID
 		guildDailyStats := misc.GuildMap[guild.ID].GuildConfig.DailyStats
-		misc.MapMutex.Unlock()
 
 		if hour == 23 && minute == 59 && !guildDailyStats {
 			_, err := s.ChannelMessageSend(guildBotLog, fmt.Sprintf("Update for **%v %v, %v**", t.Month(), t.Day(), t.Year()))
@@ -440,19 +445,18 @@ func dailyStats(s *discordgo.Session, e *discordgo.Ready) {
 			message.Content = guildPrefix + "stats"
 			message.ChannelID = guildBotLog
 			guildDailyStats = true
+			misc.MapMutex.Unlock()
 			showStats(s, &message)
 			misc.MapMutex.Lock()
 			misc.GuildMap[guild.ID].GuildConfig.DailyStats = true
 			misc.GuildSettingsWrite(misc.GuildMap[guild.ID].GuildConfig, guild.ID)
-			misc.MapMutex.Unlock()
 		}
 		if hour == 0 && minute == 0 && guildDailyStats {
-			misc.MapMutex.Lock()
 			misc.GuildMap[guild.ID].GuildConfig.DailyStats = false
 			misc.GuildSettingsWrite(misc.GuildMap[guild.ID].GuildConfig, guild.ID)
-			misc.MapMutex.Unlock()
 		}
 	}
+	misc.MapMutex.Unlock()
 
 	// Update daily anime schedule command
 	if hour == 0 && minute == 0 {
