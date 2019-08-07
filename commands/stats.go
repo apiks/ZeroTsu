@@ -352,12 +352,6 @@ func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 	t := time.Now()
 	misc.MapMutex.Lock()
 	misc.GuildMap[u.GuildID].UserChangeStats[t.Format(misc.DateFormat)]--
-	_, err := misc.UserChangeStatsWrite(misc.GuildMap[u.GuildID].UserChangeStats, u.GuildID)
-	if err != nil {
-		log.Println(err)
-		misc.MapMutex.Unlock()
-		return
-	}
 	misc.MapMutex.Unlock()
 }
 
@@ -434,9 +428,9 @@ func dailyStats(s *discordgo.Session, e *discordgo.Ready) {
 			if err != nil {
 				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
-					return
+					continue
 				}
-				return
+				continue
 			}
 
 			author.ID = s.State.User.ID
