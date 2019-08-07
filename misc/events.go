@@ -784,6 +784,7 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	// Checks if they're using a default avatar
 	if u.User.Avatar != "" {
+		MapMutex.Unlock()
 		return
 	}
 
