@@ -277,12 +277,12 @@ func RSSParser(s *discordgo.Session, guildID string) {
 			exists = false
 			storageAuthorLowercase := strings.ToLower(GuildMap[guildID].RssThreads[j].Author)
 
-			if strings.Contains(itemTitleLowercase, GuildMap[guildID].RssThreads[j].Title) &&
+			if strings.Contains(itemTitleLowercase, GuildMap[guildID].RssThreads[j].Thread) &&
 				strings.Contains(itemAuthorLowercase, storageAuthorLowercase) {
 
 				for k := 0; k < len(GuildMap[guildID].RssThreadChecks); k++ {
-					if GuildMap[guildID].RssThreadChecks[k].Thread == GuildMap[guildID].RssThreads[j].Title &&
-						GuildMap[guildID].RssThreadChecks[k].ChannelID == GuildMap[guildID].RssThreads[j].ChannelID {
+					if GuildMap[guildID].RssThreadChecks[k].Thread == GuildMap[guildID].RssThreads[j].Thread &&
+						GuildMap[guildID].RssThreadChecks[k].ChannelID == GuildMap[guildID].RssThreads[j].Channel {
 						exists = true
 						break
 					}
@@ -290,9 +290,9 @@ func RSSParser(s *discordgo.Session, guildID string) {
 
 				if !exists {
 					// Posts latest sub episode thread and pins/unpins
-					valid := RssThreadsTimerWrite(GuildMap[guildID].RssThreads[j].Title, t, GuildMap[guildID].RssThreads[j].ChannelID, guildID)
+					valid := RssThreadsTimerWrite(GuildMap[guildID].RssThreads[j].Thread, t, GuildMap[guildID].RssThreads[j].Channel, guildID)
 					if valid {
-						message, err := s.ChannelMessageSend(GuildMap[guildID].RssThreads[j].ChannelID, item.Link)
+						message, err := s.ChannelMessageSend(GuildMap[guildID].RssThreads[j].Channel, item.Link)
 						if err != nil {
 							_, _ = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 							continue
