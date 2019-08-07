@@ -56,12 +56,12 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 					if difference > 0 {
 						banFlag = false
 
-						// Checks if user is in MemberInfo and assigns to user variable if true
-						user, ok := GuildMap[guild.ID].MemberInfoMap[user.ID]
+						// Checks if user is in MemberInfo and saves him if true
+						memberInfoUser, ok := GuildMap[guild.ID].MemberInfoMap[user.ID]
 						if !ok {
 							continue
 						}
-						// Fetches all server bans so it can check if the user is banned there (whether he's been manually unbanned for example)
+						// Fetches all server bans so it can check if the memberInfoUser is banned there (whether he's been manually unbanned for example)
 						bans, err := s.GuildBans(guild.ID)
 						if err != nil {
 							_, err = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
@@ -71,14 +71,14 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 							continue
 						}
 						for _, ban := range bans {
-							if ban.User.ID == user.ID {
+							if ban.User.ID == memberInfoUser.ID {
 								banFlag = true
 								break
 							}
 						}
 						if banFlag {
-							// Unbans user if possible
-							err = s.GuildBanDelete(guild.ID, user.ID)
+							// Unbans memberInfoUser if possible
+							err = s.GuildBanDelete(guild.ID, memberInfoUser.ID)
 							if err != nil {
 								_, err = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 								if err != nil {
@@ -89,9 +89,9 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 						}
 
 						// Removes unban date entirely
-						GuildMap[guild.ID].MemberInfoMap[user.ID].UnbanDate = ""
+						GuildMap[guild.ID].MemberInfoMap[memberInfoUser.ID].UnbanDate = ""
 
-						// Removes the user ban from bannedUsers.json
+						// Removes the memberInfoUser ban from bannedUsers.json
 						GuildMap[guild.ID].BannedUsers = append(GuildMap[guild.ID].BannedUsers[:index], GuildMap[guild.ID].BannedUsers[index+1:]...)
 
 						// Writes to memberInfo.json and bannedUsers.json
@@ -99,7 +99,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 						BannedUsersWrite(GuildMap[guild.ID].BannedUsers, guild.ID)
 
 						// Sends an embed message to bot-log
-						_ = UnbanEmbed(s, user, "", GuildMap[guild.ID].GuildConfig.BotLog.ID)
+						_ = UnbanEmbed(s, memberInfoUser, "", GuildMap[guild.ID].GuildConfig.BotLog.ID)
 						break
 					}
 				}
@@ -277,12 +277,12 @@ func RSSParser(s *discordgo.Session, guildID string) {
 			exists = false
 			storageAuthorLowercase := strings.ToLower(GuildMap[guildID].RssThreads[j].Author)
 
-			if strings.Contains(itemTitleLowercase, GuildMap[guildID].RssThreads[j].Thread) &&
+			if strings.Contains(itemTitleLowercase, GuildMap[guildID].RssThreads[j].Title) &&
 				strings.Contains(itemAuthorLowercase, storageAuthorLowercase) {
 
 				for k := 0; k < len(GuildMap[guildID].RssThreadChecks); k++ {
-					if GuildMap[guildID].RssThreadChecks[k].Thread == GuildMap[guildID].RssThreads[j].Thread &&
-						GuildMap[guildID].RssThreadChecks[k].ChannelID == GuildMap[guildID].RssThreads[j].Channel {
+					if GuildMap[guildID].RssThreadChecks[k].Thread == GuildMap[guildID].RssThreads[j].Title &&
+						GuildMap[guildID].RssThreadChecks[k].ChannelID == GuildMap[guildID].RssThreads[j].ChannelID {
 						exists = true
 						break
 					}
@@ -290,9 +290,9 @@ func RSSParser(s *discordgo.Session, guildID string) {
 
 				if !exists {
 					// Posts latest sub episode thread and pins/unpins
-					valid := RssThreadsTimerWrite(GuildMap[guildID].RssThreads[j].Thread, t, GuildMap[guildID].RssThreads[j].Channel, guildID)
+					valid := RssThreadsTimerWrite(GuildMap[guildID].RssThreads[j].Title, t, GuildMap[guildID].RssThreads[j].ChannelID, guildID)
 					if valid {
-						message, err := s.ChannelMessageSend(GuildMap[guildID].RssThreads[j].Channel, item.Link)
+						message, err := s.ChannelMessageSend(GuildMap[guildID].RssThreads[j].ChannelID, item.Link)
 						if err != nil {
 							_, _ = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 							continue
@@ -333,10 +333,6 @@ func RSSParser(s *discordgo.Session, guildID string) {
 // Adds the voice role whenever a user joins the config voice chat
 func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 
-	var voiceChannels []VoiceCha
-	var noRemovalRoles []Role
-	var dontRemove bool
-
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -348,6 +344,10 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 	if v.GuildID == "" {
 		return
 	}
+
+	var voiceChannels []VoiceCha
+	var noRemovalRoles []Role
+	var dontRemove bool
 
 	MapMutex.Lock()
 	if len(GuildMap[v.GuildID].GuildConfig.VoiceChas) == 0 {
@@ -427,6 +427,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if (m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID)) && m.Author.ID == "66207186417627136" {
+
 		MapMutex.Lock()
 		guildBotLog := GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		MapMutex.Unlock()
@@ -491,6 +492,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if (m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID)) && m.Author.ID == "365245718866427904" {
+
 		MapMutex.Lock()
 		guildBotLog := GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		MapMutex.Unlock()
@@ -590,7 +592,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
-// If there's a manual ban handle it correctly
+// If there's a manual ban handle it
 func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
 
 	if e.GuildID == "" {
@@ -672,9 +674,8 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 	}
 }
 
-// Sends a message to a channel to log whenever a user joins. Intended use was to catch spambots
+// Sends a message to a channel to log whenever a user joins. Intended use was to catch spambots for r/anime
 func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
-	var creationDate time.Time
 
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
@@ -687,6 +688,8 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	if u.GuildID == "" {
 		return
 	}
+
+	var creationDate time.Time
 
 	creationDate, err := CreationTime(u.User.ID)
 	if err != nil {
@@ -722,16 +725,6 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 // Sends a message to suspected spambots to verify and bans them immediately after. Only does it for accounts younger than 3 days
 func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
-	var (
-		creationDate time.Time
-		now          time.Time
-
-		temp    BannedUsers
-		tempMem UserInfo
-
-		dmMessage string
-	)
-
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -744,11 +737,21 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
+	var (
+		creationDate time.Time
+		now          time.Time
+
+		temp    BannedUsers
+		tempMem UserInfo
+
+		dmMessage string
+	)
+
 	MapMutex.Lock()
 	guildBotLog := GuildMap[u.GuildID].GuildConfig.BotLog.ID
 	MapMutex.Unlock()
 
-	// Fetches date of account creation and checks if it's younger than 3 days
+	// Fetches date of account creation and checks if it's younger than 14 days
 	creationDate, err := CreationTime(u.User.ID)
 	if err != nil {
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
@@ -778,7 +781,6 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 			return
 		}
 	}
-	MapMutex.Unlock()
 
 	// Checks if they're using a default avatar
 	if u.User.Avatar != "" {
@@ -789,7 +791,6 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	temp.ID = u.User.ID
 	temp.User = u.User.Username
 	temp.UnbanDate = time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
-	MapMutex.Lock()
 	for index, val := range GuildMap[u.GuildID].BannedUsers {
 		if val.ID == u.User.ID {
 			GuildMap[u.GuildID].BannedUsers = append(GuildMap[u.GuildID].BannedUsers[:index], GuildMap[u.GuildID].BannedUsers[index+1:]...)

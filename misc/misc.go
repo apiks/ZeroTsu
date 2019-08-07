@@ -2,6 +2,8 @@ package misc
 
 import (
 	"fmt"
+	"io"
+	"log"
 	"math"
 	"net/http"
 	"regexp"
@@ -177,7 +179,7 @@ func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
 	var err error
 
 	if len(messageSlice) < 2 {
-		err = fmt.Errorf("Error: No @user, userID or username#discrim detected.")
+		err = fmt.Errorf("error: No @user, userID or username#discrim detected")
 		return "", err
 	}
 
@@ -215,8 +217,8 @@ func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
 	if strings.Contains(userID, "#") {
 		splitUser := strings.SplitN(userID, "#", 2)
 		if len(splitUser) < 2 {
-			err = fmt.Errorf("Error: Invalid user. You're trying to username#discrim with spaces in the username." +
-				" This command does not support that. Please use an ID.")
+			err = fmt.Errorf("error: Invalid user. You're trying to username#discrim with spaces in the username." +
+				" This command does not support that. Please use an ID")
 			return userID, err
 		}
 		MapMutex.Lock()
@@ -237,7 +239,7 @@ func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
 	}
 	_, err = strconv.ParseInt(userID, 10, 64)
 	if len(userID) < 17 || err != nil {
-		err = fmt.Errorf("Error: Invalid user.")
+		err = fmt.Errorf("error: cannot parse user")
 		return userID, err
 	}
 	return userID, err
@@ -352,8 +354,8 @@ func GetBannedUsers() {
 				if err != nil {
 					date, err = time.Parse("2006-01-02 15:04:05", user.UnbanDate)
 					if err != nil {
-						fmt.Println("in getBannedUsers date err")
-						fmt.Println(err)
+						log.Println("in getBannedUsers date err")
+						log.Println(err)
 						continue
 					}
 				}
@@ -384,21 +386,19 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 		mentionRegex := regexp.MustCompile(`(?m)<@!?\d+>`)
 		userMentionCheck = mentionRegex.FindAllString(m, -1)
 		if userMentionCheck != nil {
+			MapMutex.Lock()
 			for i := range userMentionCheck {
 				userID = strings.TrimPrefix(userMentionCheck[i], "<@")
 				userID = strings.TrimPrefix(userID, "!")
 				userID = strings.TrimSuffix(userID, ">")
 
 				// Checks first in memberInfo. Only checks serverside if it doesn't exist. Saves performance
-				MapMutex.Lock()
 				if len(GuildMap[guildID].MemberInfoMap) != 0 {
 					if _, ok := GuildMap[guildID].MemberInfoMap[userID]; ok {
 						mentions += " " + strings.ToLower(GuildMap[guildID].MemberInfoMap[userID].Nickname)
-						MapMutex.Unlock()
 						continue
 					}
 				}
-				MapMutex.Unlock()
 
 				// If user wasn't found in memberInfo with that username+discrim combo then fetch manually from Discord and then replace mentions with nick
 				user, err := s.State.Member(guildID, userID)
@@ -409,6 +409,7 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 					m = strings.Replace(m, userMentionCheck[i], fmt.Sprintf("@%v", user.Nick), -1)
 				}
 			}
+			MapMutex.Unlock()
 		}
 	}
 
