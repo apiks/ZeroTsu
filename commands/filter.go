@@ -20,13 +20,6 @@ var (
 // Handles filter in an onMessage basis
 func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
-	var (
-		mLowercase    string
-		badWordsSlice []string
-		badWordExists bool
-		removals      string
-	)
-
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -58,6 +51,13 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	misc.MapMutex.Unlock()
+
+	var (
+		mLowercase    string
+		badWordsSlice []string
+		badWordExists bool
+		removals      string
+	)
 
 	mLowercase = strings.ToLower(m.Content)
 
@@ -114,13 +114,6 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 // Handles filter in an onEdit basis
 func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 
-	var (
-		mLowercase    string
-		badWordsSlice []string
-		badWordExists bool
-		removals      string
-	)
-
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -152,6 +145,13 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 		return
 	}
 	misc.MapMutex.Unlock()
+
+	var (
+		mLowercase    string
+		badWordsSlice []string
+		badWordExists bool
+		removals      string
+	)
 
 	mLowercase = strings.ToLower(m.Content)
 
@@ -208,8 +208,6 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 // Filters reactions that contain a filtered phrase
 func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 
-	var badReactExists bool
-
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -241,6 +239,8 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 		return
 	}
 	misc.MapMutex.Unlock()
+
+	var badReactExists bool
 
 	// Checks if the react should be filtered
 	badReactExists = isFilteredReact(s, r)
@@ -289,13 +289,13 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 		mentionRegex := regexp.MustCompile(`(?m)<@!?\d+>`)
 		mentionCheck = mentionRegex.FindAllString(mLowercase, -1)
 		if mentionCheck != nil {
+			misc.MapMutex.Lock()
 			for _, mention := range mentionCheck {
 				userID = strings.TrimPrefix(mention, "<@")
 				userID = strings.TrimPrefix(userID, "!")
 				userID = strings.TrimSuffix(userID, ">")
 
 				// Checks first in memberInfo. Only checks serverside if it doesn't exist. Saves performance
-				misc.MapMutex.Lock()
 				if len(misc.GuildMap[m.GuildID].MemberInfoMap) != 0 {
 					if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
 						mentions += " " + strings.ToLower(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Nickname)
@@ -303,7 +303,6 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 						continue
 					}
 				}
-				misc.MapMutex.Unlock()
 
 				// If user wasn't found in memberInfo with that username+discrim combo then fetch manually from Discord
 				user, err := s.State.Member(m.GuildID, userID)
@@ -314,6 +313,7 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 					mentions += " " + strings.ToLower(user.Nick)
 				}
 			}
+			misc.MapMutex.Unlock()
 		}
 	}
 
@@ -339,15 +339,14 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 			}
 		}
 	}
-	misc.MapMutex.Unlock()
 
 	// If a bad phrase exists return true to filter it
 	if len(badPhraseSlice) != 0 {
+		misc.MapMutex.Unlock()
 		return true, badPhraseSlice
 	}
 
 	// Iterates through all of the message requirements to see if the message follows a set requirement {
-	misc.MapMutex.Lock()
 	for i, requirement := range misc.GuildMap[m.GuildID].MessageRequirements {
 		if requirement.Channel != m.ChannelID {
 			continue
@@ -872,10 +871,8 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 		misc.MapMutex.Unlock()
 		return
 	}
-	misc.MapMutex.Unlock()
 
 	// Counter for how many rapidly sent user messages a user has
-	misc.MapMutex.Lock()
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
 	if spamFilterMap[m.Author.ID] < 4 {
@@ -916,14 +913,6 @@ func SpamFilterTimer(s *discordgo.Session, e *discordgo.Ready) {
 		}
 		misc.MapMutex.Unlock()
 	}
-}
-
-// Filters images from the images folder with a tolerance level of 25k
-func ImageFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
-
-	// Fetches any image links containing .png
-	//urlRegex := regexp.MustCompile(`(?mi)(http[a-zA-Z]?://+)?.+/.+.png`)
-	//urls := urlRegex.FindAllString(m.Content, -1)
 }
 
 // Adds filter commands to the commandHandler

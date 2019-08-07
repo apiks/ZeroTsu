@@ -15,9 +15,6 @@ import (
 // Adds to message count on every message for that channel
 func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 
-	var channelStatsVar misc.Channel
-	t := time.Now()
-
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -29,6 +26,9 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.GuildID == "" {
 		return
 	}
+
+	var channelStatsVar misc.Channel
+	t := time.Now()
 
 	misc.MapMutex.Lock()
 	if misc.GuildMap[m.GuildID] == nil {
@@ -335,7 +335,7 @@ func OnMemberJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	misc.MapMutex.Unlock()
 }
 
-// Removes 1 from User Change on member removal and also resets variables
+// Removes 1 from User Change on member removal
 func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
@@ -352,7 +352,6 @@ func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 	t := time.Now()
 	misc.MapMutex.Lock()
 	misc.GuildMap[u.GuildID].UserChangeStats[t.Format(misc.DateFormat)]--
-	misc.WriteMemberInfo(misc.GuildMap[u.GuildID].MemberInfoMap, u.GuildID)
 	misc.MapMutex.Unlock()
 }
 
@@ -479,4 +478,3 @@ func init() {
 		category: "stats",
 	})
 }
-
