@@ -689,8 +689,6 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
-	var creationDate time.Time
-
 	creationDate, err := CreationTime(u.User.ID)
 	if err != nil {
 
@@ -773,8 +771,14 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
-	// Checks if the user is verified
 	MapMutex.Lock()
+
+	// Initializes user if he's not in memberInfo
+	if _, ok := GuildMap[u.GuildID].MemberInfoMap[u.User.ID]; !ok {
+		InitializeUser(u.Member, u.GuildID)
+	}
+
+	// Checks if the user is verified
 	if _, ok := GuildMap[u.GuildID].MemberInfoMap[u.User.ID]; ok {
 		if GuildMap[u.GuildID].MemberInfoMap[u.User.ID].RedditUsername != "" {
 			MapMutex.Unlock()
@@ -801,9 +805,6 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	BannedUsersWrite(GuildMap[u.GuildID].BannedUsers, u.GuildID)
 
 	// Adds a bool to memberInfo that it's a suspected spambot account in case they try to reverify
-	if _, ok := GuildMap[u.GuildID].MemberInfoMap[u.User.ID]; !ok {
-		InitializeUser(u.Member, u.GuildID)
-	}
 	tempMem = *GuildMap[u.GuildID].MemberInfoMap[u.User.ID]
 	tempMem.SuspectedSpambot = true
 	GuildMap[u.GuildID].MemberInfoMap[u.User.ID] = &tempMem

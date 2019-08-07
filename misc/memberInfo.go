@@ -99,7 +99,6 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	// Pulls info on user if possible
 	user, err := s.GuildMember(e.GuildID, e.User.ID)
 	if err != nil {
-		log.Println(err.Error())
 		return
 	}
 
