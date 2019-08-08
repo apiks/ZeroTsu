@@ -70,5 +70,7 @@ func init() {
 		execute: playingMsgCommand,
 		trigger: "playingmsg",
 		desc:    "Views or changes the current BOT playing message.",
+		elevated: true,
+		admin: true,
 	})
 }
