@@ -52,18 +52,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls info on user
 	userMem, err := s.State.Member(m.GuildID, userID)
 	if err != nil {
-		userMem, err = s.GuildMember(m.GuildID, userID)
-		if err != nil {
-			_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in the server. Cannot verify user until they rejoin the server.")
-			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-				if err != nil {
-					return
-				}
-				return
-			}
-			return
-		}
+		userMem, _ = s.GuildMember(m.GuildID, userID)
 	}
 
 	// Pulls the reddit username from the third parameter
@@ -78,7 +67,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Add reddit username in map
 	misc.MapMutex.Lock()
-	if misc.GuildMap[m.GuildID].MemberInfoMap[userID] != nil {
+	if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
 
 		// Stores time of verification
 		t := time.Now()
@@ -101,6 +90,19 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Sets verification variables
 		misc.GuildMap[m.GuildID].MemberInfoMap[userID].RedditUsername = redditUsername
 		misc.GuildMap[m.GuildID].MemberInfoMap[userID].VerifiedDate = ver
+	} else {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in the server _and_ MemberInfo. Cannot verify user until they rejoin the server.")
+		if err != nil {
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+			if err != nil {
+				misc.MapMutex.Unlock()
+				return
+			}
+			misc.MapMutex.Unlock()
+			return
+		}
+		misc.MapMutex.Unlock()
+		return
 	}
 
 	// Writes modified memberInfo map to storage

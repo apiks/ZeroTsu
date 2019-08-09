@@ -38,46 +38,42 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
 
-	// Pull channel info
-	channel, err := s.State.Channel(m.ChannelID)
-	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
-		return
-	}
-
 	// Sets channel params if it didn't exist before in database
 	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[m.GuildID].ChannelStats[m.ChannelID]; !ok {
-		// Fetches all guild users
-		guild, err := s.Guild(m.GuildID)
+		// Fetches all guild info
+		guild, err := s.State.Guild(m.GuildID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+			guild, err = s.Guild(m.GuildID)
 			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+				if err != nil {
+					misc.MapMutex.Unlock()
+					return
+				}
 				misc.MapMutex.Unlock()
 				return
 			}
-			misc.MapMutex.Unlock()
-			return
 		}
-		// Fetches all server roles
-		roles, err := s.GuildRoles(m.GuildID)
+		// Fetches channel info
+		channel, err := s.State.Channel(m.ChannelID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+			channel, err = s.Channel(m.ChannelID)
 			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+				if err != nil {
+					misc.MapMutex.Unlock()
+					return
+				}
 				misc.MapMutex.Unlock()
 				return
 			}
-			misc.MapMutex.Unlock()
-			return
 		}
 
 		channelStatsVar.ChannelID = channel.ID
 		channelStatsVar.Name = channel.Name
 		channelStatsVar.RoleCount = make(map[string]int)
-		channelStatsVar.RoleCount[channel.Name] = misc.GetRoleUserAmount(guild, roles, channel.Name)
+		channelStatsVar.RoleCount[channel.Name] = misc.GetRoleUserAmount(guild, guild.Roles, channel.Name)
 
 		// Removes role stat for channels without associated roles. Else turns bool to true
 		if channelStatsVar.RoleCount[channel.Name] == 0 {
@@ -184,14 +180,17 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	}
 	misc.MapMutex.Unlock()
 
-	// Pull guild info
+	// Fetches all guild info
 	guild, err := s.State.Guild(m.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+		guild, err = s.Guild(m.GuildID)
 		if err != nil {
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
 			return
 		}
-		return
 	}
 
 	// Adds the channels and their stats to message and formats it

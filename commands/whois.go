@@ -54,18 +54,20 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Fetches user from server if possible
-	mem, err := s.State.Member(m.GuildID, userID)
-	if err != nil {
-		mem, err = s.GuildMember(m.GuildID, userID)
-		if err != nil {
-			isInsideGuild = false
-		}
-	}
 	// Checks if user is in MemberInfo and assigns to user variable. Else initializes user.
 	misc.MapMutex.Lock()
 	user, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]
 	if !ok {
+
+		// Fetches user from server if possible
+		mem, err := s.State.Member(m.GuildID, userID)
+		if err != nil {
+			mem, err = s.GuildMember(m.GuildID, userID)
+			if err != nil {
+				isInsideGuild = false
+			}
+		}
+
 		if mem == nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot whois until user joins the server.")
 			if err != nil {
@@ -336,17 +338,19 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Fetches user from server if possible
-	mem, err := s.State.Member(m.GuildID, userID)
-	if err != nil {
-		mem, err = s.GuildMember(m.GuildID, userID)
-		if err != nil {
-		}
-	}
 	// Checks if user is in MemberInfo and assigns to user variable. Else initializes user.
 	misc.MapMutex.Lock()
 	user, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]
 	if !ok {
+
+		// Fetches user from server if possible
+		mem, err := s.State.Member(m.GuildID, userID)
+		if err != nil {
+			mem, err = s.GuildMember(m.GuildID, userID)
+			if err != nil {
+			}
+		}
+
 		if mem == nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot timestamp until they rejoin server.")
 			if err != nil {
