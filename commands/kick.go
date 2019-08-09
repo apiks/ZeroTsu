@@ -26,8 +26,8 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(m.Content, " ", 3)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"kick [@user, userID, or username#discrim] [reason]` format.\n\n"+
-			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"kick [@user, userID, or username#discrim] [reason]*` format.\n\n* is optional"+
+			"\n\nNote: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
 			_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -48,7 +48,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Checks if the reason contains a mention and finds the actual name instead of ID
 		reason = misc.MentionParser(s, reason, m.GuildID)
 	} else {
-		reason = "[No reason]"
+		reason = "[No reason given]"
 	}
 
 	// Pulls info on user
