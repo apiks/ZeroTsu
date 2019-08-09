@@ -46,21 +46,33 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}()
 
+	if m == nil {
+		return
+	}
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
 	if m.Author.Bot {
 		return
 	}
-	if len(m.Message.Content) == 0 {
+	if m.Message.Content == "" {
 		return
 	}
 
+	var (
+		guildPrefix       string
+		guildVoteModule   bool
+		guildWaifuModule  bool
+		guildReactsModule bool
+	)
+
 	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildVoteModule := misc.GuildMap[m.GuildID].GuildConfig.VoteModule
-	guildWaifuModule := misc.GuildMap[m.GuildID].GuildConfig.WaifuModule
-	guildReactsModule := misc.GuildMap[m.GuildID].GuildConfig.ReactsModule
+	if _, ok := misc.GuildMap[m.GuildID]; ok {
+		guildPrefix = misc.GuildMap[m.GuildID].GuildConfig.Prefix
+		guildVoteModule = misc.GuildMap[m.GuildID].GuildConfig.VoteModule
+		guildWaifuModule = misc.GuildMap[m.GuildID].GuildConfig.WaifuModule
+		guildReactsModule = misc.GuildMap[m.GuildID].GuildConfig.ReactsModule
+	}
 	misc.MapMutex.Unlock()
 
 	if m.Message.Content[0:len(guildPrefix)] != guildPrefix {
