@@ -100,7 +100,15 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		misc.MapMutex.Unlock()
 	}
 	if cmd.admin {
-		admin, _ := MemberIsAdmin(s, m.GuildID, m.Author.ID, discordgo.PermissionAdministrator)
+		mem, err := s.State.Member(m.GuildID, m.Author.ID)
+		if err != nil {
+			mem, err = s.GuildMember(m.GuildID, m.Author.ID)
+			if err != nil {
+				return
+			}
+		}
+
+		admin, _ := MemberIsAdmin(s, m.GuildID, mem, discordgo.PermissionAdministrator)
 		if !admin {
 			return
 		}
