@@ -205,7 +205,7 @@ func init() {
 	add(&command{
 		execute:  kickCommand,
 		trigger:  "kick",
-		aliases:  []string{"k", "yeet"},
+		aliases:  []string{"k", "yeet", "yut"},
 		desc:     "Kicks a user from the server and logs reason.",
 		elevated: true,
 		category: "punishment",
