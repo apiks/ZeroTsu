@@ -271,8 +271,19 @@ func RSSParser(s *discordgo.Session, guildID string) {
 
 	// Iterates through each feed item to see if it finds something from storage
 	for _, item := range feed.Items {
-		itemTitleLowercase := strings.ToLower(item.Title)
-		itemAuthorLowercase := strings.ToLower(item.Author.Name)
+
+		var (
+			itemTitleLowercase string
+			itemAuthorLowercase string
+		)
+
+		itemTitleLowercase = strings.ToLower(item.Title)
+		if item.Author != nil {
+			if item.Author.Name != "" {
+				itemAuthorLowercase = strings.ToLower(item.Author.Name)
+			}
+		}
+
 		for j := 0; j < len(GuildMap[guildID].RssThreads); j++ {
 			exists = false
 			storageAuthorLowercase := strings.ToLower(GuildMap[guildID].RssThreads[j].Author)
