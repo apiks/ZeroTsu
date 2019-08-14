@@ -420,7 +420,7 @@ func dailyStats(s *discordgo.Session, e *discordgo.Ready) {
 		guildBotLog := misc.GuildMap[guild.ID].GuildConfig.BotLog.ID
 		guildDailyStats := misc.GuildMap[guild.ID].GuildConfig.DailyStats
 
-		if hour == 16 && minute == 04 && !guildDailyStats {
+		if hour == 16 && minute == 10 && !guildDailyStats {
 			_, err := s.ChannelMessageSend(guildBotLog, fmt.Sprintf("Update for **%v %v, %v**", t.Month(), t.Day(), t.Year()))
 			if err != nil {
 				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
