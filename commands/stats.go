@@ -36,10 +36,8 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
 
 	// Sets channel params if it didn't exist before in database
-	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[m.GuildID].ChannelStats[m.ChannelID]; !ok {
 		// Fetches all guild info
 		guild, err := s.State.Guild(m.GuildID)
@@ -438,6 +436,19 @@ func dailyStats(s *discordgo.Session, e *discordgo.Ready) {
 			message.Content = guildPrefix + "stats"
 			message.ChannelID = guildBotLog
 			guildDailyStats = true
+
+			// Check for when stats don't display possibly due to malformed message
+			if author.ID == "" || message.GuildID == "" ||
+				message.Author == nil || message.Content == "" ||
+				message.ChannelID == "" {
+				log.Println("ERROR: MALFORMED DAILY STATS MESSAGE")
+				log.Println("author.ID: " + author.ID)
+				log.Println("message.GuildID: " + message.GuildID)
+				log.Println("message.Author: " + message.Author.String())
+				log.Println("message.Content: " + message.Content)
+				log.Println("message.ChannelID: " + message.ChannelID)
+			}
+
 			misc.MapMutex.Unlock()
 			showStats(s, &message)
 			misc.MapMutex.Lock()

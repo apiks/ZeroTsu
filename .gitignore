@@ -29,5 +29,6 @@ database/*
 # ZeroTsu ELF
 ZeroTsu
 
-# Config of app secrets
+# Configs of dev branch
 configsecrets.json
+config.json

@@ -204,8 +204,8 @@ func LoadGuilds() {
 		if err != nil {
 			log.Panicln(err)
 		}
-		MapMutex.Lock()
 
+		MapMutex.Lock()
 		GuildMap[folderName] = &guildInfo{
 			GuildID:             folderName,
 			GuildConfig:         GuildSettings{Prefix: ".", VoteModule: false, WaifuModule: false, ReactsModule: true, FileFilter: false, PingMessage: "Hmm? Do you want some honey, darling? Open wide~~"},
