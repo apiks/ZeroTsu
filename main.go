@@ -8,10 +8,10 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/gorilla/mux"
 
-	"github.com/r-anime/ZeroTsu/commands"
-	"github.com/r-anime/ZeroTsu/config"
-	"github.com/r-anime/ZeroTsu/misc"
-	"github.com/r-anime/ZeroTsu/web"
+	"./commands"
+	"./config"
+	"./misc"
+	"./web"
 )
 
 // Initializes and starts Bot and website
