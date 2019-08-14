@@ -418,9 +418,9 @@ func dailyStats(s *discordgo.Session, e *discordgo.Ready) {
 
 		guildPrefix := misc.GuildMap[guild.ID].GuildConfig.Prefix
 		guildBotLog := misc.GuildMap[guild.ID].GuildConfig.BotLog.ID
-		guildDailyStats := misc.GuildMap[guild.ID].GuildConfig.DailyStats
 
-		if hour == 16 && minute == 10 && !guildDailyStats {
+		if hour == 16 && minute == 55 {
+
 			_, err := s.ChannelMessageSend(guildBotLog, fmt.Sprintf("Update for **%v %v, %v**", t.Month(), t.Day(), t.Year()))
 			if err != nil {
 				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -435,7 +435,6 @@ func dailyStats(s *discordgo.Session, e *discordgo.Ready) {
 			message.Author = &author
 			message.Content = guildPrefix + "stats"
 			message.ChannelID = guildBotLog
-			guildDailyStats = true
 
 			// Check for when stats don't display possibly due to malformed message
 			if author.ID == "" || message.GuildID == "" ||
@@ -452,11 +451,6 @@ func dailyStats(s *discordgo.Session, e *discordgo.Ready) {
 			misc.MapMutex.Unlock()
 			showStats(s, &message)
 			misc.MapMutex.Lock()
-			misc.GuildMap[guild.ID].GuildConfig.DailyStats = true
-			misc.GuildSettingsWrite(misc.GuildMap[guild.ID].GuildConfig, guild.ID)
-		}
-		if hour == 0 && minute == 0 && guildDailyStats {
-			misc.GuildMap[guild.ID].GuildConfig.DailyStats = false
 			misc.GuildSettingsWrite(misc.GuildMap[guild.ID].GuildConfig, guild.ID)
 		}
 	}
@@ -470,7 +464,7 @@ func dailyStats(s *discordgo.Session, e *discordgo.Ready) {
 
 // Daily stat update timer
 func DailyStatsTimer(s *discordgo.Session, e *discordgo.Ready) {
-	for range time.NewTicker(40 * time.Second).C {
+	for range time.NewTicker(45 * time.Second).C {
 		dailyStats(s, e)
 	}
 }
