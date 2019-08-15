@@ -49,10 +49,16 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m == nil {
 		return
 	}
+	if m.Author == nil {
+		return
+	}
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
 	if m.Author.Bot {
+		return
+	}
+	if m.Message == nil {
 		return
 	}
 	if m.Message.Content == "" {
