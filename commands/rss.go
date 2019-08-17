@@ -290,13 +290,18 @@ func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
-	_, err := s.ChannelMessageSend(m.ChannelID, message)
-	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+	for i := 0; i < len(splitMessage); i++ {
+		_, err := s.ChannelMessageSend(m.ChannelID, splitMessage[i])
 		if err != nil {
-			return
+			_, err := s.ChannelMessageSend(m.ChannelID, "Error: cannot send rss message.")
+			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+				if err != nil {
+					return
+				}
+				return
+			}
 		}
-		return
 	}
 }
 
