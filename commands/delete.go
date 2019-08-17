@@ -52,9 +52,9 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 	for rssLoopFlag {
 		if rssTimerFlag {
 			for _, rssTimer := range misc.GuildMap[m.GuildID].RssThreadChecks {
-				if rssTimer.ChannelID == channelID {
+				if rssTimer.Thread.ChannelID == channelID {
 					rssTimerFlag = true
-					err := misc.RssThreadsTimerRemove(rssTimer.Thread, rssTimer.Date, rssTimer.ChannelID, m.GuildID)
+					err := misc.RssThreadsTimerRemove(rssTimer.Thread, rssTimer.Date, m.GuildID)
 					if err != nil {
 						misc.MapMutex.Unlock()
 						misc.CommandErrorHandler(s, m, err, guildBotLog)
@@ -71,9 +71,9 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		for _, thread := range misc.GuildMap[m.GuildID].RssThreads {
-			if thread.Channel == channelID {
+			if thread.ChannelID == channelID {
 				rssLoopFlag = true
-				_, err := misc.RssThreadsRemove(thread.Thread, thread.Author, m.GuildID)
+				err := misc.RssThreadsRemove(thread.Subreddit, thread.Title, thread.Author, thread.PostType, m.GuildID)
 				if err != nil {
 					misc.MapMutex.Unlock()
 					misc.CommandErrorHandler(s, m, err, guildBotLog)

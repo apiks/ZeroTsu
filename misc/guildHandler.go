@@ -63,7 +63,6 @@ type GuildSettings struct {
 	WaifuModule         bool       `json:"WaifuModule"`
 	ReactsModule        bool       `json:"ReactsModule"`
 	FileFilter          bool       `json:"FileFilter"`
-	DailyStats          bool       `json:"DailyStats"`
 	PingMessage         string     `json:"PingMessage"`
 }
 
@@ -123,15 +122,18 @@ type MessRequirement struct {
 }
 
 type RssThread struct {
-	Thread  string `json:"Thread"`
-	Channel string `json:"Channel"`
-	Author  string `json:"Author"`
+	Subreddit string `json:"Subreddit"`
+	Title     string `json:"Title"`
+	Author    string `json:"Author"`
+	Pin       bool   `json:"Pin"`
+	PostType  string `json:"PostType"`
+	ChannelID string `json:"ChannelID"`
 }
 
 type RssThreadCheck struct {
-	Thread    string    `json:"Thread"`
+	Thread    RssThread `json:"Thread"`
 	Date      time.Time `json:"Date"`
-	ChannelID string    `json:"ChannelID"`
+	GUID	  string	`json:"GUID"`
 }
 
 type Emoji struct {
@@ -775,140 +777,128 @@ func SpoilerRolesDelete(roleID string, guildID string) {
 	_ = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/spoilerRoles.json", guildID), marshaledStruct, 0644)
 }
 
-// Writes string "thread" to rssThreadsCheck.json
-func RssThreadsWrite(thread string, channel string, author string, guildID string) (bool, error) {
+// Writes rss info to rssThreads.json
+func RssThreadsWrite(subreddit, author, title, postType, channelID, guildID string, pin bool) error {
 
-	thread = strings.ToLower(thread)
-
-	var (
-		threadStruct = RssThread{thread, channel, author}
-		err          error
-	)
-
-	// Appends the new thread to a slice of all of the old ones if it doesn't exist
-	for i := 0; i < len(GuildMap[guildID].RssThreads); i++ {
-		if GuildMap[guildID].RssThreads[i].Thread == threadStruct.Thread && GuildMap[guildID].RssThreads[i].Channel == threadStruct.Channel {
-			return true, err
+	// Checks if a thread with these settings exist already
+	for _, thread := range GuildMap[guildID].RssThreads {
+		if subreddit == thread.Subreddit && title == thread.Title &&
+			postType == thread.PostType {
+			return fmt.Errorf("Error: This RSS setting already exists.")
 		}
 	}
 
-	GuildMap[guildID].RssThreads = append(GuildMap[guildID].RssThreads, threadStruct)
+	// Appends the thread to the guild's threads
+	GuildMap[guildID].RssThreads = append(GuildMap[guildID].RssThreads, RssThread{subreddit, title, author, pin, postType, channelID})
 
-	// Turns that struct slice into bytes again to be ready to written to file
+	// Turns that struct slice into bytes ready to written to file
 	marshaledStruct, err := json.MarshalIndent(GuildMap[guildID].RssThreads, "", "    ")
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	// Writes to file
 	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/rssThreads.json", guildID), marshaledStruct, 0644)
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	return false, err
+	return nil
 }
 
-// Removes string "thread" from rssThreads.json
-func RssThreadsRemove(thread string, author string, guildID string) (bool, error) {
+// Removes a setting from rssThreads.json
+func RssThreadsRemove(subreddit, title, author, postType, guildID string) error {
 
-	thread = strings.ToLower(thread)
+	var threadExists bool
 
-	var (
-		threadExists = false
-		err          error
-	)
+	// Deletes the thread if it finds it, else throw error
+	for i := 0; i < len(GuildMap[guildID].RssThreads); i++ {
 
-	// Deletes the thread if it finds it exists
-	for i, readThread := range GuildMap[guildID].RssThreads {
-		if readThread.Thread == thread {
-			threadExists = true
-			if author == "" {
-				GuildMap[guildID].RssThreads = GuildMap[guildID].RssThreads[:i+copy(GuildMap[guildID].RssThreads[i:], GuildMap[guildID].RssThreads[i+1:])]
-				break
-			} else {
-				if readThread.Author == author {
-					GuildMap[guildID].RssThreads = GuildMap[guildID].RssThreads[:i+copy(GuildMap[guildID].RssThreads[i:], GuildMap[guildID].RssThreads[i+1:])]
-					break
-				} else {
-					threadExists = false
+		if subreddit == GuildMap[guildID].RssThreads[i].Subreddit {
+			if title != "" {
+				if GuildMap[guildID].RssThreads[i].Title != title {
+					continue
 				}
 			}
+			if author != "" {
+				if GuildMap[guildID].RssThreads[i].Author != author {
+					continue
+				}
+			}
+			if postType != "" {
+				if GuildMap[guildID].RssThreads[i].PostType != postType {
+					continue
+				}
+			}
+
+			GuildMap[guildID].RssThreads = GuildMap[guildID].RssThreads[:i+copy(GuildMap[guildID].RssThreads[i:], GuildMap[guildID].RssThreads[i+1:])]
+			i--
+			threadExists = true
 		}
 	}
 
 	if !threadExists {
-		return false, err
+		return fmt.Errorf("Error: No such RSS setting exists.")
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.Marshal(GuildMap[guildID].RssThreads)
 	if err != nil {
-		return true, err
+		return err
 	}
 
 	// Writes to file
 	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/rssThreads.json", guildID), marshaledStruct, 0644)
 	if err != nil {
-		return true, err
+		return err
 	}
 
-	return true, err
+	return err
 }
 
-// Writes string "thread" to rssThreadCheck.json. Returns bool depending on success or not
-func RssThreadsTimerWrite(thread string, date time.Time, channelID string, guildID string) bool {
+// Writes an rssThread with a date to rssThreadCheck.json
+func RssThreadsTimerWrite(thread RssThread, date time.Time, GUID, guildID string) error {
 
-	thread = strings.ToLower(thread)
-
-	var threadCheckStruct = RssThreadCheck{thread, date, channelID}
-
-	// Appends the new thread to a slice of all of the old ones if it doesn't exist
-	for p := 0; p < len(GuildMap[guildID].RssThreadChecks); p++ {
-		if GuildMap[guildID].RssThreadChecks[p].Thread == threadCheckStruct.Thread &&
-			GuildMap[guildID].RssThreadChecks[p].ChannelID == threadCheckStruct.ChannelID {
-			return false
+	// Appends the new item to a slice of all of the old ones if it doesn't exist
+	for _, check := range GuildMap[guildID].RssThreadChecks {
+		if check.GUID == guildID {
+			return nil
 		}
 	}
 
-	GuildMap[guildID].RssThreadChecks = append(GuildMap[guildID].RssThreadChecks, threadCheckStruct)
+	GuildMap[guildID].RssThreadChecks = append(GuildMap[guildID].RssThreadChecks, RssThreadCheck{thread, date, GUID})
 
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(GuildMap[guildID].RssThreadChecks, "", "    ")
 	if err != nil {
-		return false
+		return err
 	}
 
 	// Writes to file
 	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/rssThreadCheck.json", guildID), marshaledStruct, 0644)
 	if err != nil {
-		return false
+		return err
 	}
 
-	return true
+	return nil
 }
 
-// Removes string "thread" to rssThreadCheck.json
-func RssThreadsTimerRemove(thread string, date time.Time, channelID string, guildID string) error {
+// Removes rssThread from rssThreadCheck.json
+func RssThreadsTimerRemove(thread RssThread, date time.Time, guildID string) error {
 
-	thread = strings.ToLower(thread)
+	var threadExists bool
 
-	var (
-		threadExists      = false
-		threadCheckStruct = RssThreadCheck{thread, date, channelID}
-	)
-
-	// Deletes the thread if it finds it exists
+	// Deletes the check if it finds it, else throw error
 	for i := 0; i < len(GuildMap[guildID].RssThreadChecks); i++ {
-		if strings.ToLower(GuildMap[guildID].RssThreadChecks[i].Thread) == threadCheckStruct.Thread &&
-			GuildMap[guildID].RssThreadChecks[i].ChannelID == threadCheckStruct.ChannelID {
+		if GuildMap[guildID].RssThreadChecks[i].Thread == thread {
+			GuildMap[guildID].RssThreadChecks = GuildMap[guildID].RssThreadChecks[:i+copy(GuildMap[guildID].RssThreadChecks[i:], GuildMap[guildID].RssThreadChecks[i+1:])]
+			i--
 			threadExists = true
-			GuildMap[guildID].RssThreadChecks = append(GuildMap[guildID].RssThreadChecks[:i], GuildMap[guildID].RssThreadChecks[i+1:]...)
-			break
 		}
 	}
+
 	if !threadExists {
-		return fmt.Errorf("Thread doesn't exist")
+		return nil
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file

@@ -43,9 +43,9 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(30 * time.Second).C {
 
 		// Checks whether it has to post rss thread and handle remindMes
-		MapMutex.Lock()
 		for _, guild := range e.Guilds {
 			RSSParser(s, guild.ID)
+			MapMutex.Lock()
 			remindMeHandler(s, guild.ID)
 
 			// Goes through bannedUsers.json if it's not empty and unbans if needed
@@ -104,8 +104,8 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 					}
 				}
 			}
+			MapMutex.Unlock()
 		}
-		MapMutex.Unlock()
 	}
 }
 
@@ -232,110 +232,151 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 // Pulls the rss thread and prints it
 func RSSParser(s *discordgo.Session, guildID string) {
 
-	var exists bool
-
+	// Checks if there are any rss settings for this guild
+	MapMutex.Lock()
 	if len(GuildMap[guildID].RssThreads) == 0 {
+		MapMutex.Unlock()
 		return
 	}
-
-	// Pulls the feed from /r/anime and puts it in feed variable
-	fp := gofeed.NewParser()
-	fp.Client = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport}, Timeout: time.Minute * 1}
-	feed, err := fp.ParseURL("http://www.reddit.com/r/anime/new/.rss")
-	if err != nil {
-		return
-	}
-	fp.Client = &http.Client{}
+	// Save current threads as a copy so mapMutex isn't taken all the time when checking the feeds
+	rssThreads := GuildMap[guildID].RssThreads
+	rssThreadChecks := GuildMap[guildID].RssThreadChecks
+	bogLogID := GuildMap[guildID].GuildConfig.BotLog.ID
 
 	t := time.Now()
-	hours := time.Hour * 16
+	hours := time.Hour * 1440
 
-	// Removes a thread if more than 16 hours have passed
-	for p := 0; p < len(GuildMap[guildID].RssThreadChecks); p++ {
+	// Removes a thread if more than 60 days have passed from the rss thread checks. This is to keep DB manageable
+	for p := 0; p < len(rssThreadChecks); p++ {
 		// Calculates if it's time to remove
-		dateRemoval := GuildMap[guildID].RssThreadChecks[p].Date.Add(hours)
+		dateRemoval := rssThreadChecks[p].Date.Add(hours)
 		difference := t.Sub(dateRemoval)
 
+		// Removes the fact that the thread had been posted already if it's time
 		if difference > 0 {
-			// Removes the fact that the thread had been posted already
-			err = RssThreadsTimerRemove(GuildMap[guildID].RssThreadChecks[p].Thread, GuildMap[guildID].RssThreadChecks[p].Date, GuildMap[guildID].RssThreadChecks[p].ChannelID, guildID)
+			err := RssThreadsTimerRemove(rssThreadChecks[p].Thread, rssThreadChecks[p].Date, guildID)
 			if err != nil {
-				_, err = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
+				_, err = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
+					MapMutex.Unlock()
 					return
 				}
+				MapMutex.Unlock()
 				return
 			}
 		}
 	}
+	// Updates rssThreadChecks var after the removal
+	rssThreadChecks = GuildMap[guildID].RssThreadChecks
+	MapMutex.Unlock()
 
-	// Iterates through each feed item to see if it finds something from storage
-	for _, item := range feed.Items {
+	// Sets up the feed parser
+	fp := gofeed.NewParser()
+	fp.Client = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport}, Timeout: time.Minute * 1}
 
-		var (
-			itemTitleLowercase string
-			itemAuthorLowercase string
-		)
-
-		itemTitleLowercase = strings.ToLower(item.Title)
-		if item.Author != nil {
-			if item.Author.Name != "" {
-				itemAuthorLowercase = strings.ToLower(item.Author.Name)
+	// Save all feeds early to save performance
+	var subMap = make(map[string]*gofeed.Feed)
+	for _, thread := range rssThreads {
+		if _, ok := subMap[thread.Subreddit]; !ok {
+			// Wait a bit between each parse
+			time.Sleep(250 * time.Millisecond)
+			// Parse feed
+			feed, err := fp.ParseURL(fmt.Sprintf("http://www.reddit.com/r/%v/%v/.rss", thread.Subreddit, thread.PostType))
+			if err != nil {
+				return
 			}
+			subMap[fmt.Sprintf("%v:%v", thread.Subreddit, thread.PostType)] = feed
 		}
+	}
 
-		for j := 0; j < len(GuildMap[guildID].RssThreads); j++ {
-			exists = false
-			storageAuthorLowercase := strings.ToLower(GuildMap[guildID].RssThreads[j].Author)
+	for _, thread := range rssThreads {
 
-			if strings.Contains(itemTitleLowercase, GuildMap[guildID].RssThreads[j].Thread) &&
-				strings.Contains(itemAuthorLowercase, storageAuthorLowercase) {
+		// Get the necessary feed from the subMap
+		feed := subMap[fmt.Sprintf("%v:%v", thread.Subreddit, thread.PostType)]
 
-				for k := 0; k < len(GuildMap[guildID].RssThreadChecks); k++ {
-					if GuildMap[guildID].RssThreadChecks[k].Thread == GuildMap[guildID].RssThreads[j].Thread &&
-						GuildMap[guildID].RssThreadChecks[k].ChannelID == GuildMap[guildID].RssThreads[j].Channel {
-						exists = true
-						break
-					}
+		t = time.Now()
+
+		// Iterates through each feed item to see if it finds something from storage that should be posted
+		for _, item := range feed.Items {
+
+			// Check if this item exists in rssThreadChecks and skips the item if it does
+			var skip = false
+			for _, check := range rssThreadChecks {
+				if check.GUID == item.GUID {
+					skip = true
+					break
 				}
+			}
+			if skip {
+				continue
+			}
 
-				if !exists {
-					// Posts latest sub episode thread and pins/unpins
-					valid := RssThreadsTimerWrite(GuildMap[guildID].RssThreads[j].Thread, t, GuildMap[guildID].RssThreads[j].Channel, guildID)
-					if valid {
-						message, err := s.ChannelMessageSend(GuildMap[guildID].RssThreads[j].Channel, item.Link)
-						if err != nil {
-							_, _ = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
-							continue
-						}
-						pins, err := s.ChannelMessagesPinned(message.ChannelID)
-						if err != nil {
-							_, _ = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
-							continue
-						}
-						if len(pins) != 0 {
-							for _, pin := range pins {
-								if pin.Author.ID == s.State.User.ID {
-									if strings.HasPrefix(strings.ToLower(pin.Content), "https://www.reddit.com/r/anime/comments/") {
-										if strings.Contains(strings.ToLower(pin.Content), "episode") ||
-											strings.Contains(strings.ToLower(pin.Content), "[spoilers]") ||
-											strings.Contains(strings.ToLower(pin.Content), "[rewatch]") {
-											err = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
-											if err != nil {
-												_, _ = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
-												continue
-											}
-										}
-									}
-								}
+			// Save lowercase feed item title
+			var itemTitleLrcase  string
+			itemTitleLrcase = strings.ToLower(item.Title)
+
+			// Check if author is same and skip if not true
+			if thread.Author != "" && item.Author != nil {
+				if strings.ToLower(item.Author.Name) != thread.Author {
+					continue
+				}
+			}
+
+			// Check if the feed item title starts with the set thread title
+			if thread.Title != "" {
+				if !strings.HasPrefix(itemTitleLrcase, thread.Title) {
+					continue
+				}
+			}
+
+			// Writes that thread has been posted
+			MapMutex.Lock()
+			err := RssThreadsTimerWrite(thread, t, item.GUID, guildID)
+			if err != nil {
+				MapMutex.Unlock()
+				_, _ = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))
+				continue
+			}
+			// Updates rssThreadChecks var after the write
+			rssThreadChecks = GuildMap[guildID].RssThreadChecks
+			MapMutex.Unlock()
+
+			// Sends feed item to chat
+			message, err := s.ChannelMessageSend(thread.ChannelID, item.Link)
+			if err != nil {
+				_, _ = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))
+				continue
+			}
+
+			// Pins/unpins the feed items if necessary
+			if !thread.Pin {
+				continue
+			}
+
+			pins, err := s.ChannelMessagesPinned(message.ChannelID)
+			if err != nil {
+				_, _ = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))
+				continue
+			}
+			// Unpins if necessary
+			if len(pins) != 0 {
+				for _, pin := range pins {
+					if pin.Author.ID == s.State.User.ID {
+						if strings.HasPrefix(strings.ToLower(pin.Content), fmt.Sprintf("https://www.reddit.com/r/%v/comments/", thread.Subreddit)) ||
+							strings.HasPrefix(strings.ToLower(pin.Content), fmt.Sprintf("http://www.reddit.com/r/%v/comments/", thread.Subreddit)) {
+							err = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
+							if err != nil {
+								_, _ = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))
+								continue
 							}
 						}
-						err = s.ChannelMessagePin(message.ChannelID, message.ID)
-						if err != nil {
-							_, _ = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
-						}
 					}
 				}
+			}
+			// Pins
+			err = s.ChannelMessagePin(message.ChannelID, message.ID)
+			if err != nil {
+				_, _ = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))
 			}
 		}
 	}
