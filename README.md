@@ -10,7 +10,7 @@
 
 * Punishment system where you can issue warnings, kick or ban people for a set period of time with the bot and log that using the member system, or remove those punishments and unban. Also shows timestamps for all of those. Automatically unbans for temp bans.
 
-* Website verification system for reddit account linking and confirmation before being able to use the server
+* Website verification system for reddit account linking and confirmation before being able to use the server [r/anime only]
 
 * Automated channel creation with various parameters you can give it to make them hidden (opt-in), temporary (auto deletes after a set period of time) and other
 
