@@ -26,8 +26,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	// Load all guild info
+	// Load all guild and shared info
 	misc.LoadGuilds()
+	misc.LoadSharedDB()
 
 	Start()
 

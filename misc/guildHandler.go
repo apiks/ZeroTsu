@@ -15,12 +15,14 @@ import (
 )
 
 var (
-	GuildMap  = make(map[string]*guildInfo)
-	dbPath    = "database/guilds"
-	fileNames = [...]string{"bannedUsers.json", "filters.json", "messReqs.json", "spoilerRoles.json", "rssThreads.json",
+	GuildMap            = make(map[string]*guildInfo)
+	SharedInfo     *sharedInfo
+	dbPath         = "database/guilds"
+	guildFileNames = [...]string{"bannedUsers.json", "filters.json", "messReqs.json", "spoilerRoles.json", "rssThreads.json",
 		"rssThreadCheck.json", "raffles.json", "waifus.json", "waifuTrades.json", "memberInfo.json", "emojiStats.json",
-		"channelStats.json", "userChangeStats.json", "verifiedStats.json", "remindMes.json", "voteInfo.json", "tempCha.json",
+		"channelStats.json", "userChangeStats.json", "verifiedStats.json", "voteInfo.json", "tempCha.json",
 		"reactJoin.json", "guildSettings.json"}
+	sharedFileNames = [...]string{"remindMes.json"}
 )
 
 type guildInfo struct {
@@ -43,11 +45,14 @@ type guildInfo struct {
 	ChannelStats    map[string]*Channel
 	UserChangeStats map[string]int
 	VerifiedStats   map[string]int
-	RemindMes       map[string]*RemindMeSlice
 	VoteInfoMap     map[string]*VoteInfo
 	TempChaMap      map[string]*TempChaInfo
 	ReactJoinMap    map[string]*ReactJoin
 	EmojiRoleMap    map[string][]string
+}
+
+type sharedInfo struct {
+	RemindMes       map[string]*RemindMeSlice
 }
 
 // Guild settings for misc things
@@ -226,7 +231,6 @@ func LoadGuilds() {
 			ChannelStats:        make(map[string]*Channel),
 			UserChangeStats:     make(map[string]int),
 			VerifiedStats:       make(map[string]int),
-			RemindMes:           make(map[string]*RemindMeSlice),
 			VoteInfoMap:         make(map[string]*VoteInfo),
 			TempChaMap:          make(map[string]*TempChaInfo),
 			ReactJoinMap:        make(map[string]*ReactJoin),
@@ -237,6 +241,32 @@ func LoadGuilds() {
 		}
 		MapMutex.Unlock()
 	}
+}
+
+// Loads global shared DBs
+func LoadSharedDB() {
+	// Creates missing "database" and "shared" folder if they don't exist
+	if _, err := os.Stat("database"); os.IsNotExist(err) {
+		os.Mkdir("database", 0777)
+	}
+	if _, err := os.Stat("database/shared"); os.IsNotExist(err) {
+		os.Mkdir("database/shared", 0777)
+	}
+
+	files, err := IOReadDir("database/shared")
+	if err != nil {
+		log.Panicln(err)
+	}
+
+	MapMutex.Lock()
+	SharedInfo = &sharedInfo{
+		RemindMes: make(map[string]*RemindMeSlice),
+	}
+
+	for _, file := range files {
+		LoadSharedDBFile(file)
+	}
+	MapMutex.Unlock()
 }
 
 func LoadGuildFile(guildID string, file string) {
@@ -290,8 +320,6 @@ func LoadGuildFile(guildID string, file string) {
 		if config.Website != "" {
 			_ = json.Unmarshal(infoByte, &GuildMap[guildID].VerifiedStats)
 		}
-	case "remindMes.json":
-		_ = json.Unmarshal(infoByte, &GuildMap[guildID].RemindMes)
 	case "voteInfo.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].VoteInfoMap)
 	case "tempCha.json":
@@ -302,6 +330,21 @@ func LoadGuildFile(guildID string, file string) {
 		}
 	case "guildSettings.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].GuildConfig)
+	}
+}
+
+func LoadSharedDBFile(file string) {
+	// Reads all the info from the file and puts them in infoByte as bytes
+	infoByte, err := ioutil.ReadFile(fmt.Sprintf("database/shared/%v", file))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	// Takes the data and puts it into the appropriate field
+	switch file {
+	case "remindMes.json":
+		_ = json.Unmarshal(infoByte, &SharedInfo.RemindMes)
 	}
 }
 
@@ -396,21 +439,21 @@ func VerifiedStatsWrite(verifiedStats map[string]int, guildID string) error {
 }
 
 // Writes RemindMe notes to remindMes.json
-func RemindMeWrite(remindMe map[string]*RemindMeSlice, guildID string) (bool, error) {
+func RemindMeWrite(remindMe map[string]*RemindMeSlice) error {
 
 	// Turns that slice into bytes to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(remindMe, "", "    ")
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/remindMes.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile("database/shared/remindMes.json", marshaledStruct, 0644)
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	return false, err
+	return nil
 }
 
 // Writes vote info to voteInfo.json
@@ -946,14 +989,31 @@ func IOReadDir(root string) ([]string, error) {
 	return files, nil
 }
 
-// Initializes a guild's DB files
+// Initializes BOT DB files
 func initDB(guildID string) {
+
 	path := fmt.Sprintf("%v/%v", dbPath, guildID)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		os.Mkdir(path, 0777)
 	}
-	for _, name := range fileNames {
+	for _, name := range guildFileNames {
 		file, err := os.OpenFile(fmt.Sprintf("%v/%v/%v", dbPath, guildID, name), os.O_RDONLY|os.O_CREATE, 0666)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		err = file.Close()
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+	}
+
+	if _, err := os.Stat("database/shared"); os.IsNotExist(err) {
+		os.Mkdir(path, 0777)
+	}
+	for _, name := range sharedFileNames {
+		file, err := os.OpenFile(fmt.Sprintf("database/shared/%v", name), os.O_RDONLY|os.O_CREATE, 0666)
 		if err != nil {
 			log.Println(err)
 			continue
@@ -969,13 +1029,14 @@ func initDB(guildID string) {
 // Writes/Refreshes all DBs
 func writeAll(guildID string) {
 	LoadGuilds()
+	LoadSharedDB()
 	MapMutex.Lock()
 	WriteMemberInfo(GuildMap[guildID].MemberInfoMap, guildID)
 	_, _ = EmojiStatsWrite(GuildMap[guildID].EmojiStats, guildID)
 	_, _ = ChannelStatsWrite(GuildMap[guildID].ChannelStats, guildID)
 	_, _ = UserChangeStatsWrite(GuildMap[guildID].UserChangeStats, guildID)
 	_ = VerifiedStatsWrite(GuildMap[guildID].VerifiedStats, guildID)
-	_, _ = RemindMeWrite(GuildMap[guildID].RemindMes, guildID)
+	_ = RemindMeWrite(SharedInfo.RemindMes)
 	VoteInfoWrite(GuildMap[guildID].VoteInfoMap, guildID)
 	TempChaWrite(GuildMap[guildID].TempChaMap, guildID)
 	ReactJoinWrite(GuildMap[guildID].ReactJoinMap, guildID)

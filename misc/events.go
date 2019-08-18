@@ -674,7 +674,7 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 	}()
 
 	t := time.Now()
-	for userID, remindMeSlice := range GuildMap[guildID].RemindMes {
+	for userID, remindMeSlice := range SharedInfo.RemindMes {
 		for index, remindMeObject := range remindMeSlice.RemindMeSlice {
 
 			// Checks if it's time to send message/ping the user
@@ -703,12 +703,12 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 
 				// Removes the RemindMe object from the RemindMe slice and writes to disk
 				if len(remindMeSlice.RemindMeSlice) == 1 {
-					delete(GuildMap[guildID].RemindMes, userID)
+					delete(SharedInfo.RemindMes, userID)
 				} else {
 					remindMeSlice.RemindMeSlice = append(remindMeSlice.RemindMeSlice[:index], remindMeSlice.RemindMeSlice[index+1:]...)
-					GuildMap[guildID].RemindMes[userID].RemindMeSlice = remindMeSlice.RemindMeSlice
+					SharedInfo.RemindMes[userID].RemindMeSlice = remindMeSlice.RemindMeSlice
 				}
-				_, err = RemindMeWrite(GuildMap[guildID].RemindMes, guildID)
+				err = RemindMeWrite(SharedInfo.RemindMes)
 				if err != nil {
 					_, err = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 					if err != nil {
