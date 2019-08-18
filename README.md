@@ -1,32 +1,35 @@
-### ZeroTsu is a Discord all-purpose BOT. Its functionalities are the following:
+## ZeroTsu is a Discord all-purpose BOT with a focus on Moderation
+<p align="center">
+	<img src="https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/6e4868e2-f52b-4c7d-a984-d5027576b221/dch684c-818cbf96-b76b-4e75-8445-75d1497195b7.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzZlNDg2OGUyLWY1MmItNGM3ZC1hOTg0LWQ1MDI3NTc2YjIyMVwvZGNoNjg0Yy04MThjYmY5Ni1iNzZiLTRlNzUtODQ0NS03NWQxNDk3MTk1YjcucG5nIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.w_Pmn6zmDv4NcB9h-lPko3-7qnvGmLqVD7862q59XR8" alt="zero two" width="300" height="300">
+</p
 
 <br/>
 
-* Channel lock for non-mods via permission change
+* Channel lock via dynamic permission change that remembers older permissions
 
 * Show avatar for a target user. Works for people not in the server
 
-* Extensive member system that tracks past member usernames, nicknames, mod-issued warnings, kicks, bans, optional reddit verification and verification date, whether in the server, timestamps for punishments, server join date
+* Extensive member system that tracks past member usernames, nicknames, mod-issued warnings, kicks, bans, whether in the server, timestamps for punishments, server join date and account creation date
 
 * Punishment system where you can issue warnings, kick or ban people for a set period of time with the bot and log that using the member system, or remove those punishments and unban. Also shows timestamps for all of those. Automatically unbans for temp bans.
 
-* Website verification system for reddit account linking and confirmation before being able to use the server
+* Website verification system for reddit account linking and confirmation before being able to use the server [r/anime only]
 
 * Automated channel creation with various parameters you can give it to make them hidden (opt-in), temporary (auto deletes after a set period of time) and other
 
 * Optional automated channel creation via non-mod started vote for a temp (auto deleted) channel with a minimum requirement of votes and hard cap of 3 at a time
 
-* Tracks server emoji stats as well as message stats for general and opt-in channels. User gain/loss per day
+* Tracks server emoji and message stats for normal and opt-in channels. User gain/loss per day
 
 * Regex-facilitated filter for phrases.
 
-* Full spoiler/opt-in/hidden channel support with reaction based role-giving or just join/leave commands. Tracks hidden channels between two dummy roles.
+* Give roles using reactions or just join/leave commands. Tracks opt-in roles between two dummy roles.
 
-* Sort all BOT created optin/spoiler roles between the two dummy roles alphabetically
+* Sort all BOT created opt-in roles between the two dummy roles alphabetically
 
 * Sort a category's channels alphabetically
 
-* Subreddit RSS system that will post a thread if it sees it containing specific phrases and is of a set author. Set for /r/anime but can be changed in the rss.go file
+* Customizable Reddit RSS system that will post a reddit thread based on its settings. Can set for a specific author, sub, post type (rising, hot, new) and title. Can also auto pin/unpin that message in a channel
 
 * BOT say/edit commands that any mod can use to send or edit important messages with the BOT, or pretend they're a ROBOT
 
