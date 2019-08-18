@@ -19,6 +19,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		reason    string
 		success   string
 		remaining string
+		commandStringsCopy []string
 
 		validSlice bool
 
@@ -34,6 +35,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.MapMutex.Unlock()
 
 	commandStrings := strings.SplitN(m.Content, " ", 4)
+	commandStringsCopy = commandStrings
 
 	if len(commandStrings) != 4 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"ban [@user, userID, or username#discrim] [time] [reason]` format. \n\n"+
@@ -49,12 +51,25 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	userID, err := misc.GetUserID(m, commandStrings)
+	// Check if the time is the 2nd parameter and handle that
+	_, _, err := misc.ResolveTimeFromString(commandStrings[1])
+	if err == nil {
+		length = commandStrings[1]
+		commandStrings = append(commandStrings[:1], commandStrings[1+1:]...)
+	}
+	// Handle userID, reason and length
+	userID, err = misc.GetUserID(m, commandStrings)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
-	length = commandStrings[2]
+
+	if length == "" {
+		length = commandStrings[2]
+	} else {
+		commandStrings = commandStringsCopy
+	}
+
 	reason = commandStrings[3]
 	// Checks if the reason contains a mention and finds the actual name instead of ID
 	reason = misc.MentionParser(s, reason, m.GuildID)
@@ -145,7 +160,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.MapMutex.Unlock()
 		return
 	}
-	if commandStrings[2] == "∞" {
+	if commandStrings[2] == "∞" || commandStrings[1] == "∞" {
 		perma = true
 	}
 	if !perma {
