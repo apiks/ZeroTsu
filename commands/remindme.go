@@ -84,9 +84,9 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Saves the remindMe data to an object of type remindMe
 	remindMeObject.CommandChannel = m.ChannelID
 	misc.MapMutex.Lock()
-	_, ok := misc.GuildMap[m.GuildID].RemindMes[userID]
+	_, ok := misc.SharedInfo.RemindMes[userID]
 	if ok {
-		remindMeObject.RemindID = len(misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice) + 1
+		remindMeObject.RemindID = len(misc.SharedInfo.RemindMes[userID].RemindMeSlice) + 1
 		flag = true
 	} else {
 		remindMeObject.RemindID = 1
@@ -96,10 +96,10 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Adds the above object to the remindMe map where all of the remindMes are kept and writes them to disk
 	if !flag {
-		misc.GuildMap[m.GuildID].RemindMes[userID] = &dummySlice
+		misc.SharedInfo.RemindMes[userID] = &dummySlice
 	}
-	misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice = append(misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice, remindMeObject)
-	_, err = misc.RemindMeWrite(misc.GuildMap[m.GuildID].RemindMes, m.GuildID)
+	misc.SharedInfo.RemindMes[userID].RemindMeSlice = append(misc.SharedInfo.RemindMes[userID].RemindMeSlice, remindMeObject)
+	err = misc.RemindMeWrite(misc.SharedInfo.RemindMes)
 	if err != nil {
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
@@ -136,7 +136,7 @@ func viewRemindMe(s *discordgo.Session, m *discordgo.Message) {
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
-	_, ok := misc.GuildMap[m.GuildID].RemindMes[userID]
+	_, ok := misc.SharedInfo.RemindMes[userID]
 	if !ok {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No saved reminds for you found.")
 		if err != nil {
@@ -168,7 +168,7 @@ func viewRemindMe(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	misc.MapMutex.Lock()
-	for _, remind := range misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice {
+	for _, remind := range misc.SharedInfo.RemindMes[userID].RemindMeSlice {
 		formattedMessage := fmt.Sprintf("`%v` - _%v_ - ID: %v", remind.Message, remind.Date.Format("2006-01-02 15:04"), remind.RemindID)
 		remindMes = append(remindMes, formattedMessage)
 	}
@@ -218,7 +218,7 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
-	_, ok := misc.GuildMap[m.GuildID].RemindMes[userID]
+	_, ok := misc.SharedInfo.RemindMes[userID]
 	if !ok {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No saved reminds found for you to delete.")
 		if err != nil {
@@ -264,19 +264,19 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 
 	// Deletes the remind from the map and writes to disk
 	misc.MapMutex.Lock()
-	for index, remind := range misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice {
+	for index, remind := range misc.SharedInfo.RemindMes[userID].RemindMeSlice {
 		if remind.RemindID == remindID {
 
 			// Deletes either the entire value or just the remind from the slice
-			if len(misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice) == 1 {
-				delete(misc.GuildMap[m.GuildID].RemindMes, userID)
+			if len(misc.SharedInfo.RemindMes[userID].RemindMeSlice) == 1 {
+				delete(misc.SharedInfo.RemindMes, userID)
 			} else {
-				misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice = append(misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice[:index], misc.GuildMap[m.GuildID].RemindMes[userID].RemindMeSlice[index+1:]...)
+				misc.SharedInfo.RemindMes[userID].RemindMeSlice = append(misc.SharedInfo.RemindMes[userID].RemindMeSlice[:index], misc.SharedInfo.RemindMes[userID].RemindMeSlice[index+1:]...)
 			}
 
 			flag = true
 
-			_, err := misc.RemindMeWrite(misc.GuildMap[m.GuildID].RemindMes, m.GuildID)
+			err := misc.RemindMeWrite(misc.SharedInfo.RemindMes)
 			if err != nil {
 				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
@@ -335,7 +335,7 @@ func init() {
 	add(&command{
 		execute:  viewRemindMe,
 		trigger:  "viewreminds",
-		aliases:  []string{"viewremindmes", "viewremindme", "viewremind", "reminds"},
+		aliases:  []string{"viewremindmes", "viewremindme", "viewremind", "reminds", "remindmes"},
 		desc:     "Shows you what reminds you have currently set.",
 		elevated: false,
 		category: "normal",
@@ -343,8 +343,8 @@ func init() {
 	add(&command{
 		execute:  removeRemindMe,
 		trigger:  "removeremind",
-		aliases:  []string{"removeremindme", "deleteremind", "deleteremindme", "killremind"},
-		desc:     "Removes a previously set remindme.",
+		aliases:  []string{"removeremindme", "deleteremind", "deleteremindme", "killremind", "stopremind"},
+		desc:     "Removes a previously set remind.",
 		elevated: false,
 		category: "normal",
 	})
