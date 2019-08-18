@@ -311,20 +311,16 @@ func RSSParser(s *discordgo.Session, guildID string) {
 				continue
 			}
 
-			// Save lowercase feed item title
-			var itemTitleLrcase  string
-			itemTitleLrcase = strings.ToLower(item.Title)
-
 			// Check if author is same and skip if not true
 			if thread.Author != "" && item.Author != nil {
-				if strings.ToLower(item.Author.Name) != thread.Author {
+				if strings.ToLower(item.Author.Name) != fmt.Sprintf("/u/%v", thread.Author) {
 					continue
 				}
 			}
 
 			// Check if the feed item title starts with the set thread title
 			if thread.Title != "" {
-				if !strings.HasPrefix(itemTitleLrcase, thread.Title) {
+				if !strings.HasPrefix(strings.ToLower(item.Title), thread.Title) {
 					continue
 				}
 			}
