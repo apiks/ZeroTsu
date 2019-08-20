@@ -100,6 +100,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		normalChannelTotal int
 		optinChannelTotal  int
 		flag               bool
+		channels	   []*misc.Channel
 	)
 
 	t := time.Now()
@@ -130,12 +131,8 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sorts channel by their message use
-	channels := make([]*misc.Channel, len(misc.GuildMap[m.GuildID].ChannelStats))
-	for i := 0; i < len(misc.GuildMap[m.GuildID].ChannelStats); i++ {
-		for _, channel := range misc.GuildMap[m.GuildID].ChannelStats {
-			channels[i] = channel
-			i++
-		}
+	for _, channel := range misc.GuildMap[m.GuildID].ChannelStats {
+		channels = append(channels, channel)
 	}
 	sort.Sort(byFrequencyChannel(channels))
 
