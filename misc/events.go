@@ -23,46 +23,67 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	var banFlag bool
 
 	for _, guild := range e.Guilds {
+
 		// Initialize guild if missing
 		initDB(guild.ID)
 		writeAll(guild.ID)
-	}
 
-	// Clean up SpoilerRoles.json in each guild
-	MapMutex.Lock()
-	for _, guild := range e.Guilds {
+		// Clean up SpoilerRoles.json in each guild
+		MapMutex.Lock()
 		err := cleanSpoilerRoles(s, guild.ID)
 		if err != nil {
 			_, _ = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 		}
+		MapMutex.Unlock()
 	}
-	MapMutex.Unlock()
 
 	_ = s.UpdateStatus(0, config.PlayingMsg)
 
 	for range time.NewTicker(30 * time.Second).C {
 
-		// Checks whether it has to post rss thread and handle remindMes
+		// Checks whether it has to post RSS threads and handle remindMes and handle bans
 		for _, guild := range e.Guilds {
 			RSSParser(s, guild.ID)
 			MapMutex.Lock()
 			remindMeHandler(s, guild.ID)
 
 			// Goes through bannedUsers.json if it's not empty and unbans if needed
-			if len(GuildMap[guild.ID].BannedUsers) != 0 {
-				t := time.Now()
-				for index, user := range GuildMap[guild.ID].BannedUsers {
-					difference := t.Sub(user.UnbanDate)
-					if difference > 0 {
-						banFlag = false
+			if len(GuildMap[guild.ID].BannedUsers) == 0 {
+				MapMutex.Unlock()
+				continue
+			}
 
-						// Checks if user is in MemberInfo and saves him if true
-						memberInfoUser, ok := GuildMap[guild.ID].MemberInfoMap[user.ID]
-						if !ok {
+			t := time.Now()
+			for i, user := range GuildMap[guild.ID].BannedUsers {
+				difference := t.Sub(user.UnbanDate)
+				if difference > 0 {
+					banFlag = false
+
+					// Checks if user is in MemberInfo and saves him if true
+					memberInfoUser, ok := GuildMap[guild.ID].MemberInfoMap[user.ID]
+					if !ok {
+						continue
+					}
+					// Fetches all server bans so it can check if the memberInfoUser is banned there (whether he's been manually unbanned for example)
+					bans, err := s.GuildBans(guild.ID)
+					if err != nil {
+						_, err = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
+						if err != nil {
 							continue
 						}
-						// Fetches all server bans so it can check if the memberInfoUser is banned there (whether he's been manually unbanned for example)
-						bans, err := s.GuildBans(guild.ID)
+						continue
+					}
+
+					// Set flag for whether user is a banned user, and then check for that flag so you can continue from the upper loop if error
+					for _, ban := range bans {
+						if ban.User.ID == memberInfoUser.ID {
+							banFlag = true
+							break
+						}
+					}
+					// Unbans memberInfoUser if possible
+					if banFlag {
+						err = s.GuildBanDelete(guild.ID, memberInfoUser.ID)
 						if err != nil {
 							_, err = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 							if err != nil {
@@ -70,38 +91,20 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 							}
 							continue
 						}
-						for _, ban := range bans {
-							if ban.User.ID == memberInfoUser.ID {
-								banFlag = true
-								break
-							}
-						}
-						if banFlag {
-							// Unbans memberInfoUser if possible
-							err = s.GuildBanDelete(guild.ID, memberInfoUser.ID)
-							if err != nil {
-								_, err = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
-								if err != nil {
-									continue
-								}
-								continue
-							}
-						}
-
-						// Removes unban date entirely
-						GuildMap[guild.ID].MemberInfoMap[memberInfoUser.ID].UnbanDate = ""
-
-						// Removes the memberInfoUser ban from bannedUsers.json
-						GuildMap[guild.ID].BannedUsers = append(GuildMap[guild.ID].BannedUsers[:index], GuildMap[guild.ID].BannedUsers[index+1:]...)
-
-						// Writes to memberInfo.json and bannedUsers.json
-						WriteMemberInfo(GuildMap[guild.ID].MemberInfoMap, guild.ID)
-						BannedUsersWrite(GuildMap[guild.ID].BannedUsers, guild.ID)
-
-						// Sends an embed message to bot-log
-						_ = UnbanEmbed(s, memberInfoUser, "", GuildMap[guild.ID].GuildConfig.BotLog.ID)
-						break
 					}
+
+					// Removes unban date entirely
+					GuildMap[guild.ID].MemberInfoMap[memberInfoUser.ID].UnbanDate = ""
+
+					// Removes the memberInfoUser ban from bannedUsers.json
+					GuildMap[guild.ID].BannedUsers = append(GuildMap[guild.ID].BannedUsers[:i], GuildMap[guild.ID].BannedUsers[i+1:]...)
+
+					// Writes to memberInfo.json and bannedUsers.json
+					WriteMemberInfo(GuildMap[guild.ID].MemberInfoMap, guild.ID)
+					BannedUsersWrite(GuildMap[guild.ID].BannedUsers, guild.ID)
+
+					// Sends an embed message to bot-log
+					_ = UnbanEmbed(s, memberInfoUser, "", GuildMap[guild.ID].GuildConfig.BotLog.ID)
 				}
 			}
 			MapMutex.Unlock()
@@ -357,15 +360,20 @@ func RSSParser(s *discordgo.Session, guildID string) {
 			// Unpins if necessary
 			if len(pins) != 0 {
 				for _, pin := range pins {
-					if pin.Author.ID == s.State.User.ID {
-						if strings.HasPrefix(strings.ToLower(pin.Content), fmt.Sprintf("https://www.reddit.com/r/%v/comments/", thread.Subreddit)) ||
-							strings.HasPrefix(strings.ToLower(pin.Content), fmt.Sprintf("http://www.reddit.com/r/%v/comments/", thread.Subreddit)) {
-							err = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
-							if err != nil {
-								_, _ = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))
-								continue
-							}
-						}
+
+					// Checks for whether the pin is one that should be unpinned
+					if pin.Author.ID != s.State.User.ID {
+						continue
+					}
+					if !strings.HasPrefix(strings.ToLower(pin.Content), fmt.Sprintf("https://www.reddit.com/r/%v/comments/", thread.Subreddit)) ||
+						!strings.HasPrefix(strings.ToLower(pin.Content), fmt.Sprintf("http://www.reddit.com/r/%v/comments/", thread.Subreddit)) {
+						continue
+					}
+
+					err = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
+					if err != nil {
+						_, _ = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))
+						continue
 					}
 				}
 			}
