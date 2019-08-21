@@ -306,11 +306,12 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 				// If user wasn't found in memberInfo with that username+discrim combo then fetch manually from Discord
 				user, err := s.State.Member(m.GuildID, userID)
 				if err != nil {
-					user, _ = s.GuildMember(m.GuildID, userID)
+					user, err = s.GuildMember(m.GuildID, userID)
+					if err != nil {
+						continue
+					}
 				}
-				if user != nil {
-					mentions += " " + strings.ToLower(user.Nick)
-				}
+				mentions += " " + strings.ToLower(user.Nick)
 			}
 			misc.MapMutex.Unlock()
 		}
