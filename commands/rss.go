@@ -121,6 +121,7 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 		title 		string
 		postType 	string
 		author		string
+		channelID	string
 
 		subIndex	int
 	)
@@ -150,9 +151,10 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	cmdStrs := strings.Split(messageLowercase, " ")
 
 	if len(cmdStrs) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"removerss [type]* [u/author]* [r/subreddit] [title]*`\n\n* is optional\n\n" +
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"removerss [type]* [u/author]* [channel]* [r/subreddit] [title]*`\n\n* is optional\n\n" +
 			"Type refers to the post sort filter. Valid values are `hot`, `new` and `rising`. Defaults to `hot`.\n" +
 			"\nAuthor is the name of the post author.\n" +
+			"\nChannel is the ID or name of a channel from which to remove\n" +
 			"\nTitle is what a post title should start with or be for the BOT to post it. Leave empty for all RSS settings fulfilling [type] and [r/subreddit].")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -186,7 +188,7 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Saves type and author if found
+	// Saves type and author if found as well as channel
 	for i, val := range cmdStrs {
 		if i >= subIndex {
 			continue
@@ -197,6 +199,10 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		if val == "hot" || val == "rising" || val == "new" {
 			postType = val
+		}
+		chaID, _ := misc.ChannelParser(s, val, m.GuildID)
+		if chaID != "" {
+			channelID = chaID
 		}
 	}
 
@@ -210,7 +216,7 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	misc.MapMutex.Lock()
-	err := misc.RssThreadsRemove(subreddit, title, author, postType, m.GuildID)
+	err := misc.RssThreadsRemove(subreddit, title, author, postType, channelID, m.GuildID)
 	if err != nil {
 		misc.MapMutex.Unlock()
 		misc.CommandErrorHandler(s, m, err, guildBotLog)

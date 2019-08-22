@@ -73,7 +73,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 		for _, thread := range misc.GuildMap[m.GuildID].RssThreads {
 			if thread.ChannelID == channelID {
 				rssLoopFlag = true
-				err := misc.RssThreadsRemove(thread.Subreddit, thread.Title, thread.Author, thread.PostType, m.GuildID)
+				err := misc.RssThreadsRemove(thread.Subreddit, thread.Title, thread.Author, thread.PostType, thread.ChannelID, m.GuildID)
 				if err != nil {
 					misc.MapMutex.Unlock()
 					misc.CommandErrorHandler(s, m, err, guildBotLog)

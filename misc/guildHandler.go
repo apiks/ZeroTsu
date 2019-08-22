@@ -851,7 +851,7 @@ func RssThreadsWrite(subreddit, author, title, postType, channelID, guildID stri
 }
 
 // Removes a setting from rssThreads.json
-func RssThreadsRemove(subreddit, title, author, postType, guildID string) error {
+func RssThreadsRemove(subreddit, title, author, postType, channelID, guildID string) error {
 
 	var threadExists bool
 
@@ -871,6 +871,11 @@ func RssThreadsRemove(subreddit, title, author, postType, guildID string) error 
 			}
 			if postType != "" {
 				if GuildMap[guildID].RssThreads[i].PostType != postType {
+					continue
+				}
+			}
+			if channelID != "" {
+				if GuildMap[guildID].RssThreads[i].ChannelID != channelID {
 					continue
 				}
 			}
