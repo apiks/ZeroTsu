@@ -39,7 +39,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
 	_ = s.UpdateStatus(0, config.PlayingMsg)
 
-	for range time.NewTicker(30 * time.Second).C {
+	for range time.NewTicker(45 * time.Second).C {
 
 		// Checks whether it has to post RSS threads and handle remindMes and handle bans
 		for _, guild := range e.Guilds {
@@ -259,17 +259,16 @@ func RSSParser(s *discordgo.Session, guildID string) {
 		difference := t.Sub(dateRemoval)
 
 		// Removes the fact that the thread had been posted already if it's time
-		if difference > 0 {
-			err := RssThreadsTimerRemove(rssThreadChecks[p].Thread, rssThreadChecks[p].Date, guildID)
+		if difference <= 0 {
+			continue
+		}
+		err := RssThreadsTimerRemove(rssThreadChecks[p].Thread, rssThreadChecks[p].Date, guildID)
+		if err != nil {
+			_, err = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))
 			if err != nil {
-				_, err = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					MapMutex.Unlock()
-					return
-				}
-				MapMutex.Unlock()
-				return
+				continue
 			}
+			continue
 		}
 	}
 	// Updates rssThreadChecks var after the removal
@@ -285,7 +284,7 @@ func RSSParser(s *discordgo.Session, guildID string) {
 	for _, thread := range rssThreads {
 		if _, ok := subMap[thread.Subreddit]; !ok {
 			// Wait a bit between each parse
-			time.Sleep(250 * time.Millisecond)
+			time.Sleep(200 * time.Millisecond)
 			// Parse feed
 			feed, err := fp.ParseURL(fmt.Sprintf("http://www.reddit.com/r/%v/%v/.rss", thread.Subreddit, thread.PostType))
 			if err != nil {
