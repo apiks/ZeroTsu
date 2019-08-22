@@ -309,6 +309,7 @@ func init() {
 	add(&command{
 		execute:  setRssCommand,
 		trigger:  "setrss",
+		aliases: []string{"addrss"},
 		desc:     "Assigns an RSS to the channel.",
 		elevated: true,
 		category: "rss",
@@ -316,6 +317,7 @@ func init() {
 	add(&command{
 		execute:  removeRssCommand,
 		trigger:  "removerss",
+		aliases: []string{"killrss", "deleterss"},
 		desc:     "Removes a previously set RSS.",
 		elevated: true,
 		category: "rss",

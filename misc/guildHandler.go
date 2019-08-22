@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	GuildMap            = make(map[string]*guildInfo)
+	GuildMap       = make(map[string]*guildInfo)
 	SharedInfo     *sharedInfo
 	dbPath         = "database/guilds"
 	guildFileNames = [...]string{"bannedUsers.json", "filters.json", "messReqs.json", "spoilerRoles.json", "rssThreads.json",
@@ -28,6 +28,7 @@ var (
 type guildInfo struct {
 	GuildID     string
 	GuildConfig GuildSettings
+	LastDBUse	map[string]*time.Time
 
 	BannedUsers         []BannedUsers
 	Filters             []Filter
@@ -826,7 +827,7 @@ func RssThreadsWrite(subreddit, author, title, postType, channelID, guildID stri
 	// Checks if a thread with these settings exist already
 	for _, thread := range GuildMap[guildID].RssThreads {
 		if subreddit == thread.Subreddit && title == thread.Title &&
-			postType == thread.PostType {
+			postType == thread.PostType && channelID == thread.ChannelID {
 			return fmt.Errorf("Error: This RSS setting already exists.")
 		}
 	}
