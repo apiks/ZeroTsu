@@ -412,9 +412,9 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 	if len(GuildMap[v.GuildID].GuildConfig.VoiceChas) == 0 {
 		MapMutex.Unlock()
 		return
-	} else {
-		voiceChannels = GuildMap[v.GuildID].GuildConfig.VoiceChas
 	}
+
+	voiceChannels = GuildMap[v.GuildID].GuildConfig.VoiceChas
 	guildBotLog := GuildMap[v.GuildID].GuildConfig.BotLog.ID
 	MapMutex.Unlock()
 
@@ -661,17 +661,15 @@ func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
 	MapMutex.Lock()
 	guildBotLog := GuildMap[e.GuildID].GuildConfig.BotLog.ID
 
-	for i := 0; i < len(GuildMap[e.GuildID].BannedUsers); i++ {
-		if GuildMap[e.GuildID].BannedUsers[i].ID == e.User.ID {
+	for _, user := range GuildMap[e.GuildID].BannedUsers {
+		if user.ID == e.User.ID {
 			MapMutex.Unlock()
 			return
 		}
 	}
 	MapMutex.Unlock()
-	_, err := s.ChannelMessageSend(guildBotLog, fmt.Sprintf("%v#%v was manually permabanned. ID: %v", e.User.Username, e.User.Discriminator, e.User.ID))
-	if err != nil {
-		return
-	}
+
+	_, _ = s.ChannelMessageSend(guildBotLog, fmt.Sprintf("%v#%v was manually permabanned. ID: %v", e.User.Username, e.User.Discriminator, e.User.ID))
 }
 
 // Sends remindMe message if it is time, either as a DM or ping
@@ -686,48 +684,44 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 
 	t := time.Now()
 	for userID, remindMeSlice := range SharedInfo.RemindMes {
-		for index, remindMeObject := range remindMeSlice.RemindMeSlice {
+		for i := len(remindMeSlice.RemindMeSlice) - 1; i >= 0; i-- {
 
 			// Checks if it's time to send message/ping the user
-			difference := t.Sub(remindMeObject.Date)
-			if difference > 0 {
+			difference := t.Sub(remindMeSlice.RemindMeSlice[i].Date)
+			if difference <= 0 {
+				continue
+			}
 
-				// Sends message to user DMs if possible
-				dm, err := s.UserChannelCreate(userID)
-				_, err = s.ChannelMessageSend(dm.ID, "RemindMe: "+remindMeObject.Message)
-				// Else sends the message in the channel the command was made in with a ping
-				if err != nil {
-					// Checks if the user is in the server before pinging him
-					_, err := s.GuildMember(guildID, userID)
-					if err == nil {
-						pingMessage := fmt.Sprintf("<@%v> Remindme: %v", userID, remindMeObject.Message)
-						_, err = s.ChannelMessageSend(remindMeObject.CommandChannel, pingMessage)
+			// Sends message to user DMs if possible
+			dm, err := s.UserChannelCreate(userID)
+			_, err = s.ChannelMessageSend(dm.ID, "RemindMe: "+remindMeSlice.RemindMeSlice[i].Message)
+			// Else sends the message in the channel the command was made in with a ping
+			if err != nil {
+				// Checks if the user is in the server before pinging him
+				_, err := s.GuildMember(guildID, userID)
+				if err == nil {
+					pingMessage := fmt.Sprintf("<@%v> Remindme: %v", userID, remindMeSlice.RemindMeSlice[i].Message)
+					_, err = s.ChannelMessageSend(remindMeSlice.RemindMeSlice[i].CommandChannel, pingMessage)
+					if err != nil {
+						_, err = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 						if err != nil {
-							_, err = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
-							if err != nil {
-								return
-							}
 							return
 						}
-					}
-				}
-
-				// Removes the RemindMe object from the RemindMe slice and writes to disk
-				if len(remindMeSlice.RemindMeSlice) == 1 {
-					delete(SharedInfo.RemindMes, userID)
-				} else {
-					remindMeSlice.RemindMeSlice = append(remindMeSlice.RemindMeSlice[:index], remindMeSlice.RemindMeSlice[index+1:]...)
-					SharedInfo.RemindMes[userID].RemindMeSlice = remindMeSlice.RemindMeSlice
-				}
-				err = RemindMeWrite(SharedInfo.RemindMes)
-				if err != nil {
-					_, err = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
-					if err != nil {
 						return
 					}
+				}
+			}
+
+			// Removes the RemindMe from the RemindMe slice and writes to disk
+			remindMeSlice.RemindMeSlice = append(remindMeSlice.RemindMeSlice[:i], remindMeSlice.RemindMeSlice[i+1:]...)
+			SharedInfo.RemindMes[userID].RemindMeSlice = remindMeSlice.RemindMeSlice
+			err = RemindMeWrite(SharedInfo.RemindMes)
+			if err != nil {
+				_, err = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
+				if err != nil {
 					return
 				}
-				break
+				return
 			}
 		}
 	}
