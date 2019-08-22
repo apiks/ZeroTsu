@@ -54,18 +54,40 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 			}
 
 			t := time.Now()
-			for i, user := range GuildMap[guild.ID].BannedUsers {
-				difference := t.Sub(user.UnbanDate)
-				if difference > 0 {
-					banFlag = false
+			for i := len(GuildMap[guild.ID].BannedUsers) - 1; i >= 0; i-- {
 
-					// Checks if user is in MemberInfo and saves him if true
-					memberInfoUser, ok := GuildMap[guild.ID].MemberInfoMap[user.ID]
-					if !ok {
+				difference := t.Sub(GuildMap[guild.ID].BannedUsers[i].UnbanDate)
+				if difference <= 0 {
+					continue
+				}
+
+				banFlag = false
+
+				// Checks if user is in MemberInfo and saves him if true
+				memberInfoUser, ok := GuildMap[guild.ID].MemberInfoMap[GuildMap[guild.ID].BannedUsers[i].ID]
+				if !ok {
+					continue
+				}
+				// Fetches all server bans so it can check if the memberInfoUser is banned there (whether he's been manually unbanned for example)
+				bans, err := s.GuildBans(guild.ID)
+				if err != nil {
+					_, err = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
+					if err != nil {
 						continue
 					}
-					// Fetches all server bans so it can check if the memberInfoUser is banned there (whether he's been manually unbanned for example)
-					bans, err := s.GuildBans(guild.ID)
+					continue
+				}
+
+				// Set flag for whether user is a banned user, and then check for that flag so you can continue from the upper loop if error
+				for _, ban := range bans {
+					if ban.User.ID == memberInfoUser.ID {
+						banFlag = true
+						break
+					}
+				}
+				// Unbans memberInfoUser if possible
+				if banFlag {
+					err = s.GuildBanDelete(guild.ID, memberInfoUser.ID)
 					if err != nil {
 						_, err = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 						if err != nil {
@@ -73,39 +95,20 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 						}
 						continue
 					}
-
-					// Set flag for whether user is a banned user, and then check for that flag so you can continue from the upper loop if error
-					for _, ban := range bans {
-						if ban.User.ID == memberInfoUser.ID {
-							banFlag = true
-							break
-						}
-					}
-					// Unbans memberInfoUser if possible
-					if banFlag {
-						err = s.GuildBanDelete(guild.ID, memberInfoUser.ID)
-						if err != nil {
-							_, err = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
-							if err != nil {
-								continue
-							}
-							continue
-						}
-					}
-
-					// Removes unban date entirely
-					GuildMap[guild.ID].MemberInfoMap[memberInfoUser.ID].UnbanDate = ""
-
-					// Removes the memberInfoUser ban from bannedUsers.json
-					GuildMap[guild.ID].BannedUsers = append(GuildMap[guild.ID].BannedUsers[:i], GuildMap[guild.ID].BannedUsers[i+1:]...)
-
-					// Writes to memberInfo.json and bannedUsers.json
-					WriteMemberInfo(GuildMap[guild.ID].MemberInfoMap, guild.ID)
-					BannedUsersWrite(GuildMap[guild.ID].BannedUsers, guild.ID)
-
-					// Sends an embed message to bot-log
-					_ = UnbanEmbed(s, memberInfoUser, "", GuildMap[guild.ID].GuildConfig.BotLog.ID)
 				}
+
+				// Removes unban date entirely
+				GuildMap[guild.ID].MemberInfoMap[memberInfoUser.ID].UnbanDate = ""
+
+				// Removes the memberInfoUser ban from bannedUsers.json
+				GuildMap[guild.ID].BannedUsers = append(GuildMap[guild.ID].BannedUsers[:i], GuildMap[guild.ID].BannedUsers[i+1:]...)
+
+				// Writes to memberInfo.json and bannedUsers.json
+				WriteMemberInfo(GuildMap[guild.ID].MemberInfoMap, guild.ID)
+				BannedUsersWrite(GuildMap[guild.ID].BannedUsers, guild.ID)
+
+				// Sends an embed message to bot-log
+				_ = UnbanEmbed(s, memberInfoUser, "", GuildMap[guild.ID].GuildConfig.BotLog.ID)
 			}
 			MapMutex.Unlock()
 		}
