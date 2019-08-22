@@ -468,6 +468,23 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	if strings.ToLower(m.Content) == fmt.Sprintf("<@%v> good bot", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID) {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Thank you ❤!")
+		if err != nil {
+
+			MapMutex.Lock()
+			guildBotLog := GuildMap[m.GuildID].GuildConfig.BotLog.ID
+			MapMutex.Unlock()
+
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
+
 	if (m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID)) && m.Author.ID == "128312718779219968" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Professor!")
 		if err != nil {
