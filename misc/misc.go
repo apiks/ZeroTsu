@@ -125,7 +125,6 @@ func (c *UserAgentTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 func ListenForDeletedRoleHandler(s *discordgo.Session, g *discordgo.GuildRoleDelete) {
 
 	MapMutex.Lock()
-	LoadDB(GuildMap[g.GuildID].SpoilerMap, g.GuildID)
 	if GuildMap[g.GuildID].SpoilerMap[g.RoleID] == nil {
 		MapMutex.Unlock()
 		return
@@ -194,7 +193,6 @@ func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
 	if strings.Contains(userID, "/u/") {
 		userID = strings.TrimPrefix(userID, "/u/")
 		MapMutex.Lock()
-		LoadDB(GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 		for _, user := range GuildMap[m.GuildID].MemberInfoMap {
 			if strings.ToLower(user.RedditUsername) == userID {
 				userID = user.ID
@@ -206,7 +204,6 @@ func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
 	if strings.Contains(userID, "u/") {
 		userID = strings.TrimPrefix(userID, "u/")
 		MapMutex.Lock()
-		LoadDB(GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 		for _, user := range GuildMap[m.GuildID].MemberInfoMap {
 			if strings.ToLower(user.RedditUsername) == userID {
 				userID = user.ID
@@ -224,7 +221,6 @@ func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
 			return userID, err
 		}
 		MapMutex.Lock()
-		LoadDB(GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 		for _, user := range GuildMap[m.GuildID].MemberInfoMap {
 			if strings.ToLower(user.Username) == splitUser[0] && user.Discrim == splitUser[1] {
 				userID = user.ID
@@ -335,8 +331,6 @@ func GetBannedUsers() {
 
 	MapMutex.Lock()
 	for guildID, _ := range GuildMap {
-		LoadDB(GuildMap[guildID].MemberInfoMap, guildID)
-		LoadDB(GuildMap[guildID].BannedUsers, guildID)
 		for _, user := range GuildMap[guildID].MemberInfoMap {
 			for _, ban := range GuildMap[guildID].BannedUsers {
 				if user.ID == ban.ID {
@@ -392,7 +386,6 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 		userMentionCheck = mentionRegex.FindAllString(m, -1)
 		if userMentionCheck != nil {
 			MapMutex.Lock()
-			LoadDB(GuildMap[guildID].MemberInfoMap, guildID)
 			for i := range userMentionCheck {
 				userID = strings.TrimPrefix(userMentionCheck[i], "<@")
 				userID = strings.TrimPrefix(userID, "!")
@@ -468,7 +461,6 @@ func ChannelParser(s *discordgo.Session, channel string, guildID string) (string
 	if err != nil {
 
 		MapMutex.Lock()
-		LoadDB(GuildMap[guildID].GuildConfig, guildID)
 		guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
 		MapMutex.Unlock()
 
@@ -520,7 +512,6 @@ func CategoryParser(s *discordgo.Session, category string, guildID string) (stri
 	if err != nil {
 
 		MapMutex.Lock()
-		LoadDB(GuildMap[guildID].GuildConfig, guildID)
 		guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
 		MapMutex.Unlock()
 
@@ -575,7 +566,6 @@ func RoleParser(s *discordgo.Session, role string, guildID string) (string, stri
 	if err != nil {
 
 		MapMutex.Lock()
-		LoadDB(GuildMap[guildID].GuildConfig, guildID)
 		guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
 		MapMutex.Unlock()
 
@@ -639,7 +629,6 @@ func OptInsHandler(s *discordgo.Session, guildID string) error {
 	}
 
 	MapMutex.Lock()
-	LoadDB(GuildMap[guildID].GuildConfig, guildID)
 	guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
 
 	// Checks if optins exist

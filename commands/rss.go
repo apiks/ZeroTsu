@@ -23,7 +23,6 @@ func setRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -128,12 +127,10 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
 	// Check if there are set RSS settings
-	misc.LoadDB(misc.GuildMap[m.GuildID].RssThreads, m.GuildID)
 	if len(misc.GuildMap[m.GuildID].RssThreads) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error. There are no set rss threads.")
 		if err != nil {
@@ -246,10 +243,8 @@ func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
-	misc.LoadDB(misc.GuildMap[m.GuildID].RssThreads, m.GuildID)
 	if len(misc.GuildMap[m.GuildID].RssThreads) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no set RSS threads.")
 		if err != nil {

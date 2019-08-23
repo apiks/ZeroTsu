@@ -65,7 +65,6 @@ func InitializeUser(u *discordgo.Member, guildID string) {
 	z, _ := t.Zone()
 	join := t.Format("2006-01-02 15:04:05") + " " + z
 
-	LoadDB(GuildMap[guildID].MemberInfoMap, guildID)
 	GuildMap[guildID].MemberInfoMap[u.User.ID] = &UserInfo{
 		ID:       u.User.ID,
 		Discrim:  u.User.Discriminator,
@@ -105,7 +104,6 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 	// If memberInfo is empty, it initializes
 	MapMutex.Lock()
-	LoadDB(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
 	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
 
 		// Initializes the first user of memberInfo
@@ -241,7 +239,6 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	var writeFlag bool
 
 	MapMutex.Lock()
-	LoadDB(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
 	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
 		MapMutex.Unlock()
 		return
@@ -328,7 +325,6 @@ func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 	var writeFlag bool
 
 	MapMutex.Lock()
-	LoadDB(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
 	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
 		MapMutex.Unlock()
 		return
@@ -474,7 +470,6 @@ func DuplicateUsernamesAndNicknamesCleanup() {
 
 // Helper of above
 func DuplicateRecursion(guildID string) {
-	LoadDB(GuildMap[guildID].MemberInfoMap, guildID)
 	for _, value := range GuildMap[guildID].MemberInfoMap {
 		// Remove duplicate usernames
 		for index, username := range value.PastUsernames {
@@ -505,7 +500,6 @@ func UsernameCleanup(s *discordgo.Session, e *discordgo.Ready) {
 	var progress int
 	MapMutex.Lock()
 	for _, guild := range e.Guilds {
-		LoadDB(GuildMap[guild.ID].MemberInfoMap, guild.ID)
 		for _, mapUser := range GuildMap[guild.ID].MemberInfoMap {
 			user, err := s.User(mapUser.ID)
 			if err != nil {

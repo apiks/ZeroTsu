@@ -25,7 +25,6 @@ func helpEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
 	// Checks for mod perms and handles accordingly
@@ -73,7 +72,6 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	guildWaifuModule := misc.GuildMap[m.GuildID].GuildConfig.WaifuModule
@@ -195,7 +193,6 @@ func helpChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 
 		misc.MapMutex.Lock()
-		misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		misc.MapMutex.Unlock()
 
@@ -220,7 +217,6 @@ func helpChannelEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -270,7 +266,6 @@ func helpFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 
 		misc.MapMutex.Lock()
-		misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		misc.MapMutex.Unlock()
 
@@ -295,7 +290,6 @@ func helpFiltersEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -345,7 +339,6 @@ func helpMiscCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 
 		misc.MapMutex.Lock()
-		misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		misc.MapMutex.Unlock()
 
@@ -370,7 +363,6 @@ func helpMiscEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -420,7 +412,6 @@ func helpNormalCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 
 		misc.MapMutex.Lock()
-		misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		misc.MapMutex.Unlock()
 
@@ -444,7 +435,6 @@ func helpNormalEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -494,7 +484,6 @@ func helpPunishmentCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 
 		misc.MapMutex.Lock()
-		misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		misc.MapMutex.Unlock()
 
@@ -519,7 +508,6 @@ func helpPunishmentEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -567,7 +555,6 @@ func helpPunishmentEmbed(s *discordgo.Session, m *discordgo.Message) error {
 func helpReactsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	guildReactsModule := misc.GuildMap[m.GuildID].GuildConfig.ReactsModule
 	misc.MapMutex.Unlock()
@@ -600,7 +587,6 @@ func helpReactsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -650,7 +636,6 @@ func helpRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 
 		misc.MapMutex.Lock()
-		misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		misc.MapMutex.Unlock()
 
@@ -675,7 +660,6 @@ func helpRssEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -725,7 +709,6 @@ func helpStatsCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 
 		misc.MapMutex.Lock()
-		misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		misc.MapMutex.Unlock()
 
@@ -750,7 +733,6 @@ func helpStatsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -800,7 +782,6 @@ func helpRaffleCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 
 		misc.MapMutex.Lock()
-		misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		misc.MapMutex.Unlock()
 
@@ -825,7 +806,6 @@ func helpRaffleEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -873,7 +853,6 @@ func helpRaffleEmbed(s *discordgo.Session, m *discordgo.Message) error {
 func helpWaifuCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	guildWaifuModule := misc.GuildMap[m.GuildID].GuildConfig.WaifuModule
 	misc.MapMutex.Unlock()
@@ -906,7 +885,6 @@ func helpWaifuEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -956,7 +934,6 @@ func helpGuildSettingsCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 
 		misc.MapMutex.Lock()
-		misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		misc.MapMutex.Unlock()
 
@@ -981,7 +958,6 @@ func helpGuildSettingsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()

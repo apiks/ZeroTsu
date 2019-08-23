@@ -28,7 +28,6 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -54,22 +53,20 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
+	
+	// Fetches user from server if possible and sets whether they're inside the server
+	mem, err := s.State.Member(m.GuildID, userID)
+	if err != nil {
+		mem, err = s.GuildMember(m.GuildID, userID)
+		if err != nil {
+			isInsideGuild = false
+		}
+	}
 
 	// Checks if user is in MemberInfo and assigns to user variable. Else initializes user.
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	user, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]
 	if !ok {
-
-		// Fetches user from server if possible
-		mem, err := s.State.Member(m.GuildID, userID)
-		if err != nil {
-			mem, err = s.GuildMember(m.GuildID, userID)
-			if err != nil {
-				isInsideGuild = false
-			}
-		}
-
 		if mem == nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot whois until user joins the server.")
 			if err != nil {
@@ -287,7 +284,6 @@ func CheckAltAccountWhois(id string, guildID string) []string {
 	var alts []string
 
 	// Stops func if target reddit username is nil
-	misc.LoadDB(misc.GuildMap[guildID].MemberInfoMap, guildID)
 	if misc.GuildMap[guildID].MemberInfoMap[id].RedditUsername == "" {
 		return nil
 	}
@@ -316,7 +312,6 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 	var message string
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -344,16 +339,13 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in MemberInfo and assigns to user variable. Else initializes user.
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	user, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]
 	if !ok {
 
 		// Fetches user from server if possible
 		mem, err := s.State.Member(m.GuildID, userID)
 		if err != nil {
-			mem, err = s.GuildMember(m.GuildID, userID)
-			if err != nil {
-			}
+			mem, _ = s.GuildMember(m.GuildID, userID)
 		}
 
 		if mem == nil {

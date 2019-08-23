@@ -12,13 +12,12 @@ import (
 func aboutCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Hello, I'm %v and was made by Professor Apiks."+
-		" I'm written in Go. Use `%vhelp` to list what commands are available to you.", s.State.User.Username, guildPrefix))
+		" I'm written in Go. Use `%vhelp` to list what commands are available to you", s.State.User.Username, guildPrefix))
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return

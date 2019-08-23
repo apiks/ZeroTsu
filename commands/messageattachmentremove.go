@@ -34,7 +34,6 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 	}
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	guildFileFilter := misc.GuildMap[m.GuildID].GuildConfig.FileFilter
 	misc.MapMutex.Unlock()

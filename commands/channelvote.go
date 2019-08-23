@@ -29,7 +29,6 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 
 	if !misc.GuildMap[m.GuildID].GuildConfig.VoteModule {
 		misc.MapMutex.Unlock()
@@ -313,7 +312,6 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(30 * time.Second).C {
 		misc.MapMutex.Lock()
 		for _, guild := range e.Guilds {
-			misc.LoadDB(misc.GuildMap[guild.ID].GuildConfig, guild.ID)
 
 			if !misc.GuildMap[guild.ID].GuildConfig.VoteModule {
 				continue

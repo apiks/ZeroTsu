@@ -19,7 +19,6 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -97,7 +96,6 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Initialize user if they are not in memberInfo
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; !ok || len(misc.GuildMap[m.GuildID].MemberInfoMap) == 0 {
 		// Initializes user if he doesn't exist in memberInfo but is in server
 		misc.InitializeUser(userMem, m.GuildID)

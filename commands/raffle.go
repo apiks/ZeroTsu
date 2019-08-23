@@ -18,7 +18,6 @@ func raffleParticipateCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -39,7 +38,6 @@ func raffleParticipateCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if such a raffle exists and adds the user ID to it if so
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].Raffles, m.GuildID)
 	for index, raffle := range misc.GuildMap[m.GuildID].Raffles {
 		if raffle.Name == strings.ToLower(commandStrings[1]) {
 			raffleExists = true
@@ -110,7 +108,6 @@ func RaffleReactJoin(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	}
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[r.GuildID].GuildConfig, r.GuildID)
 	guildBotLog := misc.GuildMap[r.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
 
@@ -124,7 +121,6 @@ func RaffleReactJoin(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 
 	// Checks if that message has a raffle react set for it
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[r.GuildID].Raffles, r.GuildID)
 	for i, raffle := range misc.GuildMap[r.GuildID].Raffles {
 		if raffle.ReactMessageID == r.MessageID {
 			misc.GuildMap[r.GuildID].Raffles[i].ParticipantIDs = append(misc.GuildMap[r.GuildID].Raffles[i].ParticipantIDs, r.UserID)
@@ -161,7 +157,6 @@ func RaffleReactLeave(s *discordgo.Session, r *discordgo.MessageReactionRemove) 
 	}
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[r.GuildID].GuildConfig, r.GuildID)
 	guildBotLog := misc.GuildMap[r.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
 
@@ -175,7 +170,6 @@ func RaffleReactLeave(s *discordgo.Session, r *discordgo.MessageReactionRemove) 
 
 	// Checks if that message has a raffle react set for it and removes it
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[r.GuildID].Raffles, r.GuildID)
 	for index, raffle := range misc.GuildMap[r.GuildID].Raffles {
 		if raffle.ReactMessageID == r.MessageID {
 			for i := range misc.GuildMap[r.GuildID].Raffles[index].ParticipantIDs {
@@ -206,7 +200,6 @@ func raffleLeaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -227,7 +220,6 @@ func raffleLeaveCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if such a raffle exists and removes the user ID from it if so
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].Raffles, m.GuildID)
 	for _, raffle := range misc.GuildMap[m.GuildID].Raffles {
 		if raffle.Name == strings.ToLower(commandStrings[1]) {
 			raffleExists = true
@@ -286,7 +278,6 @@ func craffleCommand(s *discordgo.Session, m *discordgo.Message) {
 	var temp misc.Raffle
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -313,7 +304,6 @@ func craffleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if that raffle already exists in the raffles slice
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].Raffles, m.GuildID)
 	for _, sliceRaffle := range misc.GuildMap[m.GuildID].Raffles {
 		if sliceRaffle.Name == temp.Name {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Such a raffle already exists.")
@@ -398,7 +388,6 @@ func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -418,7 +407,6 @@ func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].Raffles, m.GuildID)
 	for raffleIndex, raffle := range misc.GuildMap[m.GuildID].Raffles {
 		if raffle.Name == strings.ToLower(commandStrings[1]) {
 			participantLen := len(misc.GuildMap[m.GuildID].Raffles[raffleIndex].ParticipantIDs)
@@ -477,7 +465,6 @@ func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 func removeRaffleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -525,7 +512,6 @@ func viewRafflesCommand(s *discordgo.Session, m *discordgo.Message) {
 	var message string
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -545,7 +531,6 @@ func viewRafflesCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].Raffles, m.GuildID)
 	if len(misc.GuildMap[m.GuildID].Raffles) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no raffles.")
 		if err != nil {
