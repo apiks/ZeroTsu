@@ -45,7 +45,7 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if user is in memberInfo
 	misc.MapMutex.Lock()
 	if misc.GuildMap[m.GuildID].MemberInfoMap[userID] == nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo. Cannot remove nonexisting warning.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in internal database. Cannot remove nonexisting warning.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -155,7 +155,7 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if user is in memberInfo
 	misc.MapMutex.Lock()
 	if misc.GuildMap[m.GuildID].MemberInfoMap[userID] == nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo. Cannot remove nonexisting kick.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in internal database. Cannot remove nonexisting kick.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -265,7 +265,7 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if user is in memberInfo
 	misc.MapMutex.Lock()
 	if misc.GuildMap[m.GuildID].MemberInfoMap[userID] == nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo. Cannot remove nonexisting ban.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in internal database. Cannot remove nonexisting ban.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {

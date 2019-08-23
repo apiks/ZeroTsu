@@ -53,7 +53,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
-	
+
 	// Fetches user from server if possible and sets whether they're inside the server
 	mem, err := s.State.Member(m.GuildID, userID)
 	if err != nil {
@@ -75,17 +75,6 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 					misc.MapMutex.Unlock()
 					return
 				}
-				misc.MapMutex.Unlock()
-				return
-			}
-			misc.MapMutex.Unlock()
-			return
-		}
-
-		_, err = s.ChannelMessageSend(m.ChannelID, "User not found in memberInfo. Initializing user and whoising.")
-		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
 				misc.MapMutex.Unlock()
 				return
 			}

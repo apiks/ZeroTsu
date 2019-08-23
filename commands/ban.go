@@ -126,7 +126,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; !ok || len(misc.GuildMap[m.GuildID].MemberInfoMap) == 0 {
 		// Returns if they're not in the server and memberInfo
 		if userMem == nil {
-			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot ban user until they join the server.")
+			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ internal database. Cannot ban user until they join the server.")
 			if err != nil {
 				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {

@@ -293,18 +293,25 @@ func myWaifu(s *discordgo.Session, m *discordgo.Message) {
 	misc.MapMutex.Lock()
 	_, ok := misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID]
 	if !ok {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You are not in memberInfo and therefore not allowed to roll a waifu. Please notify a mod.")
+		// Fetch user and initialize him
+		member, err := s.State.Member(m.GuildID, m.Author.ID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
+			if member, err = s.GuildMember(m.GuildID, m.Author.ID); err != nil {
+				_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot find you in both the server and internal database. Please rejoin the server.")
+				if err != nil {
+					_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+					if err != nil {
+						misc.MapMutex.Unlock()
+						return
+					}
+					misc.MapMutex.Unlock()
+					return
+				}
 				misc.MapMutex.Unlock()
 				return
 			}
-			misc.MapMutex.Unlock()
-			return
 		}
-		misc.MapMutex.Unlock()
-		return
+		misc.InitializeUser(member, m.GuildID)
 	}
 	if misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID].Waifu.Name == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You don't have a waifu. Please roll one with `"+guildPrefix+"rollwaifu`!")
@@ -367,18 +374,25 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 	misc.MapMutex.Lock()
 	_, ok := misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID]
 	if !ok {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You are not in memberInfo and therefore not allowed to roll a waifu. Please notify a mod.")
+		// Fetch user and initialize him
+		member, err := s.State.Member(m.GuildID, m.Author.ID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
+			if member, err = s.GuildMember(m.GuildID, m.Author.ID); err != nil {
+				_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot find you in both the server and internal database. Please rejoin the server.")
+				if err != nil {
+					_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+					if err != nil {
+						misc.MapMutex.Unlock()
+						return
+					}
+					misc.MapMutex.Unlock()
+					return
+				}
 				misc.MapMutex.Unlock()
 				return
 			}
-			misc.MapMutex.Unlock()
-			return
 		}
-		misc.MapMutex.Unlock()
-		return
+		misc.InitializeUser(member, m.GuildID)
 	}
 	if misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID].Waifu.Name == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You don't have a waifu. Please roll one with `"+guildPrefix+"rollwaifu` before initiating a trade!")
@@ -397,18 +411,25 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 
 	_, ok = misc.GuildMap[m.GuildID].MemberInfoMap[userID]
 	if !ok {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Target user is not in memberInfo and therefore not allowed to roll have a waifu. Please notify a mod.")
+		// Fetch user and initialize him
+		member, err := s.State.Member(m.GuildID, m.Author.ID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
+			if member, err = s.GuildMember(m.GuildID, m.Author.ID); err != nil {
+				_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot find the target user in both the server and internal database. Please have them join the server.")
+				if err != nil {
+					_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+					if err != nil {
+						misc.MapMutex.Unlock()
+						return
+					}
+					misc.MapMutex.Unlock()
+					return
+				}
 				misc.MapMutex.Unlock()
 				return
 			}
-			misc.MapMutex.Unlock()
-			return
 		}
-		misc.MapMutex.Unlock()
-		return
+		misc.InitializeUser(member, m.GuildID)
 	}
 	if misc.GuildMap[m.GuildID].MemberInfoMap[userID].Waifu.Name == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Target user doesn't have a waifu. Please wait for them to roll for one before initiating a trade!")
@@ -505,6 +526,50 @@ func acceptTrade(s *discordgo.Session, m *discordgo.Message) {
 				}
 				misc.MapMutex.Unlock()
 				return
+			}
+
+			// Checks whether the two users are in memberinfo or server
+			if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID]; !ok {
+				// Fetch user and initialize him
+				member, err := s.State.Member(m.GuildID, m.Author.ID)
+				if err != nil {
+					if member, err = s.GuildMember(m.GuildID, m.Author.ID); err != nil {
+						_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot find you in both the server and internal database. Please rejoin the server.")
+						if err != nil {
+							_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+							if err != nil {
+								misc.MapMutex.Unlock()
+								return
+							}
+							misc.MapMutex.Unlock()
+							return
+						}
+						misc.MapMutex.Unlock()
+						return
+					}
+				}
+				misc.InitializeUser(member, m.GuildID)
+			}
+			if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[trade.InitiatorID]; !ok {
+				// Fetch user and initialize him
+				member, err := s.State.Member(m.GuildID, m.Author.ID)
+				if err != nil {
+					if member, err = s.GuildMember(m.GuildID, m.Author.ID); err != nil {
+						_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot find the initiator of the trade in both the server and internal database. Please wait until they join the server.")
+						if err != nil {
+							_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+							if err != nil {
+								misc.MapMutex.Unlock()
+								return
+							}
+							misc.MapMutex.Unlock()
+							return
+						}
+						misc.MapMutex.Unlock()
+						return
+					}
+				}
+				misc.InitializeUser(member, m.GuildID)
 			}
 
 			// Trades waifus by switching them around and removes the trade
