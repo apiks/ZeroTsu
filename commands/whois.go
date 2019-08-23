@@ -68,7 +68,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	user, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]
 	if !ok {
 		if mem == nil {
-			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot whois until user joins the server.")
+			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server and internal database. Cannot whois until user joins the server.")
 			if err != nil {
 				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
@@ -338,7 +338,7 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		if mem == nil {
-			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in memberInfo. Cannot timestamp until they rejoin server.")
+			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server and internal database. Cannot timestamp until they rejoin server.")
 			if err != nil {
 				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
