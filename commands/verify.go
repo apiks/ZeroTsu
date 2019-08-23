@@ -91,7 +91,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.GuildMap[m.GuildID].MemberInfoMap[userID].RedditUsername = redditUsername
 		misc.GuildMap[m.GuildID].MemberInfoMap[userID].VerifiedDate = ver
 	} else {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in the server _and_ MemberInfo. Cannot verify user until they rejoin the server.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in the server _and_ internal database. Cannot verify user until they rejoin the server.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -209,7 +209,7 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.GuildMap[m.GuildID].MemberInfoMap[userID].RedditUsername = ""
 		misc.GuildMap[m.GuildID].MemberInfoMap[userID].VerifiedDate = ""
 	} else {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in memberInfo. Cannot unverify user until they join the server.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in internal database. Cannot unverify user until they join the server.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {

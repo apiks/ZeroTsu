@@ -98,12 +98,12 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Saves time of unban command usage
 	t := time.Now()
 
-	// Updates unban date in memberInfo.json entry
+	// Updates unban date in memberInfo.json entry if possible and writes to storage
 	misc.MapMutex.Lock()
-	misc.GuildMap[m.GuildID].MemberInfoMap[userID].UnbanDate = t.Format("2006-01-02 15:04:05")
-
-	// Writes to memberInfo.json and bannedUsers.json
-	misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+	if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
+		misc.GuildMap[m.GuildID].MemberInfoMap[userID].UnbanDate = t.Format("2006-01-02 15:04:05")
+		misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+	}
 	misc.BannedUsersWrite(misc.GuildMap[m.GuildID].BannedUsers, m.GuildID)
 	misc.MapMutex.Unlock()
 
@@ -116,9 +116,11 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Sends an embed message to bot-log
+	// Sends an embed message to bot-log if possible
 	misc.MapMutex.Lock()
-	err = misc.UnbanEmbed(s, misc.GuildMap[m.GuildID].MemberInfoMap[userID], m.Author.Username, guildBotLog)
+	if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
+		err = misc.UnbanEmbed(s, misc.GuildMap[m.GuildID].MemberInfoMap[userID], m.Author.Username, guildBotLog)
+	}
 	misc.MapMutex.Unlock()
 }
 
