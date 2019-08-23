@@ -30,6 +30,7 @@ func OnMessageEmoji(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
 
@@ -42,6 +43,7 @@ func OnMessageEmoji(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// If a message contains a server emoji it tracks it
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].EmojiStats, m.GuildID)
 	for _, emoji := range guild.Emojis {
 		if strings.Contains(m.Content, "<:"+emoji.APIName()+">") {
 			var emojiStatsVar misc.Emoji
@@ -84,6 +86,7 @@ func OnMessageEmojiReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 	}
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[r.GuildID].GuildConfig, r.GuildID)
 	guildBotLog := misc.GuildMap[r.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
 
@@ -99,6 +102,7 @@ func OnMessageEmojiReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 
 	// If a message contains a server emoji it tracks it
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[r.GuildID].EmojiStats, r.GuildID)
 	for _, emoji := range guild.Emojis {
 		if r.Emoji.ID == emoji.ID {
 			var emojiStatsVar misc.Emoji
@@ -136,6 +140,7 @@ func OnMessageEmojiUnreact(s *discordgo.Session, r *discordgo.MessageReactionRem
 	}
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[r.GuildID].GuildConfig, r.GuildID)
 	guildBotLog := misc.GuildMap[r.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
 
@@ -151,6 +156,7 @@ func OnMessageEmojiUnreact(s *discordgo.Session, r *discordgo.MessageReactionRem
 
 	// If a message contains a server emoji it tracks it
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[r.GuildID].EmojiStats, r.GuildID)
 	for _, emoji := range guild.Emojis {
 		if r.Emoji.ID == emoji.ID {
 			var emojiStatsVar misc.Emoji
@@ -185,6 +191,7 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 	misc.MapMutex.Lock()
 	printEmojiMap = mergeDuplicates(m.GuildID)
 
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
 
@@ -285,6 +292,7 @@ func mergeDuplicates(guildID string) map[string]*misc.Emoji {
 	)
 
 	// Fetches the IDs of all of the emojis that have at least one duplicate in duplicateMap
+	misc.LoadDB(misc.GuildMap[guildID].EmojiStats, guildID)
 	for _, emoji := range misc.GuildMap[guildID].EmojiStats {
 		for _, emojiTwo := range misc.GuildMap[guildID].EmojiStats {
 			if emoji.ID == emojiTwo.ID {

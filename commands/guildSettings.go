@@ -15,6 +15,7 @@ func addCommandRole(s *discordgo.Session, m *discordgo.Message) {
 	var role misc.Role
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -88,6 +89,7 @@ func removeCommandRole(s *discordgo.Session, m *discordgo.Message) {
 	var roleExists bool
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -173,6 +175,7 @@ func viewCommandRoles(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -248,6 +251,7 @@ func viewCommandRoles(s *discordgo.Session, m *discordgo.Message) {
 func prefixCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -292,6 +296,7 @@ func botLogCommand(s *discordgo.Session, m *discordgo.Message) {
 	var message string
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog
 	misc.MapMutex.Unlock()
@@ -355,6 +360,7 @@ func optInUnderCommand(s *discordgo.Session, m *discordgo.Message) {
 	var message string
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog
 	guildOptInUnder := misc.GuildMap[m.GuildID].GuildConfig.OptInUnder
@@ -398,6 +404,7 @@ func optInUnderCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Changes and writes new optinunder role to storage
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	misc.GuildMap[m.GuildID].GuildConfig.OptInUnder.ID = roleID
 	misc.GuildMap[m.GuildID].GuildConfig.OptInUnder.Name = roleName
 	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
@@ -419,6 +426,7 @@ func optInAboveCommand(s *discordgo.Session, m *discordgo.Message) {
 	var message string
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog
 	guildOptInAbove := misc.GuildMap[m.GuildID].GuildConfig.OptInAbove
@@ -451,6 +459,7 @@ func optInAboveCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Changes and writes new optinabove role to storage
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	misc.GuildMap[m.GuildID].GuildConfig.OptInAbove.ID = roleID
 	misc.GuildMap[m.GuildID].GuildConfig.OptInAbove.Name = roleName
 	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
@@ -476,6 +485,7 @@ func addVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -601,6 +611,7 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -731,6 +742,7 @@ func viewVoiceChaRoles(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -812,6 +824,7 @@ func voteCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	var message string
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog
 	guildVoteCategory := misc.GuildMap[m.GuildID].GuildConfig.VoteChannelCategory
@@ -855,6 +868,7 @@ func voteCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Changes and writes new vote category to storage
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	misc.GuildMap[m.GuildID].GuildConfig.VoteChannelCategory.ID = catID
 	misc.GuildMap[m.GuildID].GuildConfig.VoteChannelCategory.Name = catName
 	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
@@ -879,6 +893,7 @@ func voteModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog
 	guildVoteModule := misc.GuildMap[m.GuildID].GuildConfig.VoteModule
@@ -963,6 +978,7 @@ func waifuModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog
 	guildWaifuModule := misc.GuildMap[m.GuildID].GuildConfig.WaifuModule
@@ -1047,6 +1063,7 @@ func reactModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog
 	guildReactsModule := misc.GuildMap[m.GuildID].GuildConfig.ReactsModule
@@ -1108,6 +1125,7 @@ func reactModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Changes and writes module bool to guild
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	misc.GuildMap[m.GuildID].GuildConfig.ReactsModule = module
 	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	misc.MapMutex.Unlock()
@@ -1132,6 +1150,7 @@ func attachmentRemovalCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog
 	guildFileFilter := misc.GuildMap[m.GuildID].GuildConfig.FileFilter
@@ -1211,6 +1230,7 @@ func attachmentRemovalCommand(s *discordgo.Session, m *discordgo.Message) {
 func pingMessageCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	guildPingMessage := misc.GuildMap[m.GuildID].GuildConfig.PingMessage

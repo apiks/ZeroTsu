@@ -19,6 +19,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -57,6 +58,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo and handles them
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; !ok || len(misc.GuildMap[m.GuildID].MemberInfoMap) == 0 {
 		if userMem == nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot warn user until they join the server.")
@@ -118,6 +120,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -163,6 +166,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo and handles them
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; !ok || len(misc.GuildMap[m.GuildID].MemberInfoMap) == 0 {
 		if userMem == nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot warn user until they join the server.")

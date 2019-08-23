@@ -23,7 +23,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	var (
 		muted            string
 		airing           string
-		tmute			 string
+		tmute            string
 		roleName         string
 		descriptionSlice []string
 		fixed            bool
@@ -39,6 +39,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	if m.Author.ID != s.State.User.ID {
 		misc.MapMutex.Lock()
 	}
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	if m.Author.ID != s.State.User.ID {
@@ -179,6 +180,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	if m.Author.ID != s.State.User.ID {
 		misc.MapMutex.Lock()
 	}
+	misc.LoadDB(misc.GuildMap[m.GuildID].SpoilerMap, m.GuildID)
 	misc.GuildMap[m.GuildID].SpoilerMap[newRole.ID] = &tempRole
 	misc.SpoilerRolesWrite(misc.GuildMap[m.GuildID].SpoilerMap, m.GuildID)
 	if m.Author.ID != s.State.User.ID {

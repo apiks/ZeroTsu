@@ -21,6 +21,7 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
 
@@ -45,22 +46,23 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if the channel has an associated role and updates airing role location if it exists
+	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].SpoilerMap, m.GuildID)
 	for _, role := range roles {
 		if strings.ToLower(role.Name) == strings.ToLower(cha.Name) &&
 			role.ID != m.GuildID {
-			misc.MapMutex.Lock()
 			for roleID := range misc.GuildMap[m.GuildID].SpoilerMap {
 				if role.ID == roleID {
 					roleID = role.ID
 					break
 				}
 			}
-			misc.MapMutex.Unlock()
 		}
 		if strings.ToLower(role.Name) == "airing" {
 			airingID = role.ID
 		}
 	}
+	misc.MapMutex.Unlock()
 
 	// Saves the original role and airing perms if they exists
 	for _, perm := range cha.PermissionOverwrites {
@@ -168,6 +170,7 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
 
@@ -186,22 +189,23 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if the channel has an associated role and updates airing role location if it exists
+	misc.LoadDB(misc.GuildMap[m.GuildID].SpoilerMap, m.GuildID)
+	misc.MapMutex.Lock()
 	for _, role := range roles {
 		if strings.ToLower(role.Name) == strings.ToLower(cha.Name) &&
 			role.ID != m.GuildID {
-			misc.MapMutex.Lock()
 			for rolID := range misc.GuildMap[m.GuildID].SpoilerMap {
 				if role.ID == rolID {
 					roleID = role.ID
 					break
 				}
 			}
-			misc.MapMutex.Unlock()
 		}
 		if strings.ToLower(role.Name) == "airing" {
 			airingID = role.ID
 		}
 	}
+	misc.MapMutex.Unlock()
 
 	// Saves the original role and airing perms if they exists
 	for _, perm := range cha.PermissionOverwrites {

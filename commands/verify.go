@@ -21,6 +21,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -67,6 +68,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Add reddit username in map
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
 
 		// Stores time of verification
@@ -134,6 +136,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	t := time.Now()
 	// Adds to verified stats
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].VerifiedStats, m.GuildID)
 	misc.GuildMap[m.GuildID].VerifiedStats[t.Format(misc.DateFormat)]++
 	misc.MapMutex.Unlock()
 
@@ -174,6 +177,7 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	var roleID string
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -204,6 +208,7 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Remove reddit username from map
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
 		// Sets verification variables
 		misc.GuildMap[m.GuildID].MemberInfoMap[userID].RedditUsername = ""
@@ -251,6 +256,7 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	t := time.Now()
 	// Removes from verified stats
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].VerifiedStats, m.GuildID)
 	misc.GuildMap[m.GuildID].VerifiedStats[t.Format(misc.DateFormat)]--
 	misc.MapMutex.Unlock()
 

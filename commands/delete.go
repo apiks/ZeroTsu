@@ -24,6 +24,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -49,6 +50,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 
 	// Removes the set RSS feeds for that channel
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].RssThreadChecks, m.GuildID)
 	for rssLoopFlag {
 		if rssTimerFlag {
 			for _, rssTimer := range misc.GuildMap[m.GuildID].RssThreadChecks {
@@ -70,6 +72,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 			}
 		}
 
+		misc.LoadDB(misc.GuildMap[m.GuildID].RssThreads, m.GuildID)
 		for _, thread := range misc.GuildMap[m.GuildID].RssThreads {
 			if thread.ChannelID == channelID {
 				rssLoopFlag = true
@@ -109,6 +112,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 
 	// Deletes all set reacts that link to the role ID if not using Kaguya
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].ReactJoinMap, m.GuildID)
 	for messageID, roleMapMap := range misc.GuildMap[m.GuildID].ReactJoinMap {
 		for _, roleEmojiMap := range roleMapMap.RoleEmojiMap {
 			for role, emojiSlice := range roleEmojiMap {
@@ -168,6 +172,7 @@ func deleteCategory(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -263,6 +268,7 @@ func deleteChannelReacts(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -295,6 +301,7 @@ func deleteChannelReacts(s *discordgo.Session, m *discordgo.Message) {
 
 	// Deletes all set reacts that link to the role ID if not using Kaguya
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].ReactJoinMap, m.GuildID)
 	for messageID, roleMapMap := range misc.GuildMap[m.GuildID].ReactJoinMap {
 		for _, roleEmojiMap := range roleMapMap.RoleEmojiMap {
 			for role, emojiSlice := range roleEmojiMap {
@@ -337,6 +344,7 @@ func deleteCategoryReacts(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
