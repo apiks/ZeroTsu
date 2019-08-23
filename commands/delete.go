@@ -32,7 +32,10 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 
 	if len(commandStrings) != 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"killchannel [channel]`")
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return
+		}
 		return
 	}
 

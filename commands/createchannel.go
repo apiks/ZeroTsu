@@ -218,7 +218,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	// Assign perms for the BOT
-	err = s.ChannelPermissionSet(newCha.ID, s.State.User.ID, "role", misc.SpoilerPerms, 0)
+	err = s.ChannelPermissionSet(newCha.ID, s.State.User.ID, "member", misc.SpoilerPerms, 0)
 	if err != nil {
 		if m.Author.ID != s.State.User.ID {
 			misc.MapMutex.Unlock()
