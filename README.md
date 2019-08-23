@@ -7,7 +7,7 @@
 
 * Channel lock via dynamic permission change that remembers older permissions
 
-* Show avatar for a target user. Works for people not in the server
+* Anime Schedule that prints what anime are airing when SUBBED
 
 * Extensive member system that tracks past member usernames, nicknames, mod-issued warnings, kicks, bans, whether in the server, timestamps for punishments, server join date and account creation date
 
