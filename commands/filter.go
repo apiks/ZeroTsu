@@ -926,7 +926,7 @@ func init() {
 		execute:  addFilterCommand,
 		trigger:  "addfilter",
 		aliases:  []string{"filter", "setfilter"},
-		desc:     "Adds a phrase to the filters list.",
+		desc:     "Adds a phrase to the filters list. Works for reacts and emotes too. User regex for more complex filters.",
 		elevated: true,
 		category: "filters",
 	})
