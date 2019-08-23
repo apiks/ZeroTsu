@@ -469,7 +469,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if strings.ToLower(m.Content) == fmt.Sprintf("<@%v> good bot", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v> good bot", s.State.User.ID) {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Thank you ❤!")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Thank you ❤")
 		if err != nil {
 
 			MapMutex.Lock()
