@@ -67,8 +67,8 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	)
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	if _, ok := misc.GuildMap[m.GuildID]; ok {
+		misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 		guildPrefix = misc.GuildMap[m.GuildID].GuildConfig.Prefix
 		guildVoteModule = misc.GuildMap[m.GuildID].GuildConfig.VoteModule
 		guildWaifuModule = misc.GuildMap[m.GuildID].GuildConfig.WaifuModule
@@ -181,6 +181,7 @@ func MemberIsAdmin(s *discordgo.Session, guildID string, mem *discordgo.Member, 
 
 // Checks if a user has a privileged role in a given server
 func HasPermissions(m *discordgo.Member, guildID string) bool {
+	misc.LoadDB(misc.GuildMap[guildID].GuildConfig, guildID)
 	for _, role := range m.Roles {
 		for _, goodRole := range misc.GuildMap[guildID].GuildConfig.CommandRoles {
 			if role == goodRole.ID {
