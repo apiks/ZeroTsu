@@ -101,12 +101,8 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.SharedInfo.RemindMes[userID].RemindMeSlice = append(misc.SharedInfo.RemindMes[userID].RemindMeSlice, remindMeObject)
 	err = misc.RemindMeWrite(misc.SharedInfo.RemindMes)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			misc.MapMutex.Unlock()
-			return
-		}
 		misc.MapMutex.Unlock()
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 	misc.MapMutex.Unlock()
@@ -278,12 +274,8 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 
 			err := misc.RemindMeWrite(misc.SharedInfo.RemindMes)
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-				if err != nil {
-					misc.MapMutex.Unlock()
-					return
-				}
 				misc.MapMutex.Unlock()
+				misc.CommandErrorHandler(s, m, err, guildBotLog)
 				return
 			}
 			break

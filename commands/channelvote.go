@@ -182,7 +182,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 			if !exists {
 				delete(misc.GuildMap[m.GuildID].TempChaMap, k)
-				misc.TempChaWrite(misc.GuildMap[m.GuildID].TempChaMap, m.GuildID)
+				_ = misc.TempChaWrite(misc.GuildMap[m.GuildID].TempChaMap, m.GuildID)
 			}
 			if !v.Elevated {
 				controlNumUser++
@@ -278,7 +278,12 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.GuildMap[m.GuildID].VoteInfoMap[m.ID] = &temp
 
 	// Writes to storage
-	misc.VoteInfoWrite(misc.GuildMap[m.GuildID].VoteInfoMap, m.GuildID)
+	err = misc.VoteInfoWrite(misc.GuildMap[m.GuildID].VoteInfoMap, m.GuildID)
+	if err != nil {
+		misc.MapMutex.Unlock()
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		return
+	}
 	misc.MapMutex.Unlock()
 
 	if !admin {
@@ -331,7 +336,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					// Deletes the vote from memory
 					delete(misc.GuildMap[guild.ID].VoteInfoMap, k)
 					// Writes to storage
-					misc.VoteInfoWrite(misc.GuildMap[guild.ID].VoteInfoMap, guild.ID)
+					_ = misc.VoteInfoWrite(misc.GuildMap[guild.ID].VoteInfoMap, guild.ID)
 					continue
 				}
 
@@ -361,7 +366,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					delete(misc.GuildMap[guild.ID].VoteInfoMap, k)
 
 					// Writes to storage
-					misc.VoteInfoWrite(misc.GuildMap[guild.ID].VoteInfoMap, guild.ID)
+					_ = misc.VoteInfoWrite(misc.GuildMap[guild.ID].VoteInfoMap, guild.ID)
 					continue
 				}
 
@@ -399,7 +404,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				// Allows entry to be deleted from memory now, rather than later, avoiding potential bugs if the below commands don't work
 				temp := misc.GuildMap[guild.ID].VoteInfoMap[k]
 				delete(misc.GuildMap[guild.ID].VoteInfoMap, k)
-				misc.VoteInfoWrite(misc.GuildMap[guild.ID].VoteInfoMap, guild.ID)
+				_ = misc.VoteInfoWrite(misc.GuildMap[guild.ID].VoteInfoMap, guild.ID)
 
 				// Create command
 				author.ID = s.State.User.ID
@@ -583,7 +588,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 							}
 
 							delete(misc.GuildMap[guild.ID].TempChaMap, k)
-							misc.TempChaWrite(misc.GuildMap[guild.ID].TempChaMap, guild.ID)
+							_ = misc.TempChaWrite(misc.GuildMap[guild.ID].TempChaMap, guild.ID)
 						}
 					}
 				}

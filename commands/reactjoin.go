@@ -272,7 +272,12 @@ func setReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		// Writes the data to storage
 		misc.MapMutex.Lock()
-		misc.ReactJoinWrite(misc.GuildMap[m.GuildID].ReactJoinMap, m.GuildID)
+		err = misc.ReactJoinWrite(misc.GuildMap[m.GuildID].ReactJoinMap, m.GuildID)
+		if err != nil {
+			misc.MapMutex.Unlock()
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return
+		}
 		misc.MapMutex.Unlock()
 
 		// Reacts with the set emote if possible and gives success
@@ -295,7 +300,12 @@ func setReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Writes the data to storage
 	misc.MapMutex.Lock()
-	misc.ReactJoinWrite(misc.GuildMap[m.GuildID].ReactJoinMap, m.GuildID)
+	err = misc.ReactJoinWrite(misc.GuildMap[m.GuildID].ReactJoinMap, m.GuildID)
+	if err != nil {
+		misc.MapMutex.Unlock()
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		return
+	}
 	misc.MapMutex.Unlock()
 
 	// Reacts with the set emote if possible
@@ -416,7 +426,7 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.MapMutex.Lock()
 	if len(commandStrings) == 2 {
 		delete(misc.GuildMap[m.GuildID].ReactJoinMap, commandStrings[1])
-		misc.ReactJoinWrite(misc.GuildMap[m.GuildID].ReactJoinMap, m.GuildID)
+		_ = misc.ReactJoinWrite(misc.GuildMap[m.GuildID].ReactJoinMap, m.GuildID)
 
 		// Returns if the bot called the func
 		if m.Author.ID == s.State.User.ID {
@@ -486,7 +496,7 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 					// Delete the entire message from map if it's the only set emoji react join
 					if len(misc.GuildMap[m.GuildID].ReactJoinMap[messageID].RoleEmojiMap[storageMessageID]) == 1 && len(misc.GuildMap[m.GuildID].ReactJoinMap[messageID].RoleEmojiMap[storageMessageID][role]) == 1 {
 						delete(misc.GuildMap[m.GuildID].ReactJoinMap, commandStrings[1])
-						misc.ReactJoinWrite(misc.GuildMap[m.GuildID].ReactJoinMap, m.GuildID)
+						_ = misc.ReactJoinWrite(misc.GuildMap[m.GuildID].ReactJoinMap, m.GuildID)
 
 						// Returns if the bot called the func
 						if m.Author.ID == s.State.User.ID {
@@ -506,7 +516,7 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 						// Delete only the role from map if other set react join roles exist in the map
 					} else if len(misc.GuildMap[m.GuildID].ReactJoinMap[messageID].RoleEmojiMap[storageMessageID][role]) == 1 {
 						delete(misc.GuildMap[m.GuildID].ReactJoinMap[messageID].RoleEmojiMap[storageMessageID], role)
-						misc.ReactJoinWrite(misc.GuildMap[m.GuildID].ReactJoinMap, m.GuildID)
+						_ = misc.ReactJoinWrite(misc.GuildMap[m.GuildID].ReactJoinMap, m.GuildID)
 
 						// Returns if the bot called the func
 						if m.Author.ID == s.State.User.ID {

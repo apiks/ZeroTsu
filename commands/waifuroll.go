@@ -65,12 +65,8 @@ func addWaifu(s *discordgo.Session, m *discordgo.Message) {
 	misc.GuildMap[m.GuildID].Waifus = append(misc.GuildMap[m.GuildID].Waifus, temp)
 	err := misc.WaifusWrite(misc.GuildMap[m.GuildID].Waifus, m.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			misc.MapMutex.Unlock()
-			return
-		}
 		misc.MapMutex.Unlock()
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 	misc.MapMutex.Unlock()
@@ -108,17 +104,8 @@ func removeWaifu(s *discordgo.Session, m *discordgo.Message) {
 	for i, waifu := range misc.GuildMap[m.GuildID].Waifus {
 		if strings.ToLower(waifu.Name) == strings.ToLower(commandStrings[1]) {
 			misc.GuildMap[m.GuildID].Waifus = append(misc.GuildMap[m.GuildID].Waifus[:i], misc.GuildMap[m.GuildID].Waifus[i+1:]...)
-			err := misc.WaifusWrite(misc.GuildMap[m.GuildID].Waifus, m.GuildID)
-			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-				if err != nil {
-					misc.MapMutex.Unlock()
-					return
-				}
-				misc.MapMutex.Unlock()
-				return
-			}
-			_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed waifu `"+commandStrings[1]+"` from waifu list.")
+			_ = misc.WaifusWrite(misc.GuildMap[m.GuildID].Waifus, m.GuildID)
+			_, err := s.ChannelMessageSend(m.ChannelID, "Success! Removed waifu `"+commandStrings[1]+"` from waifu list.")
 			if err != nil {
 				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
@@ -444,12 +431,8 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 	misc.GuildMap[m.GuildID].WaifuTrades = append(misc.GuildMap[m.GuildID].WaifuTrades, temp)
 	err = misc.WaifuTradesWrite(misc.GuildMap[m.GuildID].WaifuTrades, m.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			misc.MapMutex.Unlock()
-			return
-		}
 		misc.MapMutex.Unlock()
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
@@ -531,16 +514,7 @@ func acceptTrade(s *discordgo.Session, m *discordgo.Message) {
 			misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 
 			misc.GuildMap[m.GuildID].WaifuTrades = append(misc.GuildMap[m.GuildID].WaifuTrades[:i], misc.GuildMap[m.GuildID].WaifuTrades[i+1:]...)
-			err := misc.WaifuTradesWrite(misc.GuildMap[m.GuildID].WaifuTrades, m.GuildID)
-			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-				if err != nil {
-					misc.MapMutex.Unlock()
-					return
-				}
-				misc.MapMutex.Unlock()
-				return
-			}
+			_ = misc.WaifuTradesWrite(misc.GuildMap[m.GuildID].WaifuTrades, m.GuildID)
 			break
 		}
 	}
@@ -624,16 +598,7 @@ func cancelTrade(s *discordgo.Session, m *discordgo.Message) {
 
 			// Removes a trade
 			misc.GuildMap[m.GuildID].WaifuTrades = append(misc.GuildMap[m.GuildID].WaifuTrades[:i], misc.GuildMap[m.GuildID].WaifuTrades[i+1:]...)
-			err := misc.WaifuTradesWrite(misc.GuildMap[m.GuildID].WaifuTrades, m.GuildID)
-			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-				if err != nil {
-					misc.MapMutex.Unlock()
-					return
-				}
-				misc.MapMutex.Unlock()
-				return
-			}
+			_ = misc.WaifuTradesWrite(misc.GuildMap[m.GuildID].WaifuTrades, m.GuildID)
 			break
 		}
 	}

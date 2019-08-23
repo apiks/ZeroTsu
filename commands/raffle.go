@@ -62,10 +62,7 @@ func raffleParticipateCommand(s *discordgo.Session, m *discordgo.Message) {
 
 			// Adds user ID to the raffle list
 			misc.GuildMap[m.GuildID].Raffles[index].ParticipantIDs = append(misc.GuildMap[m.GuildID].Raffles[index].ParticipantIDs, m.Author.ID)
-			err := misc.RafflesWrite(misc.GuildMap[m.GuildID].Raffles, m.GuildID)
-			if err != nil {
-				misc.CommandErrorHandler(s, m, err, guildBotLog)
-			}
+			_ = misc.RafflesWrite(misc.GuildMap[m.GuildID].Raffles, m.GuildID)
 			break
 		}
 	}
@@ -107,10 +104,6 @@ func RaffleReactJoin(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 		return
 	}
 
-	misc.MapMutex.Lock()
-	guildBotLog := misc.GuildMap[r.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
-
 	// Checks if it's the slot machine emoji or the bot itself
 	if r.Emoji.APIName() != "🎰" {
 		return
@@ -124,16 +117,7 @@ func RaffleReactJoin(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	for i, raffle := range misc.GuildMap[r.GuildID].Raffles {
 		if raffle.ReactMessageID == r.MessageID {
 			misc.GuildMap[r.GuildID].Raffles[i].ParticipantIDs = append(misc.GuildMap[r.GuildID].Raffles[i].ParticipantIDs, r.UserID)
-			err := misc.RafflesWrite(misc.GuildMap[r.GuildID].Raffles, r.GuildID)
-			if err != nil {
-				_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-				if err != nil {
-					misc.MapMutex.Unlock()
-					return
-				}
-				misc.MapMutex.Unlock()
-				return
-			}
+			_ = misc.RafflesWrite(misc.GuildMap[r.GuildID].Raffles, r.GuildID)
 			misc.MapMutex.Unlock()
 			return
 		}
@@ -156,10 +140,6 @@ func RaffleReactLeave(s *discordgo.Session, r *discordgo.MessageReactionRemove) 
 		return
 	}
 
-	misc.MapMutex.Lock()
-	guildBotLog := misc.GuildMap[r.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
-
 	// Checks if it's the slot machine emoji or the bot
 	if r.Emoji.APIName() != "🎰" {
 		return
@@ -175,16 +155,7 @@ func RaffleReactLeave(s *discordgo.Session, r *discordgo.MessageReactionRemove) 
 			for i := range misc.GuildMap[r.GuildID].Raffles[index].ParticipantIDs {
 				misc.GuildMap[r.GuildID].Raffles[index].ParticipantIDs = append(misc.GuildMap[r.GuildID].Raffles[index].ParticipantIDs[:i], misc.GuildMap[r.GuildID].Raffles[index].ParticipantIDs[i+1:]...)
 			}
-			err := misc.RafflesWrite(misc.GuildMap[r.GuildID].Raffles, r.GuildID)
-			if err != nil {
-				_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-				if err != nil {
-					misc.MapMutex.Unlock()
-					return
-				}
-				misc.MapMutex.Unlock()
-				return
-			}
+			_ = misc.RafflesWrite(misc.GuildMap[r.GuildID].Raffles, r.GuildID)
 			misc.MapMutex.Unlock()
 			return
 		}

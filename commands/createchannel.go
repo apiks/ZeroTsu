@@ -298,7 +298,14 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 		}
 		misc.GuildMap[m.GuildID].TempChaMap[newRole.ID] = &temp
-		misc.TempChaWrite(misc.GuildMap[m.GuildID].TempChaMap, m.GuildID)
+		err = misc.TempChaWrite(misc.GuildMap[m.GuildID].TempChaMap, m.GuildID)
+		if err != nil {
+			if m.Author.ID != s.State.User.ID {
+				misc.MapMutex.Unlock()
+			}
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return
+		}
 		if m.Author.ID != s.State.User.ID {
 			misc.MapMutex.Unlock()
 		}

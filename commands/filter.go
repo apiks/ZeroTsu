@@ -453,10 +453,7 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Writes the phrase to filters.json and checks if the requirement was already in storage
 	err := misc.FiltersWrite(commandStrings[1], m.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 

@@ -26,9 +26,8 @@ var (
 )
 
 type guildInfo struct {
-	GuildID     string
-	GuildConfig GuildSettings
-	LastDBUse	map[string]*time.Time
+	GuildID     	string
+	GuildConfig 	GuildSettings
 
 	BannedUsers         []BannedUsers
 	Filters             []Filter
@@ -70,6 +69,7 @@ type GuildSettings struct {
 	ReactsModule        bool       `json:"ReactsModule"`
 	FileFilter          bool       `json:"FileFilter"`
 	PingMessage         string     `json:"PingMessage"`
+	Premium				bool	   `json:"Premium"`
 }
 
 type Role struct {
@@ -161,6 +161,7 @@ type Channel struct {
 
 type RemindMeSlice struct {
 	RemindMeSlice []RemindMe
+	Premium		  bool
 }
 
 type RemindMe struct {
@@ -216,7 +217,7 @@ func LoadGuilds() {
 		MapMutex.Lock()
 		GuildMap[folderName] = &guildInfo{
 			GuildID:             folderName,
-			GuildConfig:         GuildSettings{Prefix: ".", VoteModule: false, WaifuModule: false, ReactsModule: true, FileFilter: false, PingMessage: "Hmm? Do you want some honey, darling? Open wide~~"},
+			GuildConfig:         GuildSettings{Prefix: ".", VoteModule: false, WaifuModule: false, ReactsModule: true, FileFilter: false, PingMessage: "Hmm? Do you want some honey, darling? Open wide~~", Premium: false},
 			BannedUsers:         nil,
 			Filters:             nil,
 			MessageRequirements: nil,
@@ -442,6 +443,15 @@ func VerifiedStatsWrite(verifiedStats map[string]int, guildID string) error {
 // Writes RemindMe notes to remindMes.json
 func RemindMeWrite(remindMe map[string]*RemindMeSlice) error {
 
+	// Checks if the user has hit the db limit
+	for _, remindMeSlice := range SharedInfo.RemindMes {
+		if remindMeSlice.Premium && len(remindMeSlice.RemindMeSlice) > 299 {
+			return fmt.Errorf("Error: You have reached the RemindMe limit (299) for this account.")
+		} else if !remindMeSlice.Premium && len(remindMeSlice.RemindMeSlice) > 99 {
+			return fmt.Errorf("Error: You have reached the RemindMe limit (100) for this account.")
+		}
+	}
+
 	// Turns that slice into bytes to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(remindMe, "", "    ")
 	if err != nil {
@@ -458,55 +468,85 @@ func RemindMeWrite(remindMe map[string]*RemindMeSlice) error {
 }
 
 // Writes vote info to voteInfo.json
-func VoteInfoWrite(info map[string]*VoteInfo, guildID string) {
+func VoteInfoWrite(info map[string]*VoteInfo, guildID string) error {
+
+	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].VoteInfoMap) > 199 {
+		return fmt.Errorf("Error: You have reached the vote limit (200) for this server.")
+	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].VoteInfoMap) > 99 {
+		return fmt.Errorf("Error: You have reached the vote limit (100) for this server.")
+	}
 
 	// Turns info slice into byte ready to be pushed to file
 	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
-		return
+		return err
 	}
 
 	//Writes to file
 	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/voteInfo.json", guildID), MarshaledStruct, 0644)
 	if err != nil {
-		return
+		return err
 	}
+
+	return nil
 }
 
 // Writes temp cha info to tempCha.json
-func TempChaWrite(info map[string]*TempChaInfo, guildID string) {
+func TempChaWrite(info map[string]*TempChaInfo, guildID string) error {
+
+	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].TempChaMap) > 199 {
+		return fmt.Errorf("Error: You have reached the temporary channel limit (200) for this server.")
+	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].TempChaMap) > 99 {
+		return fmt.Errorf("Error: You have reached the temporary channel limit (100) for this server.")
+	}
 
 	// Turns info map into byte ready to be pushed to file
 	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
-		return
+		return err
 	}
 
 	// Writes to file
 	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/tempCha.json", guildID), MarshaledStruct, 0644)
 	if err != nil {
-		return
+		return err
 	}
+
+	return nil
 }
 
 // Writes react channel join info to ReactJoin.json
-func ReactJoinWrite(info map[string]*ReactJoin, guildID string) {
+func ReactJoinWrite(info map[string]*ReactJoin, guildID string) error {
+
+	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].ReactJoinMap) > 399 {
+		return fmt.Errorf("Error: You have reached the react role giving limit (400) for this server.")
+	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].ReactJoinMap) > 149 {
+		return fmt.Errorf("Error: You have reached the react role giving limit (150) for this server.")
+	}
 
 	// Turns info slice into byte ready to be pushed to file
 	marshaledStruct, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
-		return
+		return err
 	}
 
 	// Writes to file
 	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/reactJoin.json", guildID), marshaledStruct, 0644)
 	if err != nil {
-		return
+		return err
 	}
+
+	return nil
 }
 
 // Writes Raffles to raffles.json
 func RafflesWrite(raffle []Raffle, guildID string) error {
+
+	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].Raffles) > 199 {
+		return fmt.Errorf("Error: You have reached the raffle limit (200) for this server.")
+	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].Raffles) > 49 {
+		return fmt.Errorf("Error: You have reached the raffle limit (50) for this server.")
+	}
 
 	// Turns that slice into bytes to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(raffle, "", "    ")
@@ -526,6 +566,12 @@ func RafflesWrite(raffle []Raffle, guildID string) error {
 // Writes Waifus to waifus.json
 func WaifusWrite(waifu []Waifu, guildID string) error {
 
+	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].Waifus) > 399 {
+		return fmt.Errorf("Error: You have reached the waifu limit (400) for this server.")
+	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].Waifus) > 49 {
+		return fmt.Errorf("Error: You have reached the waifu limit (50) for this server.")
+	}
+
 	// Turns that slice into bytes to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(waifu, "", "    ")
 	if err != nil {
@@ -543,6 +589,12 @@ func WaifusWrite(waifu []Waifu, guildID string) error {
 
 // Writes WaifuTrades to waifutrades.json
 func WaifuTradesWrite(trade []WaifuTrade, guildID string) error {
+
+	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].WaifuTrades) > 299 {
+		return fmt.Errorf("Error: This server has reached the waifu trade limit (300).")
+	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].WaifuTrades) > 149 {
+		return fmt.Errorf("Error: This server has reached the waifu trade limit (150).")
+	}
 
 	// Turns that slice into bytes to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(trade, "", "    ")
@@ -615,6 +667,12 @@ func RaffleRemove(raffle string, guildID string) error {
 // Adds string "phrase" to filters.json and memory
 func FiltersWrite(phrase string, guildID string) error {
 
+	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].Filters) > 299 {
+		return fmt.Errorf("Error: You have reached the filter limit (300) for this server.")
+	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].Filters) > 99 {
+		return fmt.Errorf("Error: You have reached the filter limit (100) for this server.")
+	}
+
 	var filterStruct = Filter{phrase}
 
 	// Appends the new filtered phrase to a slice of all of the old ones if it doesn't exist
@@ -686,6 +744,12 @@ func FiltersRemove(phrase string, guildID string) error {
 
 // Adds string "phrase" to messReqs.json and memory
 func MessRequirementWrite(phrase string, channel string, filterType string, guildID string) error {
+
+	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].MessageRequirements) > 149 {
+		return fmt.Errorf("Error: You have reached the message requirement filter limit (149) for this server.")
+	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].MessageRequirements) > 49 {
+		return fmt.Errorf("Error: You have reached the message requirement filter limit (49) for this server.")
+	}
 
 	var MessRequirementStruct = MessRequirement{phrase, filterType, channel, ""}
 
@@ -823,6 +887,12 @@ func SpoilerRolesDelete(roleID string, guildID string) {
 
 // Writes rss info to rssThreads.json
 func RssThreadsWrite(subreddit, author, title, postType, channelID, guildID string, pin bool) error {
+
+	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].RssThreads) > 399 {
+		return fmt.Errorf("Error: You have reached the RSS thread limit (400) for this server.")
+	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].RssThreads) > 149 {
+		return fmt.Errorf("Error: You have reached the RSS thread limit (150) for this server.")
+	}
 
 	// Checks if a thread with these settings exist already
 	for _, thread := range GuildMap[guildID].RssThreads {
