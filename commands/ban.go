@@ -30,7 +30,6 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	z, _ := time.Now().Zone()
 
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -124,7 +123,6 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo and handles them
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; !ok || len(misc.GuildMap[m.GuildID].MemberInfoMap) == 0 {
 		// Returns if they're not in the server and memberInfo
 		if userMem == nil {
@@ -206,7 +204,6 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Adds the now banned user to BannedUsersSlice, removes the previous instances if he already existed there and writes to disk
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].BannedUsers, m.GuildID)
 	for index, val := range misc.GuildMap[m.GuildID].BannedUsers {
 		if val.ID == userID {
 			misc.GuildMap[m.GuildID].BannedUsers = append(misc.GuildMap[m.GuildID].BannedUsers[:index], misc.GuildMap[m.GuildID].BannedUsers[index+1:]...)

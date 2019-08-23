@@ -40,7 +40,6 @@ func jokeCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Joke website is not working properly. Please notify Apiks about it.")
 		if err != nil {
 			misc.MapMutex.Lock()
-			misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 			guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 			misc.MapMutex.Unlock()
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
@@ -52,7 +51,6 @@ func jokeCommand(s *discordgo.Session, m *discordgo.Message) {
 	_, err = s.ChannelMessageSend(m.ChannelID, joke.Setup+"\n\n"+joke.Punchline)
 	if err != nil {
 		misc.MapMutex.Lock()
-		misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		misc.MapMutex.Unlock()
 		misc.CommandErrorHandler(s, m, err, guildBotLog)

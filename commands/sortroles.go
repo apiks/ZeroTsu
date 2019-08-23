@@ -23,9 +23,7 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 	if m.Author.ID != s.State.User.ID {
 		misc.MapMutex.Lock()
 	}
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.LoadDB(misc.GuildMap[m.GuildID].SpoilerMap, m.GuildID)
 	if len(misc.GuildMap[m.GuildID].SpoilerMap) == 0 {
 		if m.Author.ID != s.State.User.ID {
 			misc.MapMutex.Unlock()

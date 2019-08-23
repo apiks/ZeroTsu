@@ -32,7 +32,6 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		MapMutex.Lock()
 		err := cleanSpoilerRoles(s, guild.ID)
 		if err != nil {
-			LoadDB(GuildMap[guild.ID].GuildConfig, guild.ID)
 			_, _ = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 		}
 		MapMutex.Unlock()
@@ -49,7 +48,6 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 			remindMeHandler(s, guild.ID)
 
 			// Goes through bannedUsers.json if it's not empty and unbans if needed
-			LoadDB(GuildMap[guild.ID].BannedUsers, guild.ID)
 			if len(GuildMap[guild.ID].BannedUsers) == 0 {
 				MapMutex.Unlock()
 				continue
@@ -66,8 +64,6 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 				banFlag = false
 
 				// Checks if user is in MemberInfo and saves him if true
-				LoadDB(GuildMap[guild.ID].MemberInfoMap, guild.ID)
-				LoadDB(GuildMap[guild.ID].GuildConfig, guild.ID)
 				memberInfoUser, ok := GuildMap[guild.ID].MemberInfoMap[GuildMap[guild.ID].BannedUsers[i].ID]
 				if !ok {
 					continue
@@ -157,11 +153,10 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 		MapMutex.Lock()
 		for _, guild := range e.Guilds {
-			LoadDB(GuildMap[guild.ID].GuildConfig, guild.ID)
+
 			guildBotLog := GuildMap[guild.ID].GuildConfig.BotLog.ID
 
 			// Writes emoji stats to disk
-			LoadDB(GuildMap[guild.ID].EmojiStats, guild.ID)
 			_, err := EmojiStatsWrite(GuildMap[guild.ID].EmojiStats, guild.ID)
 			if err != nil {
 				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
@@ -172,7 +167,6 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			}
 
 			// Writes user gain stats to disk
-			LoadDB(GuildMap[guild.ID].UserChangeStats, guild.ID)
 			_, err = UserChangeStatsWrite(GuildMap[guild.ID].UserChangeStats, guild.ID)
 			if err != nil {
 				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
@@ -184,7 +178,6 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 			// Writes verified stats to disk
 			if config.Website != "" {
-				LoadDB(GuildMap[guild.ID].VerifiedStats, guild.ID)
 				err = VerifiedStatsWrite(GuildMap[guild.ID].VerifiedStats, guild.ID)
 				if err != nil {
 					_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
@@ -196,7 +189,6 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			}
 
 			// Writes memberInfo to disk
-			LoadDB(GuildMap[guild.ID].MemberInfoMap, guild.ID)
 			WriteMemberInfo(GuildMap[guild.ID].MemberInfoMap, guild.ID)
 
 			// Fetches all server roles
@@ -210,7 +202,6 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			}
 			// Updates optin role stat
 			t := time.Now()
-			LoadDB(GuildMap[guild.ID].ChannelStats, guild.ID)
 			for chas := range GuildMap[guild.ID].ChannelStats {
 				if GuildMap[guild.ID].ChannelStats[chas].RoleCount == nil {
 					GuildMap[guild.ID].ChannelStats[chas].RoleCount = make(map[string]int)
@@ -239,15 +230,6 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 				}
 				continue
 			}
-
-			// Unloads DBs if necessary
-			for db, useTime := range GuildMap[guild.ID].LastDBUse {
-				difference := t.Sub(*useTime)
-				if difference < 6 * time.Hour {
-					continue
-				}
-				unloadDB(*db, guild.ID)
-			}
 		}
 		MapMutex.Unlock()
 	}
@@ -258,14 +240,11 @@ func RSSParser(s *discordgo.Session, guildID string) {
 
 	// Checks if there are any rss settings for this guild
 	MapMutex.Lock()
-	LoadDB(GuildMap[guildID].RssThreads, guildID)
 	if len(GuildMap[guildID].RssThreads) == 0 {
 		MapMutex.Unlock()
 		return
 	}
 	// Save current threads as a copy so mapMutex isn't taken all the time when checking the feeds
-	LoadDB(GuildMap[guildID].RssThreadChecks, guildID)
-	LoadDB(GuildMap[guildID].GuildConfig, guildID)
 	rssThreads := GuildMap[guildID].RssThreads
 	rssThreadChecks := GuildMap[guildID].RssThreadChecks
 	bogLogID := GuildMap[guildID].GuildConfig.BotLog.ID
@@ -430,7 +409,6 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 	var dontRemove bool
 
 	MapMutex.Lock()
-	LoadDB(GuildMap[v.GuildID].GuildConfig, v.GuildID)
 	if len(GuildMap[v.GuildID].GuildConfig.VoiceChas) == 0 {
 		MapMutex.Unlock()
 		return
@@ -491,11 +469,10 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if strings.ToLower(m.Content) == fmt.Sprintf("<@%v> good bot", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v> good bot", s.State.User.ID) {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Thank you ❤")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Thank you ❤!")
 		if err != nil {
 
 			MapMutex.Lock()
-			LoadDB(GuildMap[m.GuildID].GuildConfig, m.GuildID)
 			guildBotLog := GuildMap[m.GuildID].GuildConfig.BotLog.ID
 			MapMutex.Unlock()
 
@@ -699,8 +676,6 @@ func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
 	}
 
 	MapMutex.Lock()
-	LoadDB(GuildMap[e.GuildID].GuildConfig, e.GuildID)
-	LoadDB(GuildMap[e.GuildID].BannedUsers, e.GuildID)
 	guildBotLog := GuildMap[e.GuildID].GuildConfig.BotLog.ID
 
 	for _, user := range GuildMap[e.GuildID].BannedUsers {
@@ -745,7 +720,6 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 					pingMessage := fmt.Sprintf("<@%v> Remindme: %v", userID, remindMeSlice.RemindMeSlice[i].Message)
 					_, err = s.ChannelMessageSend(remindMeSlice.RemindMeSlice[i].CommandChannel, pingMessage)
 					if err != nil {
-						LoadDB(GuildMap[guildID].GuildConfig, guildID)
 						_, err = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 						if err != nil {
 							return
@@ -760,7 +734,6 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 			SharedInfo.RemindMes[userID].RemindMeSlice = remindMeSlice.RemindMeSlice
 			err = RemindMeWrite(SharedInfo.RemindMes)
 			if err != nil {
-				LoadDB(GuildMap[guildID].GuildConfig, guildID)
 				_, err = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
 					return
@@ -790,7 +763,6 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	if err != nil {
 
 		MapMutex.Lock()
-		LoadDB(GuildMap[u.GuildID].GuildConfig, u.GuildID)
 		guildBotLog := GuildMap[u.GuildID].GuildConfig.BotLog.ID
 		MapMutex.Unlock()
 
@@ -807,7 +779,6 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		if err != nil {
 
 			MapMutex.Lock()
-			LoadDB(GuildMap[u.GuildID].GuildConfig, u.GuildID)
 			guildBotLog := GuildMap[u.GuildID].GuildConfig.BotLog.ID
 			MapMutex.Unlock()
 
@@ -845,7 +816,6 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	)
 
 	MapMutex.Lock()
-	LoadDB(GuildMap[u.GuildID].GuildConfig, u.GuildID)
 	guildBotLog := GuildMap[u.GuildID].GuildConfig.BotLog.ID
 	MapMutex.Unlock()
 
@@ -874,7 +844,6 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	MapMutex.Lock()
 
 	// Initializes user if he's not in memberInfo
-	LoadDB(GuildMap[u.GuildID].MemberInfoMap, u.GuildID)
 	if _, ok := GuildMap[u.GuildID].MemberInfoMap[u.User.ID]; !ok {
 		InitializeUser(u.Member, u.GuildID)
 	}
@@ -897,7 +866,6 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	temp.ID = u.User.ID
 	temp.User = u.User.Username
 	temp.UnbanDate = time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
-	LoadDB(GuildMap[u.GuildID].BannedUsers, u.GuildID)
 	for index, val := range GuildMap[u.GuildID].BannedUsers {
 		if val.ID == u.User.ID {
 			GuildMap[u.GuildID].BannedUsers = append(GuildMap[u.GuildID].BannedUsers[:index], GuildMap[u.GuildID].BannedUsers[index+1:]...)
@@ -941,7 +909,6 @@ func cleanSpoilerRoles(s *discordgo.Session, guildID string) error {
 
 	var shouldDelete bool
 
-	LoadDB(GuildMap[guildID].GuildConfig, guildID)
 	guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
 
 	// Pulls all of the server roles
@@ -955,7 +922,6 @@ func cleanSpoilerRoles(s *discordgo.Session, guildID string) error {
 	}
 
 	// Removes roles not found in spoilerRoles.json
-	LoadDB(GuildMap[guildID].SpoilerMap, guildID)
 	for _, spoilerRole := range GuildMap[guildID].SpoilerMap {
 		shouldDelete = true
 		for _, role := range roles {

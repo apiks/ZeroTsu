@@ -9,7 +9,6 @@ import (
 // Returns a message on "ping" to see if bot is alive
 func pingCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	_, err := s.ChannelMessageSend(m.ChannelID, misc.GuildMap[m.GuildID].GuildConfig.PingMessage)
 	if err != nil {
 		_, err = s.ChannelMessageSend(misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
