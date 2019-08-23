@@ -236,6 +236,10 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 		return
 	}
 
+	if e.User.ID == s.State.User.ID {
+		initDB(e.GuildID)
+	}
+
 	var writeFlag bool
 
 	MapMutex.Lock()
