@@ -217,6 +217,15 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 	}
+	// Assign perms for the BOT
+	err = s.ChannelPermissionSet(newCha.ID, s.State.User.ID, "member", misc.SpoilerPerms, 0)
+	if err != nil {
+		if m.Author.ID != s.State.User.ID {
+			misc.MapMutex.Unlock()
+		}
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		return
+	}
 	if m.Author.ID != s.State.User.ID {
 		misc.MapMutex.Unlock()
 	}
