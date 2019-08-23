@@ -161,7 +161,6 @@ func ChannelStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 	// Checks for nil entry assignment error and saves from that (could be abused to stop bot)
 	if id != "" {
 		misc.MapMutex.Lock()
-		misc.LoadDB(misc.GuildMap[config.ServerID].ChannelStats, config.ServerID)
 		if misc.GuildMap[config.ServerID].ChannelStats[id] == nil {
 			pick.Error = false
 			// Loads the html & css stats files
@@ -181,7 +180,6 @@ func ChannelStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 	if id == "" {
 		pick.ChannelStats = make(map[string]*misc.Channel)
 		misc.MapMutex.Lock()
-		misc.LoadDB(misc.GuildMap[config.ServerID].ChannelStats, config.ServerID)
 		pick.ChannelStats = misc.GuildMap[config.ServerID].ChannelStats
 		// Loads the html & css stats files
 		t, err := template.ParseFiles("./web/assets/channelstats.html")
@@ -201,7 +199,6 @@ func ChannelStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Save dates, sort them and then assign messages in order of the dates
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[config.ServerID].ChannelStats, config.ServerID)
 	for date := range misc.GuildMap[config.ServerID].ChannelStats[id].Messages {
 		dateLabels = append(dateLabels, date)
 	}
@@ -250,7 +247,6 @@ func UserChangeStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Save dates, sort them and then assign user change int in order of the dates
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[config.ServerID].UserChangeStats, config.ServerID)
 	for date := range misc.GuildMap[config.ServerID].UserChangeStats {
 		dateLabels = append(dateLabels, date)
 		totalChange += misc.GuildMap[config.ServerID].UserChangeStats[date]
@@ -383,7 +379,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Sets the username + discrim combo if it exists in memberinfo via ID, also sorts out the reddit verified status
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
 	if _, ok := misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID]; ok {
 		usernameDiscrim := misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].Username + "#" + misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].Discrim
 		tempUser.UsernameDiscrim = usernameDiscrim
@@ -746,7 +741,6 @@ func Verify(cookieValue *http.Cookie, r *http.Request) error {
 	}()
 
 	// Confirms that the map is not empty
-	misc.LoadDB(misc.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
 	if len(misc.GuildMap[config.ServerID].MemberInfoMap) == 0 {
 		return fmt.Errorf("Critical Error: MemberInfo is empty. Please notify a mod.")
 	}
@@ -785,7 +779,6 @@ func Verify(cookieValue *http.Cookie, r *http.Request) error {
 	misc.WriteMemberInfo(misc.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
 
 	// Adds to verified stats
-	misc.LoadDB(misc.GuildMap[config.ServerID].VerifiedStats, config.ServerID)
 	misc.GuildMap[config.ServerID].VerifiedStats[t.Format(misc.DateFormat)]++
 	return nil
 }
@@ -814,9 +807,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 			for userID := range verifyMap {
 
 				// Checks if banned suspected spambot accounts verified
-				misc.LoadDB(misc.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
 				if misc.GuildMap[config.ServerID].MemberInfoMap[userID].SuspectedSpambot {
-					misc.LoadDB(misc.GuildMap[config.ServerID].BannedUsers, config.ServerID)
 					for i, banUser := range misc.GuildMap[config.ServerID].BannedUsers {
 						if banUser.ID == userID {
 							misc.GuildMap[config.ServerID].BannedUsers = append(misc.GuildMap[config.ServerID].BannedUsers[:i], misc.GuildMap[config.ServerID].BannedUsers[i+1:]...)
@@ -931,7 +922,6 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	// Checks if the user is an already verified one
 	misc.MapMutex.Lock()
-	misc.LoadDB(misc.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
 	if len(misc.GuildMap[config.ServerID].MemberInfoMap) == 0 {
 		misc.MapMutex.Unlock()
 		return
@@ -991,7 +981,6 @@ func CheckAltAccount(s *discordgo.Session, id string) bool {
 		}
 	}()
 
-	misc.LoadDB(misc.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
 	if len(misc.GuildMap[config.ServerID].MemberInfoMap) == 0 {
 		return false
 	}
