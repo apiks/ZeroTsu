@@ -65,11 +65,40 @@ func playingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
+// Prints in how many servers the BOT is
+func serversCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	if m.Author.ID != config.OwnerID {
+		return
+	}
+
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I am in %v servers.", len(s.State.Guilds)))
+	if err != nil {
+
+		misc.MapMutex.Lock()
+		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+		misc.MapMutex.Unlock()
+
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+		if err != nil {
+			return
+		}
+		return
+	}
+}
+
 func init() {
 	add(&command{
 		execute: playingMsgCommand,
 		trigger: "playingmsg",
 		desc:    "Views or changes the current BOT playing message.",
+		elevated: true,
+		admin: true,
+	})
+	add(&command{
+		execute: serversCommand,
+		trigger: "servers",
+		desc:    "Views the number of servers the BOT is in.",
 		elevated: true,
 		admin: true,
 	})
