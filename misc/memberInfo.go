@@ -238,6 +238,7 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 
 	if e.User.ID == s.State.User.ID {
 		initDB(e.GuildID)
+		LoadGuilds()
 	}
 
 	var writeFlag bool
