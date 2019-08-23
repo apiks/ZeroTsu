@@ -117,7 +117,7 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		misc.MapMutex.Unlock()
 	}
-	if cmd.admin {
+	if cmd.admin && m.Author.ID != config.OwnerID {
 		mem, err := s.State.Member(m.GuildID, m.Author.ID)
 		if err != nil {
 			mem, err = s.GuildMember(m.GuildID, m.Author.ID)
@@ -171,9 +171,6 @@ func HasElevatedPermissions(s *discordgo.Session, userID string, guildID string)
 func MemberIsAdmin(s *discordgo.Session, guildID string, mem *discordgo.Member, permission int) (bool, error) {
 	// Iterate through the role IDs stored in member.Roles
 	// to check permissions
-	if mem.User.ID == config.OwnerID {
-		return true, nil
-	}
 	for _, roleID := range mem.Roles {
 		role, err := s.State.Role(guildID, roleID)
 		if err != nil {
