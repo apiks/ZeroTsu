@@ -23,6 +23,7 @@ func addWaifu(s *discordgo.Session, m *discordgo.Message) {
 	var temp misc.Waifu
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -43,6 +44,7 @@ func addWaifu(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if such a waifu already exists
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].Waifus, m.GuildID)
 	for _, waifu := range misc.GuildMap[m.GuildID].Waifus {
 		if waifu.Name == strings.ToLower(commandStrings[1]) {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: That waifu already exists.")
@@ -85,6 +87,7 @@ func addWaifu(s *discordgo.Session, m *discordgo.Message) {
 func removeWaifu(s *discordgo.Session, m *discordgo.Message) {
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -105,6 +108,7 @@ func removeWaifu(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if such a waifu already exists and removes it if so
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].Waifus, m.GuildID)
 	for i, waifu := range misc.GuildMap[m.GuildID].Waifus {
 		if strings.ToLower(waifu.Name) == strings.ToLower(commandStrings[1]) {
 			misc.GuildMap[m.GuildID].Waifus = append(misc.GuildMap[m.GuildID].Waifus[:i], misc.GuildMap[m.GuildID].Waifus[i+1:]...)
@@ -146,6 +150,7 @@ func viewWaifus(s *discordgo.Session, m *discordgo.Message) {
 	var message string
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -165,6 +170,7 @@ func viewWaifus(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].Waifus, m.GuildID)
 	if len(misc.GuildMap[m.GuildID].Waifus) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no waifus.")
 		if err != nil {
@@ -206,6 +212,7 @@ func rollWaifu(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -225,6 +232,7 @@ func rollWaifu(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	_, ok := misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID]
 	if !ok {
 		// Fetch user and initialize him
@@ -253,6 +261,7 @@ func rollWaifu(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
+	misc.LoadDB(misc.GuildMap[m.GuildID].Waifus, m.GuildID)
 	waifuLen = len(misc.GuildMap[m.GuildID].Waifus)
 	if waifuLen == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no waifus to roll.")
@@ -285,6 +294,7 @@ func rollWaifu(s *discordgo.Session, m *discordgo.Message) {
 func myWaifu(s *discordgo.Session, m *discordgo.Message) {
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -304,6 +314,7 @@ func myWaifu(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	_, ok := misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID]
 	if !ok {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You are not in memberInfo and therefore not allowed to roll a waifu. Please notify a mod.")
@@ -352,6 +363,7 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 	var temp misc.WaifuTrade
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -378,6 +390,7 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	_, ok := misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID]
 	if !ok {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You are not in memberInfo and therefore not allowed to roll a waifu. Please notify a mod.")
@@ -438,6 +451,7 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
+	misc.LoadDB(misc.GuildMap[m.GuildID].WaifuTrades, m.GuildID)
 	temp.TradeID = strconv.Itoa(len(misc.GuildMap[m.GuildID].WaifuTrades))
 	temp.AccepteeID = userID
 	temp.InitiatorID = m.Author.ID
@@ -473,6 +487,7 @@ func acceptTrade(s *discordgo.Session, m *discordgo.Message) {
 	var flag bool
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -492,6 +507,7 @@ func acceptTrade(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].WaifuTrades, m.GuildID)
 	if len(misc.GuildMap[m.GuildID].WaifuTrades) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no ongoing trades.")
 		if err != nil {
@@ -525,6 +541,7 @@ func acceptTrade(s *discordgo.Session, m *discordgo.Message) {
 			}
 
 			// Trades waifus by switching them around and removes the trade
+			misc.LoadDB(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 			accepteeWaifu := misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID].Waifu
 			misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID].Waifu = misc.GuildMap[m.GuildID].MemberInfoMap[trade.InitiatorID].Waifu
 			misc.GuildMap[m.GuildID].MemberInfoMap[trade.InitiatorID].Waifu = accepteeWaifu
@@ -570,6 +587,7 @@ func cancelTrade(s *discordgo.Session, m *discordgo.Message) {
 	var flag bool
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -589,6 +607,7 @@ func cancelTrade(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].WaifuTrades, m.GuildID)
 	if len(misc.GuildMap[m.GuildID].WaifuTrades) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no ongoing trades.")
 		if err != nil {
@@ -668,6 +687,7 @@ func showOwners(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -688,6 +708,7 @@ func showOwners(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if there are any waifus
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].Waifus, m.GuildID)
 	if len(misc.GuildMap[m.GuildID].Waifus) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no waifus.")
 		if err != nil {
@@ -701,6 +722,7 @@ func showOwners(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Iterates through each waifu and member, increasing the waifuNum each time it detects a user with that waifu, and saves it to the messsage
+	misc.LoadDB(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	for _, waifu := range misc.GuildMap[m.GuildID].Waifus {
 		for _, member := range misc.GuildMap[m.GuildID].MemberInfoMap {
 			if member.Waifu.Name == waifu.Name {

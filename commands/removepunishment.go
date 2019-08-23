@@ -14,6 +14,7 @@ import (
 func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -44,6 +45,7 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	if misc.GuildMap[m.GuildID].MemberInfoMap[userID] == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo. Cannot remove nonexisting warning.")
 		if err != nil {
@@ -124,6 +126,7 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -154,6 +157,7 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	if misc.GuildMap[m.GuildID].MemberInfoMap[userID] == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo. Cannot remove nonexisting kick.")
 		if err != nil {
@@ -234,6 +238,7 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -264,6 +269,7 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	if misc.GuildMap[m.GuildID].MemberInfoMap[userID] == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in memberInfo. Cannot remove nonexisting ban.")
 		if err != nil {

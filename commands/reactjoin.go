@@ -28,6 +28,8 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 
 	// Checks if a react channel join is set for that specific message and emoji and continues if true
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[r.GuildID].GuildConfig, r.GuildID)
+	misc.LoadDB(misc.GuildMap[r.GuildID].ReactJoinMap, r.GuildID)
 	guildBotLog := misc.GuildMap[r.GuildID].GuildConfig.BotLog.ID
 
 	if misc.GuildMap[r.GuildID].ReactJoinMap[r.MessageID] == nil {
@@ -119,6 +121,8 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 
 	// Checks if a react channel join is set for that specific message and emoji and continues if true
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[r.GuildID].GuildConfig, r.GuildID)
+	misc.LoadDB(misc.GuildMap[r.GuildID].ReactJoinMap, r.GuildID)
 	guildBotLog := misc.GuildMap[r.GuildID].GuildConfig.BotLog.ID
 
 	if misc.GuildMap[r.GuildID].ReactJoinMap[r.MessageID] == nil {
@@ -199,6 +203,7 @@ func setReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 	var roleExists bool
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -272,6 +277,7 @@ func setReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		// Writes the data to storage
 		misc.MapMutex.Lock()
+		misc.LoadDB(misc.GuildMap[m.GuildID].ReactJoinMap, m.GuildID)
 		misc.ReactJoinWrite(misc.GuildMap[m.GuildID].ReactJoinMap, m.GuildID)
 		misc.MapMutex.Unlock()
 
@@ -322,6 +328,7 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -366,6 +373,7 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].ReactJoinMap, m.GuildID)
 	if len(misc.GuildMap[m.GuildID].ReactJoinMap) == 0 {
 		// Returns if the bot called the func
 		if m.Author.ID == s.State.User.ID {
@@ -579,6 +587,8 @@ func viewReactJoinsCommand(s *discordgo.Session, m *discordgo.Message) {
 	var line string
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	misc.LoadDB(misc.GuildMap[m.GuildID].ReactJoinMap, m.GuildID)
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
 	if len(misc.GuildMap[m.GuildID].ReactJoinMap) == 0 {
@@ -638,6 +648,8 @@ func SaveReactJoin(messageID string, role string, emoji string, guildID string) 
 
 	// Uses this if the message already has a set emoji react
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[guildID].ReactJoinMap, guildID)
+	misc.LoadDB(misc.GuildMap[guildID].EmojiRoleMap, guildID)
 	if misc.GuildMap[guildID].ReactJoinMap[messageID] != nil {
 		temp = *misc.GuildMap[guildID].ReactJoinMap[messageID]
 
@@ -705,6 +717,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -830,6 +843,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Updates the position of opt-in-under and opt-in-above position
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	for i := 0; i < len(deb); i++ {
 		if deb[i].ID == misc.GuildMap[m.GuildID].GuildConfig.OptInUnder.ID {
 			misc.GuildMap[m.GuildID].GuildConfig.OptInUnder.Position = deb[i].Position
@@ -910,6 +924,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()

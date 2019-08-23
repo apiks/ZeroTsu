@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 
@@ -28,12 +29,12 @@ var (
 type guildInfo struct {
 	GuildID     string
 	GuildConfig GuildSettings
-	LastDBUse	map[string]*time.Time
+	LastDBUse	map[*interface{}]*time.Time
 
 	BannedUsers         []BannedUsers
 	Filters             []Filter
 	MessageRequirements []MessRequirement
-	SpoilerRoles        []discordgo.Role
+	SpoilerRoles        []*discordgo.Role
 	RssThreads          []RssThread
 	RssThreadChecks     []RssThreadCheck
 	Raffles             []Raffle
@@ -217,6 +218,7 @@ func LoadGuilds() {
 		GuildMap[folderName] = &guildInfo{
 			GuildID:             folderName,
 			GuildConfig:         GuildSettings{Prefix: ".", VoteModule: false, WaifuModule: false, ReactsModule: true, FileFilter: false, PingMessage: "Hmm? Do you want some honey, darling? Open wide~~"},
+			LastDBUse:			 make(map[*interface{}]*time.Time),
 			BannedUsers:         nil,
 			Filters:             nil,
 			MessageRequirements: nil,
@@ -237,9 +239,11 @@ func LoadGuilds() {
 			ReactJoinMap:        make(map[string]*ReactJoin),
 			EmojiRoleMap:        make(map[string][]string),
 		}
+
 		for _, file := range files {
 			LoadGuildFile(folderName, file)
 		}
+		unloadGuildDBs(folderName)
 		MapMutex.Unlock()
 	}
 }
@@ -282,44 +286,59 @@ func LoadGuildFile(guildID string, file string) {
 	switch file {
 	case "bannedUsers.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].BannedUsers)
+		setLastDBUse(GuildMap[guildID].BannedUsers, guildID)
 	case "filters.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].Filters)
+		setLastDBUse(GuildMap[guildID].Filters, guildID)
 	case "messReqs.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].MessageRequirements)
+		setLastDBUse(GuildMap[guildID].MessageRequirements, guildID)
 	case "spoilerRoles.json":
 		err = json.Unmarshal(infoByte, &GuildMap[guildID].SpoilerRoles)
 		if err != nil {
 			return
 		}
+		setLastDBUse(GuildMap[guildID].SpoilerRoles, guildID)
 		// Fills spoilerMap with roles from the spoilerRoles.json file if latter is not empty
 		for i := 0; i < len(GuildMap[guildID].SpoilerRoles); i++ {
-			GuildMap[guildID].SpoilerMap[GuildMap[guildID].SpoilerRoles[i].ID] = &GuildMap[guildID].SpoilerRoles[i]
+			GuildMap[guildID].SpoilerMap[GuildMap[guildID].SpoilerRoles[i].ID] = GuildMap[guildID].SpoilerRoles[i]
 		}
+		setLastDBUse(GuildMap[guildID].SpoilerMap, guildID)
 	case "rssThreads.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].RssThreads)
+		setLastDBUse(GuildMap[guildID].RssThreads, guildID)
 	case "rssThreadCheck.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].RssThreadChecks)
+		setLastDBUse(GuildMap[guildID].RssThreadChecks, guildID)
 	case "raffles.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].Raffles)
+		setLastDBUse(GuildMap[guildID].Raffles, guildID)
 	case "waifus.json":
 		if GuildMap[guildID].GuildConfig.WaifuModule {
 			_ = json.Unmarshal(infoByte, &GuildMap[guildID].Waifus)
+			setLastDBUse(GuildMap[guildID].Waifus, guildID)
 		}
 	case "waifuTrades.json":
 		if GuildMap[guildID].GuildConfig.WaifuModule {
 			_ = json.Unmarshal(infoByte, &GuildMap[guildID].WaifuTrades)
+			setLastDBUse(GuildMap[guildID].WaifuTrades, guildID)
 		}
 	case "memberInfo.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].MemberInfoMap)
+		setLastDBUse(GuildMap[guildID].MemberInfoMap, guildID)
 	case "emojiStats.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].EmojiStats)
+		setLastDBUse(GuildMap[guildID].EmojiStats, guildID)
 	case "channelStats.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].ChannelStats)
+		setLastDBUse(GuildMap[guildID].ChannelStats, guildID)
 	case "userChangeStats.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].UserChangeStats)
+		setLastDBUse(GuildMap[guildID].UserChangeStats, guildID)
 	case "verifiedStats.json":
 		if config.Website != "" {
 			_ = json.Unmarshal(infoByte, &GuildMap[guildID].VerifiedStats)
+			setLastDBUse(GuildMap[guildID].VerifiedStats, guildID)
 		}
 	case "voteInfo.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].VoteInfoMap)
@@ -328,9 +347,13 @@ func LoadGuildFile(guildID string, file string) {
 	case "reactJoin.json":
 		if GuildMap[guildID].GuildConfig.ReactsModule {
 			_ = json.Unmarshal(infoByte, &GuildMap[guildID].ReactJoinMap)
+			setLastDBUse(GuildMap[guildID].ReactJoinMap, guildID)
 		}
 	case "guildSettings.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].GuildConfig)
+		setLastDBUse(GuildMap[guildID].GuildConfig, guildID)
+	case "lastDBUse.json":
+		_ = json.Unmarshal(infoByte, &GuildMap[guildID].LastDBUse)
 	}
 }
 
@@ -769,7 +792,7 @@ func SpoilerRolesWrite(SpoilerMapWrite map[string]*discordgo.Role, guildID strin
 	// Appends the new spoiler role to a slice of all of the old ones if it doesn't exist
 	if len(GuildMap[guildID].SpoilerRoles) == 0 {
 		for k := range SpoilerMapWrite {
-			GuildMap[guildID].SpoilerRoles = append(GuildMap[guildID].SpoilerRoles, *SpoilerMapWrite[k])
+			GuildMap[guildID].SpoilerRoles = append(GuildMap[guildID].SpoilerRoles, SpoilerMapWrite[k])
 		}
 	} else {
 		for k := range SpoilerMapWrite {
@@ -784,7 +807,7 @@ func SpoilerRolesWrite(SpoilerMapWrite map[string]*discordgo.Role, guildID strin
 			}
 
 			if !roleExists {
-				GuildMap[guildID].SpoilerRoles = append(GuildMap[guildID].SpoilerRoles, *SpoilerMapWrite[k])
+				GuildMap[guildID].SpoilerRoles = append(GuildMap[guildID].SpoilerRoles, SpoilerMapWrite[k])
 			}
 		}
 	}
@@ -1030,6 +1053,125 @@ func initDB(guildID string) {
 			continue
 		}
 	}
+}
+
+// Loads a specific db from a guild if necessary
+func LoadDB(database interface{}, guildID string) {
+	setLastDBUse(database, guildID)
+	if _, ok := database.(GuildSettings); !ok {
+		if !reflect.ValueOf(database).IsNil() {
+			return
+		}
+	} else {
+		if database.(GuildSettings).PingMessage != "" {
+			return
+		}
+	}
+
+	// Loads dbs dynamically
+	switch database.(type) {
+	case GuildSettings:
+		if GuildMap[guildID].GuildConfig.PingMessage == "" {
+			return
+		}
+		LoadGuildFile(guildID, "guildSettings.json")
+	case []BannedUsers:
+		LoadGuildFile(guildID, "bannedUsers.json")
+	case []Filter:
+		LoadGuildFile(guildID, "filters.json")
+	case []MessRequirement:
+		LoadGuildFile(guildID, "messReqs.json")
+	case []*discordgo.Role:
+		LoadGuildFile(guildID, "spoilerRoles.json")
+	case []RssThread:
+		LoadGuildFile(guildID, "rssThreads.json")
+	case []RssThreadCheck:
+		LoadGuildFile(guildID, "rssThreadCheck.json")
+	case []Raffle:
+		LoadGuildFile(guildID, "raffles.json")
+	case []Waifu:
+		LoadGuildFile(guildID, "waifus.json")
+	case []WaifuTrade:
+		LoadGuildFile(guildID, "waifuTrades.json")
+	case map[string]*UserInfo:
+		LoadGuildFile(guildID, "memberInfo.json")
+	case map[string]*discordgo.Role:
+		LoadGuildFile(guildID, "spoilerRoles.json")
+	case map[string]*Emoji:
+		LoadGuildFile(guildID, "emojiStats.json")
+	case map[string]*Channel:
+		LoadGuildFile(guildID, "channelStats.json")
+	case map[string]int:
+		LoadGuildFile(guildID, "userChangeStats.json")
+		LoadGuildFile(guildID, "verifiedStats.json")
+	case map[string]*ReactJoin:
+		LoadGuildFile(guildID, "reactJoin.json")
+	case map[string][]string:
+		LoadGuildFile(guildID, "guildSettings.json")
+	}
+}
+
+// Unloads a specific db from a guild if necessary
+func unloadDB(database interface{}, guildID string) {
+	if database == nil {
+		return
+	}
+
+	switch database.(type) {
+	case GuildSettings:
+		emptyGuildConfig := GuildSettings{}
+		GuildMap[guildID].GuildConfig = emptyGuildConfig
+	case []BannedUsers:
+		GuildMap[guildID].BannedUsers = nil
+	case []Filter:
+		GuildMap[guildID].Filters = nil
+	case []MessRequirement:
+		GuildMap[guildID].MessageRequirements = nil
+	case []*discordgo.Role:
+		GuildMap[guildID].SpoilerRoles = nil
+	case []RssThread:
+		GuildMap[guildID].RssThreads = nil
+	case []RssThreadCheck:
+		GuildMap[guildID].RssThreadChecks = nil
+	case []Raffle:
+		GuildMap[guildID].Raffles = nil
+	case []Waifu:
+		GuildMap[guildID].Waifus = nil
+	case []WaifuTrade:
+		GuildMap[guildID].WaifuTrades = nil
+	case map[string]*UserInfo:
+		GuildMap[guildID].MemberInfoMap = nil
+	case map[string]*discordgo.Role:
+		GuildMap[guildID].SpoilerMap = nil
+	case map[string]*Emoji:
+		GuildMap[guildID].EmojiStats = nil
+	case map[string]*Channel:
+		GuildMap[guildID].ChannelStats = nil
+	case map[string]int:
+		GuildMap[guildID].UserChangeStats = nil
+		GuildMap[guildID].VerifiedStats = nil
+	case map[string]*ReactJoin:
+		GuildMap[guildID].ReactJoinMap = nil
+	case map[string][]string:
+		GuildMap[guildID].EmojiRoleMap = nil
+	}
+}
+
+// Unloads all dbs that haven't been used in a while
+func unloadGuildDBs(guildID string) {
+	t := time.Now()
+	for db, useTime := range GuildMap[guildID].LastDBUse {
+		difference := t.Sub(*useTime)
+		if difference < 6 * time.Hour {
+			continue
+		}
+		unloadDB(*db, guildID)
+	}
+}
+
+func setLastDBUse(db interface{}, guildID string) {
+	t := time.Now()
+	GuildMap[guildID].LastDBUse[&db] = &t
 }
 
 // Writes/Refreshes all DBs

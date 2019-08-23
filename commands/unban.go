@@ -16,6 +16,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 	var banFlag = false
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -50,6 +51,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Goes through every banned user from BannedUsersSlice and if the user is in it, confirms that user is a temp ban
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].BannedUsers, m.GuildID)
 	if len(misc.GuildMap[m.GuildID].BannedUsers) == 0 {
 		_, err = s.ChannelMessageSend(m.ChannelID, "No bans found.")
 		if err != nil {
@@ -100,6 +102,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Updates unban date in memberInfo.json entry
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	misc.GuildMap[m.GuildID].MemberInfoMap[userID].UnbanDate = t.Format("2006-01-02 15:04:05")
 
 	// Writes to memberInfo.json and bannedUsers.json

@@ -58,6 +58,7 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 			if err != nil {
 
 				misc.MapMutex.Lock()
+				misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 				guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 				misc.MapMutex.Unlock()
 
@@ -83,6 +84,7 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 
 		misc.MapMutex.Lock()
+		misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		misc.MapMutex.Unlock()
 

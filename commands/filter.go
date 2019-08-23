@@ -93,6 +93,7 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if err != nil {
 
 		misc.MapMutex.Lock()
+		misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		misc.MapMutex.Unlock()
 
@@ -187,6 +188,7 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	if err != nil {
 
 		misc.MapMutex.Lock()
+		misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		misc.MapMutex.Unlock()
 
@@ -255,6 +257,7 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 	if err != nil {
 
 		misc.MapMutex.Lock()
+		misc.LoadDB(misc.GuildMap[r.GuildID].GuildConfig, r.GuildID)
 		guildBotLog := misc.GuildMap[r.GuildID].GuildConfig.BotLog.ID
 		misc.MapMutex.Unlock()
 
@@ -290,6 +293,7 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 		mentionCheck = mentionRegex.FindAllString(mLowercase, -1)
 		if mentionCheck != nil {
 			misc.MapMutex.Lock()
+			misc.LoadDB(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 			for _, mention := range mentionCheck {
 				userID = strings.TrimPrefix(mention, "<@")
 				userID = strings.TrimPrefix(userID, "!")
@@ -319,6 +323,7 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 
 	// Iterates through all the filters to see if the message contained a filtered phrase
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].Filters, m.GuildID)
 	for _, filter := range misc.GuildMap[m.GuildID].Filters {
 
 		// Regex check the filter phrase in the message
@@ -347,6 +352,7 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 	}
 
 	// Iterates through all of the message requirements to see if the message follows a set requirement {
+	misc.LoadDB(misc.GuildMap[m.GuildID].MessageRequirements, m.GuildID)
 	for i, requirement := range misc.GuildMap[m.GuildID].MessageRequirements {
 		if requirement.Channel != m.ChannelID {
 			continue
@@ -392,6 +398,7 @@ func isFilteredReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) bool
 
 	// Iterates through all the filters to see if the react contained a filtered phrase
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[r.GuildID].Filters, r.GuildID)
 	for _, filter := range misc.GuildMap[r.GuildID].Filters {
 
 		// Assigns the filter to a string that can be changed to the normal API mode name later
@@ -431,6 +438,7 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -479,8 +487,10 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
+	misc.LoadDB(misc.GuildMap[m.GuildID].Filters, m.GuildID)
 	if len(misc.GuildMap[m.GuildID].Filters) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no filters.")
 		if err != nil {
@@ -540,8 +550,10 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 	var filters string
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
+	misc.LoadDB(misc.GuildMap[m.GuildID].Filters, m.GuildID)
 	if len(misc.GuildMap[m.GuildID].Filters) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no filters.")
 		if err != nil {
@@ -593,6 +605,7 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
 
@@ -656,6 +669,7 @@ func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -741,8 +755,10 @@ func removeMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
+	misc.LoadDB(misc.GuildMap[m.GuildID].MessageRequirements, m.GuildID)
 	if len(misc.GuildMap[m.GuildID].MessageRequirements) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no message requirements.")
 		if err != nil {
@@ -809,8 +825,10 @@ func viewMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	var mRequirements string
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
+	misc.LoadDB(misc.GuildMap[m.GuildID].MessageRequirements, m.GuildID)
 	if len(misc.GuildMap[m.GuildID].MessageRequirements) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no message requirements.")
 		if err != nil {
@@ -873,6 +891,7 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Counter for how many rapidly sent user messages a user has
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
 	if spamFilterMap[m.Author.ID] < 4 {
@@ -881,7 +900,7 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Stops filter if there is an unusual high size of messages to be deleted from a user (i.e. discord lags)
+	// Stops filter if there is an unusual high size of messages to be deleted from a user (e.g. discord lags)
 	if spamFilterMap[m.Author.ID] > 15 {
 		_, err = s.ChannelMessageSend(guildBotLog, "Error: My spam filter has been disabled due to massive overflow of requests.")
 		if err != nil {

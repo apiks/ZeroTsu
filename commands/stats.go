@@ -35,9 +35,11 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 		misc.MapMutex.Unlock()
 		return
 	}
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
 	// Sets channel params if it didn't exist before in database
+	misc.LoadDB(misc.GuildMap[m.GuildID].ChannelStats, m.GuildID)
 	if _, ok := misc.GuildMap[m.GuildID].ChannelStats[m.ChannelID]; !ok {
 		// Fetches all guild info
 		guild, err := s.State.Guild(m.GuildID)
@@ -100,15 +102,16 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		normalChannelTotal int
 		optinChannelTotal  int
 		flag               bool
-		channels	   []*misc.Channel
 	)
 
 	t := time.Now()
 
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
 	// Fixes channels without ID param
+	misc.LoadDB(misc.GuildMap[m.GuildID].ChannelStats, m.GuildID)
 	for id := range misc.GuildMap[m.GuildID].ChannelStats {
 		if misc.GuildMap[m.GuildID].ChannelStats[id].ChannelID == "" {
 			misc.GuildMap[m.GuildID].ChannelStats[id].ChannelID = id
@@ -131,8 +134,12 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sorts channel by their message use
-	for _, channel := range misc.GuildMap[m.GuildID].ChannelStats {
-		channels = append(channels, channel)
+	channels := make([]*misc.Channel, len(misc.GuildMap[m.GuildID].ChannelStats))
+	for i := 0; i < len(misc.GuildMap[m.GuildID].ChannelStats); i++ {
+		for _, channel := range misc.GuildMap[m.GuildID].ChannelStats {
+			channels[i] = channel
+			i++
+		}
 	}
 	sort.Sort(byFrequencyChannel(channels))
 
@@ -225,6 +232,9 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
+	misc.LoadDB(misc.GuildMap[m.GuildID].UserChangeStats, m.GuildID)
+	misc.LoadDB(misc.GuildMap[m.GuildID].VerifiedStats, m.GuildID)
+
 	message += fmt.Sprintf("\nOpt-in Total: %d\n\n------\n", optinChannelTotal)
 	message += fmt.Sprintf("\nGrand Total Messages: %d\n\n", optinChannelTotal+normalChannelTotal)
 	message += fmt.Sprintf("\nDaily User Change: %d\n\n", misc.GuildMap[m.GuildID].UserChangeStats[t.Format(misc.DateFormat)])
@@ -284,6 +294,8 @@ func lineSpaceFormatChannel(id string, optin bool, guildID string) string {
 	var totalMessages int
 	t := time.Now()
 
+	misc.LoadDB(misc.GuildMap[guildID].ChannelStats, guildID)
+
 	for date := range misc.GuildMap[guildID].ChannelStats[id].Messages {
 		totalMessages += misc.GuildMap[guildID].ChannelStats[id].Messages[date]
 	}
@@ -325,6 +337,7 @@ func OnMemberJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	t := time.Now()
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[u.GuildID].UserChangeStats, u.GuildID)
 	misc.GuildMap[u.GuildID].UserChangeStats[t.Format(misc.DateFormat)]++
 	misc.MapMutex.Unlock()
 }
@@ -345,6 +358,7 @@ func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 
 	t := time.Now()
 	misc.MapMutex.Lock()
+	misc.LoadDB(misc.GuildMap[u.GuildID].UserChangeStats, u.GuildID)
 	misc.GuildMap[u.GuildID].UserChangeStats[t.Format(misc.DateFormat)]--
 	misc.MapMutex.Unlock()
 }
@@ -353,6 +367,7 @@ func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 func isChannelUsable(channel misc.Channel, guild *discordgo.Guild) (misc.Channel, bool) {
 
 	// Checks if channel exists and if it's optin
+	misc.LoadDB(misc.GuildMap[guild.ID].GuildConfig, guild.ID)
 	for guildIndex := range guild.Channels {
 		for roleIndex := range guild.Roles {
 			if guild.Roles[roleIndex].Position < misc.GuildMap[guild.ID].GuildConfig.OptInUnder.Position &&
@@ -372,6 +387,7 @@ func isChannelUsable(channel misc.Channel, guild *discordgo.Guild) (misc.Channel
 			channel.Exists = false
 		}
 	}
+	misc.LoadDB(misc.GuildMap[guild.ID].ChannelStats, guild.ID)
 	misc.GuildMap[guild.ID].ChannelStats[channel.ChannelID] = &channel
 
 	if channel.Exists {
@@ -413,6 +429,7 @@ func dailyStats(s *discordgo.Session, e *discordgo.Ready) {
 	misc.MapMutex.Lock()
 	for _, guild := range e.Guilds {
 
+		misc.LoadDB(misc.GuildMap[guild.ID].GuildConfig, guild.ID)
 		guildPrefix := misc.GuildMap[guild.ID].GuildConfig.Prefix
 		guildBotLog := misc.GuildMap[guild.ID].GuildConfig.BotLog.ID
 
