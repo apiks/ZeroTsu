@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -64,6 +65,7 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Saves the original role and airing perms if they exists
 	for _, perm := range cha.PermissionOverwrites {
+		log.Println(perm.ID)
 		if perm.ID == roleID && roleID != "" {
 			originalRolePerms = perm
 		}
@@ -72,6 +74,7 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		if perm.ID == m.GuildID {
 			originalEveryonePerms = perm
+			log.Println(originalEveryonePerms)
 		}
 	}
 
@@ -98,6 +101,15 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	if originalEveryonePerms != nil {
 		err = s.ChannelPermissionSet(m.ChannelID, m.GuildID, "role", originalEveryonePerms.Allow & ^discordgo.PermissionSendMessages, originalEveryonePerms.Deny|discordgo.PermissionSendMessages)
+		if err != nil {
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+	} else {
+		err = s.ChannelPermissionSet(m.ChannelID, m.GuildID, "role", 0, discordgo.PermissionSendMessages)
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -287,6 +299,7 @@ func init() {
 	add(&command{
 		execute:  lockCommand,
 		trigger:  "lock",
+		aliases:  []string{"lockchannel", "channellock"},
 		desc:     "Locks a channel.",
 		elevated: true,
 		category: "channel",
@@ -294,6 +307,7 @@ func init() {
 	add(&command{
 		execute:  unlockCommand,
 		trigger:  "unlock",
+		aliases:  []string{"unlockchannel", "channelunlock"},
 		desc:     "Unlocks a channel.",
 		elevated: true,
 		category: "channel",
