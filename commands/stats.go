@@ -411,6 +411,10 @@ func dailyStats(s *discordgo.Session, e *discordgo.Ready) {
 	hour := t.Hour()
 	minute := t.Minute()
 
+	if hour != 23 || minute != 59 {
+		return
+	}
+
 	folders, err := ioutil.ReadDir("database/guilds")
 	if err != nil {
 		log.Panicln(err)
@@ -425,10 +429,6 @@ func dailyStats(s *discordgo.Session, e *discordgo.Ready) {
 
 		guildPrefix := misc.GuildMap[guildID].GuildConfig.Prefix
 		guildBotLog := misc.GuildMap[guildID].GuildConfig.BotLog.ID
-
-		if hour != 23 && minute != 59 {
-			continue
-		}
 
 		_, err := s.ChannelMessageSend(guildBotLog, fmt.Sprintf("Update for **%v %v, %v**", t.Month(), t.Day(), t.Year()))
 		if err != nil {
