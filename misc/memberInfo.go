@@ -91,6 +91,11 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		return
 	}
 
+	if e.User.ID == s.State.User.ID {
+		InitDB(e.GuildID)
+		LoadGuilds()
+	}
+
 	var (
 		flag        bool
 		writeFlag   bool
@@ -237,7 +242,7 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	}
 
 	if e.User.ID == s.State.User.ID {
-		initDB(e.GuildID)
+		InitDB(e.GuildID)
 		LoadGuilds()
 	}
 
@@ -325,6 +330,11 @@ func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 
 	if e.GuildID == "" {
 		return
+	}
+
+	if e.User.ID == s.State.User.ID {
+		InitDB(e.GuildID)
+		LoadGuilds()
 	}
 
 	var writeFlag bool

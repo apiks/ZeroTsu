@@ -33,6 +33,11 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		return
 	}
 
+	if m.Author.ID == s.State.User.ID {
+		misc.InitDB(m.GuildID)
+		misc.LoadGuilds()
+	}
+
 	misc.MapMutex.Lock()
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	guildFileFilter := misc.GuildMap[m.GuildID].GuildConfig.FileFilter

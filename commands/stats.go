@@ -410,46 +410,56 @@ func dailyStats(s *discordgo.Session, e *discordgo.Ready) {
 	hour := t.Hour()
 	minute := t.Minute()
 
+	folders, err := ioutil.ReadDir("database/guilds")
+	if err != nil {
+		log.Panicln(err)
+	}
+
 	misc.MapMutex.Lock()
-	for _, guild := range e.Guilds {
+	for _, f := range folders {
+		if !f.IsDir() {
+			continue
+		}
+		guildID := f.Name()
 
-		guildPrefix := misc.GuildMap[guild.ID].GuildConfig.Prefix
-		guildBotLog := misc.GuildMap[guild.ID].GuildConfig.BotLog.ID
+		guildPrefix := misc.GuildMap[guildID].GuildConfig.Prefix
+		guildBotLog := misc.GuildMap[guildID].GuildConfig.BotLog.ID
 
-		if hour == 23 && minute == 59 {
+		if hour != 23 && minute != 59 {
+			continue
+		}
 
-			_, err := s.ChannelMessageSend(guildBotLog, fmt.Sprintf("Update for **%v %v, %v**", t.Month(), t.Day(), t.Year()))
+		_, err := s.ChannelMessageSend(guildBotLog, fmt.Sprintf("Update for **%v %v, %v**", t.Month(), t.Day(), t.Year()))
+		if err != nil {
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-				if err != nil {
-					continue
-				}
 				continue
 			}
-
-			author.ID = s.State.User.ID
-			message.GuildID = guild.ID
-			message.Author = &author
-			message.Content = guildPrefix + "stats"
-			message.ChannelID = guildBotLog
-
-			// Check for when stats don't display possibly due to malformed message
-			if author.ID == "" || message.GuildID == "" ||
-				message.Author == nil || message.Content == "" ||
-				message.ChannelID == "" {
-				log.Println("ERROR: MALFORMED DAILY STATS MESSAGE")
-				log.Println("author.ID: " + author.ID)
-				log.Println("message.GuildID: " + message.GuildID)
-				log.Println("message.Author: " + message.Author.String())
-				log.Println("message.Content: " + message.Content)
-				log.Println("message.ChannelID: " + message.ChannelID)
-			}
-
-			misc.MapMutex.Unlock()
-			showStats(s, &message)
-			misc.MapMutex.Lock()
-			misc.GuildSettingsWrite(misc.GuildMap[guild.ID].GuildConfig, guild.ID)
+			continue
 		}
+
+		author.ID = s.State.User.ID
+		message.GuildID = guildID
+		message.Author = &author
+		message.Content = guildPrefix + "stats"
+		message.ChannelID = guildBotLog
+
+		// Check for when stats don't display possibly due to malformed message
+		if author.ID == "" || message.GuildID == "" ||
+			message.Author == nil || message.Content == "" ||
+			message.ChannelID == "" {
+			log.Println("ERROR: MALFORMED DAILY STATS MESSAGE")
+			log.Println("author.ID: " + author.ID)
+			log.Println("message.GuildID: " + message.GuildID)
+			log.Println("message.Author: " + message.Author.String())
+			log.Println("message.Content: " + message.Content)
+			log.Println("message.ChannelID: " + message.ChannelID)
+		}
+
+		misc.MapMutex.Unlock()
+		showStats(s, &message)
+		misc.MapMutex.Lock()
+		misc.GuildSettingsWrite(misc.GuildMap[guildID].GuildConfig, guildID)
 	}
 	misc.MapMutex.Unlock()
 
