@@ -1066,7 +1066,7 @@ func IOReadDir(root string) ([]string, error) {
 }
 
 // Initializes BOT DB files
-func initDB(guildID string) {
+func InitDB(guildID string) {
 
 	path := fmt.Sprintf("%v/%v", dbPath, guildID)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
