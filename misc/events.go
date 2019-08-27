@@ -25,7 +25,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	for _, guild := range e.Guilds {
 
 		// Initialize guild if missing
-		initDB(guild.ID)
+		InitDB(guild.ID)
 		writeAll(guild.ID)
 
 		// Clean up SpoilerRoles.json in each guild
