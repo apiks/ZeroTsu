@@ -913,6 +913,11 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		}
 	}()
 
+	if _, ok := misc.GuildMap[u.GuildID]; !ok {
+		misc.InitDB(u.GuildID)
+		misc.LoadGuilds()
+	}
+
 	// Pulls info on user if possible
 	user, err := s.GuildMember(config.ServerID, u.User.ID)
 	if err != nil {

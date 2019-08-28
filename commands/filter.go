@@ -36,6 +36,12 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
+
+	if _, ok := misc.GuildMap[m.GuildID]; !ok {
+		misc.InitDB(m.GuildID)
+		misc.LoadGuilds()
+	}
+
 	// Pulls info on message author
 	mem, err := s.State.Member(m.GuildID, m.Author.ID)
 	if err != nil {
@@ -130,6 +136,12 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
+
+	if _, ok := misc.GuildMap[m.GuildID]; !ok {
+		misc.InitDB(m.GuildID)
+		misc.LoadGuilds()
+	}
+
 	// Pulls info on message author
 	mem, err := s.State.Member(m.GuildID, m.Author.ID)
 	if err != nil {
@@ -224,6 +236,12 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 	if r.UserID == s.State.User.ID {
 		return
 	}
+
+	if _, ok := misc.GuildMap[m.GuildID]; !ok {
+		misc.InitDB(m.GuildID)
+		misc.LoadGuilds()
+	}
+
 	// Pulls info on message author
 	mem, err := s.State.Member(r.GuildID, r.UserID)
 	if err != nil {
@@ -854,6 +872,12 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
+
+	if _, ok := misc.GuildMap[m.GuildID]; !ok {
+		misc.InitDB(m.GuildID)
+		misc.LoadGuilds()
+	}
+
 	// Pulls info on message author
 	mem, err := s.State.Member(m.GuildID, m.Author.ID)
 	if err != nil {

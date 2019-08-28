@@ -104,6 +104,11 @@ func RaffleReactJoin(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 		return
 	}
 
+	if _, ok := misc.GuildMap[r.GuildID]; !ok {
+		misc.InitDB(r.GuildID)
+		misc.LoadGuilds()
+	}
+
 	// Checks if it's the slot machine emoji or the bot itself
 	if r.Emoji.APIName() != "🎰" {
 		return
@@ -138,6 +143,11 @@ func RaffleReactLeave(s *discordgo.Session, r *discordgo.MessageReactionRemove) 
 
 	if r.GuildID == "" {
 		return
+	}
+
+	if _, ok := misc.GuildMap[r.GuildID]; !ok {
+		misc.InitDB(r.GuildID)
+		misc.LoadGuilds()
 	}
 
 	// Checks if it's the slot machine emoji or the bot

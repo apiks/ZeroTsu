@@ -29,6 +29,11 @@ func OnMessageEmoji(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	if _, ok := misc.GuildMap[m.GuildID]; !ok {
+		misc.InitDB(m.GuildID)
+		misc.LoadGuilds()
+	}
+
 	misc.MapMutex.Lock()
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -83,6 +88,11 @@ func OnMessageEmojiReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 		return
 	}
 
+	if _, ok := misc.GuildMap[r.GuildID]; !ok {
+		misc.InitDB(r.GuildID)
+		misc.LoadGuilds()
+	}
+
 	misc.MapMutex.Lock()
 	guildBotLog := misc.GuildMap[r.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
@@ -133,6 +143,11 @@ func OnMessageEmojiUnreact(s *discordgo.Session, r *discordgo.MessageReactionRem
 
 	if r.GuildID == "" {
 		return
+	}
+
+	if _, ok := misc.GuildMap[r.GuildID]; !ok {
+		misc.InitDB(r.GuildID)
+		misc.LoadGuilds()
 	}
 
 	misc.MapMutex.Lock()

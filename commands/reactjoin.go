@@ -26,6 +26,11 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 		return
 	}
 
+	if _, ok := misc.GuildMap[r.GuildID]; !ok {
+		misc.InitDB(r.GuildID)
+		misc.LoadGuilds()
+	}
+
 	// Checks if a react channel join is set for that specific message and emoji and continues if true
 	misc.MapMutex.Lock()
 	guildBotLog := misc.GuildMap[r.GuildID].GuildConfig.BotLog.ID
@@ -115,6 +120,11 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 
 	if r.GuildID == "" {
 		return
+	}
+
+	if _, ok := misc.GuildMap[r.GuildID]; !ok {
+		misc.InitDB(r.GuildID)
+		misc.LoadGuilds()
 	}
 
 	// Checks if a react channel join is set for that specific message and emoji and continues if true

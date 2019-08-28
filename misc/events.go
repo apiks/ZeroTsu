@@ -154,6 +154,11 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 		MapMutex.Lock()
 		for _, guild := range e.Guilds {
 
+			if _, ok := GuildMap[guild.ID]; !ok {
+				InitDB(guild.ID)
+				LoadGuilds()
+			}
+
 			guildBotLog := GuildMap[guild.ID].GuildConfig.BotLog.ID
 
 			// Writes emoji stats to disk
@@ -404,6 +409,11 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 		return
 	}
 
+	if _, ok := GuildMap[v.GuildID]; !ok {
+		InitDB(v.GuildID)
+		LoadGuilds()
+	}
+
 	var voiceChannels []VoiceCha
 	var noRemovalRoles []Role
 	var dontRemove bool
@@ -466,6 +476,11 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	if m.GuildID == "" {
 		return
+	}
+
+	if _, ok := GuildMap[m.GuildID]; !ok {
+		InitDB(m.GuildID)
+		LoadGuilds()
 	}
 
 	if strings.ToLower(m.Content) == fmt.Sprintf("<@%v> good bot", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v> good bot", s.State.User.ID) {
@@ -675,6 +690,11 @@ func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
 		return
 	}
 
+	if _, ok := GuildMap[e.GuildID]; !ok {
+		InitDB(e.GuildID)
+		LoadGuilds()
+	}
+
 	MapMutex.Lock()
 	guildBotLog := GuildMap[e.GuildID].GuildConfig.BotLog.ID
 
@@ -759,6 +779,11 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
+	if _, ok := GuildMap[u.GuildID]; !ok {
+		InitDB(u.GuildID)
+		LoadGuilds()
+	}
+
 	creationDate, err := CreationTime(u.User.ID)
 	if err != nil {
 
@@ -803,6 +828,11 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	if u.GuildID == "" {
 		return
+	}
+
+	if _, ok := GuildMap[u.GuildID]; !ok {
+		InitDB(u.GuildID)
+		LoadGuilds()
 	}
 
 	var (

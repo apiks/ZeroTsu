@@ -65,6 +65,11 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	if _, ok := misc.GuildMap[m.GuildID]; !ok {
+		misc.InitDB(m.GuildID)
+		misc.LoadGuilds()
+	}
+
 	var (
 		guildPrefix       string
 		guildVoteModule   bool
