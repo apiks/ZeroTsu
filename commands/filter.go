@@ -237,8 +237,8 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 		return
 	}
 
-	if _, ok := misc.GuildMap[m.GuildID]; !ok {
-		misc.InitDB(m.GuildID)
+	if _, ok := misc.GuildMap[r.GuildID]; !ok {
+		misc.InitDB(r.GuildID)
 		misc.LoadGuilds()
 	}
 
