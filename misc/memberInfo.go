@@ -87,19 +87,14 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		}
 	}()
 
-	if e.GuildID == "" {
-		return
-	}
-
-	if e.User.ID == s.State.User.ID {
-		InitDB(e.GuildID)
-		LoadGuilds()
-	}
-
 	var (
 		flag        bool
 		writeFlag   bool
 	)
+
+	if e.GuildID == "" {
+		return
+	}
 
 	// Pulls info on user if possible
 	user, err := s.GuildMember(e.GuildID, e.User.ID)
@@ -241,11 +236,6 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 		return
 	}
 
-	if e.User.ID == s.State.User.ID {
-		InitDB(e.GuildID)
-		LoadGuilds()
-	}
-
 	var writeFlag bool
 
 	MapMutex.Lock()
@@ -330,11 +320,6 @@ func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 
 	if e.GuildID == "" {
 		return
-	}
-
-	if e.User.ID == s.State.User.ID {
-		InitDB(e.GuildID)
-		LoadGuilds()
 	}
 
 	var writeFlag bool

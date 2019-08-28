@@ -945,3 +945,15 @@ func cleanSpoilerRoles(s *discordgo.Session, guildID string) error {
 
 	return nil
 }
+
+// Handles BOT joining a server
+func GuildCreate(s *discordgo.Session, u *discordgo.GuildCreate) {
+	InitDB(u.Guild.ID)
+	LoadGuilds()
+	log.Println("Joined guild: " + u.Guild.Name)
+}
+
+// Logs BOT leaving a server
+func GuildDelete(s *discordgo.Session, u *discordgo.GuildDelete) {
+	log.Println("Left guild: " + u.Guild.Name)
+}

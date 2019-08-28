@@ -62,6 +62,10 @@ func Start() {
 		log.Println(err)
 	}
 
+	// Guild join and leave
+	goBot.AddHandler(misc.GuildCreate)
+	goBot.AddHandler(misc.GuildDelete)
+
 	// Reads all banned users from memberInfo on bot start
 	misc.GetBannedUsers()
 
