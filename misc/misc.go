@@ -124,6 +124,11 @@ func (c *UserAgentTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 // Every time a role is deleted it deletes it from SpoilerMap
 func ListenForDeletedRoleHandler(s *discordgo.Session, g *discordgo.GuildRoleDelete) {
 
+	if _, ok := GuildMap[g.GuildID]; !ok {
+		InitDB(g.GuildID)
+		LoadGuilds()
+	}
+
 	MapMutex.Lock()
 	if GuildMap[g.GuildID].SpoilerMap[g.RoleID] == nil {
 		MapMutex.Unlock()
@@ -175,11 +180,8 @@ func ResolveTimeFromString(given string) (ret time.Time, perma bool, err error) 
 // Resolves a userID from a userID, Mention or username#discrim
 func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
 
-	var err error
-
 	if len(messageSlice) < 2 {
-		err = fmt.Errorf("error: No @user, userID or username#discrim detected")
-		return "", err
+		return "", fmt.Errorf("Error: No @user, userID or username#discrim detected")
 	}
 
 	// Pulls the userID from the second parameter
@@ -211,14 +213,17 @@ func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
 			}
 		}
 		MapMutex.Unlock()
+
+		if userID == "" {
+			return userID, fmt.Errorf("Error: This reddit user is not in the internal database. Cannot whois")
+		}
 	}
 	// Handles userID if it was username#discrim format
 	if strings.Contains(userID, "#") {
 		splitUser := strings.SplitN(userID, "#", 2)
 		if len(splitUser) < 2 {
-			err = fmt.Errorf("error: Invalid user. You're trying to username#discrim with spaces in the username." +
+			return userID, fmt.Errorf("Error: Invalid user. You're trying to username#discrim with spaces in the username." +
 				" This command does not support that. Please use an ID")
-			return userID, err
 		}
 		MapMutex.Lock()
 		for _, user := range GuildMap[m.GuildID].MemberInfoMap {
@@ -236,12 +241,11 @@ func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
 		userID = strings.TrimPrefix(userID, "!")
 		userID = strings.TrimSuffix(userID, ">")
 	}
-	_, err = strconv.ParseInt(userID, 10, 64)
+	_, err := strconv.ParseInt(userID, 10, 64)
 	if len(userID) < 17 || err != nil {
-		err = fmt.Errorf("error: cannot parse user")
-		return userID, err
+		return userID, fmt.Errorf("Error: Cannot parse user")
 	}
-	return userID, err
+	return userID, nil
 }
 
 // Mentions channel by *discordgo.Channel. By Kagumi
