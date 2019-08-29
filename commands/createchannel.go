@@ -31,6 +31,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		categoryNum = 0
 
 		channel channel
+		newRole *discordgo.Role
 
 		descriptionEdit discordgo.ChannelEdit
 		channelEdit     discordgo.ChannelEdit
@@ -49,7 +50,8 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"create [name] OPTIONAL[type] [categoryID] [description; must have at least one other non-name parameter]`\n\nFour type of parameters exist: `airing`, `temp`, `general` and `optin`. `Optin` is the default one. Temp gets auto-deleted after three hours of inactivity.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"create [name] OPTIONAL[type] [categoryID] [description; must have at least one other non-name parameter]`\n\n" +
+			"Four type of parameters exist: `airing`, `temp`, `general` and `optin`. `Optin` is the default one. `Temp` gets auto-deleted after three hours of inactivity. Only `general` does not create a role")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -153,36 +155,41 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	time.Sleep(500 * time.Millisecond)
 
-	// Creates the new role
-	newRole, err := s.GuildRoleCreate(m.GuildID)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return
-	}
+	// Handles role creation if not general type
+	if channel.Type != "general" {
 
-	// Sets role name to hyphenated form
-	roleName = newCha.Name
+		// Creates the new role
+		newRole, err := s.GuildRoleCreate(m.GuildID)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return
+		}
 
-	// Edits the new role with proper hyphenated name
-	_, err = s.GuildRoleEdit(m.GuildID, newRole.ID, roleName, 0, false, 0, false)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return
-	}
+		// Sets role name to hyphenated form
+		roleName = newCha.Name
 
-	// Adds the role to the SpoilerMap and writes to storage
-	tempRole := discordgo.Role{
-		ID:   newRole.ID,
-		Name: command,
-	}
-	// Locks mutex based on whether the bot called the command or not because it's already being locked in channelvote
-	if m.Author.ID != s.State.User.ID {
-		misc.MapMutex.Lock()
-	}
-	misc.GuildMap[m.GuildID].SpoilerMap[newRole.ID] = &tempRole
-	misc.SpoilerRolesWrite(misc.GuildMap[m.GuildID].SpoilerMap, m.GuildID)
-	if m.Author.ID != s.State.User.ID {
-		misc.MapMutex.Unlock()
+		// Edits the new role with proper hyphenated name
+		_, err = s.GuildRoleEdit(m.GuildID, newRole.ID, roleName, 0, false, 0, false)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return
+		}
+
+		// Adds the role to the SpoilerMap and writes to storage
+		tempRole := discordgo.Role{
+			ID:   newRole.ID,
+			Name: command,
+		}
+		// Locks mutex based on whether the bot called the command or not because it's already being locked in channelvote
+		if m.Author.ID != s.State.User.ID {
+			misc.MapMutex.Lock()
+		}
+		misc.GuildMap[m.GuildID].SpoilerMap[newRole.ID] = &tempRole
+		misc.SpoilerRolesWrite(misc.GuildMap[m.GuildID].SpoilerMap, m.GuildID)
+		if m.Author.ID != s.State.User.ID {
+			misc.MapMutex.Unlock()
+		}
+
 	}
 
 	// Pulls info on server roles
@@ -352,9 +359,10 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
-	// If the message was called from StartVote, prints it for all to see, else mod-only message
+	// Mod-only message for non-startvote channels
 	if m.Author.ID != s.State.User.ID {
-		_, err = s.ChannelMessageSend(m.ChannelID, "Channel and role `"+roleName+"` created. If opt-in please sort in the roles list. Sort category separately.")
+		_, err = s.ChannelMessageSend(m.ChannelID, "Channel and role `"+roleName+"` created. If opt-in please sort in the roles list between the dummy roles or with `" + guildPrefix + "sortroles` (warning, lags in big servers)." +
+			" If you do not do this you cannot join the role with reacts or `" + guildPrefix + "join`. Sort category separately.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		}
