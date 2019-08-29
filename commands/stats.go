@@ -13,6 +13,8 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
+var today = time.Now()
+
 // Adds to message count on every message for that channel
 func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 
@@ -426,9 +428,11 @@ func dailyStats(s *discordgo.Session, e *discordgo.Ready) {
 	hour := t.Hour()
 	minute := t.Minute()
 
-	if hour != 23 || minute != 59 {
+	if today.Day() == t.Day() {
 		return
 	}
+
+	today = t
 
 	folders, err := ioutil.ReadDir("database/guilds")
 	if err != nil {
@@ -444,6 +448,10 @@ func dailyStats(s *discordgo.Session, e *discordgo.Ready) {
 
 		guildPrefix := misc.GuildMap[guildID].GuildConfig.Prefix
 		guildBotLog := misc.GuildMap[guildID].GuildConfig.BotLog.ID
+
+		if guildBotLog == "" {
+			continue
+		}
 
 		_, err := s.ChannelMessageSend(guildBotLog, fmt.Sprintf("Update for **%v %v, %v**", t.Month(), t.Day(), t.Year()))
 		if err != nil {
@@ -475,7 +483,6 @@ func dailyStats(s *discordgo.Session, e *discordgo.Ready) {
 		misc.MapMutex.Unlock()
 		showStats(s, &message)
 		misc.MapMutex.Lock()
-		misc.GuildSettingsWrite(misc.GuildMap[guildID].GuildConfig, guildID)
 	}
 	misc.MapMutex.Unlock()
 
