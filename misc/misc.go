@@ -180,8 +180,6 @@ func ResolveTimeFromString(given string) (ret time.Time, perma bool, err error) 
 // Resolves a userID from a userID, Mention or username#discrim
 func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
 
-	var redditUser bool
-
 	if len(messageSlice) < 2 {
 		return "", fmt.Errorf("Error: No @user, userID or username#discrim detected")
 	}
@@ -195,29 +193,36 @@ func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
 	}
 	// Handles userID if it was in reddit username format
 	if strings.Contains(userID, "/u/") {
+		exists := false
 		userID = strings.TrimPrefix(userID, "/u/")
 		MapMutex.Lock()
 		for _, user := range GuildMap[m.GuildID].MemberInfoMap {
 			if strings.ToLower(user.RedditUsername) == userID {
 				userID = user.ID
-				break
-			}
-		}
-		MapMutex.Unlock()
-	}
-	if strings.Contains(userID, "u/") {
-		userID = strings.TrimPrefix(userID, "u/")
-		MapMutex.Lock()
-		for _, user := range GuildMap[m.GuildID].MemberInfoMap {
-			if strings.ToLower(user.RedditUsername) == userID {
-				userID = user.ID
-				redditUser = true
+				exists = true
 				break
 			}
 		}
 		MapMutex.Unlock()
 
-		if !redditUser {
+		if !exists {
+			return userID, fmt.Errorf("Error: This reddit user is not in the internal database. Cannot whois")
+		}
+	}
+	if strings.Contains(userID, "u/") {
+		exists := false
+		userID = strings.TrimPrefix(userID, "u/")
+		MapMutex.Lock()
+		for _, user := range GuildMap[m.GuildID].MemberInfoMap {
+			if strings.ToLower(user.RedditUsername) == userID {
+				userID = user.ID
+				exists = true
+				break
+			}
+		}
+		MapMutex.Unlock()
+
+		if !exists {
 			return userID, fmt.Errorf("Error: This reddit user is not in the internal database. Cannot whois")
 		}
 	}
