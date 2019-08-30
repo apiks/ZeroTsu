@@ -1101,7 +1101,7 @@ func init() {
 	categoriesMap["Normal"] = "Normal user commands."
 	categoriesMap["Punishment"] = "Warnings, kicks and bans."
 	categoriesMap["Reacts"] = "Channel join via react commands."
-	categoriesMap["Rss"] = "RSS feed from sub commands."
+	categoriesMap["Rss"] = "Reddit RSS feed commands."
 	categoriesMap["Stats"] = "Channel and emoji stats."
 	categoriesMap["Raffles"] = "Raffle commands."
 	categoriesMap["Waifus"] = "Waifu commands."

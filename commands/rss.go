@@ -316,7 +316,7 @@ func init() {
 		execute:  setRssCommand,
 		trigger:  "setrss",
 		aliases: []string{"addrss"},
-		desc:     "Assigns an RSS to the channel.",
+		desc:     "Assigns a reddit RSS to the channel.",
 		elevated: true,
 		category: "rss",
 	})
@@ -324,7 +324,7 @@ func init() {
 		execute:  removeRssCommand,
 		trigger:  "removerss",
 		aliases: []string{"killrss", "deleterss"},
-		desc:     "Removes a previously set RSS.",
+		desc:     "Removes a previously set reddit RSS.",
 		elevated: true,
 		category: "rss",
 	})
@@ -332,7 +332,7 @@ func init() {
 		execute:  viewRssCommand,
 		trigger:  "viewrss",
 		aliases:  []string{"showrss", "rssview", "rssshow", "viewrs", "showrs", "rss"},
-		desc:     "Prints all currently set RSS.",
+		desc:     "Prints all currently set reddit RSS.",
 		elevated: true,
 		category: "rss",
 	})
