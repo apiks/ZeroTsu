@@ -327,8 +327,8 @@ func init() {
 	})
 	add(&command{
 		execute:  viewRemindMe,
-		trigger:  "viewreminds",
-		aliases:  []string{"viewremindmes", "viewremindme", "viewremind", "reminds", "remindmes"},
+		trigger:  "reminds",
+		aliases:  []string{"viewremindmes", "viewremindme", "viewremind", "viewreminds", "remindmes"},
 		desc:     "Shows you what reminds you have currently set.",
 		elevated: false,
 		category: "normal",
