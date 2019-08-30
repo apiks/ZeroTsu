@@ -35,6 +35,16 @@ func pickCommand(s *discordgo.Session, m *discordgo.Message) {
 		items = strings.Split(commandStrings[1], ",")
 	}
 
+	// Check if after the split the item is still one
+	if len(items) == 1 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Not enough items. Please add at least one more item.")
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return
+		}
+		return
+	}
+
 	// Trims trailing and leading whitespace from each item
 	for i := 0; i < len(items); i++ {
 		items[i] = strings.TrimSpace(items[i])
