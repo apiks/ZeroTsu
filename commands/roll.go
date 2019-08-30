@@ -77,7 +77,7 @@ func init() {
 	add(&command{
 		execute:  rollCommand,
 		trigger:  "roll",
-		desc:     "Rolls a number from 1 to 100. Specify a number to increase the range.",
+		desc:     "Rolls a number from 1 to 100. Specify a number to change the range.",
 		category: "normal",
 	})
 }
