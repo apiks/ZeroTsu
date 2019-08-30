@@ -65,7 +65,7 @@ func rollCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Makes sure it's not a number outside of boundaries
 	if num < 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Negative numbers are not a valid number. Please use a positive number.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid number. Please use a positive number.")
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
