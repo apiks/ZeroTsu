@@ -409,7 +409,7 @@ func splitStatMessages(msgs []string, message string) ([]string, string) {
 }
 
 // Posts daily stats and update schedule command
-func dailyStats(s *discordgo.Session, e *discordgo.Ready) {
+func dailyStats(s *discordgo.Session) {
 
 	var (
 		message discordgo.Message
@@ -495,7 +495,7 @@ func dailyStats(s *discordgo.Session, e *discordgo.Ready) {
 // Daily stat update timer
 func DailyStatsTimer(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(1 * time.Minute).C {
-		dailyStats(s, e)
+		dailyStats(s)
 	}
 }
 

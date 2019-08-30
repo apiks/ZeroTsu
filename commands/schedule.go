@@ -16,6 +16,7 @@ var AnimeSchedule = make(map[int][]ShowAirTime)
 type ShowAirTime struct {
 	Name    string
 	AirTime string
+	Episode	string
 }
 
 // Shows todays airing anime times, fetched from AnimeSchedule.net
@@ -132,13 +133,13 @@ func getDaySchedule(weekday int) string {
 					ukTimezoneString, _ := t.In(BST).Zone()
 					westAmericanTimezoneString, _ := t.In(PDT).Zone()
 
-					printMessage += fmt.Sprintf("**%v** - **|** %v __%v__ **|** %v __%v__ **|** %v __%v__ **|**\n\n", show.Name, t.UTC().In(BST).Format("15:04"), ukTimezoneString,
+					printMessage += fmt.Sprintf("**%v %v** - **|** %v %v **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, t.UTC().In(BST).Format("15:04"), ukTimezoneString,
 						t.UTC().In(PDT).Format("15:04"), westAmericanTimezoneString,
 						t.UTC().In(JST).Format("15:04"), jstTimezoneString)
 				} else {
 					westAmericanTimezoneString, _ := t.In(PST).Zone()
 
-					printMessage += fmt.Sprintf("**%v** - **|** %v __GMT__ **|** %v __%v__ **|** %v __%v__ **|**\n\n", show.Name, t.UTC().Format("15:04"),
+					printMessage += fmt.Sprintf("**%v %v** - **|** %v GMT **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, t.UTC().Format("15:04"),
 						t.UTC().In(PST).Format("15:04"), westAmericanTimezoneString,
 						t.UTC().In(JST).Format("15:04"), jstTimezoneString)
 				}
@@ -176,6 +177,8 @@ func processEachShow(index int, element *goquery.Selection) {
 	}
 
 	show.Name = element.Find(".show-name").Text()
+	show.Episode = element.Parent().Parent().Parent().Find(".episode-counter").Text()
+	show.Episode = strings.Trim(show.Episode, "\n")
 	show.AirTime = element.Find(".air-time").Text()
 
 	misc.MapMutex.Lock()

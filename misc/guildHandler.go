@@ -53,6 +53,7 @@ type guildInfo struct {
 
 type sharedInfo struct {
 	RemindMes       map[string]*RemindMeSlice
+	AnimeSubs		map[string][]string
 }
 
 // Guild settings for misc things
@@ -263,6 +264,7 @@ func LoadSharedDB() {
 	MapMutex.Lock()
 	SharedInfo = &sharedInfo{
 		RemindMes: make(map[string]*RemindMeSlice),
+		AnimeSubs: make(map[string][]string),
 	}
 
 	for _, file := range files {
@@ -460,6 +462,24 @@ func RemindMeWrite(remindMe map[string]*RemindMeSlice) error {
 
 	// Writes to file
 	err = ioutil.WriteFile("database/shared/remindMes.json", marshaledStruct, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Writes anime notfication subscription to animeSubs.json
+func AnimeSubsWrite(animeSubs map[string][]string) error {
+
+	// Turns that slice into bytes to be ready to written to file
+	marshaledStruct, err := json.MarshalIndent(animeSubs, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	// Writes to file
+	err = ioutil.WriteFile("database/shared/animeSubs.json", marshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
@@ -1113,6 +1133,7 @@ func writeAll(guildID string) {
 	_, _ = UserChangeStatsWrite(GuildMap[guildID].UserChangeStats, guildID)
 	_ = VerifiedStatsWrite(GuildMap[guildID].VerifiedStats, guildID)
 	_ = RemindMeWrite(SharedInfo.RemindMes)
+	_ = AnimeSubsWrite(SharedInfo.AnimeSubs)
 	VoteInfoWrite(GuildMap[guildID].VoteInfoMap, guildID)
 	TempChaWrite(GuildMap[guildID].TempChaMap, guildID)
 	ReactJoinWrite(GuildMap[guildID].ReactJoinMap, guildID)

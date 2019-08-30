@@ -10,6 +10,7 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
+// Sets a remindMe note for after the target time has passed to be sent to the user
 func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
@@ -27,7 +28,7 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if message contains filtered words, which would not be allowed as a remind
 	badWordExists, _ := isFiltered(s, m)
 	if badWordExists {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Usage of server filtered words in the remind command is not allowed.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Usage of server filtered words in the remindMe command is not allowed. Please use remindMe in another server I am in.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
