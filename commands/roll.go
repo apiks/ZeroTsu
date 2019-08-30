@@ -61,7 +61,16 @@ func rollCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 		return
+	}
 
+	// Makes sure it's not a number outside of boundaries
+	if num < 1 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Negative numbers are not a valid number. Please use a positive number.")
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return
+		}
+		return
 	}
 
 	// Rolls a specified number
@@ -77,8 +86,8 @@ func init() {
 	add(&command{
 		execute:  rollCommand,
 		trigger:  "roll",
+		aliases:  []string{"rol", "r"},
 		desc:     "Rolls a number from 1 to 100. Specify a number to change the range.",
 		category: "normal",
 	})
 }
-
