@@ -55,7 +55,7 @@ func pickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Picks a random item
 	randomItemNum := rand.Intn(len(items))
-	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Picked: %v", items[randomItemNum]))
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("**Picked:** %v", items[randomItemNum]))
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return

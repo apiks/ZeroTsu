@@ -24,7 +24,7 @@ func rollCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Rolls a number between 1 and 100 if only the command is used
 	if len(commandStrings) == 1 {
 		randomNum := rand.Intn(99)+1
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Rolled: %v", randomNum))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("**Rolled:** %v", randomNum))
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
@@ -75,7 +75,7 @@ func rollCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Rolls a specified number
 	randomNum := rand.Intn(num)+1
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Rolled: %v", randomNum))
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("**Rolled:** %v", randomNum))
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
