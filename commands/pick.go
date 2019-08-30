@@ -1,6 +1,14 @@
 package commands
 
-import "strings"
+import (
+	"fmt"
+	"math/rand"
+	"strings"
+
+	"github.com/bwmarrin/discordgo"
+
+	"github.com/r-anime/ZeroTsu/misc"
+)
 
 // Picks one item from a specified number of item.
 func pickCommand(s *discordgo.Session, m *discordgo.Message) {
