@@ -554,12 +554,9 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Iterates through all the filters in memory and adds them to the filters string
 	for _, filter := range misc.GuildMap[m.GuildID].Filters {
-		if filters == "" {
-			filters = fmt.Sprintf("`%v`", filter.Filter)
-			continue
-		}
-		filters = fmt.Sprintf("%v\n `%v`", filters, filter)
+		filters += fmt.Sprintf("**%v**\n", filter.Filter)
 	}
+	filters = strings.TrimSuffix(filters, "\n")
 	misc.MapMutex.Unlock()
 
 	// Splits and sends message
@@ -572,6 +569,7 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 				_, _ = s.ChannelMessageSend(guildBotLog, err.Error())
 				return
 			}
+			return
 		}
 	}
 }
@@ -663,11 +661,11 @@ func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings = strings.SplitN(mLowercase, " ", 4)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vmrequire [channel]* [type]* [phrase]`\n\n"+
-			"`[channel]` is a ping or ID to the channel where the requirement will only be done.\n"+
-			"`[type]` can either be soft or hard. Soft means a user must mention the phrase in their first message and is okay until someone else types a message. Hard means all messages must contain that phrase. Defaults to soft.\n"+
-			"`[phrase]` is either regex expression (preferable) or just a simple string.\n\n"+
-			"***** is optional.", guildPrefix))
+		message := fmt.Sprintf("Usage: `%vmrequire [channel]* [type]* [phrase]`\n\n[channel] is a ping or ID to the channel where the requirement will only be done.\n"+
+			"[type] can either be soft or hard. Soft means a user must mention the phrase in their first message and is okay until someone else types a message. Hard means all messages must contain that phrase. Defaults to soft.\n"+
+			"[phrase] is either regex expression (preferable) or just a simple string.\n\n"+
+			"***** is optional.", guildPrefix)
+		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
@@ -830,9 +828,10 @@ func viewMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 		if requirement.Channel == "" {
 			requirement.Channel = "All channels"
 		}
-		mRequirements += fmt.Sprintf("`%v - %v - %v`\n", requirement.Phrase, requirement.Channel, requirement.Type)
+		mRequirements += fmt.Sprintf("**%v - %v - %v**\n", requirement.Phrase, requirement.Channel, requirement.Type)
 	}
 	misc.MapMutex.Unlock()
+	mRequirements = strings.TrimSuffix(mRequirements, "\n")
 
 	// Splits and sends message
 	splitMessage := misc.SplitLongMessage(mRequirements)
