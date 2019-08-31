@@ -159,14 +159,11 @@ func filterExtensionCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Writes the extension to extensionList.json and checks if the extension was already in storage
-	misc.MapMutex.Lock()
 	err := misc.ExtensionsWrite(commandStrings[1], m.GuildID)
 	if err != nil {
-		misc.MapMutex.Unlock()
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
-	misc.MapMutex.Unlock()
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been added to the file extension list.", commandStrings[1]))
 	if err != nil {
@@ -215,14 +212,11 @@ func unfilterExtensionCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Removes extension from storage and memory
-	misc.MapMutex.Lock()
 	err := misc.ExtensionsRemove(commandStrings[1], m.GuildID)
 	if err != nil {
-		misc.MapMutex.Unlock()
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
-	misc.MapMutex.Unlock()
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been removed from the file extension list.", commandStrings[1]))
 	if err != nil {
