@@ -200,6 +200,7 @@ LoopShowCheck:
 LoopShowRemoval:
 	for userID, userSubs := range misc.SharedInfo.AnimeSubs {
 
+		// Skip users that are not the message author so they don't delete everyone's subscriptions
 		if userID != m.Author.ID {
 			continue
 		}
@@ -281,6 +282,15 @@ func viewSubscriptions(s *discordgo.Session, m *discordgo.Message) {
 	}
 	misc.MapMutex.Unlock()
 
+	if len(message) == 0 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You have no active show subscriptions.")
+		if err != nil {
+			_, _ = s.ChannelMessageSend(guildBotLog, err.Error())
+			return
+		}
+		return
+	}
+
 	// Splits the message if it's too big into multiple ones
 	if len(message) > 1900 {
 		messages = misc.SplitLongMessage(message)
@@ -289,7 +299,7 @@ func viewSubscriptions(s *discordgo.Session, m *discordgo.Message) {
 	if messages == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, _ = s.ChannelMessageSend(guildBotLog, err.Error())
 			return
 		}
 		return
