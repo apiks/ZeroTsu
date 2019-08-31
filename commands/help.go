@@ -1096,13 +1096,39 @@ func splitHelpEmbedField(embed *discordgo.MessageEmbed, elevated bool) []*discor
 		newEmbeds = append(newEmbeds, newEmbed)
 	}
 
-	// Set up the footer for the last embed
+	// Set up the footer for the last embed and also the user and permission level for the first embed
 	if len(newEmbeds) != 0 {
 		newFooter = new(discordgo.MessageEmbedFooter)
 		newFooter.Text = embed.Footer.Text
 		newFooter.ProxyIconURL = embed.Footer.ProxyIconURL
 		newFooter.IconURL = embed.Footer.IconURL
 		newEmbeds[len(newEmbeds)-1].Footer = newFooter
+
+		// Move the fields dynamically to add user and permission level to the first embed
+		if !elevated {
+			// User
+			newEmbedField = nil
+			newEmbedField = new(discordgo.MessageEmbedField)
+			newEmbedField.Name = embed.Fields[0].Name
+			newEmbedField.Value = embed.Fields[0].Value
+			newEmbedField.Inline = embed.Fields[0].Inline
+			newEmbeds[0].Fields = append(newEmbeds[0].Fields, newEmbedField)
+
+			// Permission level
+			newEmbedField = nil
+			newEmbedField = new(discordgo.MessageEmbedField)
+			newEmbedField.Name = embed.Fields[1].Name
+			newEmbedField.Value = embed.Fields[1].Value
+			newEmbedField.Inline = embed.Fields[1].Inline
+			newEmbeds[0].Fields = append(newEmbeds[0].Fields, newEmbedField)
+
+			// Save and remove the commands field and then readd it at the end
+			newEmbedField = nil
+			newEmbedField = new(discordgo.MessageEmbedField)
+			newEmbedField = newEmbeds[0].Fields[0]
+			newEmbeds[0].Fields = append(newEmbeds[0].Fields[:0], newEmbeds[0].Fields[0+1:]...)
+			newEmbeds[0].Fields = append(newEmbeds[0].Fields, newEmbedField)
+		}
 	}
 
 	if len(newEmbeds) == 0 {
