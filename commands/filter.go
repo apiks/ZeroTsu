@@ -562,9 +562,17 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	misc.MapMutex.Unlock()
 
-	_, err := s.ChannelMessageSend(m.ChannelID, filters)
-	if err != nil {
-		_, _ = s.ChannelMessageSend(guildBotLog, err.Error())
+	// Splits and sends message
+	splitMessage := misc.SplitLongMessage(filters)
+	for i := 0; i < len(splitMessage); i++ {
+		_, err := s.ChannelMessageSend(m.ChannelID, splitMessage[i])
+		if err != nil {
+			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot send filters message.")
+			if err != nil {
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error())
+				return
+			}
+		}
 	}
 }
 
@@ -826,10 +834,17 @@ func viewMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	misc.MapMutex.Unlock()
 
-	_, err := s.ChannelMessageSend(m.ChannelID, mRequirements)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return
+	// Splits and sends message
+	splitMessage := misc.SplitLongMessage(mRequirements)
+	for i := 0; i < len(splitMessage); i++ {
+		_, err := s.ChannelMessageSend(m.ChannelID, splitMessage[i])
+		if err != nil {
+			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot send message requirements message.")
+			if err != nil {
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error())
+				return
+			}
+		}
 	}
 }
 

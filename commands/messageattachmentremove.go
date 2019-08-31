@@ -258,9 +258,17 @@ func viewExtensionsCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	misc.MapMutex.Unlock()
 
-	_, err := s.ChannelMessageSend(m.ChannelID, extensions)
-	if err != nil {
-		_, _ = s.ChannelMessageSend(guildBotLog, err.Error())
+	// Splits and sends message
+	splitMessage := misc.SplitLongMessage(extensions)
+	for i := 0; i < len(splitMessage); i++ {
+		_, err := s.ChannelMessageSend(m.ChannelID, splitMessage[i])
+		if err != nil {
+			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot send file extensions message.")
+			if err != nil {
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error())
+				return
+			}
+		}
 	}
 }
 
