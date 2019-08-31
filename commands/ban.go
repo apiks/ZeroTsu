@@ -26,6 +26,8 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		temp misc.BannedUsers
 
 		banTimestamp misc.Punishment
+
+		user	*discordgo.User
 	)
 	z, _ := time.Now().Zone()
 
@@ -42,10 +44,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes. Use 0d for permanent.\n"+
 			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 		return
@@ -142,6 +141,23 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Initializes user if he doesn't exist in memberInfo but is in server
 		misc.InitializeUser(userMem, m.GuildID)
 	}
+	if userMem == nil {
+		user, err = s.User(userID)
+		if err != nil {
+			_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot fetch this user and therefore cannot ban him.")
+			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error())
+				if err != nil {
+					misc.MapMutex.Unlock()
+					return
+				}
+				misc.MapMutex.Unlock()
+				return
+			}
+			misc.MapMutex.Unlock()
+			return
+		}
+	}
 
 	// Adds ban date to memberInfo and checks if perma
 	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Bans = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Bans, reason)
@@ -194,7 +210,12 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Saves the details in temp
 	temp.ID = userID
-	temp.User = userMem.User.Username
+	if userMem != nil {
+		temp.User = userMem.User.Username
+	} else {
+		temp.User = user.Username
+	}
+
 
 	if perma {
 		temp.UnbanDate = time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
@@ -244,20 +265,37 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sends embed bot-log message
-	err = BanEmbed(s, m, userMem.User, reason, UnbanDate, perma, guildBotLog)
-	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+	if userMem != nil {
+		err = BanEmbed(s, m, userMem.User, reason, UnbanDate, perma, guildBotLog)
 		if err != nil {
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
 			return
 		}
-		return
+	} else {
+		err = BanEmbed(s, m, user, reason, UnbanDate, perma, guildBotLog)
+		if err != nil {
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
 	}
 
 	// Sends embed channel message
-	err = BanEmbed(s, m, userMem.User, reason, UnbanDate, perma, m.ChannelID)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return
+	if userMem != nil {
+		err = BanEmbed(s, m, userMem.User, reason, UnbanDate, perma, m.ChannelID)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+		}
+	} else {
+		err = BanEmbed(s, m, user, reason, UnbanDate, perma, m.ChannelID)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+		}
 	}
 }
 
