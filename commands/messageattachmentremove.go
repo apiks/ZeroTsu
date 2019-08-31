@@ -11,14 +11,7 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
-var (
-	whitelist = [...]string{"png", "gif", "gifv",
-		"jpeg", "jpg", "bmp", "tif", "tiff", "webm", "webps", "webp",
-		"mp4", "ogg", "wmv", "3gp", "avi", "flv", "wav"}
-	whitelistString = ".png, .gif, .gifv, .jpeg, .jpg, .bmp, .tif, .tiff, .webm, .webps, .webp, .mp4, .ogg, .wmv, .3gp, .avi, .flv, .wav"
-)
-
-// Checks messages with uploads if they're uploading a whitelisted file type. If not it removes them
+// Checks messages with uploads if they're uploading a blacklisted file type. If so it removvvevs them
 func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -33,14 +26,15 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		return
 	}
 
+	if _, ok := misc.GuildMap[m.GuildID]; !ok {
+		misc.InitDB(m.GuildID)
+		misc.LoadGuilds()
+	}
+
 	misc.MapMutex.Lock()
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	guildFileFilter := misc.GuildMap[m.GuildID].GuildConfig.FileFilter
+	guildExtensionFilterType := misc.GuildMap[m.GuildID].GuildConfig.WhitelistFileFilter
 	misc.MapMutex.Unlock()
-
-	if !guildFileFilter {
-		return
-	}
 
 	if m.Author.ID == s.State.User.ID {
 		return
@@ -65,10 +59,17 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 	misc.MapMutex.Unlock()
 
 	// Iterates through all the attachments (since more than one can be posted in one go)
-	// and checks if it's an allowed file type. If it isn't sends error message for each file
+	// and checks if it's a banned file type. If it is then remove them
 	for _, attachment := range m.Attachments {
-		if isAllowed(attachment.Filename) {
-			continue
+
+		if guildExtensionFilterType {
+			if isBannedExtension(attachment.Filename, m.GuildID) {
+				continue
+			}
+		} else {
+			if !isBannedExtension(attachment.Filename, m.GuildID) {
+				continue
+			}
 		}
 
 		// Deletes the message that was sent if has a non-whitelisted attachment
@@ -84,26 +85,198 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		now := time.Now().Format("2006-01-02 15:04:05")
 
 		// Prints success in bot-log channel
-		_, _ = s.ChannelMessageSend(guildBotLog, m.Author.Mention()+" had their message removed for uploading non-whitelisted `"+
-			attachment.Filename+"` in "+"<#"+m.ChannelID+"> on [_"+now+"_]")
+		if guildExtensionFilterType {
+			_, _ = s.ChannelMessageSend(guildBotLog, m.Author.Mention()+" had their message removed for uploading a non-whitelisted file type `"+
+				attachment.Filename+"` in "+"<#"+m.ChannelID+"> on [_"+now+"_]")
+		} else {
+			_, _ = s.ChannelMessageSend(guildBotLog, m.Author.Mention()+" had their message removed for uploading a blacklisted file type `"+
+				attachment.Filename+"` in "+"<#"+m.ChannelID+"> on [_"+now+"_]")
+		}
 
 		// Sends a message to the user in their DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 			return
 		}
-		_, _ = s.ChannelMessageSend(dm.ID, "Your message upload `"+attachment.Filename+"` was removed for using a non-whitelisted file type.\n\nAllowed file types: `"+whitelistString+"`")
+
+		// Fetches all file extensions
+		var extensions string
+		misc.MapMutex.Lock()
+		for ext := range misc.GuildMap[m.GuildID].ExtensionList {
+			extensions += fmt.Sprintf("%v, ", ext)
+		}
+		misc.MapMutex.Unlock()
+		extensions = strings.TrimSuffix(extensions, ", ")
+
+		if guildExtensionFilterType {
+			_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message upload `%v` was removed for using a non-whitelisted file type.\n\nAllowed file types are: `%v`", attachment.Filename, extensions))
+		} else {
+			_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message upload `%v` was removed for using a blacklisted file type.\n\nBlacklisted file types are: `%v`", attachment.Filename, extensions))
+		}
 	}
 
 }
 
-// Checks if it's an allowed file type and returns true if it is, else false. By Kagumi
-func isAllowed(filename string) bool {
+// Checks if it's an banned file type and returns true if it is, else false
+func isBannedExtension(filename, guildID string) bool {
 	filename = strings.ToLower(filename)
-	for _, ext := range whitelist {
+	misc.MapMutex.Lock()
+	for ext := range misc.GuildMap[guildID].ExtensionList {
 		if strings.HasSuffix(filename, fmt.Sprintf(".%s", ext)) {
+			misc.MapMutex.Unlock()
 			return true
 		}
 	}
+	misc.MapMutex.Unlock()
 	return false
+}
+
+// Blacklists a file extension
+func filterExtensionCommand(s *discordgo.Session, m *discordgo.Message) {
+
+
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
+	commandStrings := strings.SplitN(strings.ToLower(m.Content), " ", 2)
+
+	if len(commandStrings) == 1 {
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vextension [file extension]`\n\n[file extension] is the file extension (e.g. .exe or .jpeg).", guildPrefix))
+		if err != nil {
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error())
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
+
+	// Writes the extension to extensionList.json and checks if the extension was already in storage
+	err := misc.ExtensionsWrite(commandStrings[1], m.GuildID)
+	if err != nil {
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		return
+	}
+
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been added to the file extension list.", commandStrings[1]))
+	if err != nil {
+		_, _ = s.ChannelMessageSend(guildBotLog, err.Error())
+	}
+}
+
+// Removes a blacklisted file extension from the blacklist
+func unfilterExtensionCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	misc.MapMutex.Lock()
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+
+	if len(misc.GuildMap[m.GuildID].ExtensionList) == 0 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no blacklisted file extensions.")
+		if err != nil {
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error())
+			if err != nil {
+				misc.MapMutex.Unlock()
+				return
+			}
+			misc.MapMutex.Unlock()
+			return
+		}
+		misc.MapMutex.Unlock()
+		return
+	}
+
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	misc.MapMutex.Unlock()
+
+	commandStrings := strings.SplitN(strings.ToLower(m.Content), " ", 2)
+
+	if len(commandStrings) == 1 {
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vremoveextension [file extension]`\n\n[file extension] is the file extension you want to remove from the blacklist (e.g. .exe or .jpeg)", guildPrefix))
+		if err != nil {
+			_, _ = s.ChannelMessageSend(guildBotLog, err.Error())
+			return
+		}
+		return
+	}
+
+	// Removes extension from storage and memory
+	err := misc.ExtensionsRemove(commandStrings[1], m.GuildID)
+	if err != nil {
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+		if err != nil {
+			return
+		}
+		return
+	}
+
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been removed from the file extension list.", commandStrings[1]))
+	if err != nil {
+		_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+	}
+}
+
+// Print file extensions from memory
+func viewExtensionsCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	var extensions string
+
+	misc.MapMutex.Lock()
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+
+	if len(misc.GuildMap[m.GuildID].ExtensionList) == 0 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no file extensions saved.")
+		if err != nil {
+			_, err := s.ChannelMessageSend(guildBotLog, err.Error())
+			if err != nil {
+				misc.MapMutex.Unlock()
+				return
+			}
+			misc.MapMutex.Unlock()
+			return
+		}
+		misc.MapMutex.Unlock()
+		return
+	}
+
+	// Iterates through all the file extensions in memory and adds them to the extensions string
+	for ext := range misc.GuildMap[m.GuildID].ExtensionList {
+		extensions += fmt.Sprintf(".%v\n", ext)
+	}
+	misc.MapMutex.Unlock()
+
+	_, err := s.ChannelMessageSend(m.ChannelID, extensions)
+	if err != nil {
+		_, _ = s.ChannelMessageSend(guildBotLog, err.Error())
+	}
+}
+
+// Adds file extension commands to the commandHandler
+func init() {
+	add(&command{
+		execute:  filterExtensionCommand,
+		trigger:  "addextension",
+		aliases:  []string{"filterextension", "extension"},
+		desc:     "Adds a file extension to the extension blacklist/whitelist.",
+		elevated: true,
+		category: "filters",
+	})
+	add(&command{
+		execute:  unfilterExtensionCommand,
+		trigger:  "removeextension",
+		aliases:  []string{"killextension", "unextension"},
+		desc:     "Removes a file extension from the extension blacklist/whitelist",
+		elevated: true,
+		category: "filters",
+	})
+	add(&command{
+		execute:  viewExtensionsCommand,
+		trigger:  "extensions",
+		aliases:  []string{"filextensions", "filteredextensions", "printextensions"},
+		desc:     "Prints the file extension blacklist/whitelist.",
+		elevated: true,
+		category: "filters",
+	})
 }

@@ -443,18 +443,12 @@ func isFilteredReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) bool
 // Adds a filter phrase to storage and memory
 func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	var (
-		mLowercase     string
-		commandStrings []string
-	)
-
 	misc.MapMutex.Lock()
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	misc.MapMutex.Unlock()
 
-	mLowercase = strings.ToLower(m.Content)
-	commandStrings = strings.SplitN(mLowercase, " ", 2)
+	commandStrings := strings.SplitN(strings.ToLower(m.Content), " ", 2)
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vfilter [phrase]`\n\n[phrase] is either regex expression (preferable) or just a simple string.", guildPrefix))
@@ -477,11 +471,7 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been added to the filter list.", commandStrings[1]))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
-		return
+		_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 	}
 }
 
@@ -520,10 +510,7 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vunfilter [phrase]`\n\n[phrase] is the filter phrase that was used when creating a filter.", guildPrefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			return
 		}
 		return
@@ -532,20 +519,13 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Removes phrase from storage and memory
 	err := misc.FiltersRemove(commandStrings[1], m.GuildID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		return
 	}
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been removed from the filter list.", commandStrings[1]))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
-		return
+		_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 	}
 }
 
@@ -584,11 +564,7 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, filters)
 	if err != nil {
-		_, err := s.ChannelMessageSend(guildBotLog, err.Error())
-		if err != nil {
-			return
-		}
-		return
+		_, _ = s.ChannelMessageSend(guildBotLog, err.Error())
 	}
 }
 

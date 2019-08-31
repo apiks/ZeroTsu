@@ -39,16 +39,17 @@ type guildInfo struct {
 	Waifus              []Waifu
 	WaifuTrades         []WaifuTrade
 
-	MemberInfoMap   map[string]*UserInfo
-	SpoilerMap      map[string]*discordgo.Role
-	EmojiStats      map[string]*Emoji
-	ChannelStats    map[string]*Channel
-	UserChangeStats map[string]int
-	VerifiedStats   map[string]int
-	VoteInfoMap     map[string]*VoteInfo
-	TempChaMap      map[string]*TempChaInfo
-	ReactJoinMap    map[string]*ReactJoin
-	EmojiRoleMap    map[string][]string
+	MemberInfoMap      map[string]*UserInfo
+	SpoilerMap         map[string]*discordgo.Role
+	EmojiStats         map[string]*Emoji
+	ChannelStats       map[string]*Channel
+	UserChangeStats    map[string]int
+	VerifiedStats      map[string]int
+	VoteInfoMap        map[string]*VoteInfo
+	TempChaMap         map[string]*TempChaInfo
+	ReactJoinMap       map[string]*ReactJoin
+	EmojiRoleMap       map[string][]string
+	ExtensionList 	   map[string]string
 }
 
 type sharedInfo struct {
@@ -67,8 +68,8 @@ type GuildSettings struct {
 	VoteModule          bool       `json:"VoteModule"`
 	VoteChannelCategory Cha        `json:"VoteChannelCategory"`
 	WaifuModule         bool       `json:"WaifuModule"`
+	WhitelistFileFilter	bool	   `json:"WhitelistFileFilter"`
 	ReactsModule        bool       `json:"ReactsModule"`
-	FileFilter          bool       `json:"FileFilter"`
 	PingMessage         string     `json:"PingMessage"`
 	Premium				bool	   `json:"Premium"`
 }
@@ -223,7 +224,7 @@ func LoadGuilds() {
 		MapMutex.Lock()
 		GuildMap[folderName] = &guildInfo{
 			GuildID:             folderName,
-			GuildConfig:         GuildSettings{Prefix: ".", VoteModule: false, WaifuModule: false, ReactsModule: true, FileFilter: false, PingMessage: "Hmm? Do you want some honey, darling? Open wide~~", Premium: false},
+			GuildConfig:         GuildSettings{Prefix: ".", VoteModule: false, WaifuModule: false, ReactsModule: true, WhitelistFileFilter: false, PingMessage: "Hmm? Do you want some honey, darling? Open wide~~", Premium: false},
 			BannedUsers:         nil,
 			Filters:             nil,
 			MessageRequirements: nil,
@@ -233,16 +234,17 @@ func LoadGuilds() {
 			Raffles:             nil,
 			Waifus:              nil,
 			WaifuTrades:         nil,
-			MemberInfoMap:       make(map[string]*UserInfo),
-			SpoilerMap:          make(map[string]*discordgo.Role),
-			EmojiStats:          make(map[string]*Emoji),
-			ChannelStats:        make(map[string]*Channel),
-			UserChangeStats:     make(map[string]int),
-			VerifiedStats:       make(map[string]int),
-			VoteInfoMap:         make(map[string]*VoteInfo),
-			TempChaMap:          make(map[string]*TempChaInfo),
-			ReactJoinMap:        make(map[string]*ReactJoin),
-			EmojiRoleMap:        make(map[string][]string),
+			MemberInfoMap:      make(map[string]*UserInfo),
+			SpoilerMap:         make(map[string]*discordgo.Role),
+			EmojiStats:         make(map[string]*Emoji),
+			ChannelStats:       make(map[string]*Channel),
+			UserChangeStats:    make(map[string]int),
+			VerifiedStats:      make(map[string]int),
+			VoteInfoMap:        make(map[string]*VoteInfo),
+			TempChaMap:         make(map[string]*TempChaInfo),
+			ReactJoinMap:       make(map[string]*ReactJoin),
+			EmojiRoleMap:       make(map[string][]string),
+			ExtensionList: 		make(map[string]string),
 		}
 		for _, file := range files {
 			LoadGuildFile(folderName, file)
@@ -337,6 +339,8 @@ func LoadGuildFile(guildID string, file string) {
 		if GuildMap[guildID].GuildConfig.ReactsModule {
 			_ = json.Unmarshal(infoByte, &GuildMap[guildID].ReactJoinMap)
 		}
+	case "extensionList.json":
+		_ = json.Unmarshal(infoByte, &GuildMap[guildID].ExtensionList)
 	case "guildSettings.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].GuildConfig)
 	}
@@ -769,6 +773,91 @@ func FiltersRemove(phrase string, guildID string) error {
 	return nil
 }
 
+// Adds a string file extension to extensionList.json and memory
+func ExtensionsWrite(extension string, guildID string) error {
+
+	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].ExtensionList) > 199 {
+		return fmt.Errorf("Error: You have reached the file extension filter limit (200) for this server.")
+	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].ExtensionList) > 99 {
+		return fmt.Errorf("Error: You have reached the file extension filter (100) for this server.")
+	}
+
+	if strings.HasPrefix(extension, ".") {
+		extension = strings.TrimPrefix(extension, ".")
+	}
+
+	// Appends the new file extension to a slice of all of the old ones if it doesn't already exist
+	MapMutex.Lock()
+	for ext := range GuildMap[guildID].ExtensionList {
+		if strings.ToLower(ext) == strings.ToLower(extension) {
+			MapMutex.Unlock()
+			return fmt.Errorf(fmt.Sprintf("Error: `%v` is already on the file extension list.", ext))
+		}
+	}
+
+	// Adds the extension to the file extension list with its type (blacklist or whitelist)
+	if GuildMap[guildID].GuildConfig.WhitelistFileFilter {
+		GuildMap[guildID].ExtensionList[strings.ToLower(extension)] = "whitelist"
+	} else {
+		GuildMap[guildID].ExtensionList[strings.ToLower(extension)] = "blacklist"
+	}
+
+
+	// Turns that struct slice into bytes again to be ready to written to file
+	marshaledStruct, err := json.MarshalIndent(GuildMap[guildID].ExtensionList, "", "    ")
+	if err != nil {
+		MapMutex.Unlock()
+		return err
+	}
+	MapMutex.Unlock()
+
+	// Writes to file
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/extensionList.json", guildID), marshaledStruct, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Removes a file extension from extensionList.json and memory
+func ExtensionsRemove(extension string, guildID string) error {
+
+	var extensionExists bool
+
+	// Deletes the filtered phrase if it finds it exists
+	MapMutex.Lock()
+	for ext := range GuildMap[guildID].ExtensionList {
+		if strings.ToLower(ext) == strings.ToLower(extension) {
+			delete(GuildMap[guildID].ExtensionList, extension)
+			extensionExists = true
+			break
+		}
+	}
+
+	// Exits func if the extension is not on the blacklist
+	if !extensionExists {
+		MapMutex.Unlock()
+		return fmt.Errorf(fmt.Sprintf("Error: `%v` is not in the file extension list.", extension))
+	}
+
+	// Turns that struct slice into bytes again to be ready to written to file
+	marshaledStruct, err := json.Marshal(GuildMap[guildID].ExtensionList)
+	if err != nil {
+		MapMutex.Unlock()
+		return err
+	}
+	MapMutex.Unlock()
+
+	// Writes to file
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/extensionList.json", guildID), marshaledStruct, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Adds string "phrase" to messReqs.json and memory
 func MessRequirementWrite(phrase string, channel string, filterType string, guildID string) error {
 
@@ -1141,9 +1230,9 @@ func writeAll(guildID string) {
 	_ = VerifiedStatsWrite(GuildMap[guildID].VerifiedStats, guildID)
 	_ = RemindMeWrite(SharedInfo.RemindMes)
 	_ = AnimeSubsWrite(SharedInfo.AnimeSubs)
-	VoteInfoWrite(GuildMap[guildID].VoteInfoMap, guildID)
-	TempChaWrite(GuildMap[guildID].TempChaMap, guildID)
-	ReactJoinWrite(GuildMap[guildID].ReactJoinMap, guildID)
+	_ = VoteInfoWrite(GuildMap[guildID].VoteInfoMap, guildID)
+	_ = TempChaWrite(GuildMap[guildID].TempChaMap, guildID)
+	_ = ReactJoinWrite(GuildMap[guildID].ReactJoinMap, guildID)
 	_ = RafflesWrite(GuildMap[guildID].Raffles, guildID)
 	_ = WaifusWrite(GuildMap[guildID].Waifus, guildID)
 	_ = WaifuTradesWrite(GuildMap[guildID].WaifuTrades, guildID)

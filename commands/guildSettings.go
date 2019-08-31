@@ -1123,18 +1123,17 @@ func reactModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 }
 
 // Handles attachment removal disable or enable
-func attachmentRemovalCommand(s *discordgo.Session, m *discordgo.Message) {
+func whitelistFileFilter(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
 		message   string
 		module    bool
-		whitelist = ".png, .gif, .gifv, .jpeg, .jpg, .bmp, .tif, .tiff, .webm, .webps, .webp, .mp4, .ogg, .wmv, .3gp, .avi, .flv, .wav"
 	)
 
 	misc.MapMutex.Lock()
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog
-	guildFileFilter := misc.GuildMap[m.GuildID].GuildConfig.FileFilter
+	guildFileFilter := misc.GuildMap[m.GuildID].GuildConfig.WhitelistFileFilter
 	misc.MapMutex.Unlock()
 
 	mLowercase := strings.ToLower(m.Content)
@@ -1143,13 +1142,13 @@ func attachmentRemovalCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Displays current module setting
 	if len(commandStrings) == 1 {
 		if !guildFileFilter {
-			message = fmt.Sprintf("File Filter is disabled. Please use `%vattachmentremoval true` to enable it.\n\n No delete (whitelisted) file types are: `%v`", guildPrefix, whitelist)
+			message = fmt.Sprintf("Whitelist File Filter version is disabled. Using a Blacklist File Filter. Please use `%vwhitelist true` to enable it.", guildPrefix)
 		} else {
-			message = fmt.Sprintf("File Filter is enabled. Please use `%vattachmentremoval false` to disable it.\n\n No delete (whitelisted) file types are: `%v`", guildPrefix, whitelist)
+			message = fmt.Sprintf("WhitelistFile Filter version is enabled. Please use `%vwhitelist false` to disable it and enable the Blacklist File Filter instead.", guildPrefix)
 		}
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error())
 			if err != nil {
 				return
 			}
@@ -1157,9 +1156,9 @@ func attachmentRemovalCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	} else if len(commandStrings) > 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vattachmentremoval [true/false]`", guildPrefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vwhitelist [true/false]`", guildPrefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error())
 			if err != nil {
 				return
 			}
@@ -1173,12 +1172,12 @@ func attachmentRemovalCommand(s *discordgo.Session, m *discordgo.Message) {
 		commandStrings[1] == "1" ||
 		commandStrings[1] == "enable" {
 		module = true
-		message = "Success! File Filter was enabled."
+		message = "Success! Whitelist File Filter was enabled."
 	} else if commandStrings[1] == "false" ||
 		commandStrings[1] == "0" ||
 		commandStrings[1] == "disable" {
 		module = false
-		message = "Success! File Filter was disabled."
+		message = "Success! File Filter has reverted to a blacklist."
 	} else {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid value. Please use `true` or `false`.")
 		if err != nil {
@@ -1193,17 +1192,13 @@ func attachmentRemovalCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Changes and writes module bool to guild
 	misc.MapMutex.Lock()
-	misc.GuildMap[m.GuildID].GuildConfig.FileFilter = module
+	misc.GuildMap[m.GuildID].GuildConfig.WhitelistFileFilter = module
 	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	misc.MapMutex.Unlock()
 
 	_, err := s.ChannelMessageSend(m.ChannelID, message)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
-		return
+		_, _ = s.ChannelMessageSend(guildBotLog.ID, err.Error())
 	}
 }
 
@@ -1372,10 +1367,10 @@ func init() {
 		category: "settings",
 	})
 	add(&command{
-		execute:  attachmentRemovalCommand,
-		trigger:  "attachmentremoval",
-		aliases:  []string{"attachremove", "attachmentremove", "attachremoval", "fileremove", "fileremoval", "filefilter", "filesfilter"},
-		desc:     "Auto-delete non-whitelisted file attachments",
+		execute:  whitelistFileFilter,
+		trigger:  "whitelist",
+		aliases:  []string{"filefilter", "attachmentremove", "attachremoval", "fileremove", "fileremoval", "attachmentremoval", "filesfilter", "whitelistfilter", "whitelistfile", "filewhitelist"},
+		desc:     "Switch between a whitelist attachment file filter (removes all attachments except whitelisted ones) and a blacklist attachment file filter (remove only specified file extensions)",
 		elevated: true,
 		admin:    true,
 		category: "settings",
