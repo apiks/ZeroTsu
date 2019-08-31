@@ -384,7 +384,11 @@ func animeSubsHandler(s *discordgo.Session) {
 
 				// Sends notification to user DMs if possible
 				dm, _ := s.UserChannelCreate(userID)
-				_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("%v episode %v is out!", scheduleShow.Name, scheduleShow.Episode))
+				if config.ServerID == "267799767843602452" {
+					_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("%v episode %v is out!\n\nTimes are from <https://AnimeSchedule.net>", scheduleShow.Name, scheduleShow.Episode))
+				} else {
+					_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("%v episode %v is out!", scheduleShow.Name, scheduleShow.Episode))
+				}
 
 				// Sets the show as notified for that user
 				misc.SharedInfo.AnimeSubs[userID][subKey].Notified = true
