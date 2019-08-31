@@ -108,10 +108,15 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		misc.MapMutex.Unlock()
 		extensions = strings.TrimSuffix(extensions, ", ")
 
+		if len(extensions) == 0 {
+			_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message upload `%v` was removed for using a non-whitelisted file type.\n\nNo file attachments are allowed on that server.", attachment.Filename))
+			return
+		}
+
 		if guildExtensionFilterType {
 			_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message upload `%v` was removed for using a non-whitelisted file type.\n\nAllowed file types are: `%v`", attachment.Filename, extensions))
 		} else {
-			_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message upload `%v` was removed for using a blacklisted file type.\n\nBlacklisted file types are: `%v`", attachment.Filename, extensions))
+			_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message upload `%v` was removed for using a blacklisted file type.", attachment.Filename))
 		}
 	}
 
