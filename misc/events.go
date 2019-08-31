@@ -243,6 +243,8 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 // Pulls the rss thread and prints it
 func RSSParser(s *discordgo.Session, guildID string) {
 
+	var pinnedItems = make(map[*gofeed.Item]bool)
+
 	// Checks if there are any rss settings for this guild
 	MapMutex.Lock()
 	if len(GuildMap[guildID].RssThreads) == 0 {
@@ -282,7 +284,7 @@ func RSSParser(s *discordgo.Session, guildID string) {
 
 	// Sets up the feed parser
 	fp := gofeed.NewParser()
-	fp.Client = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport}, Timeout: time.Minute * 1}
+	fp.Client = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport}, Timeout: time.Second * 20}
 
 	// Save all feeds early to save performance
 	var subMap = make(map[string]*gofeed.Feed)
@@ -359,6 +361,9 @@ func RSSParser(s *discordgo.Session, guildID string) {
 			if !thread.Pin {
 				continue
 			}
+			if _, ok := pinnedItems[item]; ok {
+				continue
+			}
 
 			pins, err := s.ChannelMessagesPinned(message.ChannelID)
 			if err != nil {
@@ -366,23 +371,21 @@ func RSSParser(s *discordgo.Session, guildID string) {
 				continue
 			}
 			// Unpins if necessary
-			if len(pins) != 0 {
-				for _, pin := range pins {
+			for _, pin := range pins {
 
-					// Checks for whether the pin is one that should be unpinned
-					if pin.Author.ID != s.State.User.ID {
-						continue
-					}
-					if !strings.HasPrefix(strings.ToLower(pin.Content), fmt.Sprintf("https://www.reddit.com/r/%v/comments/", thread.Subreddit)) ||
-						!strings.HasPrefix(strings.ToLower(pin.Content), fmt.Sprintf("http://www.reddit.com/r/%v/comments/", thread.Subreddit)) {
-						continue
-					}
+				// Checks for whether the pin is one that should be unpinned
+				if pin.Author.ID != s.State.User.ID {
+					continue
+				}
+				if !strings.HasPrefix(strings.ToLower(pin.Content), fmt.Sprintf("https://www.reddit.com/r/%v/comments/", thread.Subreddit)) ||
+					!strings.HasPrefix(strings.ToLower(pin.Content), fmt.Sprintf("http://www.reddit.com/r/%v/comments/", thread.Subreddit)) {
+					continue
+				}
 
-					err = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
-					if err != nil {
-						_, _ = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))
-						continue
-					}
+				err = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
+				if err != nil {
+					_, _ = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))
+					continue
 				}
 			}
 			// Pins
@@ -390,6 +393,7 @@ func RSSParser(s *discordgo.Session, guildID string) {
 			if err != nil {
 				_, _ = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))
 			}
+			pinnedItems[item] = true
 		}
 	}
 }
