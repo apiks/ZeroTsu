@@ -254,7 +254,7 @@ func viewExtensionsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Iterates through all the file extensions in memory and adds them to the extensions string
 	for ext := range misc.GuildMap[m.GuildID].ExtensionList {
-		extensions += fmt.Sprintf(".%v\n", ext)
+		extensions += fmt.Sprintf("**.%v**\n", ext)
 	}
 	misc.MapMutex.Unlock()
 
