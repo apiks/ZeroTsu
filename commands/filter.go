@@ -828,7 +828,7 @@ func viewMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 		if requirement.Channel == "" {
 			requirement.Channel = "All channels"
 		}
-		mRequirements += fmt.Sprintf("**%v - %v - %v**\n", requirement.Phrase, requirement.Channel, requirement.Type)
+		mRequirements += fmt.Sprintf("**%v** - **%v** - **%v**\n", requirement.Phrase, requirement.Channel, requirement.Type)
 	}
 	misc.MapMutex.Unlock()
 	mRequirements = strings.TrimSuffix(mRequirements, "\n")

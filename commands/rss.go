@@ -263,19 +263,19 @@ func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Iterates through all the rss settings if they exist and adds them to the message string and print them
 	for i := 0; i < len(misc.GuildMap[m.GuildID].RssThreads); i++ {
 		// Format print string
-		message += fmt.Sprintf("`r/%v", misc.GuildMap[m.GuildID].RssThreads[i].Subreddit)
+		message += fmt.Sprintf("**r/%v**", misc.GuildMap[m.GuildID].RssThreads[i].Subreddit)
 		if misc.GuildMap[m.GuildID].RssThreads[i].Author != "" {
-			message += fmt.Sprintf(" - u/%v", misc.GuildMap[m.GuildID].RssThreads[i].Author)
+			message += fmt.Sprintf(" - **u/%v**", misc.GuildMap[m.GuildID].RssThreads[i].Author)
 		}
-		message += fmt.Sprintf(" - %v", misc.GuildMap[m.GuildID].RssThreads[i].PostType)
+		message += fmt.Sprintf(" - **%v**", misc.GuildMap[m.GuildID].RssThreads[i].PostType)
 		if misc.GuildMap[m.GuildID].RssThreads[i].Pin {
 			message += " - pinned"
 		}
-		message += fmt.Sprintf(" - %v", misc.GuildMap[m.GuildID].RssThreads[i].ChannelID)
+		message += fmt.Sprintf(" - **%v**", misc.GuildMap[m.GuildID].RssThreads[i].ChannelID)
 		if misc.GuildMap[m.GuildID].RssThreads[i].Title != "" {
-			message += fmt.Sprintf(" - %v", misc.GuildMap[m.GuildID].RssThreads[i].Title)
+			message += fmt.Sprintf(" - **%v**", misc.GuildMap[m.GuildID].RssThreads[i].Title)
 		}
-		message += "`\n"
+		message += "\n"
 	}
 	misc.MapMutex.Unlock()
 
