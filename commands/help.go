@@ -178,7 +178,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 
 	// Adds everything together
 	embedMess.Fields = embed
-	embeds := splitHelpEmbedField(&embedMess)
+	embeds := splitHelpEmbedField(&embedMess, elevated)
 
 	for _, splitEmbed := range embeds {
 		// Sends embed in channel
@@ -254,7 +254,7 @@ func helpChannelEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
-	embeds := splitHelpEmbedField(&embedMess)
+	embeds := splitHelpEmbedField(&embedMess, true)
 
 	for _, splitEmbed := range embeds {
 		// Sends embed in channel
@@ -330,7 +330,7 @@ func helpFiltersEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
-	embeds := splitHelpEmbedField(&embedMess)
+	embeds := splitHelpEmbedField(&embedMess, true)
 
 	for _, splitEmbed := range embeds {
 		// Sends embed in channel
@@ -406,7 +406,7 @@ func helpMiscEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
-	embeds := splitHelpEmbedField(&embedMess)
+	embeds := splitHelpEmbedField(&embedMess, true)
 
 	for _, splitEmbed := range embeds {
 		// Sends embed in channel
@@ -481,7 +481,7 @@ func helpNormalEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
-	embeds := splitHelpEmbedField(&embedMess)
+	embeds := splitHelpEmbedField(&embedMess, true)
 
 	for _, splitEmbed := range embeds {
 		// Sends embed in channel
@@ -558,7 +558,7 @@ func helpPunishmentEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
-	embeds := splitHelpEmbedField(&embedMess)
+	embeds := splitHelpEmbedField(&embedMess, true)
 
 	for _, splitEmbed := range embeds {
 		// Sends embed in channel
@@ -640,7 +640,7 @@ func helpReactsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
-	embeds := splitHelpEmbedField(&embedMess)
+	embeds := splitHelpEmbedField(&embedMess, true)
 
 	for _, splitEmbed := range embeds {
 		// Sends embed in channel
@@ -716,7 +716,7 @@ func helpRssEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
-	embeds := splitHelpEmbedField(&embedMess)
+	embeds := splitHelpEmbedField(&embedMess, true)
 
 	for _, splitEmbed := range embeds {
 		// Sends embed in channel
@@ -792,7 +792,7 @@ func helpStatsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
-	embeds := splitHelpEmbedField(&embedMess)
+	embeds := splitHelpEmbedField(&embedMess, true)
 
 	for _, splitEmbed := range embeds {
 		// Sends embed in channel
@@ -868,7 +868,7 @@ func helpRaffleEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
-	embeds := splitHelpEmbedField(&embedMess)
+	embeds := splitHelpEmbedField(&embedMess, true)
 
 	for _, splitEmbed := range embeds {
 		// Sends embed in channel
@@ -950,7 +950,7 @@ func helpWaifuEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
-	embeds := splitHelpEmbedField(&embedMess)
+	embeds := splitHelpEmbedField(&embedMess, true)
 
 	for _, splitEmbed := range embeds {
 		// Sends embed in channel
@@ -1026,7 +1026,7 @@ func helpGuildSettingsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
-	embeds := splitHelpEmbedField(&embedMess)
+	embeds := splitHelpEmbedField(&embedMess, true)
 
 	for _, splitEmbed := range embeds {
 		// Sends embed in channel
@@ -1040,7 +1040,7 @@ func helpGuildSettingsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 }
 
 // Split a help embed into multiple parts
-func splitHelpEmbedField(embed *discordgo.MessageEmbed) []*discordgo.MessageEmbed {
+func splitHelpEmbedField(embed *discordgo.MessageEmbed, elevated bool) []*discordgo.MessageEmbed {
 
 	var (
 		totalLen      int
@@ -1048,10 +1048,16 @@ func splitHelpEmbedField(embed *discordgo.MessageEmbed) []*discordgo.MessageEmbe
 		newEmbeds     []*discordgo.MessageEmbed
 		newEmbedField *discordgo.MessageEmbedField
 		newFooter	  *discordgo.MessageEmbedFooter
+		targetIndex 	int
 	)
 
+	// Set the proper field index
+	if !elevated {
+		targetIndex = 2
+	}
+
 	// Split off all commands and calculate their total char length
-	commands := strings.Split(embed.Fields[0].Value, "\n")
+	commands := strings.Split(embed.Fields[targetIndex].Value, "\n")
 	for _, command := range commands {
 		totalLen += len(command)
 	}
@@ -1061,12 +1067,12 @@ func splitHelpEmbedField(embed *discordgo.MessageEmbed) []*discordgo.MessageEmbe
 
 		newEmbedField = nil
 		newEmbedField = new(discordgo.MessageEmbedField)
-		newEmbedField.Name = embed.Fields[0].Name
+		newEmbedField.Name = embed.Fields[targetIndex].Name
 		for i := 0; i < len(commands)/2; i++ {
 			newEmbedField.Value += fmt.Sprintf("%v\n", commands[i])
 			totalLen -= len(commands[i])
 		}
-		newEmbedField.Inline = embed.Fields[0].Inline
+		newEmbedField.Inline = embed.Fields[targetIndex].Inline
 
 		newEmbed = nil
 		newEmbed = new(discordgo.MessageEmbed)
@@ -1076,19 +1082,18 @@ func splitHelpEmbedField(embed *discordgo.MessageEmbed) []*discordgo.MessageEmbe
 
 		newEmbedField = nil
 		newEmbedField = new(discordgo.MessageEmbedField)
-		newEmbedField.Name = embed.Fields[0].Name
+		newEmbedField.Name = embed.Fields[targetIndex].Name
 		for i := len(commands)/2; i < len(commands); i++ {
 			newEmbedField.Value += fmt.Sprintf("%v\n", commands[i])
 			totalLen -= len(commands[i])
 		}
-		newEmbedField.Inline = embed.Fields[0].Inline
+		newEmbedField.Inline = embed.Fields[targetIndex].Inline
 
 		newEmbed = nil
 		newEmbed = new(discordgo.MessageEmbed)
 		newEmbed.Fields = append(newEmbed.Fields, newEmbedField)
 		newEmbed.Color = embed.Color
 		newEmbeds = append(newEmbeds, newEmbed)
-
 	}
 
 	// Set up the footer for the last embed
