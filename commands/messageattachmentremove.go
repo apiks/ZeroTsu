@@ -134,7 +134,6 @@ func isBannedExtension(filename, guildID string) bool {
 // Blacklists a file extension
 func filterExtensionCommand(s *discordgo.Session, m *discordgo.Message) {
 
-
 	misc.MapMutex.Lock()
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
@@ -152,6 +151,11 @@ func filterExtensionCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 		return
+	}
+
+	// Remove double spaces
+	for i := 0; i < len(commandStrings); i++ {
+		commandStrings[i] = strings.Replace(commandStrings[i], "  ", " ", -1)
 	}
 
 	// Writes the extension to extensionList.json and checks if the extension was already in storage
@@ -200,6 +204,11 @@ func unfilterExtensionCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 		return
+	}
+
+	// Remove double spaces
+	for i := 0; i < len(commandStrings); i++ {
+		commandStrings[i] = strings.Replace(commandStrings[i], "  ", " ", -1)
 	}
 
 	// Removes extension from storage and memory
