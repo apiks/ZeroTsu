@@ -161,6 +161,9 @@ func Start() {
 	// Auto spambot ban
 	goBot.AddHandler(misc.SpambotJoin)
 
+	// Anime subscription handler
+	goBot.AddHandler(commands.AnimeSubsTimer)
+
 	err = goBot.Open()
 	if err != nil {
 		panic("Critical error: BOT cannot start.")

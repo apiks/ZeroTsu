@@ -31,7 +31,7 @@ func setRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	cmdStrs := strings.Split(messageLowercase, " ")
 
 	if len(cmdStrs) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"setrss [u/author]* [type]* [pin]* [r/subreddit] [title]*`\n\n * are optional.\n\nType refers to the post sort filter. Valid values are `hot`, `new` and `rising`. Defaults to `hot`.\nPin refers to whether to pin the post when the bot posts it and unpin the previous bot pin of the same subreddit. Use `true` or `false` as values.\nTitle is what a post title should start with for the BOT to post it. Leave empty for all posts.\n\nFor author and subreddit be sure to add the prefixes `u/` and `r/`.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"setrss [u/author]* [type]* [pin]* [r/subreddit] [title]*`\n\n* are optional.\n\nType refers to the post sort filter. Valid values are `hot`, `new` and `rising`. Defaults to `hot`.\nPin refers to whether to pin the post when the bot posts it and unpin the previous bot pin of the same subreddit. Use `true` or `false` as values.\nTitle is what a post title should start with for the BOT to post it. Leave empty for all posts.\n\nFor author and subreddit be sure to add the prefixes `u/` and `r/`.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -296,15 +296,13 @@ func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
+
 	for i := 0; i < len(splitMessage); i++ {
 		_, err := s.ChannelMessageSend(m.ChannelID, splitMessage[i])
 		if err != nil {
-			_, err := s.ChannelMessageSend(m.ChannelID, "Error: cannot send rss message.")
+			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot send rss message.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error())
 				return
 			}
 		}

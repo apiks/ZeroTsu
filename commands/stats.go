@@ -108,10 +108,16 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		normalChannelTotal int
 		optinChannelTotal  int
 		flag               bool
-		channels	   []*misc.Channel
+		channels	   	   []*misc.Channel
+		t				   time.Time
 	)
 
-	t := time.Now()
+	// Print either today or yesterday based on whether it's the bot that called the func
+	if m.Author.ID == s.State.User.ID {
+		t = today
+	} else {
+		t = time.Now()
+	}
 
 	misc.MapMutex.Lock()
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
@@ -425,14 +431,10 @@ func dailyStats(s *discordgo.Session) {
 	}()
 
 	t := time.Now()
-	hour := t.Hour()
-	minute := t.Minute()
 
 	if today.Day() == t.Day() {
 		return
 	}
-
-	today = t
 
 	folders, err := ioutil.ReadDir("database/guilds")
 	if err != nil {
@@ -486,10 +488,11 @@ func dailyStats(s *discordgo.Session) {
 	}
 	misc.MapMutex.Unlock()
 
-	// Update daily anime schedule command
-	if hour == 0 && minute == 0 {
-		UpdateAnimeSchedule()
-	}
+	today = t
+
+	// Update daily anime schedule command and reset sub notified status
+	UpdateAnimeSchedule()
+	resetSubNotified()
 }
 
 // Daily stat update timer

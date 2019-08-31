@@ -177,14 +177,17 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 
 	// Adds everything together
 	embedMess.Fields = embed
+	embeds := splitHelpEmbedField(&embedMess)
 
-	// Sends embed in channel
-	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return err
+	for _, splitEmbed := range embeds {
+		// Sends embed in channel
+		_, err := s.ChannelMessageSendEmbed(m.ChannelID, splitEmbed)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 // Mod command help page
@@ -250,14 +253,17 @@ func helpChannelEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
+	embeds := splitHelpEmbedField(&embedMess)
 
-	// Sends embed in channel
-	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return err
+	for _, splitEmbed := range embeds {
+		// Sends embed in channel
+		_, err := s.ChannelMessageSendEmbed(m.ChannelID, splitEmbed)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 // Mod command help page
@@ -323,14 +329,17 @@ func helpFiltersEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
+	embeds := splitHelpEmbedField(&embedMess)
 
-	// Sends embed in channel
-	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return err
+	for _, splitEmbed := range embeds {
+		// Sends embed in channel
+		_, err := s.ChannelMessageSendEmbed(m.ChannelID, splitEmbed)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 // Mod command help page
@@ -396,14 +405,17 @@ func helpMiscEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
+	embeds := splitHelpEmbedField(&embedMess)
 
-	// Sends embed in channel
-	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return err
+	for _, splitEmbed := range embeds {
+		// Sends embed in channel
+		_, err := s.ChannelMessageSendEmbed(m.ChannelID, splitEmbed)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 // Mod command help page
@@ -468,14 +480,18 @@ func helpNormalEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
+	embeds := splitHelpEmbedField(&embedMess)
 
-	// Sends embed in channel
-	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return err
+	for _, splitEmbed := range embeds {
+		// Sends embed in channel
+		_, err := s.ChannelMessageSendEmbed(m.ChannelID, splitEmbed)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return err
+		}
 	}
-	return err
+
+	return nil
 }
 
 // Mod command help page
@@ -541,14 +557,17 @@ func helpPunishmentEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
+	embeds := splitHelpEmbedField(&embedMess)
 
-	// Sends embed in channel
-	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return err
+	for _, splitEmbed := range embeds {
+		// Sends embed in channel
+		_, err := s.ChannelMessageSendEmbed(m.ChannelID, splitEmbed)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 // Prints pretty help
@@ -620,14 +639,17 @@ func helpReactsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
+	embeds := splitHelpEmbedField(&embedMess)
 
-	// Sends embed in channel
-	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return err
+	for _, splitEmbed := range embeds {
+		// Sends embed in channel
+		_, err := s.ChannelMessageSendEmbed(m.ChannelID, splitEmbed)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 // Mod command help page
@@ -693,14 +715,17 @@ func helpRssEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
+	embeds := splitHelpEmbedField(&embedMess)
 
-	// Sends embed in channel
-	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return err
+	for _, splitEmbed := range embeds {
+		// Sends embed in channel
+		_, err := s.ChannelMessageSendEmbed(m.ChannelID, splitEmbed)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 // Mod command help page
@@ -766,14 +791,17 @@ func helpStatsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
+	embeds := splitHelpEmbedField(&embedMess)
 
-	// Sends embed in channel
-	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return err
+	for _, splitEmbed := range embeds {
+		// Sends embed in channel
+		_, err := s.ChannelMessageSendEmbed(m.ChannelID, splitEmbed)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 // Mod command help page
@@ -839,14 +867,17 @@ func helpRaffleEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
+	embeds := splitHelpEmbedField(&embedMess)
 
-	// Sends embed in channel
-	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return err
+	for _, splitEmbed := range embeds {
+		// Sends embed in channel
+		_, err := s.ChannelMessageSendEmbed(m.ChannelID, splitEmbed)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 // Mod command help page
@@ -918,14 +949,17 @@ func helpWaifuEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
+	embeds := splitHelpEmbedField(&embedMess)
 
-	// Sends embed in channel
-	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return err
+	for _, splitEmbed := range embeds {
+		// Sends embed in channel
+		_, err := s.ChannelMessageSendEmbed(m.ChannelID, splitEmbed)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 // Mod command help page
@@ -991,14 +1025,85 @@ func helpGuildSettingsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	// Adds everything together
 	embedMess.Fields = embed
+	embeds := splitHelpEmbedField(&embedMess)
 
-	// Sends embed in channel
-	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
-	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return err
+	for _, splitEmbed := range embeds {
+		// Sends embed in channel
+		_, err := s.ChannelMessageSendEmbed(m.ChannelID, splitEmbed)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return err
+		}
 	}
-	return err
+	return nil
+}
+
+// Split a help embed into multiple parts
+func splitHelpEmbedField(embed *discordgo.MessageEmbed) []*discordgo.MessageEmbed {
+
+	var (
+		totalLen      int
+		newEmbed      *discordgo.MessageEmbed
+		newEmbeds     []*discordgo.MessageEmbed
+		newEmbedField *discordgo.MessageEmbedField
+		newFooter	  *discordgo.MessageEmbedFooter
+	)
+
+	// Split off all commands and calculate their total char length
+	commands := strings.Split(embed.Fields[0].Value, "\n")
+	for _, command := range commands {
+		totalLen += len(command)
+	}
+
+	// If they're over 1024 chars  then split them into more embeds
+	for totalLen > 1024 {
+
+		newEmbedField = nil
+		newEmbedField = new(discordgo.MessageEmbedField)
+		newEmbedField.Name = embed.Fields[0].Name
+		for i := 0; i < len(commands)/2; i++ {
+			newEmbedField.Value += fmt.Sprintf("%v\n", commands[i])
+			totalLen -= len(commands[i])
+		}
+		newEmbedField.Inline = embed.Fields[0].Inline
+
+		newEmbed = nil
+		newEmbed = new(discordgo.MessageEmbed)
+		newEmbed.Fields = append(newEmbed.Fields, newEmbedField)
+		newEmbed.Color = embed.Color
+		newEmbeds = append(newEmbeds, newEmbed)
+
+		newEmbedField = nil
+		newEmbedField = new(discordgo.MessageEmbedField)
+		newEmbedField.Name = embed.Fields[0].Name
+		for i := len(commands)/2; i < len(commands); i++ {
+			newEmbedField.Value += fmt.Sprintf("%v\n", commands[i])
+			totalLen -= len(commands[i])
+		}
+		newEmbedField.Inline = embed.Fields[0].Inline
+
+		newEmbed = nil
+		newEmbed = new(discordgo.MessageEmbed)
+		newEmbed.Fields = append(newEmbed.Fields, newEmbedField)
+		newEmbed.Color = embed.Color
+		newEmbeds = append(newEmbeds, newEmbed)
+
+	}
+
+	// Set up the footer for the last embed
+	if len(newEmbeds) != 0 {
+		newFooter = new(discordgo.MessageEmbedFooter)
+		newFooter.Text = embed.Footer.Text
+		newFooter.ProxyIconURL = embed.Footer.ProxyIconURL
+		newFooter.IconURL = embed.Footer.IconURL
+		newEmbeds[len(newEmbeds)-1].Footer = newFooter
+	}
+
+	if len(newEmbeds) == 0 {
+		newEmbeds = append(newEmbeds, embed)
+	}
+
+	return newEmbeds
 }
 
 func init() {

@@ -22,7 +22,7 @@ var (
 		"rssThreadCheck.json", "raffles.json", "waifus.json", "waifuTrades.json", "memberInfo.json", "emojiStats.json",
 		"channelStats.json", "userChangeStats.json", "verifiedStats.json", "voteInfo.json", "tempCha.json",
 		"reactJoin.json", "guildSettings.json"}
-	sharedFileNames = [...]string{"remindMes.json"}
+	sharedFileNames = [...]string{"remindMes.json", "animeSubs.json"}
 )
 
 type guildInfo struct {
@@ -53,7 +53,7 @@ type guildInfo struct {
 
 type sharedInfo struct {
 	RemindMes       map[string]*RemindMeSlice
-	AnimeSubs		map[string][]string
+	AnimeSubs		map[string][]ShowSub
 }
 
 // Guild settings for misc things
@@ -188,6 +188,11 @@ type WaifuTrade struct {
 	AccepteeID  string `json:"AccepteeID"`
 }
 
+type ShowSub struct {
+	Show		string	`json:"Show"`
+	Notified	bool	`json:"Notified"`
+}
+
 // Loads all guilds in the database/guilds folder
 func LoadGuilds() {
 
@@ -264,7 +269,7 @@ func LoadSharedDB() {
 	MapMutex.Lock()
 	SharedInfo = &sharedInfo{
 		RemindMes: make(map[string]*RemindMeSlice),
-		AnimeSubs: make(map[string][]string),
+		AnimeSubs: make(map[string][]ShowSub),
 	}
 
 	for _, file := range files {
@@ -349,6 +354,8 @@ func LoadSharedDBFile(file string) {
 	switch file {
 	case "remindMes.json":
 		_ = json.Unmarshal(infoByte, &SharedInfo.RemindMes)
+	case "animeSubs.json":
+		_ = json.Unmarshal(infoByte, &SharedInfo.AnimeSubs)
 	}
 }
 
@@ -470,7 +477,7 @@ func RemindMeWrite(remindMe map[string]*RemindMeSlice) error {
 }
 
 // Writes anime notfication subscription to animeSubs.json
-func AnimeSubsWrite(animeSubs map[string][]string) error {
+func AnimeSubsWrite(animeSubs map[string][]ShowSub) error {
 
 	// Turns that slice into bytes to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(animeSubs, "", "    ")
