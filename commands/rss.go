@@ -269,7 +269,7 @@ func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		message += fmt.Sprintf(" - **%v**", misc.GuildMap[m.GuildID].RssThreads[i].PostType)
 		if misc.GuildMap[m.GuildID].RssThreads[i].Pin {
-			message += " - pinned"
+			message += " - **pinned**"
 		}
 		message += fmt.Sprintf(" - **%v**", misc.GuildMap[m.GuildID].RssThreads[i].ChannelID)
 		if misc.GuildMap[m.GuildID].RssThreads[i].Title != "" {
