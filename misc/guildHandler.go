@@ -825,6 +825,10 @@ func ExtensionsRemove(extension string, guildID string) error {
 
 	var extensionExists bool
 
+	if strings.HasPrefix(extension, ".") {
+		extension = strings.TrimPrefix(extension, ".")
+	}
+
 	// Deletes the filtered phrase if it finds it exists
 	MapMutex.Lock()
 	for ext := range GuildMap[guildID].ExtensionList {
