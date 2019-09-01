@@ -214,7 +214,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		}
 		// Formats  and splits message
 		if !channel.Optin {
-			message += lineSpaceFormatChannel(channel.ChannelID, false, m.GuildID)
+			message += lineSpaceFormatChannel(channel.ChannelID, false, m.GuildID, t)
 			message += "\n"
 		}
 		msgs, message = splitStatMessages(msgs, message)
@@ -234,7 +234,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		if channel.Optin {
 
 			// Formats  and splits message
-			message += lineSpaceFormatChannel(channel.ChannelID, true, m.GuildID)
+			message += lineSpaceFormatChannel(channel.ChannelID, true, m.GuildID, t)
 			msgs, message = splitStatMessages(msgs, message)
 		}
 	}
@@ -293,10 +293,9 @@ func (e byFrequencyChannel) Less(i, j int) bool {
 }
 
 // Formats the line space length for the above to keep level spacing
-func lineSpaceFormatChannel(id string, optin bool, guildID string) string {
+func lineSpaceFormatChannel(id string, optin bool, guildID string, t time.Time) string {
 
 	var totalMessages int
-	t := time.Now()
 
 	for date := range misc.GuildMap[guildID].ChannelStats[id].Messages {
 		totalMessages += misc.GuildMap[guildID].ChannelStats[id].Messages[date]
@@ -455,7 +454,7 @@ func dailyStats(s *discordgo.Session) {
 			continue
 		}
 
-		_, err := s.ChannelMessageSend(guildBotLog, fmt.Sprintf("Update for **%v %v, %v**", t.Month(), t.Day(), t.Year()))
+		_, err := s.ChannelMessageSend(guildBotLog, fmt.Sprintf("Stats for **%v %v, %v**", today.Month(), today.Day(), today.Year()))
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
