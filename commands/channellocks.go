@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -65,7 +64,6 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Saves the original role and airing perms if they exists
 	for _, perm := range cha.PermissionOverwrites {
-		log.Println(perm.ID)
 		if perm.ID == roleID && roleID != "" {
 			originalRolePerms = perm
 		}
@@ -74,7 +72,6 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		if perm.ID == m.GuildID {
 			originalEveryonePerms = perm
-			log.Println(originalEveryonePerms)
 		}
 	}
 
