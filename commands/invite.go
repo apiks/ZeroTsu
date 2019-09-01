@@ -11,7 +11,7 @@ import (
 // Prints Public ZeroTsu's invite link
 func inviteCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	inviteLink := "https://discordapp.com/api/oauth2/authorize?client_id=614495694769618944&permissions=8&scope=bot"
+	inviteLink := "https://discordapp.com/api/oauth2/authorize?client_id=614495694769618944&permissions=401960278&scope=bot"
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Invite me to your server by using this link!\n\n<%v>", inviteLink))
 	if err != nil {
