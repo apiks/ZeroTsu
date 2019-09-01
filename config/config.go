@@ -20,6 +20,7 @@ var (
 	RedditAppName    string
 	RedditAppSecret  string
 	DiscordAppSecret string
+	DiscordBotsSecret string
 
 	config        *configStruct
 	configsecrets *configSecrets
@@ -42,6 +43,7 @@ type configSecrets struct {
 	RedditAppName    string `json:"RedditName"`
 	RedditAppSecret  string `json:"RedditSecret"`
 	DiscordAppSecret string `json:"DiscordSecret"`
+	DiscordBotsSecret string `json:"DiscordBotsSecret"`
 }
 
 // Loads config.json values
@@ -96,6 +98,7 @@ func ReadConfigSecrets() error {
 	RedditAppName = configsecrets.RedditAppName
 	RedditAppSecret = configsecrets.RedditAppSecret
 	DiscordAppSecret = configsecrets.DiscordAppSecret
+	DiscordBotsSecret = configsecrets.DiscordBotsSecret
 
 	fmt.Println("Successfuly read hidden configsecrets file.")
 
