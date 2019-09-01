@@ -25,6 +25,11 @@ func helpEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 		admin    bool
 	)
 
+	if m.GuildID == "" {
+		_ = helpEmbed(s, m, elevated, admin)
+		return
+	}
+
 	misc.MapMutex.Lock()
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
@@ -70,14 +75,21 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 
 		// Slice for sorting
 		commands []string
+
+		guildPrefix = "."
+		guildBotLog string
+		guildWaifuModule bool
+		guildReactsModule bool
 	)
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	guildWaifuModule := misc.GuildMap[m.GuildID].GuildConfig.WaifuModule
-	guildReactsModule := misc.GuildMap[m.GuildID].GuildConfig.ReactsModule
-	misc.MapMutex.Unlock()
+	if m.GuildID != "" {
+		misc.MapMutex.Lock()
+		guildPrefix = misc.GuildMap[m.GuildID].GuildConfig.Prefix
+		guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+		guildWaifuModule = misc.GuildMap[m.GuildID].GuildConfig.WaifuModule
+		guildReactsModule = misc.GuildMap[m.GuildID].GuildConfig.ReactsModule
+		misc.MapMutex.Unlock()
+	}
 
 	// Set embed color
 	embedMess.Color = 0x00ff00
@@ -119,6 +131,11 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 		}
 		sort.Strings(commands)
 		for i := 0; i < len(commands); i++ {
+			if m.GuildID == "" {
+				if !commandMap[commands[i]].DMAble {
+					continue
+				}
+			}
 			if !commandMap[commands[i]].elevated {
 				if commandMap[commands[i]].category == "waifus" {
 					if !guildWaifuModule {
@@ -1145,6 +1162,7 @@ func init() {
 		aliases:  []string{"h"},
 		desc:     "Print all available commands in embed form.",
 		category: "normal",
+		DMAble: true,
 	})
 	//add(&command{
 	//	execute:  helpPlaintextCommand,

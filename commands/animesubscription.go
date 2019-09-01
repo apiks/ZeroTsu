@@ -17,12 +17,17 @@ func subscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 	var (
 		showName string
 		hasAiredToday	bool
+
+		guildPrefix = "."
+		guildBotLog string
 	)
 
-	misc.MapMutex.Lock()
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	misc.MapMutex.Unlock()
+	if m.GuildID != "" {
+		misc.MapMutex.Lock()
+		guildPrefix = misc.GuildMap[m.GuildID].GuildConfig.Prefix
+		guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+		misc.MapMutex.Unlock()
+	}
 
 	commandStrings := strings.SplitN(strings.ToLower(m.Content), " ", 2)
 
@@ -149,12 +154,17 @@ func unsubscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 	var (
 		isValidShow bool
 		isDeleted 	bool
+
+		guildPrefix = "."
+		guildBotLog string
 	)
 
-	misc.MapMutex.Lock()
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	misc.MapMutex.Unlock()
+	if m.GuildID != "" {
+		misc.MapMutex.Lock()
+		guildPrefix = misc.GuildMap[m.GuildID].GuildConfig.Prefix
+		guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+		misc.MapMutex.Unlock()
+	}
 
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
@@ -252,12 +262,17 @@ func viewSubscriptions(s *discordgo.Session, m *discordgo.Message) {
 	var (
 		message 	string
 		messages 	[]string
+
+		guildPrefix = "."
+		guildBotLog string
 	)
 
-	misc.MapMutex.Lock()
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	misc.MapMutex.Unlock()
+	if m.GuildID != "" {
+		misc.MapMutex.Lock()
+		guildPrefix = misc.GuildMap[m.GuildID].GuildConfig.Prefix
+		guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+		misc.MapMutex.Unlock()
+	}
 
 	commandStrings := strings.Split(m.Content, " ")
 
@@ -385,7 +400,7 @@ func animeSubsHandler(s *discordgo.Session) {
 
 				// Sends notification to user DMs if possible
 				dm, _ := s.UserChannelCreate(userID)
-				if config.ServerID == "267799767843602452" {
+				if config.ServerID != "267799767843602452" {
 					_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("%v episode %v is out!\n\nTimes are from <https://AnimeSchedule.net>", scheduleShow.Name, scheduleShow.Episode))
 				} else {
 					_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("%v episode %v is out!", scheduleShow.Name, scheduleShow.Episode))
@@ -455,6 +470,7 @@ func init() {
 		aliases:  []string{"subscribe", "subs", "animesub", "subanime", "addsub"},
 		desc:     "Subscribe to get DMs whenever a specific anime show's episodes are released (subbed where applicable.) Please have your DM settings accept messages from non-friends for it to work.",
 		category: "normal",
+		DMAble: true,
 	})
 	add(&command{
 		execute:  unsubscribeCommand,
@@ -462,6 +478,7 @@ func init() {
 		aliases:  []string{"unsubscribe", "unsubs", "unanimesub", "unsubanime", "removesub", "killsub", "stopsub"},
 		desc:     "Unsubscribe from getting notifications about a specific anime.",
 		category: "normal",
+		DMAble: true,
 	})
 	add(&command{
 		execute:  viewSubscriptions,
@@ -469,5 +486,6 @@ func init() {
 		aliases:  []string{"subscriptions", "animesubs", "showsubs", "showsubscriptions", "viewsubs", "viewsubscriptions"},
 		desc:     "Print which shows you are subscribed to get notifications for.",
 		category: "normal",
+		DMAble: true,
 	})
 }

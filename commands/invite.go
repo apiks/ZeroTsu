@@ -15,9 +15,12 @@ func inviteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Invite me to your server by using this link!\n\n<%v>", inviteLink))
 	if err != nil {
-		misc.MapMutex.Lock()
-		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-		misc.MapMutex.Unlock()
+		var guildBotLog string
+		if m.GuildID != "" {
+			misc.MapMutex.Lock()
+			guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+			misc.MapMutex.Unlock()
+		}
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
@@ -31,5 +34,6 @@ func init() {
 		aliases:  []string{"inv", "invit"},
 		desc:     "Print the BOT's invite link",
 		category: "normal",
+		DMAble: true,
 	})
 }

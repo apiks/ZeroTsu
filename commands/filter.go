@@ -298,6 +298,10 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 		messRequireCheck         []string
 	)
 
+	if m.GuildID == "" {
+		return false, nil
+	}
+
 	mLowercase = strings.ToLower(m.Content)
 
 	// Checks if the message contains a mention and finds the actual name instead of ID and put it in mentions

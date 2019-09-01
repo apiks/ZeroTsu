@@ -13,10 +13,17 @@ import (
 // Picks one item from a specified number of item.
 func pickCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	misc.MapMutex.Lock()
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	misc.MapMutex.Unlock()
+	var (
+		guildPrefix = "."
+		guildBotLog string
+	)
+
+	if m.GuildID != "" {
+		misc.MapMutex.Lock()
+		guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+		guildPrefix = misc.GuildMap[m.GuildID].GuildConfig.Prefix
+		misc.MapMutex.Unlock()
+	}
 
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
@@ -69,5 +76,6 @@ func init() {
 		aliases:  []string{"pic", "pik", "p"},
 		desc:     "Picks one thing from a specified number of things.",
 		category: "normal",
+		DMAble: true,
 	})
 }

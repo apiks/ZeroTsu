@@ -14,10 +14,17 @@ import (
 // Rolls a number between 1 and a specified number (defaults to 100)
 func rollCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	misc.MapMutex.Lock()
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	misc.MapMutex.Unlock()
+	var (
+		guildPrefix = "."
+		guildBotLog string
+	)
+
+	if m.GuildID != "" {
+		misc.MapMutex.Lock()
+		guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+		guildPrefix = misc.GuildMap[m.GuildID].GuildConfig.Prefix
+		misc.MapMutex.Unlock()
+	}
 
 	commandStrings := strings.Split(m.Content, " ")
 
@@ -45,7 +52,6 @@ func rollCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if the specified number is actually a number
 	num, err := strconv.Atoi(commandStrings[1])
 	if err != nil {
-
 		// Handles different error types
 		if err.(*strconv.NumError).Err == strconv.ErrRange {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: That number is too large. Please try a smaller one.")
@@ -89,5 +95,6 @@ func init() {
 		aliases:  []string{"rol", "r"},
 		desc:     "Rolls a number from 1 to 100. Specify a number to change the range.",
 		category: "normal",
+		DMAble: true,
 	})
 }

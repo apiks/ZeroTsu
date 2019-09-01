@@ -56,7 +56,7 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Check if it's a valid int
 		if day < 0 || day > 6 {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot parse that day.")
-			if err != nil {
+			if err != nil && m.GuildID != "" {
 
 				misc.MapMutex.Lock()
 				guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
@@ -81,7 +81,7 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Print the daily schedule
 	_, err := s.ChannelMessageSend(m.ChannelID, printMessage)
-	if err != nil {
+	if err != nil && m.GuildID != "" {
 
 		misc.MapMutex.Lock()
 		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
@@ -256,5 +256,6 @@ func init() {
 		trigger:  "schedule",
 		desc:     "Print anime air times SUBBED. Add a day to specify a day",
 		category: "normal",
+		DMAble: true,
 	})
 }

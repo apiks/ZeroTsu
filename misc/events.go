@@ -737,7 +737,7 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 			dm, err := s.UserChannelCreate(userID)
 			_, err = s.ChannelMessageSend(dm.ID, "RemindMe: "+remindMeSlice.RemindMeSlice[i].Message)
 			// Else sends the message in the channel the command was made in with a ping
-			if err != nil {
+			if err != nil && guildID != "" {
 				// Checks if the user is in the server before pinging him
 				_, err := s.GuildMember(guildID, userID)
 				if err == nil {
@@ -757,7 +757,7 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 			remindMeSlice.RemindMeSlice = append(remindMeSlice.RemindMeSlice[:i], remindMeSlice.RemindMeSlice[i+1:]...)
 			SharedInfo.RemindMes[userID].RemindMeSlice = remindMeSlice.RemindMeSlice
 			err = RemindMeWrite(SharedInfo.RemindMes)
-			if err != nil {
+			if err != nil && guildID != "" {
 				_, err = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
 					return

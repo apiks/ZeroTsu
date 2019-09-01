@@ -18,12 +18,17 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 		userID         string
 		flag           bool
 		dummySlice     misc.RemindMeSlice
+
+		guildPrefix = "."
+		guildBotLog string
 	)
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
+	if m.GuildID != "" {
+		misc.MapMutex.Lock()
+		guildPrefix = misc.GuildMap[m.GuildID].GuildConfig.Prefix
+		guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+		misc.MapMutex.Unlock()
+	}
 
 	// Checks if message contains filtered words, which would not be allowed as a remind
 	badWordExists, _ := isFiltered(s, m)
@@ -123,6 +128,9 @@ func viewRemindMe(s *discordgo.Session, m *discordgo.Message) {
 		userID    string
 		remindMes []string
 		message   string
+
+		guildPrefix = "."
+		guildBotLog string
 	)
 
 	userID = m.Author.ID
@@ -130,8 +138,10 @@ func viewRemindMe(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if the user has any reminds
 	misc.MapMutex.Lock()
 
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	if m.GuildID != "" {
+		guildPrefix = misc.GuildMap[m.GuildID].GuildConfig.Prefix
+		guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	}
 
 	_, ok := misc.SharedInfo.RemindMes[userID]
 	if !ok {
@@ -205,6 +215,9 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 		userID   string
 		remindID int
 		flag     bool
+
+		guildPrefix = "."
+		guildBotLog string
 	)
 
 	userID = m.Author.ID
@@ -212,8 +225,10 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if the user has any reminds
 	misc.MapMutex.Lock()
 
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	if m.GuildID != "" {
+		guildPrefix = misc.GuildMap[m.GuildID].GuildConfig.Prefix
+		guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	}
 
 	_, ok := misc.SharedInfo.RemindMes[userID]
 	if !ok {
@@ -324,6 +339,7 @@ func init() {
 		desc:     "Reminds you of the message after the command after a period of time. Either messages you or pings you if it cannot.",
 		elevated: false,
 		category: "normal",
+		DMAble: true,
 	})
 	add(&command{
 		execute:  viewRemindMe,
@@ -332,6 +348,7 @@ func init() {
 		desc:     "Shows you what reminds you have currently set.",
 		elevated: false,
 		category: "normal",
+		DMAble: true,
 	})
 	add(&command{
 		execute:  removeRemindMe,
@@ -340,5 +357,6 @@ func init() {
 		desc:     "Removes a previously set remind.",
 		elevated: false,
 		category: "normal",
+		DMAble: true,
 	})
 }
