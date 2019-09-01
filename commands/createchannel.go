@@ -69,7 +69,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	if m.Author.ID == s.State.User.ID {
 		misc.MapMutex.Unlock()
 	}
-	err := misc.OptInsHandler(s, m.GuildID)
+	err := misc.OptInsHandler(s, m.ChannelID, m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
@@ -159,7 +159,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	if channel.Type != "general" {
 
 		// Creates the new role
-		newRole, err := s.GuildRoleCreate(m.GuildID)
+		newRole, err = s.GuildRoleCreate(m.GuildID)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
@@ -189,7 +189,6 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		if m.Author.ID != s.State.User.ID {
 			misc.MapMutex.Unlock()
 		}
-
 	}
 
 	// Pulls info on server roles

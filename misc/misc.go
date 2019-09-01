@@ -626,7 +626,7 @@ func Uptime() time.Duration {
 }
 
 // Checks if optins exist and creates them if they don't
-func OptInsHandler(s *discordgo.Session, guildID string) error {
+func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 
 	var (
 		optInUnderExists bool
@@ -671,7 +671,10 @@ func OptInsHandler(s *discordgo.Session, guildID string) error {
 	if !optInUnderExists {
 		var optIn OptinRole
 
-		_, _ = s.ChannelMessageSend(guildBotLog, "Necessary opt-in-under role not detected. Trying to create it.")
+		_, err := s.ChannelMessageSend(channelID, "Necessary opt-in-under role not detected. Trying to create it.")
+		if err != nil {
+			_, _ = s.ChannelMessageSend(guildBotLog, "Necessary opt-in-under role not detected. Trying to create it.")
+		}
 
 		// Creates opt-in-under role
 		role, err := s.GuildRoleCreate(guildID)
@@ -698,7 +701,10 @@ func OptInsHandler(s *discordgo.Session, guildID string) error {
 	if !optInAboveExists {
 		var optIn OptinRole
 
-		_, _ = s.ChannelMessageSend(guildBotLog, "Necessary opt-in-above role not detected. Trying to create it.")
+		_, err := s.ChannelMessageSend(channelID, "Necessary opt-in-above role not detected. Trying to create it.")
+		if err != nil {
+			_, _ = s.ChannelMessageSend(guildBotLog, "Necessary opt-in-above role not detected. Trying to create it.")
+		}
 
 		// Creates opt-in-above role
 		role, err := s.GuildRoleCreate(guildID)

@@ -1,11 +1,14 @@
 package misc
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -37,7 +40,13 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		MapMutex.Unlock()
 	}
 
+	// Update playing status
 	_ = s.UpdateStatus(0, config.PlayingMsg)
+
+	// Sends server count to bot list sites if it's the public ZeroTsu
+	if s.State.User.ID == "614495694769618944" {
+		sendServers(s)
+	}
 
 	for range time.NewTicker(45 * time.Second).C {
 
@@ -237,6 +246,11 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			}
 		}
 		MapMutex.Unlock()
+
+		// Sends server count to bot list sites if it's the public ZeroTsu
+		if s.State.User.ID == "614495694769618944" {
+			sendServers(s)
+		}
 	}
 }
 
@@ -479,6 +493,10 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	if m.GuildID == "" {
+		return
+	}
+
+	if m.Author.Bot {
 		return
 	}
 
@@ -981,13 +999,40 @@ func cleanSpoilerRoles(s *discordgo.Session, guildID string) error {
 }
 
 // Handles BOT joining a server
-func GuildCreate(s *discordgo.Session, u *discordgo.GuildCreate) {
-	InitDB(u.Guild.ID)
+func GuildCreate(s *discordgo.Session, g *discordgo.GuildCreate) {
+	InitDB(g.Guild.ID)
 	LoadGuilds()
-	log.Println("Joined guild: " + u.Guild.Name)
+
+	log.Println(fmt.Sprintf("Joined guild %v", g.Guild.Name))
 }
 
 // Logs BOT leaving a server
-func GuildDelete(s *discordgo.Session, u *discordgo.GuildDelete) {
-	log.Println("Left guild: " + u.Guild.Name)
+func GuildDelete(s *discordgo.Session, g *discordgo.GuildDelete) {
+	log.Println(fmt.Sprintf("Left guild %v", g.Guild.Name))
+}
+
+// Send number of servers via post request
+func sendServers(s *discordgo.Session) {
+
+	if config.ServerID == "267799767843602452" {
+		return
+	}
+
+	client := &http.Client{}
+	data := url.Values{
+		"server_count": {strconv.Itoa(len(s.State.Guilds))},
+	}
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("https://discordbots.org/api/bots/%v/stats", s.State.User.ID), bytes.NewBufferString(data.Encode()))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	req.Header.Add("Authorization", config.DiscordBotsSecret)
+
+	_, err = client.Do(req)
+	if err != nil {
+		log.Println(err)
+	}
 }

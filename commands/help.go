@@ -115,7 +115,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 	// Sets usage field if elevated
 	if elevated {
 		// Sets footer field
-		embedFooter.Text = fmt.Sprintf("Usage: Pick a category with %vhcategory", guildPrefix)
+		embedFooter.Text = fmt.Sprintf("Usage: %vh-category | (Example: %vh-settings)", guildPrefix, guildPrefix)
 		embedMess.Footer = &embedFooter
 	}
 
@@ -154,7 +154,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 		misc.MapMutex.Unlock()
 
 		// Sets footer field
-		embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
+		embedFooter.Text = fmt.Sprintf("Tip: Type %v<command> to see a detailed description.", guildPrefix)
 		embedMess.Footer = &embedFooter
 	} else {
 		// Sets elevated commands field
@@ -1172,78 +1172,78 @@ func init() {
 	//})
 	add(&command{
 		execute:  helpChannelCommand,
-		trigger:  "hchannel",
-		aliases:  []string{"h[channel]", "hchannels", "h[channels]"},
+		trigger:  "h-channel",
+		aliases:  []string{"h[channel]", "hchannels", "h[channels]", "h-chanel", "help-channel", "help-chanel", "hchannel", "h-channels", "help-channels"},
 		desc:     "Print all channel related commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpFiltersCommand,
-		trigger:  "hfilters",
-		aliases:  []string{"h[filters]", "hfilter", "h[filters]"},
+		trigger:  "h-filters",
+		aliases:  []string{"h[filters]", "hfilter", "h[filters]", "h-filter", "help-filters", "help-filter", "hfilters"},
 		desc:     "Print all commands related to filters.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpMiscCommand,
-		trigger:  "hmisc",
-		aliases:  []string{"h[misc]", "hmiscellaneous", "h[miscellaneous]"},
+		trigger:  "h-misc",
+		aliases:  []string{"h[misc]", "hmiscellaneous", "h[miscellaneous]", "help-misc", "hmisc"},
 		desc:     "Print all miscellaneous mod commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpNormalCommand,
-		trigger:  "hnormal",
-		aliases:  []string{"h[normal]"},
+		trigger:  "h-normal",
+		aliases:  []string{"h[normal]", "h-norma", "h-norm", "help-normal", "hnormal"},
 		desc:     "Print all normal user commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpPunishmentCommand,
-		trigger:  "hpunishment",
-		aliases:  []string{"h[punishment]", "hpunishments", "h[punishments]"},
-		desc:     "Print all mod pusnihment commands.",
+		trigger:  "h-punishment",
+		aliases:  []string{"h[punishment]", "hpunishments", "h[punishments]", "h-punish", "h-pun", "help-punishment", "help-punishments", "h-punishments", "hpunishment"},
+		desc:     "Print all mod punishment commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpReactsCommand,
-		trigger:  "helpreacts",
-		aliases:  []string{"hreact", "helpreacts", "hreacts"},
+		trigger:  "h-reacts",
+		aliases:  []string{"helpreacts", "helpreacts", "hreact", "h-react", "help-reacts", "help-react", "hreacts"},
 		desc:     "Print all react mod commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpRssCommand,
-		trigger:  "hrss",
-		aliases:  []string{"h[rss]"},
+		trigger:  "h-rss",
+		aliases:  []string{"h[rss]", "help-rss", "hrss"},
 		desc:     "Print all RSS feed from sub commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpStatsCommand,
-		trigger:  "hstats",
-		aliases:  []string{"h[stats]", "hstat", "h[stat]"},
+		trigger:  "h-stats",
+		aliases:  []string{"h[stats]", "hstat", "h[stat]", "help-stats", "hstats", "h-stats", "help-stats"},
 		desc:     "Print all channel and emoji stats commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpRaffleCommand,
-		trigger:  "hraffle",
-		aliases:  []string{"h[raffle]", "hraffles", "h[raffles]"},
+		trigger:  "h-raffles",
+		aliases:  []string{"h[raffle]", "hraffles", "h[raffles]", "help-raffle", "help-raffles", "h-raffle", "hraffle"},
 		desc:     "Print all raffle commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpWaifuCommand,
-		trigger:  "hwaifu",
-		aliases:  []string{"h[waifu]", "hwaifus", "h[waifus]"},
+		trigger:  "h-waifu",
+		aliases:  []string{"h[waifu]", "hwaifus", "h[waifus]", "help-waifu", "help-waifus", "h-waifus", "hwaifu"},
 		desc:     "Print all waifu commands.",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpGuildSettingsCommand,
-		trigger:  "hsettings",
-		aliases:  []string{"h[set]", "hsetting", "h[setting]", "h[settings]", "hset", "hsets", "hsetts", "hsett"},
+		trigger:  "h-settings",
+		aliases:  []string{"h[set]", "hsetting", "h[setting]", "h[settings]", "hset", "hsets", "hsetts", "hsett", "h-set", "help-settings", "help-set"},
 		desc:     "Print all server setting commands.",
 		elevated: true,
 		admin:    true,

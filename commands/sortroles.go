@@ -38,7 +38,7 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 	if m.Author.ID == s.State.User.ID {
 		misc.MapMutex.Unlock()
 	}
-	err := misc.OptInsHandler(s, m.GuildID)
+	err := misc.OptInsHandler(s, m.ChannelID, m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return

@@ -172,7 +172,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Confirms whether optins exist
-	err = misc.OptInsHandler(s, m.GuildID)
+	err = misc.OptInsHandler(s, m.ChannelID, m.GuildID)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
