@@ -27,6 +27,7 @@ type command struct {
 	elevated     bool
 	admin        bool
 	category     string
+	DMAble		 bool
 }
 
 func add(c *command) {
@@ -65,6 +66,39 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	// Handle guild command if it's coming from a server
+	if m.GuildID != "" {
+		handleGuild(s, m)
+		return
+	}
+
+	// Parse the command
+	var guildPrefix = "."
+	if m.Message.Content[0:len(guildPrefix)] != guildPrefix {
+		return
+	}
+	cmdTrigger := strings.Split(m.Content, " ")[0][len(guildPrefix):]
+	cmdTrigger = strings.ToLower(cmdTrigger)
+	cmd, ok := commandMap[cmdTrigger]
+	if !ok {
+		cmd, ok = commandMap[aliasMap[cmdTrigger]]
+		if !ok {
+			return
+		}
+	}
+
+	// Allow only normal DMable commands
+	if !cmd.DMAble {
+		return
+	}
+
+	// Execute the command
+	cmd.execute(s, m.Message)
+	cmd.commandCount++
+}
+
+// Handles a command from a guild
+func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if _, ok := misc.GuildMap[m.GuildID]; !ok {
 		misc.InitDB(m.GuildID)
 		misc.LoadGuilds()
@@ -144,6 +178,11 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 	}
+}
+
+// Handles a command from DMs
+func handleDM(s *discordgo.Session, m *discordgo.MessageCreate) {
+
 }
 
 // Checks if a user has the admin permissions or is a privileged role
