@@ -1,7 +1,14 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/bwmarrin/discordgo"
+
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
@@ -15,18 +22,14 @@ func pruneCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	commandStrings := strings.Split(m.Content, " ")
 
-	// Throw error if too many parameters
-	if len(commandStrings) > 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vprune [amount]*`\n\n[amount] is the number of messages to remove. Defaults to 100. Max is 5000.\n\n***** is optional.", guildPrefix))
+	// Throw error not correct amoutn of parameters
+	if len(commandStrings) != 2 {
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vprune [amount]`\n\n[amount] is the number of messages to remove. Max is 5000.", guildPrefix))
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 		return
-	}
-	// If no amount was specified then remove the past 100 messages
-	if len(commandStrings) == 1 {
-		pruneMessages(s, m, 100, guildBotLog)
 	}
 	// If an amount was specified then remove an x amount of messages
 	if len(commandStrings) == 2 {
