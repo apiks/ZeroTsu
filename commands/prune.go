@@ -150,6 +150,11 @@ OuterLoop:
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
+		_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Removed the past %v messages in this channel.", len(deleteMessageIDs)))
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return
+		}
 		return
 	}
 
