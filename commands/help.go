@@ -1243,7 +1243,7 @@ func init() {
 	add(&command{
 		execute:  helpGuildSettingsCommand,
 		trigger:  "h-settings",
-		aliases:  []string{"h[set]", "hsetting", "h[setting]", "h[settings]", "hset", "hsets", "hsetts", "hsett", "h-set", "help-settings", "help-set"},
+		aliases:  []string{"h[set]", "hsetting", "h[setting]", "h[settings]", "hset", "hsets", "hsetts", "hsett", "h-set", "help-settings", "help-set", "hsettings"},
 		desc:     "Print all server setting commands.",
 		elevated: true,
 		admin:    true,
