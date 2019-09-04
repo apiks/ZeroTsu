@@ -196,6 +196,6 @@ func init() {
 		aliases:  []string{"p", "prun", "pru", "purge"},
 		desc:     "Prunes the previous x amount of messages in a channel. Works only for messages under 14 days old. Takes 5 seconds per 100 messages. MAX is 5000 which takes roughly four minutes.",
 		elevated: true,
-		category: "punishment",
+		category: "channel",
 	})
 }

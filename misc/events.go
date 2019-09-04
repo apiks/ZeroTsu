@@ -37,6 +37,8 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		if err != nil {
 			_, _ = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error())
 		}
+
+		DynamicNicknameChange(s, guild.ID)
 		MapMutex.Unlock()
 	}
 
