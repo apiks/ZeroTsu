@@ -142,12 +142,6 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 						continue
 					}
 				}
-				if config.Website == "" {
-					if commandMap[commands[i]].trigger == "verify" ||
-						commandMap[commands[i]].trigger == "unverify" {
-						continue
-					}
-				}
 				userCommands.Value += fmt.Sprintf("`%v` - %v\n", commands[i], commandMap[commands[i]].desc)
 			}
 		}
@@ -412,6 +406,12 @@ func helpMiscEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	}
 	sort.Strings(commands)
 	for i := 0; i < len(commands); i++ {
+		if config.Website == "" {
+			if commandMap[commands[i]].trigger == "verify" ||
+				commandMap[commands[i]].trigger == "unverify" {
+				continue
+			}
+		}
 		if commandMap[commands[i]].category == "misc" {
 			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], commandMap[commands[i]].desc)
 		}

@@ -60,6 +60,7 @@ func pruneMessages(s *discordgo.Session, m *discordgo.Message, amount int, guild
 	var (
 		deleteMessageIDs []string
 		lastMessageID	 string
+		successMessages  []string
 	)
 
 	// Add the command message
@@ -69,11 +70,12 @@ func pruneMessages(s *discordgo.Session, m *discordgo.Message, amount int, guild
 	now := time.Now()
 
 	if amount <= 100 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Fetching messages to prune . . .")
+		successMess1, err := s.ChannelMessageSend(m.ChannelID, "Fetching messages to prune . . .")
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
+		successMessages = append(successMessages, successMess1.ID)
 	}
 
 	// Keep iterating until amount is zero
@@ -140,11 +142,12 @@ OuterLoop:
 	}
 
 	if len(deleteMessageIDs) > 100 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Starting to prune messages. This might take a while . . .")
+		successMess2, err := s.ChannelMessageSend(m.ChannelID, "Starting to prune messages. This might take a while . . .")
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
+		successMessages = append(successMessages, successMess2.ID)
 	}
 
 	// Deletes each 100 messages in the deleteMessageIDs in bulk
@@ -154,11 +157,15 @@ OuterLoop:
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
-		_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Removed the past %v messages in this channel.", len(deleteMessageIDs)))
+		successMess3, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Removed the past %v messages in this channel. Removing command messages in 2 seconds.", len(deleteMessageIDs)-1))
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
+
+		successMessages = append(successMessages, successMess3.ID)
+		time.Sleep(2 * time.Second)
+		_ = s.ChannelMessagesBulkDelete(successMess3.ChannelID, successMessages)
 		return
 	}
 
@@ -183,10 +190,16 @@ OuterLoop:
 		messagesLen -= 100
 	}
 
-	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Removed the past %v messages in this channel.", len(deleteMessageIDs)))
+	successMess3, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Removed the past %v messages in this channel. Removing command messages in 2 seconds.", len(deleteMessageIDs)))
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		return
 	}
+
+	// Deletes success messages
+	successMessages = append(successMessages, successMess3.ID)
+	time.Sleep(2 * time.Second)
+	_ = s.ChannelMessagesBulkDelete(successMess3.ChannelID, successMessages)
 }
 
 func init() {
