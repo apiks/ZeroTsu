@@ -272,6 +272,7 @@ func prefixCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.MapMutex.Lock()
 	misc.GuildMap[m.GuildID].GuildConfig.Prefix = commandStrings[1]
 	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	misc.DynamicNicknameChange(s, m.GuildID, guildPrefix)
 	misc.MapMutex.Unlock()
 
 	guildPrefix = commandStrings[1]

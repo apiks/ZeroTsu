@@ -35,7 +35,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		MapMutex.Lock()
 		err := cleanSpoilerRoles(s, guild.ID)
 		if err != nil {
-			_, _ = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
+			_, _ = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error())
 		}
 		MapMutex.Unlock()
 	}
@@ -244,6 +244,9 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 				}
 				continue
 			}
+
+			// Updates BOT nickname
+			DynamicNicknameChange(s, guild.ID)
 		}
 		MapMutex.Unlock()
 
@@ -1021,4 +1024,31 @@ func sendServers(s *discordgo.Session) {
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+// Changes the BOT's nickname dynamically to a `prefix username` format if there is no existing custom nickname
+func DynamicNicknameChange(s *discordgo.Session, guildID string, oldPrefix ...string) {
+
+	guildPrefix := GuildMap[guildID].GuildConfig.Prefix
+
+	// Set custom nickname based on guild prefix if there is no existing nickname
+	me, err := s.State.Member(guildID, s.State.User.ID)
+	if err != nil {
+		me, err = s.GuildMember(guildID, s.State.User.ID)
+		if err != nil {
+			return
+		}
+	}
+
+	if me.Nick != "" {
+		targetPrefix := guildPrefix
+		if oldPrefix[0] != "" {
+			targetPrefix = oldPrefix[0]
+		}
+		if me.Nick != fmt.Sprintf("%v %v", targetPrefix, s.State.User.Username) && me.Nick != "" {
+			return
+		}
+	}
+
+	_ = s.GuildMemberNickname(guildID, "@me", fmt.Sprintf("%v %v", guildPrefix, s.State.User.Username))
 }
