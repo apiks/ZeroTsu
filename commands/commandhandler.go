@@ -43,7 +43,7 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Println(rec)
-			log.Println("Recovery in HandleCommand")
+			log.Println("Recovery in HandleCommand with message: " + m.Content)
 		}
 	}()
 
@@ -112,12 +112,13 @@ func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 	)
 
 	misc.MapMutex.Lock()
-	if _, ok := misc.GuildMap[m.GuildID]; ok {
-		guildPrefix = misc.GuildMap[m.GuildID].GuildConfig.Prefix
-		guildVoteModule = misc.GuildMap[m.GuildID].GuildConfig.VoteModule
-		guildWaifuModule = misc.GuildMap[m.GuildID].GuildConfig.WaifuModule
-		guildReactsModule = misc.GuildMap[m.GuildID].GuildConfig.ReactsModule
+	if _, ok := misc.GuildMap[m.GuildID]; !ok {
+		return
 	}
+	guildPrefix = misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildVoteModule = misc.GuildMap[m.GuildID].GuildConfig.VoteModule
+	guildWaifuModule = misc.GuildMap[m.GuildID].GuildConfig.WaifuModule
+	guildReactsModule = misc.GuildMap[m.GuildID].GuildConfig.ReactsModule
 	misc.MapMutex.Unlock()
 
 	if m.Message.Content[0:len(guildPrefix)] != guildPrefix {

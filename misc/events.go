@@ -1044,13 +1044,22 @@ func DynamicNicknameChange(s *discordgo.Session, guildID string, oldPrefix ...st
 
 	if me.Nick != "" {
 		targetPrefix := guildPrefix
-		if oldPrefix[0] != "" {
-			targetPrefix = oldPrefix[0]
+		if len(oldPrefix) > 0 {
+			if oldPrefix[0] != "" {
+				targetPrefix = oldPrefix[0]
+			}
 		}
 		if me.Nick != fmt.Sprintf("%v %v", targetPrefix, s.State.User.Username) && me.Nick != "" {
 			return
 		}
 	}
 
-	_ = s.GuildMemberNickname(guildID, "@me", fmt.Sprintf("%v %v", guildPrefix, s.State.User.Username))
+	err = s.GuildMemberNickname(guildID, "@me", fmt.Sprintf("%v %v", guildPrefix, s.State.User.Username))
+	if err != nil {
+		if _, ok := err.(*discordgo.RESTError); ok {
+			if err.(*discordgo.RESTError).Response.Status == "400 Bad Request" {
+				_ = s.GuildMemberNickname(guildID, "@me", fmt.Sprintf("%v", s.State.User.Username))
+			}
+		}
+	}
 }
