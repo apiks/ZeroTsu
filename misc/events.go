@@ -670,6 +670,67 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	if (m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID)) && m.Author.ID == "315201054377771009" {
+
+		randomNum := rand.Intn(5)
+		if randomNum == 0 {
+			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("https://cdn.discordapp.com/attachments/618463738504151086/619090216329674800/uiz31mhq12k11.gif\n\nPrefix: `%v`", guildPrefix))
+			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
+				if err != nil {
+					return
+				}
+				return
+			}
+			return
+		}
+		if randomNum == 1 {
+			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Onii-chan no ecchi!\n\nPrefix: `%v`", guildPrefix))
+			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
+				if err != nil {
+					return
+				}
+				return
+			}
+			return
+		}
+		if randomNum == 2 {
+			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Kusuguttai Neiru-kun.\n\nPrefix: `%v`", guildPrefix))
+			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
+				if err != nil {
+					return
+				}
+				return
+			}
+			return
+		}
+		if randomNum == 3 {
+			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Liking lolis isn't a crime, but I'll still visit you in prison.\n\nPrefix: `%v`", guildPrefix))
+			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
+				if err != nil {
+					return
+				}
+				return
+			}
+			return
+		}
+		if randomNum == 4 {
+			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Iris told me she wanted you to meow at her while she was still young.\n\nPrefix: `%v`", guildPrefix))
+			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
+				if err != nil {
+					return
+				}
+				return
+			}
+			return
+		}
+		return
+	}
+
 	if (m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID)) && darlingTrigger > 10 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Daaarling~\n\nPrefix: `%v`", guildPrefix))
 		if err != nil {
