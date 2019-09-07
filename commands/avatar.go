@@ -12,10 +12,17 @@ import (
 // Returns user avatar in channel as message
 func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
+	var (
+		guildPrefix = "."
+		guildBotLog string
+	)
+
+	if m.GuildID != "" {
+		misc.MapMutex.Lock()
+		guildPrefix = misc.GuildMap[m.GuildID].GuildConfig.Prefix
+		guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+		misc.MapMutex.Unlock()
+	}
 
 	commandStrings := strings.Split(m.Content, " ")
 
@@ -71,5 +78,6 @@ func init() {
 		trigger:  "avatar",
 		desc:     "Show user avatar. Add [@mention] or [userID] to specify a user.",
 		category: "normal",
+		DMAble: true,
 	})
 }

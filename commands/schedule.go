@@ -58,10 +58,14 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot parse that day.")
 			if err != nil && m.GuildID != "" {
 
-				misc.MapMutex.Lock()
-				guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-				misc.MapMutex.Unlock()
-
+				var guildBotLog string
+				if m.GuildID != "" {
+					misc.MapMutex.Lock()
+					guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+					misc.MapMutex.Unlock()
+				} else {
+					return
+				}
 				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
 					return
@@ -83,9 +87,14 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 	_, err := s.ChannelMessageSend(m.ChannelID, printMessage)
 	if err != nil && m.GuildID != "" {
 
-		misc.MapMutex.Lock()
-		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-		misc.MapMutex.Unlock()
+		var guildBotLog string
+		if m.GuildID != "" {
+			misc.MapMutex.Lock()
+			guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+			misc.MapMutex.Unlock()
+		} else {
+			return
+		}
 
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {

@@ -17,6 +17,8 @@ func uptimeCommand(s *discordgo.Session, m *discordgo.Message) {
 			misc.MapMutex.Lock()
 			guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 			misc.MapMutex.Unlock()
+		} else {
+			return
 		}
 
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))

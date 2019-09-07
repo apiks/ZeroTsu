@@ -20,6 +20,8 @@ func inviteCommand(s *discordgo.Session, m *discordgo.Message) {
 			misc.MapMutex.Lock()
 			guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 			misc.MapMutex.Unlock()
+		} else {
+			return
 		}
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
