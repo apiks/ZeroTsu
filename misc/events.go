@@ -718,7 +718,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		if randomNum == 4 {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Iris told me she wanted you to meow at her while she was still young.\n\nPrefix: `%v`", guildPrefix))
+			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Iris told me you wanted her to meow at you while she was still young.\n\nPrefix: `%v`", guildPrefix))
 			if err != nil {
 				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				if err != nil {
@@ -1060,6 +1060,9 @@ func GuildCreate(s *discordgo.Session, g *discordgo.GuildCreate) {
 
 // Logs BOT leaving a server
 func GuildDelete(s *discordgo.Session, g *discordgo.GuildDelete) {
+	if g.Name == "" {
+		return
+	}
 	log.Println(fmt.Sprintf("Left guild %v", g.Guild.Name))
 }
 

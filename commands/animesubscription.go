@@ -49,12 +49,12 @@ func subscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
-	misc.MapMutex.Lock()
 
 	now := time.Now()
 	now = now.UTC()
 
 	// Iterates over all of the anime shows saved from AnimeSchedule and checks if it finds one
+	misc.MapMutex.Lock()
 Loop:
 	for dayInt, dailyShows := range AnimeSchedule {
 		for _, show := range dailyShows {
@@ -138,6 +138,7 @@ Loop:
 	err := misc.AnimeSubsWrite(misc.SharedInfo.AnimeSubs)
 	if err != nil {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		return
 	}
 	misc.MapMutex.Unlock()
 
@@ -186,9 +187,8 @@ func unsubscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	misc.MapMutex.Lock()
-
 	// Iterate over all of the seasonal anime and see if it's a valid one
+	misc.MapMutex.Lock()
 LoopShowCheck:
 	for _, scheduleShows := range AnimeSchedule {
 		for _, scheduleShow := range scheduleShows {
@@ -201,9 +201,11 @@ LoopShowCheck:
 	if !isValidShow {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid currently airing show.")
 		if err != nil {
+			misc.MapMutex.Unlock()
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
+		misc.MapMutex.Unlock()
 		return
 	}
 
@@ -236,9 +238,11 @@ LoopShowRemoval:
 	if !isDeleted {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: You are not subscribed to `%v`", commandStrings[1]))
 		if err != nil {
+			misc.MapMutex.Unlock()
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
+		misc.MapMutex.Unlock()
 		return
 	}
 
@@ -351,6 +355,7 @@ func animeSubsHandler(s *discordgo.Session) {
 	now = now.UTC()
 
 	// Fetches today's shows
+	misc.MapMutex.Lock()
 	for dayInt, scheduleShows := range AnimeSchedule {
 		// Checks if the target schedule day is today or not
 		if int(time.Now().Weekday()) != dayInt {
@@ -414,6 +419,7 @@ func animeSubsHandler(s *discordgo.Session) {
 
 	// Write to shared AnimeSubs DB
 	_ = misc.AnimeSubsWrite(misc.SharedInfo.AnimeSubs)
+	misc.MapMutex.Unlock()
 }
 
 func AnimeSubsTimer(s *discordgo.Session, e *discordgo.Ready) {
