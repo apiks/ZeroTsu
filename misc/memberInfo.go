@@ -121,7 +121,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		ciphertext := Encrypt(Key, user.User.ID)
 
 		// Sends verification message to user in DMs if possible
-		if config.Website != "" {
+		if config.Website != "" && e.GuildID == "267799767843602452" {
 			dm, _ := s.UserChannelCreate(user.User.ID)
 			_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n"+
 				"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
@@ -145,7 +145,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		ciphertext := Encrypt(Key, user.User.ID)
 
 		// Sends verification message to user in DMs if possible
-		if config.Website != "" {
+		if config.Website != "" && e.GuildID == "267799767843602452" {
 			dm, _ := s.UserChannelCreate(user.User.ID)
 			_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n"+
 				"Please verify your reddit account at http://%v/verification?reqvalue=%v", config.Website, ciphertext))
@@ -160,7 +160,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	}
 
 	// If user is already in memberInfo lacks reddit username and site is enabled, tell user to verify
-	if memberInfoUser.RedditUsername == "" && config.Website != "" {
+	if memberInfoUser.RedditUsername == "" && config.Website != "" && e.GuildID == "267799767843602452" {
 
 		// Encrypts id
 		ciphertext := Encrypt(Key, user.User.ID)

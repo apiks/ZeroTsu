@@ -13,7 +13,7 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
-var today = time.Now()
+var Today = time.Now()
 
 // Adds to message count on every message for that channel
 func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -112,9 +112,9 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		t				   time.Time
 	)
 
-	// Print either today or yesterday based on whether it's the bot that called the func
+	// Print either Today or yesterday based on whether it's the bot that called the func
 	if m.Author.ID == s.State.User.ID {
-		t = today
+		t = Today
 	} else {
 		t = time.Now()
 	}
@@ -431,9 +431,13 @@ func dailyStats(s *discordgo.Session) {
 
 	t := time.Now()
 
-	if today.Day() == t.Day() {
+	if Today.Day() == t.Day() {
 		return
 	}
+
+	// Update daily anime schedule
+	UpdateAnimeSchedule()
+	ResetSubscriptions()
 
 	folders, err := ioutil.ReadDir("database/guilds")
 	if err != nil {
@@ -447,16 +451,24 @@ func dailyStats(s *discordgo.Session) {
 		}
 		guildID := f.Name()
 
+		// Sends daily schedule if need be
+		DailySchedule(s, guildID)
+
 		guildPrefix := misc.GuildMap[guildID].GuildConfig.Prefix
 		guildBotLog := misc.GuildMap[guildID].GuildConfig.BotLog.ID
-
-		if guildBotLog == "" {
+		var guildDailyStatsID string
+		if dailystats, ok := misc.GuildMap[guildID].Autoposts["dailystats"]; !ok {
+			continue
+		} else {
+			guildDailyStatsID = dailystats.ID
+		}
+		if guildDailyStatsID == "" {
 			continue
 		}
 
-		_, err := s.ChannelMessageSend(guildBotLog, fmt.Sprintf("Stats for **%v %v, %v**", today.Month(), today.Day(), today.Year()))
+		_, err := s.ChannelMessageSend(guildDailyStatsID, fmt.Sprintf("Stats for **%v %v, %v**", Today.Month(), Today.Day(), Today.Year()))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error())
 			if err != nil {
 				continue
 			}
@@ -467,7 +479,7 @@ func dailyStats(s *discordgo.Session) {
 		message.GuildID = guildID
 		message.Author = &author
 		message.Content = guildPrefix + "stats"
-		message.ChannelID = guildBotLog
+		message.ChannelID = guildDailyStatsID
 
 		// Check for when stats don't display possibly due to malformed message
 		if author.ID == "" || message.GuildID == "" ||
@@ -487,11 +499,7 @@ func dailyStats(s *discordgo.Session) {
 	}
 	misc.MapMutex.Unlock()
 
-	today = t
-
-	// Update daily anime schedule command and reset sub notified status
-	UpdateAnimeSchedule()
-	resetSubNotified()
+	Today = t
 }
 
 // Daily stat update timer

@@ -11,14 +11,6 @@ import (
 	"time"
 )
 
-var AnimeSchedule = make(map[int][]ShowAirTime)
-
-type ShowAirTime struct {
-	Name    string
-	AirTime string
-	Episode	string
-}
-
 // Shows todays airing anime times, fetched from AnimeSchedule.net
 func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 
@@ -33,7 +25,13 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	if len(commandStrings) == 1 {
 		// Get the current day's schedule in print format
+		if m.Author.ID == s.State.User.ID {
+			misc.MapMutex.Unlock()
+		}
 		printMessage = getDaySchedule(currentDay)
+		if m.Author.ID == s.State.User.ID {
+			misc.MapMutex.Lock()
+		}
 	} else {
 		// Else get the target day's schedule in print format
 		switch commandStrings[1] {
@@ -89,9 +87,15 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		var guildBotLog string
 		if m.GuildID != "" {
+			if m.Author.ID == s.State.User.ID {
+				misc.MapMutex.Unlock()
+			}
 			misc.MapMutex.Lock()
 			guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 			misc.MapMutex.Unlock()
+			if m.Author.ID == s.State.User.ID {
+				misc.MapMutex.Lock()
+			}
 		} else {
 			return
 		}
@@ -125,7 +129,7 @@ func getDaySchedule(weekday int) string {
 	}
 
 	misc.MapMutex.Lock()
-	for dayInt, showSlice := range AnimeSchedule {
+	for dayInt, showSlice := range misc.AnimeSchedule {
 		if dayInt == weekday {
 			for _, show := range showSlice {
 
@@ -165,7 +169,7 @@ func getDaySchedule(weekday int) string {
 func processEachShow(index int, element *goquery.Selection) {
 	var (
 		day  int
-		show ShowAirTime
+		show misc.ShowAirTime
 	)
 
 	switch strings.ToLower(element.Parent().Parent().Parent().SiblingsFiltered(".column-title").Text()) {
@@ -191,7 +195,7 @@ func processEachShow(index int, element *goquery.Selection) {
 	show.AirTime = element.Find(".air-time").Text()
 
 	misc.MapMutex.Lock()
-	AnimeSchedule[day] = append(AnimeSchedule[day], show)
+	misc.AnimeSchedule[day] = append(misc.AnimeSchedule[day], show)
 	misc.MapMutex.Unlock()
 }
 
@@ -228,8 +232,8 @@ func UpdateAnimeSchedule() {
 
 	// Find all airing shows and process them after resetting map
 	misc.MapMutex.Lock()
-	for dayInt := range AnimeSchedule {
-		delete(AnimeSchedule, dayInt)
+	for dayInt := range misc.AnimeSchedule {
+		delete(misc.AnimeSchedule, dayInt)
 	}
 	misc.MapMutex.Unlock()
 	document.Find(".columns h3").Each(processEachShow)
@@ -257,6 +261,31 @@ func isTimeDST(t time.Time) bool {
 	}
 	// assume no dst
 	return false
+}
+
+// Posts the schedule in a target channel if a guild has enabled it
+func DailySchedule(s *discordgo.Session, guildID string) {
+	if _, ok := misc.GuildMap[guildID].Autoposts["dailyschedule"]; !ok {
+		return
+	}
+	if misc.GuildMap[guildID].Autoposts["dailyschedule"].ID == "" {
+		return
+	}
+
+	var (
+		message discordgo.Message
+		author  discordgo.User
+	)
+
+	guildPrefix := misc.GuildMap[guildID].GuildConfig.Prefix
+
+	author.ID = s.State.User.ID
+	message.GuildID = guildID
+	message.Author = &author
+	message.Content = guildPrefix + "schedule"
+	message.ChannelID = misc.GuildMap[guildID].Autoposts["dailyschedule"].ID
+
+	scheduleCommand(s, &message)
 }
 
 func init() {

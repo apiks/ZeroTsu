@@ -56,7 +56,7 @@ func subscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Iterates over all of the anime shows saved from AnimeSchedule and checks if it finds one
 	misc.MapMutex.Lock()
 Loop:
-	for dayInt, dailyShows := range AnimeSchedule {
+	for dayInt, dailyShows := range misc.AnimeSchedule {
 		for _, show := range dailyShows {
 			if strings.ToLower(show.Name) == commandStrings[1] {
 
@@ -83,8 +83,8 @@ Loop:
 					}
 				}
 
-				// Checks if the show is from today and whether it has already passed (to avoid notifying the user today if it has passed)
-				if int(time.Now().Weekday()) == dayInt {
+				// Checks if the show is from Today and whether it has already passed (to avoid notifying the user Today if it has passed)
+				if int(now.Weekday()) == dayInt {
 
 					// Reset bool
 					hasAiredToday = false
@@ -100,12 +100,11 @@ Loop:
 						continue
 					}
 
-					// Form the air date for today
+					// Form the air date for Today
 					scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), scheduleHour, scheduleMinute, now.Second(), now.Nanosecond(), now.Location())
-					scheduleDate = scheduleDate.UTC()
 
-					// Calculates whether the show has already aired today
-					difference := now.Sub(scheduleDate.UTC())
+					// Calculates whether the show has already aired Today
+					difference := now.Sub(scheduleDate)
 					if difference > 0 {
 						hasAiredToday = true
 					}
@@ -190,7 +189,7 @@ func unsubscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Iterate over all of the seasonal anime and see if it's a valid one
 	misc.MapMutex.Lock()
 LoopShowCheck:
-	for _, scheduleShows := range AnimeSchedule {
+	for _, scheduleShows := range misc.AnimeSchedule {
 		for _, scheduleShow := range scheduleShows {
 			if strings.ToLower(scheduleShow.Name) == strings.ToLower(commandStrings[1]) {
 				isValidShow = true
@@ -345,24 +344,29 @@ func animeSubsHandler(s *discordgo.Session) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Println(rec)
-			log.Println("Recovery in AnimeSubsHandler")
+			log.Println("Recovery in animeSubsHandler")
 		}
 	}()
 
-	var todayShows []ShowAirTime
+	var todayShows []misc.ShowAirTime
 
 	now := time.Now()
+
+	if int(Today.Weekday()) != int(now.Weekday()) {
+		return
+	}
+
 	now = now.UTC()
 
-	// Fetches today's shows
+	// Fetches Today's shows
 	misc.MapMutex.Lock()
-	for dayInt, scheduleShows := range AnimeSchedule {
-		// Checks if the target schedule day is today or not
-		if int(time.Now().Weekday()) != dayInt {
+	for dayInt, scheduleShows := range misc.AnimeSchedule {
+		// Checks if the target schedule day is Today or not
+		if int(now.Weekday()) != dayInt {
 			continue
 		}
 
-		// Saves today's shows
+		// Saves Today's shows
 		todayShows = scheduleShows
 		break
 	}
@@ -394,7 +398,7 @@ func animeSubsHandler(s *discordgo.Session) {
 					continue
 				}
 
-				// Form the air date for today
+				// Form the air date for Today
 				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), scheduleHour, scheduleMinute, now.Second(), now.Nanosecond(), now.Location())
 
 				// Calculates whether the show has already aired today
@@ -403,7 +407,21 @@ func animeSubsHandler(s *discordgo.Session) {
 					continue
 				}
 
-				// Sends notification to user DMs if possible
+				// Sends notification to user DMs if possible, or to guild autopost channel
+				if userShow.Guild {
+					if _, ok := misc.GuildMap[userID].Autoposts["newepisodes"]; !ok {
+						continue
+					}
+					_, err = s.ChannelMessageSend(misc.GuildMap[userID].Autoposts["newepisodes"].ID, fmt.Sprintf("%v episode %v is out!", scheduleShow.Name, scheduleShow.Episode))
+					if err != nil {
+						_, _ = s.ChannelMessageSend(misc.GuildMap[userID].GuildConfig.BotLog.ID, err.Error())
+						continue
+					}
+					// Sets the show as notified for that guild
+					misc.SharedInfo.AnimeSubs[userID][subKey].Notified = true
+					continue
+				}
+
 				dm, _ := s.UserChannelCreate(userID)
 				if config.ServerID != "267799767843602452" {
 					_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("%v episode %v is out!\n\nTimes are from <https://AnimeSchedule.net>", scheduleShow.Name, scheduleShow.Episode))
@@ -424,11 +442,12 @@ func animeSubsHandler(s *discordgo.Session) {
 
 func AnimeSubsTimer(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(1 * time.Minute).C {
+		// Anime Episodes subscription
 		animeSubsHandler(s)
 	}
 }
 
-// Reset all Notified bools for today
+// Set up all notified bools for anime subscriptions
 func resetSubNotified() {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
@@ -438,17 +457,22 @@ func resetSubNotified() {
 		}
 	}()
 
-	var todayShows []ShowAirTime
+	var todayShows []misc.ShowAirTime
 
-	// Fetches today's shows
+	now := time.Now()
+	if int(now.Weekday()) == int(Today.Weekday()) {
+		return
+	}
+
+	// Fetches Today's shows
 	misc.MapMutex.Lock()
-	for dayInt, scheduleShows := range AnimeSchedule {
-		// Checks if the target schedule day is today or not
-		if int(time.Now().Weekday()) != dayInt {
+	for dayInt, scheduleShows := range misc.AnimeSchedule {
+		// Checks if the target schedule day is Today or not
+		if int(now.UTC().Weekday()) != dayInt {
 			continue
 		}
 
-		// Saves today's shows
+		// Saves Today's shows
 		todayShows = scheduleShows
 		break
 	}
@@ -464,6 +488,73 @@ func resetSubNotified() {
 		}
 	}
 
+	// Write to shared AnimeSubs DB
+	_ = misc.AnimeSubsWrite(misc.SharedInfo.AnimeSubs)
+	misc.MapMutex.Unlock()
+}
+
+// Resets anime sub notifications status on bot start
+func ResetSubscriptions() {
+	// Saves program from panic and continues running normally without executing the command if it happens
+	defer func() {
+		if rec := recover(); rec != nil {
+			log.Println(rec)
+			log.Println("Recovery in ResetSubscriptions")
+		}
+	}()
+
+	var todayShows []misc.ShowAirTime
+
+	now := time.Now()
+
+	// Fetches Today's shows
+	misc.MapMutex.Lock()
+	for dayInt, scheduleShows := range misc.AnimeSchedule {
+		// Checks if the target schedule day is Today or not
+		if int(now.Weekday()) != dayInt {
+			continue
+		}
+
+		// Saves Today's shows
+		todayShows = scheduleShows
+		break
+	}
+
+	nowUTC := now.UTC()
+
+	for userID, subscriptions := range misc.SharedInfo.AnimeSubs {
+		for subKey, userShow := range subscriptions {
+			for _, scheduleShow := range todayShows {
+
+				// Checks if the target show matches
+				if strings.ToLower(userShow.Show) != strings.ToLower(scheduleShow.Name) {
+					continue
+				}
+
+				// Parse the air hour and minute
+				scheduleTime := strings.Split(scheduleShow.AirTime, ":")
+				scheduleHour, err := strconv.Atoi(scheduleTime[0])
+				if err != nil {
+					continue
+				}
+				scheduleMinute, err := strconv.Atoi(scheduleTime[1])
+				if err != nil {
+					continue
+				}
+
+				// Form the air date for Today
+				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), scheduleHour, scheduleMinute, nowUTC.Second(), nowUTC.Nanosecond(), nowUTC.Location())
+
+				// Calculates whether the show has already aired today
+				difference := now.Sub(scheduleDate)
+				if difference >= 0 {
+					misc.SharedInfo.AnimeSubs[userID][subKey].Notified = true
+				} else {
+					misc.SharedInfo.AnimeSubs[userID][subKey].Notified = false
+				}
+			}
+		}
+	}
 	// Write to shared AnimeSubs DB
 	_ = misc.AnimeSubsWrite(misc.SharedInfo.AnimeSubs)
 	misc.MapMutex.Unlock()

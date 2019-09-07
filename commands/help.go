@@ -13,7 +13,7 @@ import (
 
 // Command categories in sorted form and map form(map for descriptions)
 var (
-	categoriesSorted = [...]string{"Channel", "Filters", "Misc", "Normal", "Punishment", "Reacts", "Rss", "Stats", "Raffles", "Waifus", "Settings"}
+	categoriesSorted = [...]string{"Autopost", "Channel", "Filters", "Misc", "Normal", "Punishment", "Reacts", "Rss", "Stats", "Raffles", "Waifus", "Settings"}
 	categoriesMap    = make(map[string]string)
 )
 
@@ -981,6 +981,82 @@ func helpWaifuEmbed(s *discordgo.Session, m *discordgo.Message) error {
 }
 
 // Mod command help page
+func helpAutopostCommand(s *discordgo.Session, m *discordgo.Message) {
+	err := helpAutopostEmbed(s, m)
+	if err != nil {
+
+		misc.MapMutex.Lock()
+		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+		misc.MapMutex.Unlock()
+
+		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		return
+	}
+}
+
+// Mod command help page embed
+func helpAutopostEmbed(s *discordgo.Session, m *discordgo.Message) error {
+
+	var (
+		embedMess   discordgo.MessageEmbed
+		embedFooter discordgo.MessageEmbedFooter
+
+		// Embed slice and its fields
+		embed         []*discordgo.MessageEmbedField
+		commandsField discordgo.MessageEmbedField
+
+		// Slice for sorting
+		commands []string
+	)
+
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
+	// Set embed color
+	embedMess.Color = 0x00ff00
+
+	// Sets footer field
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
+	embedMess.Footer = &embedFooter
+
+	// Sets command field
+	commandsField.Name = "Command:"
+	commandsField.Inline = true
+
+	// Iterates through commands in the waifus category
+	misc.MapMutex.Lock()
+	for command := range commandMap {
+		commands = append(commands, command)
+	}
+	sort.Strings(commands)
+	for i := 0; i < len(commands); i++ {
+		if commandMap[commands[i]].category == "autopost" {
+			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], commandMap[commands[i]].desc)
+		}
+	}
+	misc.MapMutex.Unlock()
+
+	// Adds the field to embed slice (because embedMess.Fields requires slice input)
+	embed = append(embed, &commandsField)
+
+	// Adds everything together
+	embedMess.Fields = embed
+	embeds := splitHelpEmbedField(&embedMess, true)
+
+	for _, splitEmbed := range embeds {
+		// Sends embed in channel
+		_, err := s.ChannelMessageSendEmbed(m.ChannelID, splitEmbed)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return err
+		}
+	}
+	return nil
+}
+
+// Mod command help page
 func helpGuildSettingsCommand(s *discordgo.Session, m *discordgo.Message) {
 	err := helpGuildSettingsEmbed(s, m)
 	if err != nil {
@@ -1162,7 +1238,7 @@ func init() {
 		aliases:  []string{"h"},
 		desc:     "Print all available commands in embed form.",
 		category: "normal",
-		DMAble: true,
+		DMAble:   true,
 	})
 	//add(&command{
 	//	execute:  helpPlaintextCommand,
@@ -1241,6 +1317,13 @@ func init() {
 		elevated: true,
 	})
 	add(&command{
+		execute:  helpAutopostCommand,
+		trigger:  "h-autopost",
+		aliases:  []string{"h[autopost]", "hautopost", "h[auto]", "h[autoposts]", "hautopost", "hautoposts", "hautos", "hauto", "h-autopost", "help-autopost", "help-auto", "h-autos"},
+		desc:     "Print all server setting commands.",
+		elevated: true,
+	})
+	add(&command{
 		execute:  helpGuildSettingsCommand,
 		trigger:  "h-settings",
 		aliases:  []string{"h[set]", "hsetting", "h[setting]", "h[settings]", "hset", "hsets", "hsetts", "hsett", "h-set", "help-settings", "help-set", "hsettings"},
@@ -1260,6 +1343,7 @@ func init() {
 	categoriesMap["Stats"] = "Channel and emoji stats."
 	categoriesMap["Raffles"] = "Raffle commands."
 	categoriesMap["Waifus"] = "Waifu commands."
+	categoriesMap["Autopost"] = "Autopost commands."
 	categoriesMap["Settings"] = "Server setting commands."
 	misc.MapMutex.Unlock()
 }

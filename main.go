@@ -71,6 +71,7 @@ func Start() {
 
 	// Updates schedule command print message on load
 	commands.UpdateAnimeSchedule()
+	commands.ResetSubscriptions()
 
 	//misc.ReadImages()
 

@@ -21,8 +21,9 @@ var (
 	guildFileNames = [...]string{"bannedUsers.json", "filters.json", "messReqs.json", "spoilerRoles.json", "rssThreads.json",
 		"rssThreadCheck.json", "raffles.json", "waifus.json", "waifuTrades.json", "memberInfo.json", "emojiStats.json",
 		"channelStats.json", "userChangeStats.json", "verifiedStats.json", "voteInfo.json", "tempCha.json",
-		"reactJoin.json", "guildSettings.json"}
+		"reactJoin.json", "guildSettings.json", "autoposts.json"}
 	sharedFileNames = [...]string{"remindMes.json", "animeSubs.json"}
+	AnimeSchedule = make(map[int][]ShowAirTime)
 )
 
 type guildInfo struct {
@@ -50,6 +51,7 @@ type guildInfo struct {
 	ReactJoinMap       map[string]*ReactJoin
 	EmojiRoleMap       map[string][]string
 	ExtensionList 	   map[string]string
+	Autoposts		   map[string]*Cha
 }
 
 type sharedInfo struct {
@@ -72,6 +74,12 @@ type GuildSettings struct {
 	ReactsModule        bool       `json:"ReactsModule"`
 	PingMessage         string     `json:"PingMessage"`
 	Premium				bool	   `json:"Premium"`
+}
+
+type ShowAirTime struct {
+	Name    string
+	AirTime string
+	Episode	string
 }
 
 type Role struct {
@@ -190,8 +198,9 @@ type WaifuTrade struct {
 }
 
 type ShowSub struct {
-	Show		string	`json:"Show"`
-	Notified	bool	`json:"Notified"`
+	Show		string		`json:"Show"`
+	Notified	bool		`json:"Notified"`
+	Guild       bool    	`json:"Guild"`
 }
 
 // Loads all guilds in the database/guilds folder
@@ -245,9 +254,79 @@ func LoadGuilds() {
 			ReactJoinMap:       make(map[string]*ReactJoin),
 			EmojiRoleMap:       make(map[string][]string),
 			ExtensionList: 		make(map[string]string),
+			Autoposts:			make(map[string]*Cha),
 		}
 		for _, file := range files {
 			LoadGuildFile(folderName, file)
+		}
+		// Loads default map settings
+		if GuildMap[folderName].GuildConfig.BotLog.ID != "" {
+			if dailystats, ok := GuildMap[folderName].Autoposts["dailystats"]; ok {
+				if dailystats.ID == "" {
+					GuildMap[folderName].Autoposts["dailystats"] = &GuildMap[folderName].GuildConfig.BotLog
+					_ = AutopostsWrite(GuildMap[folderName].Autoposts, folderName)
+				}
+			} else {
+				GuildMap[folderName].Autoposts["dailystats"] = &GuildMap[folderName].GuildConfig.BotLog
+				_ = AutopostsWrite(GuildMap[folderName].Autoposts, folderName)
+			}
+		}
+		if _, ok := GuildMap[folderName].Autoposts["newepisodes"]; ok {
+
+			var shows []ShowSub
+
+			now := time.Now()
+			now = now.UTC()
+
+			// Adds every single show as a guild subscription
+			for dayInt, scheduleShows := range AnimeSchedule {
+				for _, show := range scheduleShows {
+
+					// Checks if the show is from today and whether it has already passed (to avoid notifying the user today if it has passed)
+					var hasAiredToday bool
+					if int(now.Weekday()) == dayInt {
+
+						// Reset bool
+						hasAiredToday = false
+
+						// Parse the air hour and minute
+						scheduleTime := strings.Split(show.AirTime, ":")
+						scheduleHour, err := strconv.Atoi(scheduleTime[0])
+						if err != nil {
+							continue
+						}
+						scheduleMinute, err := strconv.Atoi(scheduleTime[1])
+						if err != nil {
+							continue
+						}
+
+						// Form the air date for today
+						scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), scheduleHour, scheduleMinute, now.Second(), now.Nanosecond(), now.Location())
+						scheduleDate = scheduleDate.UTC()
+
+						// Calculates whether the show has already aired today
+						difference := now.Sub(scheduleDate.UTC())
+						if difference >= 0 {
+							hasAiredToday = true
+						}
+					}
+
+					guildSub := new(ShowSub)
+					guildSub.Guild = true
+					guildSub.Show = show.Name
+					if hasAiredToday {
+						guildSub.Notified = true
+					} else {
+						guildSub.Notified = false
+					}
+
+					shows = append(shows, *guildSub)
+				}
+			}
+
+			SharedInfo.AnimeSubs[folderName] = shows
+			// Write to shared AnimeSubs DB
+			_ = AnimeSubsWrite(SharedInfo.AnimeSubs)
 		}
 		MapMutex.Unlock()
 	}
@@ -343,6 +422,8 @@ func LoadGuildFile(guildID string, file string) {
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].ExtensionList)
 	case "guildSettings.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].GuildConfig)
+	case "autoposts.json":
+		_ = json.Unmarshal(infoByte, &GuildMap[guildID].Autoposts)
 	}
 }
 
@@ -643,18 +724,19 @@ func WaifuTradesWrite(trade []WaifuTrade, guildID string) error {
 }
 
 // Writes to bannedUsers.json from bannedUsersSlice
-func BannedUsersWrite(bannedUsers []BannedUsers, guildID string) {
+func BannedUsersWrite(bannedUsers []BannedUsers, guildID string) error {
 	// Turns that slice into bytes to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(bannedUsers, "", "    ")
 	if err != nil {
-		return
+		return err
 	}
 	// Writes to file
 	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/bannedUsers.json", guildID), marshaledStruct, 0644)
 	if err != nil {
-		return
+		return err
 	}
-	return
+
+	return nil
 }
 
 // Removes raffle with name string "raffle" from raffles.json
@@ -1156,19 +1238,39 @@ func RssThreadsTimerRemove(thread RssThread, date time.Time, guildID string) err
 }
 
 // Writes guild settings to guildSettings.json
-func GuildSettingsWrite(info GuildSettings, guildID string) {
+func GuildSettingsWrite(info GuildSettings, guildID string) error {
 
 	// Turns info map into byte ready to be pushed to file
 	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
-		return
+		return err
 	}
 
 	// Writes to file
 	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/guildSettings.json", guildID), MarshaledStruct, 0644)
 	if err != nil {
-		return
+		return err
 	}
+
+	return nil
+}
+
+// Writes autoposts info to autoposts.json
+func AutopostsWrite(info map[string]*Cha, guildID string) error {
+
+	// Turns info map into byte ready to be pushed to file
+	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	// Writes to file
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/autoposts.json", guildID), MarshaledStruct, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Reads and returns the names of every file in that directory
@@ -1224,8 +1326,8 @@ func InitDB(guildID string) {
 
 // Writes/Refreshes all DBs
 func writeAll(guildID string) {
-	LoadGuilds()
 	LoadSharedDB()
+	LoadGuilds()
 	MapMutex.Lock()
 	WriteMemberInfo(GuildMap[guildID].MemberInfoMap, guildID)
 	_, _ = EmojiStatsWrite(GuildMap[guildID].EmojiStats, guildID)
@@ -1240,7 +1342,8 @@ func writeAll(guildID string) {
 	_ = RafflesWrite(GuildMap[guildID].Raffles, guildID)
 	_ = WaifusWrite(GuildMap[guildID].Waifus, guildID)
 	_ = WaifuTradesWrite(GuildMap[guildID].WaifuTrades, guildID)
-	BannedUsersWrite(GuildMap[guildID].BannedUsers, guildID)
-	GuildSettingsWrite(GuildMap[guildID].GuildConfig, guildID)
+	_ = AutopostsWrite(GuildMap[guildID].Autoposts, guildID)
+	_ = BannedUsersWrite(GuildMap[guildID].BannedUsers, guildID)
+	_ = GuildSettingsWrite(GuildMap[guildID].GuildConfig, guildID)
 	MapMutex.Unlock()
 }
