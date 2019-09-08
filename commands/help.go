@@ -1241,7 +1241,7 @@ func init() {
 		DMAble:   true,
 	})
 	//add(&command{
-	//	execute:  helpPlaintextCommand,
+	///	execute:  helpPlaintextCommand,
 	//	trigger:  "helpplain",
 	//	desc:     "Prints all available commands in plain text.",
 	//	category: "normal",
