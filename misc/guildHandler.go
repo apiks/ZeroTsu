@@ -81,6 +81,7 @@ type ShowAirTime struct {
 	Name    string
 	AirTime string
 	Episode	string
+	Delayed string
 }
 
 type Role struct {

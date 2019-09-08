@@ -382,6 +382,10 @@ func animeSubsHandler(s *discordgo.Session) {
 
 			for _, scheduleShow := range todayShows {
 
+				if scheduleShow.Delayed != "" {
+					continue
+				}
+
 				// Checks if the target show matches
 				if strings.ToLower(userShow.Show) != strings.ToLower(scheduleShow.Name) {
 					continue
@@ -412,7 +416,7 @@ func animeSubsHandler(s *discordgo.Session) {
 					if _, ok := misc.GuildMap[userID].Autoposts["newepisodes"]; !ok {
 						continue
 					}
-					_, err = s.ChannelMessageSend(misc.GuildMap[userID].Autoposts["newepisodes"].ID, fmt.Sprintf("%v episode %v is out!", scheduleShow.Name, scheduleShow.Episode))
+					err := subEmbed(s, scheduleShow, misc.GuildMap[userID].Autoposts["newepisodes"].ID)
 					if err != nil {
 						_, _ = s.ChannelMessageSend(misc.GuildMap[userID].GuildConfig.BotLog.ID, err.Error())
 						continue
@@ -441,7 +445,7 @@ func animeSubsHandler(s *discordgo.Session) {
 }
 
 func AnimeSubsTimer(s *discordgo.Session, e *discordgo.Ready) {
-	for range time.NewTicker(1 * time.Minute).C {
+	for range time.NewTicker(20 * time.Second).C {
 		// Anime Episodes subscription
 		animeSubsHandler(s)
 	}
@@ -558,6 +562,33 @@ func ResetSubscriptions() {
 	// Write to shared AnimeSubs DB
 	_ = misc.AnimeSubsWrite(misc.SharedInfo.AnimeSubs)
 	misc.MapMutex.Unlock()
+}
+
+// Embed message for subscriptions
+func subEmbed(s *discordgo.Session, show misc.ShowAirTime, channelID string) error {
+
+	hyphenatedName := misc.RemoveSpaces(strings.ToLower(show.Name))
+	imageLink := fmt.Sprintf("https://animeschedule.net/img/shows/%v.webp", hyphenatedName)
+	embed := &discordgo.MessageEmbed{
+		URL:         fmt.Sprintf("https://animeschedule.net/shows/%v", hyphenatedName),
+		Title:       show.Name,
+		Description: fmt.Sprintf("__**%v**__ is out!", show.Episode),
+		Timestamp:   time.Now().Format(time.RFC3339),
+		Color:       0x00ff00,
+		Image:       &discordgo.MessageEmbedImage{
+			Width:  30,
+			Height: 60,
+			URL:		imageLink,
+		},
+	}
+
+	_, err := s.ChannelMessageSendEmbed(channelID, embed)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return nil
 }
 
 func init() {

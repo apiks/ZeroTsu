@@ -116,10 +116,12 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
 				// Writes to memberInfo.json and bannedUsers.json
 				WriteMemberInfo(GuildMap[guild.ID].MemberInfoMap, guild.ID)
-				BannedUsersWrite(GuildMap[guild.ID].BannedUsers, guild.ID)
+				_ = BannedUsersWrite(GuildMap[guild.ID].BannedUsers, guild.ID)
 
 				// Sends an embed message to bot-log
-				_ = UnbanEmbed(s, memberInfoUser, "", GuildMap[guild.ID].GuildConfig.BotLog.ID)
+				if !banFlag {
+					_ = UnbanEmbed(s, memberInfoUser, "", GuildMap[guild.ID].GuildConfig.BotLog.ID)
+				}
 			}
 			MapMutex.Unlock()
 		}

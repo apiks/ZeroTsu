@@ -146,15 +146,27 @@ func getDaySchedule(weekday int) string {
 					ukTimezoneString, _ := t.In(BST).Zone()
 					westAmericanTimezoneString, _ := t.In(PDT).Zone()
 
-					printMessage += fmt.Sprintf("**%v %v** - **|** %v %v **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, t.UTC().In(BST).Format("15:04"), ukTimezoneString,
-						t.UTC().In(PDT).Format("15:04"), westAmericanTimezoneString,
-						t.UTC().In(JST).Format("15:04"), jstTimezoneString)
+					if show.Delayed == "" {
+						printMessage += fmt.Sprintf("**%v %v** - **|** %v %v **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, t.UTC().In(BST).Format("15:04"), ukTimezoneString,
+							t.UTC().In(PDT).Format("15:04"), westAmericanTimezoneString,
+							t.UTC().In(JST).Format("15:04"), jstTimezoneString)
+					} else {
+						printMessage += fmt.Sprintf("**%v %v** __%v__ - **|** %v %v **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, show.Delayed, t.UTC().In(BST).Format("15:04"), ukTimezoneString,
+							t.UTC().In(PDT).Format("15:04"), westAmericanTimezoneString,
+							t.UTC().In(JST).Format("15:04"), jstTimezoneString)
+					}
 				} else {
 					westAmericanTimezoneString, _ := t.In(PST).Zone()
 
-					printMessage += fmt.Sprintf("**%v %v** - **|** %v GMT **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, t.UTC().Format("15:04"),
-						t.UTC().In(PST).Format("15:04"), westAmericanTimezoneString,
-						t.UTC().In(JST).Format("15:04"), jstTimezoneString)
+					if show.Delayed == "" {
+						printMessage += fmt.Sprintf("**%v %v** - **|** %v GMT **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, t.UTC().Format("15:04"),
+							t.UTC().In(PST).Format("15:04"), westAmericanTimezoneString,
+							t.UTC().In(JST).Format("15:04"), jstTimezoneString)
+					} else {
+						printMessage += fmt.Sprintf("**%v %v** __%v__ - **|** %v GMT **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, show.Delayed, t.UTC().Format("15:04"),
+							t.UTC().In(PST).Format("15:04"), westAmericanTimezoneString,
+							t.UTC().In(JST).Format("15:04"), jstTimezoneString)
+					}
 				}
 			}
 			break
@@ -191,8 +203,10 @@ func processEachShow(index int, element *goquery.Selection) {
 
 	show.Name = element.Find(".show-name").Text()
 	show.Episode = element.Parent().Parent().Parent().Find(".episode-counter").Text()
-	show.Episode = strings.Trim(show.Episode, "\n")
+	show.Episode = strings.Replace(show.Episode, "\n", "", -1)
 	show.AirTime = element.Find(".air-time").Text()
+	show.Delayed = element.Find(".delay").Text()
+	show.Delayed = strings.Trim(show.Delayed, "\n")
 
 	misc.MapMutex.Lock()
 	misc.AnimeSchedule[day] = append(misc.AnimeSchedule[day], show)
@@ -286,6 +300,13 @@ func DailySchedule(s *discordgo.Session, guildID string) {
 	message.ChannelID = misc.GuildMap[guildID].Autoposts["dailyschedule"].ID
 
 	scheduleCommand(s, &message)
+}
+
+func ScheduleTimer(s *discordgo.Session, e *discordgo.Ready) {
+	for range time.NewTicker(20 * time.Minute).C {
+		// Update anime schedule
+		UpdateAnimeSchedule()
+	}
 }
 
 func init() {

@@ -165,6 +165,9 @@ func Start() {
 	// Anime subscription handler
 	goBot.AddHandler(commands.AnimeSubsTimer)
 
+	// Anime schedule timer
+	goBot.AddHandler(commands.ScheduleTimer)
+
 	err = goBot.Open()
 	if err != nil {
 		panic("Critical error: BOT cannot start.")

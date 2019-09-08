@@ -752,3 +752,13 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 
 	return err
 }
+
+// Replaces all instances of spaces in a string with hyphens
+func RemoveSpaces(str string) string {
+	return strings.Replace(str, " ", "-", -1)
+}
+
+// Replaces all instances of hyphens in a string with spaces
+func RemoveHyphens(str string) string {
+	return strings.Replace(str, "-", " ", -1)
+}
