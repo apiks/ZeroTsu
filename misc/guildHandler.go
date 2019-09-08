@@ -272,61 +272,7 @@ func LoadGuilds() {
 			}
 		}
 		if _, ok := GuildMap[folderName].Autoposts["newepisodes"]; ok {
-
-			var shows []ShowSub
-
-			now := time.Now()
-			now = now.UTC()
-
-			// Adds every single show as a guild subscription
-			for dayInt, scheduleShows := range AnimeSchedule {
-				for _, show := range scheduleShows {
-
-					// Checks if the show is from today and whether it has already passed (to avoid notifying the user today if it has passed)
-					var hasAiredToday bool
-					if int(now.Weekday()) == dayInt {
-
-						// Reset bool
-						hasAiredToday = false
-
-						// Parse the air hour and minute
-						scheduleTime := strings.Split(show.AirTime, ":")
-						scheduleHour, err := strconv.Atoi(scheduleTime[0])
-						if err != nil {
-							continue
-						}
-						scheduleMinute, err := strconv.Atoi(scheduleTime[1])
-						if err != nil {
-							continue
-						}
-
-						// Form the air date for today
-						scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), scheduleHour, scheduleMinute, now.Second(), now.Nanosecond(), now.Location())
-						scheduleDate = scheduleDate.UTC()
-
-						// Calculates whether the show has already aired today
-						difference := now.Sub(scheduleDate.UTC())
-						if difference >= 0 {
-							hasAiredToday = true
-						}
-					}
-
-					guildSub := new(ShowSub)
-					guildSub.Guild = true
-					guildSub.Show = show.Name
-					if hasAiredToday {
-						guildSub.Notified = true
-					} else {
-						guildSub.Notified = false
-					}
-
-					shows = append(shows, *guildSub)
-				}
-			}
-
-			SharedInfo.AnimeSubs[folderName] = shows
-			// Write to shared AnimeSubs DB
-			_ = AnimeSubsWrite(SharedInfo.AnimeSubs)
+			SetupGuildSub(folderName)
 		}
 		MapMutex.Unlock()
 	}
@@ -1322,6 +1268,63 @@ func InitDB(guildID string) {
 			continue
 		}
 	}
+}
+
+func SetupGuildSub(guildID string) {
+	var shows []ShowSub
+
+	now := time.Now()
+	now = now.UTC()
+
+	// Adds every single show as a guild subscription
+	for dayInt, scheduleShows := range AnimeSchedule {
+		for _, show := range scheduleShows {
+
+			// Checks if the show is from today and whether it has already passed (to avoid notifying the user today if it has passed)
+			var hasAiredToday bool
+			if int(now.Weekday()) == dayInt {
+
+				// Reset bool
+				hasAiredToday = false
+
+				// Parse the air hour and minute
+				scheduleTime := strings.Split(show.AirTime, ":")
+				scheduleHour, err := strconv.Atoi(scheduleTime[0])
+				if err != nil {
+					continue
+				}
+				scheduleMinute, err := strconv.Atoi(scheduleTime[1])
+				if err != nil {
+					continue
+				}
+
+				// Form the air date for today
+				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), scheduleHour, scheduleMinute, now.Second(), now.Nanosecond(), now.Location())
+				scheduleDate = scheduleDate.UTC()
+
+				// Calculates whether the show has already aired today
+				difference := now.Sub(scheduleDate.UTC())
+				if difference >= 0 {
+					hasAiredToday = true
+				}
+			}
+
+			guildSub := new(ShowSub)
+			guildSub.Guild = true
+			guildSub.Show = show.Name
+			if hasAiredToday {
+				guildSub.Notified = true
+			} else {
+				guildSub.Notified = false
+			}
+
+			shows = append(shows, *guildSub)
+		}
+	}
+
+	SharedInfo.AnimeSubs[guildID] = shows
+	// Write to shared AnimeSubs DB
+	_ = AnimeSubsWrite(SharedInfo.AnimeSubs)
 }
 
 // Writes/Refreshes all DBs

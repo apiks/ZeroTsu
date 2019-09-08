@@ -224,16 +224,20 @@ func setNewEpisodesCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.MapMutex.Lock()
 	misc.GuildMap[m.GuildID].Autoposts["newepisodes"] = guildNewEpisodes
 	_ = misc.AutopostsWrite(misc.GuildMap[m.GuildID].Autoposts, m.GuildID)
-	misc.MapMutex.Unlock()
 
 	if guildNewEpisodes == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Success! Autopost for new airing anime episodes has been disabled!")
 		if err != nil {
 			_, _ = s.ChannelMessageSend(guildBotLog, err.Error())
+			misc.MapMutex.Unlock()
 			return
 		}
+		misc.MapMutex.Unlock()
 		return
 	}
+
+	misc.SetupGuildSub(m.GuildID)
+	misc.MapMutex.Unlock()
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New Autopost channel for new airing anime episodes is: `%v - %v`", guildNewEpisodes.Name, guildNewEpisodes.ID))
 	if err != nil {
