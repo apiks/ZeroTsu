@@ -76,6 +76,21 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	misc.MapMutex.Unlock()
 
+	// Check if the user is banned using other means
+	if !banFlag {
+		bans, err := s.GuildBans(m.GuildID)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return
+		}
+		for _, ban := range bans {
+			if ban.User.ID == userID {
+				banFlag = true
+				break
+			}
+		}
+	}
+
 	if !banFlag {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%v#%v__ is not banned.", user.Username, user.Discriminator))
 		if err != nil {
@@ -104,7 +119,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.GuildMap[m.GuildID].MemberInfoMap[userID].UnbanDate = t.Format("2006-01-02 15:04:05")
 		misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	}
-	misc.BannedUsersWrite(misc.GuildMap[m.GuildID].BannedUsers, m.GuildID)
+	_ = misc.BannedUsersWrite(misc.GuildMap[m.GuildID].BannedUsers, m.GuildID)
 	misc.MapMutex.Unlock()
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%v#%v__ has been unbanned.", user.Username, user.Discriminator))
