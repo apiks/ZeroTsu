@@ -207,6 +207,8 @@ func processEachShow(index int, element *goquery.Selection) {
 	show.AirTime = element.Find(".air-time").Text()
 	show.Delayed = element.Find(".delay").Text()
 	show.Delayed = strings.Trim(show.Delayed, "\n")
+	show.Key, _ = element.Parent().Parent().Parent().Find(".show-link").Attr("href")
+	show.Key = strings.ToLower(strings.TrimPrefix(show.Key, "/shows/"))
 
 	misc.MapMutex.Lock()
 	misc.AnimeSchedule[day] = append(misc.AnimeSchedule[day], show)

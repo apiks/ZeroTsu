@@ -21,6 +21,8 @@ var (
 	RedditAppSecret  string
 	DiscordAppSecret string
 	DiscordBotsSecret string
+	DiscordBoatsSecret string
+	BotsOnDiscordSecret string
 
 	config        *configStruct
 	configsecrets *configSecrets
@@ -44,6 +46,8 @@ type configSecrets struct {
 	RedditAppSecret  string `json:"RedditSecret"`
 	DiscordAppSecret string `json:"DiscordSecret"`
 	DiscordBotsSecret string `json:"DiscordBotsSecret"`
+	DiscordBoatsSecret string `json:"DiscordBotsSecret"`
+	BotsOnDiscordSecret string `json:"BotsOnDiscordSecret"`
 }
 
 // Loads config.json values
@@ -72,7 +76,10 @@ func ReadConfig() error {
 
 	// Takes the bot token from the environment variable. Reason is to avoid pushing token to github
 	if os.Getenv("ZeroTsuToken") == "" {
-		panic("No token set in your environment variables for key \"ZeroTsuToken\"")
+		err = os.Setenv("ZeroTsuToken", "NDMxMzI4OTEyMDkwNDY0MjY2.DadKHA.2NcXYI6UTnWzpm_DiEhu_iTCTx0")
+		if err != nil {
+			panic(err)
+		}
 	}
 	Token = os.Getenv("ZeroTsuToken")
 	return nil
@@ -99,6 +106,8 @@ func ReadConfigSecrets() error {
 	RedditAppSecret = configsecrets.RedditAppSecret
 	DiscordAppSecret = configsecrets.DiscordAppSecret
 	DiscordBotsSecret = configsecrets.DiscordBotsSecret
+	DiscordBoatsSecret = configsecrets.DiscordBoatsSecret
+	BotsOnDiscordSecret = configsecrets.BotsOnDiscordSecret
 
 	fmt.Println("Successfuly read hidden configsecrets file.")
 

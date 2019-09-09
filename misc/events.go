@@ -1071,15 +1071,16 @@ func GuildDelete(s *discordgo.Session, g *discordgo.GuildDelete) {
 // Send number of servers via post request
 func sendServers(s *discordgo.Session) {
 
-	if config.ServerID == "267799767843602452" {
+	if s.State.User.ID != "614495694769618944" {
 		return
 	}
 
 	client := &http.Client{}
+
+	// Discord Bots
 	data := url.Values{
 		"server_count": {strconv.Itoa(len(s.State.Guilds))},
 	}
-
 	req, err := http.NewRequest("POST", fmt.Sprintf("https://discordbots.org/api/bots/%v/stats", s.State.User.ID), bytes.NewBufferString(data.Encode()))
 	if err != nil {
 		log.Println(err)
@@ -1087,7 +1088,38 @@ func sendServers(s *discordgo.Session) {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
 	req.Header.Add("Authorization", config.DiscordBotsSecret)
+	_, err = client.Do(req)
+	if err != nil {
+		log.Println(err)
+	}
 
+	// Discord Boats
+	data = url.Values{
+		"server_count": {strconv.Itoa(len(s.State.Guilds))},
+	}
+	req, err = http.NewRequest("POST", fmt.Sprintf("https://discord.boats/api/bot/:%v", s.State.User.ID), bytes.NewBufferString(data.Encode()))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	req.Header.Add("Authorization", config.DiscordBoatsSecret)
+	_, err = client.Do(req)
+	if err != nil {
+		log.Println(err)
+	}
+
+	// Bots on Discord
+	data = url.Values{
+		"guildCount": {strconv.Itoa(len(s.State.Guilds))},
+	}
+	req, err = http.NewRequest("POST", fmt.Sprintf("https://bots.ondiscord.xyz/bot-api/bots/:%v/guilds", s.State.User.ID), bytes.NewBufferString(data.Encode()))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	req.Header.Add("Authorization", config.BotsOnDiscordSecret)
 	_, err = client.Do(req)
 	if err != nil {
 		log.Println(err)

@@ -428,9 +428,9 @@ func animeSubsHandler(s *discordgo.Session) {
 
 				dm, _ := s.UserChannelCreate(userID)
 				if config.ServerID != "267799767843602452" {
-					_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("%v episode %v is out!\n\nTimes are from <https://AnimeSchedule.net>", scheduleShow.Name, scheduleShow.Episode))
+					_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("**%v __%v__** is out!\nSource: <https://animeschedule.net/shows/%v>", scheduleShow.Name, scheduleShow.Episode, scheduleShow.Key))
 				} else {
-					_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("%v episode %v is out!", scheduleShow.Name, scheduleShow.Episode))
+					_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("**%v __%v__** is out!", scheduleShow.Name, scheduleShow.Episode))
 				}
 
 				// Sets the show as notified for that user
@@ -445,7 +445,7 @@ func animeSubsHandler(s *discordgo.Session) {
 }
 
 func AnimeSubsTimer(s *discordgo.Session, e *discordgo.Ready) {
-	for range time.NewTicker(20 * time.Second).C {
+	for range time.NewTicker(1 * time.Minute).C {
 		// Anime Episodes subscription
 		animeSubsHandler(s)
 	}
@@ -567,10 +567,9 @@ func ResetSubscriptions() {
 // Embed message for subscriptions
 func subEmbed(s *discordgo.Session, show misc.ShowAirTime, channelID string) error {
 
-	hyphenatedName := misc.RemoveSpaces(strings.ToLower(show.Name))
-	imageLink := fmt.Sprintf("https://animeschedule.net/img/shows/%v.webp", hyphenatedName)
+	imageLink := fmt.Sprintf("https://animeschedule.net/img/shows/%v.webp", show.Key)
 	embed := &discordgo.MessageEmbed{
-		URL:         fmt.Sprintf("https://animeschedule.net/shows/%v", hyphenatedName),
+		URL:         fmt.Sprintf("https://animeschedule.net/shows/%v", show.Key),
 		Title:       show.Name,
 		Description: fmt.Sprintf("__**%v**__ is out!", show.Episode),
 		Timestamp:   time.Now().Format(time.RFC3339),

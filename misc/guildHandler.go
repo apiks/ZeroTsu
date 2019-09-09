@@ -82,6 +82,7 @@ type ShowAirTime struct {
 	AirTime string
 	Episode	string
 	Delayed string
+	Key		string
 }
 
 type Role struct {
@@ -264,7 +265,7 @@ func LoadGuilds() {
 		// Loads default map settings
 		if GuildMap[folderName].GuildConfig.BotLog.ID != "" {
 			if dailystats, ok := GuildMap[folderName].Autoposts["dailystats"]; ok {
-				if dailystats.ID == "" {
+				if dailystats != nil {
 					GuildMap[folderName].Autoposts["dailystats"] = &GuildMap[folderName].GuildConfig.BotLog
 					_ = AutopostsWrite(GuildMap[folderName].Autoposts, folderName)
 				}
