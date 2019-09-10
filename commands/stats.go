@@ -30,15 +30,15 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	var channelStatsVar misc.Channel
+	t := time.Now()
+
+	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[m.GuildID]; !ok {
 		misc.InitDB(m.GuildID)
 		misc.LoadGuilds()
 	}
 
-	var channelStatsVar misc.Channel
-	t := time.Now()
-
-	misc.MapMutex.Lock()
 	if misc.GuildMap[m.GuildID] == nil {
 		misc.MapMutex.Unlock()
 		return
@@ -336,13 +336,14 @@ func OnMemberJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
+	t := time.Now()
+
+	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[u.GuildID]; !ok {
 		misc.InitDB(u.GuildID)
 		misc.LoadGuilds()
 	}
 
-	t := time.Now()
-	misc.MapMutex.Lock()
 	misc.GuildMap[u.GuildID].UserChangeStats[t.Format(misc.DateFormat)]++
 	misc.MapMutex.Unlock()
 }
@@ -361,13 +362,14 @@ func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 		return
 	}
 
+	t := time.Now()
+
+	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[u.GuildID]; !ok {
 		misc.InitDB(u.GuildID)
 		misc.LoadGuilds()
 	}
 
-	t := time.Now()
-	misc.MapMutex.Lock()
 	misc.GuildMap[u.GuildID].UserChangeStats[t.Format(misc.DateFormat)]--
 	misc.MapMutex.Unlock()
 }

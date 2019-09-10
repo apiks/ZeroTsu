@@ -233,7 +233,6 @@ func LoadGuilds() {
 			log.Panicln(err)
 		}
 
-		MapMutex.Lock()
 		GuildMap[folderName] = &guildInfo{
 			GuildID:             folderName,
 			GuildConfig:         GuildSettings{Prefix: ".", VoteModule: false, WaifuModule: false, ReactsModule: true, WhitelistFileFilter: false, PingMessage: "Hmm? Do you want some honey, darling? Open wide~~", Premium: false},
@@ -277,7 +276,6 @@ func LoadGuilds() {
 		if _, ok := GuildMap[folderName].Autoposts["newepisodes"]; ok {
 			SetupGuildSub(folderName)
 		}
-		MapMutex.Unlock()
 	}
 }
 
@@ -296,7 +294,6 @@ func LoadSharedDB() {
 		log.Panicln(err)
 	}
 
-	MapMutex.Lock()
 	SharedInfo = &sharedInfo{
 		RemindMes: make(map[string]*RemindMeSlice),
 		AnimeSubs: make(map[string][]ShowSub),
@@ -305,7 +302,6 @@ func LoadSharedDB() {
 	for _, file := range files {
 		LoadSharedDBFile(file)
 	}
-	MapMutex.Unlock()
 }
 
 func LoadGuildFile(guildID string, file string) {
@@ -1334,7 +1330,6 @@ func SetupGuildSub(guildID string) {
 func writeAll(guildID string) {
 	LoadSharedDB()
 	LoadGuilds()
-	MapMutex.Lock()
 	WriteMemberInfo(GuildMap[guildID].MemberInfoMap, guildID)
 	_, _ = EmojiStatsWrite(GuildMap[guildID].EmojiStats, guildID)
 	_, _ = ChannelStatsWrite(GuildMap[guildID].ChannelStats, guildID)
@@ -1351,5 +1346,4 @@ func writeAll(guildID string) {
 	_ = AutopostsWrite(GuildMap[guildID].Autoposts, guildID)
 	_ = BannedUsersWrite(GuildMap[guildID].BannedUsers, guildID)
 	_ = GuildSettingsWrite(GuildMap[guildID].GuildConfig, guildID)
-	MapMutex.Unlock()
 }

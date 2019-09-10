@@ -28,11 +28,11 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	for _, guild := range e.Guilds {
 
 		// Initialize guild if missing
+		MapMutex.Lock()
 		InitDB(guild.ID)
 		writeAll(guild.ID)
 
 		// Clean up SpoilerRoles.json in each guild
-		MapMutex.Lock()
 		err := cleanSpoilerRoles(s, guild.ID)
 		if err != nil {
 			_, _ = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error())
@@ -434,16 +434,16 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 		return
 	}
 
-	if _, ok := GuildMap[v.GuildID]; !ok {
-		InitDB(v.GuildID)
-		LoadGuilds()
-	}
-
 	var voiceChannels []VoiceCha
 	var noRemovalRoles []Role
 	var dontRemove bool
 
 	MapMutex.Lock()
+	if _, ok := GuildMap[v.GuildID]; !ok {
+		InitDB(v.GuildID)
+		LoadGuilds()
+	}
+
 	if len(GuildMap[v.GuildID].GuildConfig.VoiceChas) == 0 {
 		MapMutex.Unlock()
 		return
@@ -507,11 +507,6 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	if _, ok := GuildMap[m.GuildID]; !ok {
-		InitDB(m.GuildID)
-		LoadGuilds()
-	}
-
 	var (
 		guildPrefix = "."
 		guildBotLog string
@@ -519,6 +514,10 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	if m.GuildID != "" {
 		MapMutex.Lock()
+		if _, ok := GuildMap[m.GuildID]; !ok {
+			InitDB(m.GuildID)
+			LoadGuilds()
+		}
 		guildPrefix = GuildMap[m.GuildID].GuildConfig.Prefix
 		guildBotLog = GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		MapMutex.Unlock()
@@ -766,12 +765,12 @@ func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
 		return
 	}
 
+	MapMutex.Lock()
 	if _, ok := GuildMap[e.GuildID]; !ok {
 		InitDB(e.GuildID)
 		LoadGuilds()
 	}
 
-	MapMutex.Lock()
 	guildBotLog := GuildMap[e.GuildID].GuildConfig.BotLog.ID
 
 	for _, user := range GuildMap[e.GuildID].BannedUsers {
@@ -855,10 +854,12 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
+	MapMutex.Lock()
 	if _, ok := GuildMap[u.GuildID]; !ok {
 		InitDB(u.GuildID)
 		LoadGuilds()
 	}
+	MapMutex.Unlock()
 
 	creationDate, err := CreationTime(u.User.ID)
 	if err != nil {
@@ -906,11 +907,6 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
-	if _, ok := GuildMap[u.GuildID]; !ok {
-		InitDB(u.GuildID)
-		LoadGuilds()
-	}
-
 	var (
 		creationDate time.Time
 		now          time.Time
@@ -922,6 +918,11 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	)
 
 	MapMutex.Lock()
+	if _, ok := GuildMap[u.GuildID]; !ok {
+		InitDB(u.GuildID)
+		LoadGuilds()
+	}
+
 	guildBotLog := GuildMap[u.GuildID].GuildConfig.BotLog.ID
 	MapMutex.Unlock()
 
@@ -1054,8 +1055,10 @@ func cleanSpoilerRoles(s *discordgo.Session, guildID string) error {
 
 // Handles BOT joining a server
 func GuildCreate(s *discordgo.Session, g *discordgo.GuildCreate) {
+	MapMutex.Lock()
 	InitDB(g.Guild.ID)
 	LoadGuilds()
+	MapMutex.Unlock()
 
 	log.Println(fmt.Sprintf("Joined guild %v", g.Guild.Name))
 }

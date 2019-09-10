@@ -96,19 +96,19 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		return
 	}
 
-	if _, ok := GuildMap[e.GuildID]; !ok {
-		InitDB(e.GuildID)
-		LoadGuilds()
-	}
-
 	// Pulls info on user if possible
 	user, err := s.GuildMember(e.GuildID, e.User.ID)
 	if err != nil {
 		return
 	}
 
-	// If memberInfo is empty, it initializes
 	MapMutex.Lock()
+	if _, ok := GuildMap[e.GuildID]; !ok {
+		InitDB(e.GuildID)
+		LoadGuilds()
+	}
+
+	// If memberInfo is empty, it initializes
 	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
 
 		// Initializes the first user of memberInfo
@@ -241,14 +241,14 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 		return
 	}
 
+	var writeFlag bool
+
+	MapMutex.Lock()
 	if _, ok := GuildMap[e.GuildID]; !ok {
 		InitDB(e.GuildID)
 		LoadGuilds()
 	}
 
-	var writeFlag bool
-
-	MapMutex.Lock()
 	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
 		MapMutex.Unlock()
 		return
@@ -332,14 +332,14 @@ func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 		return
 	}
 
+	var writeFlag bool
+
+	MapMutex.Lock()
 	if _, ok := GuildMap[e.GuildID]; !ok {
 		InitDB(e.GuildID)
 		LoadGuilds()
 	}
 
-	var writeFlag bool
-
-	MapMutex.Lock()
 	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
 		MapMutex.Unlock()
 		return

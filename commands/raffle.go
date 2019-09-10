@@ -104,6 +104,7 @@ func RaffleReactJoin(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 		return
 	}
 
+	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[r.GuildID]; !ok {
 		misc.InitDB(r.GuildID)
 		misc.LoadGuilds()
@@ -111,14 +112,15 @@ func RaffleReactJoin(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 
 	// Checks if it's the slot machine emoji or the bot itself
 	if r.Emoji.APIName() != "🎰" {
+		misc.MapMutex.Unlock()
 		return
 	}
 	if r.UserID == s.State.User.ID {
+		misc.MapMutex.Unlock()
 		return
 	}
 
 	// Checks if that message has a raffle react set for it
-	misc.MapMutex.Lock()
 	for i, raffle := range misc.GuildMap[r.GuildID].Raffles {
 		if raffle.ReactMessageID == r.MessageID {
 			misc.GuildMap[r.GuildID].Raffles[i].ParticipantIDs = append(misc.GuildMap[r.GuildID].Raffles[i].ParticipantIDs, r.UserID)
@@ -145,6 +147,7 @@ func RaffleReactLeave(s *discordgo.Session, r *discordgo.MessageReactionRemove) 
 		return
 	}
 
+	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[r.GuildID]; !ok {
 		misc.InitDB(r.GuildID)
 		misc.LoadGuilds()
@@ -152,14 +155,15 @@ func RaffleReactLeave(s *discordgo.Session, r *discordgo.MessageReactionRemove) 
 
 	// Checks if it's the slot machine emoji or the bot
 	if r.Emoji.APIName() != "🎰" {
+		misc.MapMutex.Unlock()
 		return
 	}
 	if r.UserID == s.State.SessionID {
+		misc.MapMutex.Unlock()
 		return
 	}
 
 	// Checks if that message has a raffle react set for it and removes it
-	misc.MapMutex.Lock()
 	for index, raffle := range misc.GuildMap[r.GuildID].Raffles {
 		if raffle.ReactMessageID == r.MessageID {
 			for i := range misc.GuildMap[r.GuildID].Raffles[index].ParticipantIDs {

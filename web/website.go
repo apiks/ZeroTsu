@@ -913,11 +913,6 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		}
 	}()
 
-	if _, ok := misc.GuildMap[u.GuildID]; !ok {
-		misc.InitDB(u.GuildID)
-		misc.LoadGuilds()
-	}
-
 	// Pulls info on user if possible
 	user, err := s.GuildMember(config.ServerID, u.User.ID)
 	if err != nil {
@@ -925,8 +920,13 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 	userID = user.User.ID
 
-	// Checks if the user is an already verified one
 	misc.MapMutex.Lock()
+	if _, ok := misc.GuildMap[u.GuildID]; !ok {
+		misc.InitDB(u.GuildID)
+		misc.LoadGuilds()
+	}
+
+	// Checks if the user is an already verified one
 	if len(misc.GuildMap[config.ServerID].MemberInfoMap) == 0 {
 		misc.MapMutex.Unlock()
 		return

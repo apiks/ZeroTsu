@@ -124,12 +124,12 @@ func (c *UserAgentTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 // Every time a role is deleted it deletes it from SpoilerMap
 func ListenForDeletedRoleHandler(s *discordgo.Session, g *discordgo.GuildRoleDelete) {
 
+	MapMutex.Lock()
 	if _, ok := GuildMap[g.GuildID]; !ok {
 		InitDB(g.GuildID)
 		LoadGuilds()
 	}
 
-	MapMutex.Lock()
 	if GuildMap[g.GuildID].SpoilerMap[g.RoleID] == nil {
 		MapMutex.Unlock()
 		return
