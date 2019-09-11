@@ -854,6 +854,10 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
+	if u.GuildID != "267799767843602452" {
+		return
+	}
+
 	MapMutex.Lock()
 	if _, ok := GuildMap[u.GuildID]; !ok {
 		InitDB(u.GuildID)

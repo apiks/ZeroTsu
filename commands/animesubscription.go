@@ -136,6 +136,7 @@ Loop:
 	// Write to shared AnimeSubs DB
 	err := misc.AnimeSubsWrite(misc.SharedInfo.AnimeSubs)
 	if err != nil {
+		misc.MapMutex.Unlock()
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
