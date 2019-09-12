@@ -22,7 +22,6 @@ type command struct {
 	trigger      string
 	aliases      []string
 	desc         string
-	commandCount int
 	deleteAfter  bool
 	elevated     bool
 	admin        bool
@@ -94,11 +93,11 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Execute the command
 	cmd.execute(s, m.Message)
-	cmd.commandCount++
 }
 
 // Handles a command from a guild
 func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
+	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[m.GuildID]; !ok {
 		misc.InitDB(m.GuildID)
 		misc.LoadGuilds()
@@ -111,8 +110,8 @@ func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 		guildReactsModule bool
 	)
 
-	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[m.GuildID]; !ok {
+		misc.MapMutex.Unlock()
 		return
 	}
 	guildPrefix = misc.GuildMap[m.GuildID].GuildConfig.Prefix
@@ -172,7 +171,6 @@ func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 	cmd.execute(s, m.Message)
-	cmd.commandCount++
 	if cmd.deleteAfter {
 		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {

@@ -353,14 +353,15 @@ func animeSubsHandler(s *discordgo.Session) {
 
 	now := time.Now()
 
+	misc.MapMutex.Lock()
 	if int(Today.Weekday()) != int(now.Weekday()) {
+		misc.MapMutex.Unlock()
 		return
 	}
 
 	now = now.UTC()
 
 	// Fetches Today's shows
-	misc.MapMutex.Lock()
 	for dayInt, scheduleShows := range misc.AnimeSchedule {
 		// Checks if the target schedule day is Today or not
 		if int(now.Weekday()) != dayInt {
@@ -465,12 +466,12 @@ func resetSubNotified() {
 	var todayShows []misc.ShowAirTime
 
 	now := time.Now()
+	misc.MapMutex.Lock()
 	if int(now.Weekday()) == int(Today.Weekday()) {
 		return
 	}
 
 	// Fetches Today's shows
-	misc.MapMutex.Lock()
 	for dayInt, scheduleShows := range misc.AnimeSchedule {
 		// Checks if the target schedule day is Today or not
 		if int(now.UTC().Weekday()) != dayInt {

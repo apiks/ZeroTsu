@@ -113,13 +113,13 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	// Print either Today or yesterday based on whether it's the bot that called the func
+	misc.MapMutex.Lock()
 	if m.Author.ID == s.State.User.ID {
 		t = Today
 	} else {
 		t = time.Now()
 	}
 
-	misc.MapMutex.Lock()
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
 	// Fixes channels without ID param
@@ -433,9 +433,12 @@ func dailyStats(s *discordgo.Session) {
 
 	t := time.Now()
 
+	misc.MapMutex.Lock()
 	if Today.Day() == t.Day() {
+		misc.MapMutex.Unlock()
 		return
 	}
+	misc.MapMutex.Unlock()
 
 	// Update daily anime schedule
 	UpdateAnimeSchedule()
@@ -499,9 +502,9 @@ func dailyStats(s *discordgo.Session) {
 		showStats(s, &message)
 		misc.MapMutex.Lock()
 	}
-	misc.MapMutex.Unlock()
 
 	Today = t
+	misc.MapMutex.Unlock()
 }
 
 // Daily stat update timer
