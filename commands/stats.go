@@ -465,16 +465,17 @@ func dailyStats(s *discordgo.Session) {
 		if dailystats, ok := misc.GuildMap[guildID].Autoposts["dailystats"]; !ok {
 			continue
 		} else {
+			if dailystats.ID == "" {
+				continue
+			}
 			guildDailyStatsID = dailystats.ID
-		}
-		if guildDailyStatsID == "" {
-			continue
 		}
 
 		_, err := s.ChannelMessageSend(guildDailyStatsID, fmt.Sprintf("Stats for **%v %v, %v**", Today.Month(), Today.Day(), Today.Year()))
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error())
 			if err != nil {
+				log.Println(err)
 				continue
 			}
 			continue

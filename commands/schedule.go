@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/bwmarrin/discordgo"
+	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/misc"
 	"log"
 	"net/http"
@@ -58,9 +59,13 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 				var guildBotLog string
 				if m.GuildID != "" {
-					misc.MapMutex.Lock()
+					if m.Author.ID != s.State.User.ID {
+						misc.MapMutex.Lock()
+					}
 					guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-					misc.MapMutex.Unlock()
+					if m.Author.ID != s.State.User.ID {
+						misc.MapMutex.Unlock()
+					}
 				} else {
 					return
 				}
@@ -87,14 +92,13 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		var guildBotLog string
 		if m.GuildID != "" {
-			if m.Author.ID == s.State.User.ID {
-				misc.MapMutex.Unlock()
+			if m.Author.ID != s.State.User.ID {
+				misc.MapMutex.Lock()
 			}
-			misc.MapMutex.Lock()
 			guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 			misc.MapMutex.Unlock()
-			if m.Author.ID == s.State.User.ID {
-				misc.MapMutex.Lock()
+			if m.Author.ID != s.State.User.ID {
+				misc.MapMutex.Unlock()
 			}
 		} else {
 			return
