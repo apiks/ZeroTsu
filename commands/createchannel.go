@@ -214,7 +214,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	for _, goodRole := range misc.GuildMap[m.GuildID].GuildConfig.CommandRoles {
 		// Mod perms
-		err = s.ChannelPermissionSet(newCha.ID, goodRole.ID, "role", misc.SpoilerPerms, 0)
+		err = s.ChannelPermissionSet(newCha.ID, goodRole.ID, "role", misc.FullSpoilerPerms, 0)
 		if err != nil {
 			if m.Author.ID != s.State.User.ID {
 				misc.MapMutex.Unlock()
@@ -224,7 +224,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	// Assign perms for the BOT
-	err = s.ChannelPermissionSet(newCha.ID, s.State.User.ID, "member", misc.SpoilerPerms, 0)
+	err = s.ChannelPermissionSet(newCha.ID, s.State.User.ID, "member", misc.FullSpoilerPerms, 0)
 	if err != nil {
 		if m.Author.ID != s.State.User.ID {
 			misc.MapMutex.Unlock()
@@ -240,13 +240,13 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	if channel.Type != "general" {
 		// Everyone perms
-		err = s.ChannelPermissionSet(newCha.ID, m.GuildID, "role", 0, misc.SpoilerPerms)
+		err = s.ChannelPermissionSet(newCha.ID, m.GuildID, "role", discordgo.PermissionSendMessages, misc.ReadSpoilerPerms)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 		// Spoiler role perms
-		err = s.ChannelPermissionSet(newCha.ID, newRole.ID, "role", misc.SpoilerPerms, 0)
+		err = s.ChannelPermissionSet(newCha.ID, newRole.ID, "role", misc.ReadSpoilerPerms, 0)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
@@ -274,7 +274,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Airing perms
 	if channel.Type == "airing" && airing != "" {
-		err = s.ChannelPermissionSet(newCha.ID, airing, "role", misc.SpoilerPerms, 0)
+		err = s.ChannelPermissionSet(newCha.ID, airing, "role", misc.ReadSpoilerPerms, 0)
 		if err != nil {
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
@@ -360,10 +360,17 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Mod-only message for non-startvote channels
 	if m.Author.ID != s.State.User.ID {
-		_, err = s.ChannelMessageSend(m.ChannelID, "Channel and role `"+roleName+"` created. If opt-in please sort in the roles list between the dummy roles or with `" + guildPrefix + "sortroles` (warning, lags in big servers)." +
-			" If you do not do this you cannot join the role with reacts or `" + guildPrefix + "join`. Sort category separately.")
-		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+		if roleName != "" {
+			_, err = s.ChannelMessageSend(m.ChannelID, "Channel and role `"+roleName+"` created. If opt-in please sort in the roles list between the dummy roles or with `" + guildPrefix + "sortroles` (warning, lags in big servers)." +
+				" If you do not do this you cannot join the role with reacts or `" + guildPrefix + "join`. Sort category separately.")
+			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+			}
+		} else {
+			_, err = s.ChannelMessageSend(m.ChannelID, "Success! Channel created.")
+			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+			}
 		}
 	}
 }
