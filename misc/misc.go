@@ -23,7 +23,8 @@ const (
 )
 
 var (
-	SpoilerPerms = discordgo.PermissionSendMessages + discordgo.PermissionReadMessages + discordgo.PermissionReadMessageHistory
+	FullSpoilerPerms = discordgo.PermissionSendMessages + discordgo.PermissionReadMessages + discordgo.PermissionReadMessageHistory
+	ReadSpoilerPerms = discordgo.PermissionReadMessages + discordgo.PermissionReadMessageHistory
 
 	StartTime time.Time
 )
