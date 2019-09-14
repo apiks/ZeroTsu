@@ -415,7 +415,9 @@ func animeSubsHandler(s *discordgo.Session) {
 
 				// Sends notification to user DMs if possible, or to guild autopost channel
 				if userShow.Guild {
-					if _, ok := misc.GuildMap[userID].Autoposts["newepisodes"]; !ok {
+					if newepisodes, ok := misc.GuildMap[userID].Autoposts["newepisodes"]; !ok {
+						continue
+					} else if newepisodes == nil {
 						continue
 					}
 					err := subEmbed(s, scheduleShow, misc.GuildMap[userID].Autoposts["newepisodes"].ID)

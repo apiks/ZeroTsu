@@ -465,6 +465,9 @@ func dailyStats(s *discordgo.Session) {
 		if dailystats, ok := misc.GuildMap[guildID].Autoposts["dailystats"]; !ok {
 			continue
 		} else {
+			if dailystats == nil {
+				continue
+			}
 			if dailystats.ID == "" {
 				continue
 			}
