@@ -12,8 +12,6 @@ import (
 // Sends a message from the bot to a channel
 func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	var channelID string
-
 	misc.MapMutex.Lock()
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
@@ -34,12 +32,8 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Checks if the optional command is present
-	_, err := strconv.ParseInt(commandStrings[1], 10, 64)
-	if len(commandStrings[1]) > 17 && err == nil {
-		// Set variable to non-null value for below check
-		channelID = "1"
-	}
+	// Checks if the optional channel is present
+	channelID, _ := misc.ChannelParser(s, commandStrings[1], m.GuildID)
 
 	// Sends the message to the channel the original message was in. Else continues to custom channel ID
 	if channelID == "" {
@@ -63,35 +57,8 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Pulls server channels and checks if it's a valid channel
-	channels, err := s.GuildChannels(m.GuildID)
-	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
-		return
-	}
-	for i := 0; i < len(channels); i++ {
-		if channels[i].ID == commandStrings[1] {
-			channelID = channels[i].ID
-			break
-		}
-	}
-	if channelID == "1" {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid channel.")
-		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
-			return
-		}
-		return
-	}
-
 	message := strings.TrimPrefix(m.Content, guildPrefix+"say "+channelID)
-	_, err = s.ChannelMessageSend(channelID, message)
+	_, err := s.ChannelMessageSend(channelID, message)
 	if err != nil {
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
@@ -132,21 +99,19 @@ func editCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Checks if it's a valid channel ID
-	_, err := strconv.ParseInt(commandStrings[1], 10, 64)
-	if len(commandStrings[1]) < 17 || err != nil {
+	// Checks if the channel is present and valid
+	channelID, _ := misc.ChannelParser(s, commandStrings[1], m.GuildID)
+	if channelID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid channel.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			return
 		}
 		return
 	}
+
 	// Checks if it's a valid message ID
-	_, err = strconv.ParseInt(commandStrings[2], 10, 64)
+	_, err := strconv.ParseInt(commandStrings[2], 10, 64)
 	if len(commandStrings[2]) < 17 || err != nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid message.")
 		if err != nil {
