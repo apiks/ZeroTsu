@@ -161,8 +161,10 @@ func Start() {
 	// Logs each user that joins the server
 	goBot.AddHandler(misc.GuildJoin)
 
-	// Auto spambot ban
-	goBot.AddHandler(misc.SpambotJoin)
+	// Auto spambot ban for r/anime
+	if config.ServerID == "267799767843602452" {
+		goBot.AddHandler(misc.SpambotJoin)
+	}
 
 	// Anime subscription handler
 	goBot.AddHandler(commands.AnimeSubsTimer)
