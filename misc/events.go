@@ -46,9 +46,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	_ = s.UpdateStatus(0, config.PlayingMsg)
 
 	// Sends server count to bot list sites if it's the public ZeroTsu
-	if s.State.User.ID == "614495694769618944" {
-		sendServers(s)
-	}
+	sendServers(s)
 
 	for range time.NewTicker(45 * time.Second).C {
 
@@ -255,9 +253,7 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 		MapMutex.Unlock()
 
 		// Sends server count to bot list sites if it's the public ZeroTsu
-		if s.State.User.ID == "614495694769618944" {
-			sendServers(s)
-		}
+		sendServers(s)
 	}
 }
 
@@ -1082,13 +1078,26 @@ func sendServers(s *discordgo.Session) {
 		return
 	}
 
+	guildCountStr := strconv.Itoa(len(s.State.Guilds))
 	client := &http.Client{}
 
 	// Discord Bots
+	discordBotsGuildCount(client, guildCountStr)
+
+	// Discord Boats
+	discordBoatsGuildCount(client, guildCountStr)
+
+	// Bots on Discord
+	discordBotsOnDiscordGuildCount(client, guildCountStr)
+}
+
+// Sends guild count to discordbots.org
+func discordBotsGuildCount(client *http.Client, guildCount string) {
+
 	data := url.Values{
-		"server_count": {strconv.Itoa(len(s.State.Guilds))},
+		"server_count": {guildCount},
 	}
-	req, err := http.NewRequest("POST", fmt.Sprintf("https://discordbots.org/api/bots/%v/stats", s.State.User.ID), bytes.NewBufferString(data.Encode()))
+	req, err := http.NewRequest("POST", "https://discordbots.org/api/bots/614495694769618944/stats", bytes.NewBufferString(data.Encode()))
 	if err != nil {
 		log.Println(err)
 		return
@@ -1099,12 +1108,14 @@ func sendServers(s *discordgo.Session) {
 	if err != nil {
 		log.Println(err)
 	}
+}
 
-	// Discord Boats
-	data = url.Values{
-		"server_count": {strconv.Itoa(len(s.State.Guilds))},
+// Sends guild count to discord.boats
+func discordBoatsGuildCount(client *http.Client, guildCount string) {
+	data := url.Values{
+		"server_count": {guildCount},
 	}
-	req, err = http.NewRequest("POST", fmt.Sprintf("https://discord.boats/api/bot/:%v", s.State.User.ID), bytes.NewBufferString(data.Encode()))
+	req, err := http.NewRequest("POST", "https://discord.boats/api/bot/614495694769618944", bytes.NewBufferString(data.Encode()))
 	if err != nil {
 		log.Println(err)
 		return
@@ -1115,12 +1126,14 @@ func sendServers(s *discordgo.Session) {
 	if err != nil {
 		log.Println(err)
 	}
+}
 
-	// Bots on Discord
-	data = url.Values{
-		"guildCount": {strconv.Itoa(len(s.State.Guilds))},
+// Sends guild count to bots.ondiscord.xyz
+func discordBotsOnDiscordGuildCount(client *http.Client, guildCount string) {
+	data := url.Values{
+		"guildCount": {guildCount},
 	}
-	req, err = http.NewRequest("POST", fmt.Sprintf("https://bots.ondiscord.xyz/bot-api/bots/:%v/guilds", s.State.User.ID), bytes.NewBufferString(data.Encode()))
+	req, err := http.NewRequest("POST", "https://bots.ondiscord.xyz/bot-api/bots/614495694769618944/guilds", bytes.NewBufferString(data.Encode()))
 	if err != nil {
 		log.Println(err)
 		return

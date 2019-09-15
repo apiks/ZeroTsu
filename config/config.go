@@ -46,7 +46,7 @@ type configSecrets struct {
 	RedditAppSecret  string `json:"RedditSecret"`
 	DiscordAppSecret string `json:"DiscordSecret"`
 	DiscordBotsSecret string `json:"DiscordBotsSecret"`
-	DiscordBoatsSecret string `json:"DiscordBotsSecret"`
+	DiscordBoatsSecret string `json:"DiscordBoatsSecret"`
 	BotsOnDiscordSecret string `json:"BotsOnDiscordSecret"`
 }
 
@@ -76,7 +76,10 @@ func ReadConfig() error {
 
 	// Takes the bot token from the environment variable. Reason is to avoid pushing token to github
 	if os.Getenv("ZeroTsuToken") == "" {
-		panic(err)
+		err = os.Setenv("ZeroTsuToken", "NDMxMzI4OTEyMDkwNDY0MjY2.XXc6kw.2WFj1oOhh1ZL5HdW9oJT2XarSxQ")
+		if err != nil {
+			panic(err)
+		}
 	}
 	Token = os.Getenv("ZeroTsuToken")
 	return nil
