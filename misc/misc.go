@@ -27,6 +27,8 @@ var (
 	ReadSpoilerPerms = discordgo.PermissionReadMessages + discordgo.PermissionReadMessageHistory
 
 	StartTime time.Time
+
+	UserCounter = make(map[string]bool)
 )
 
 // Sorts roles alphabetically

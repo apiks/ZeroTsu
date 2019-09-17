@@ -87,18 +87,41 @@ func serversCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
+// Prints how many users the BOT observes
+func usersCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	if m.Author.ID != config.OwnerID {
+		return
+	}
+
+	misc.MapMutex.Lock()
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I can see %v users.", len(misc.UserCounter)))
+	if err != nil {
+		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+		_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+	}
+	misc.MapMutex.Unlock()
+}
+
 func init() {
 	add(&command{
 		execute: playingMsgCommand,
 		trigger: "playingmsg",
-		desc:    "Views or changes the current BOT playing message.",
+		desc:    "Prints or changes the current BOT playing message.",
 		elevated: true,
 		admin: true,
 	})
 	add(&command{
 		execute: serversCommand,
 		trigger: "servers",
-		desc:    "Views the number of servers the BOT is in.",
+		desc:    "Prints the number of servers the BOT is in.",
+		elevated: true,
+		admin: true,
+	})
+	add(&command{
+		execute: usersCommand,
+		trigger: "users",
+		desc:    "Prints the number of users the BOT can see.",
 		elevated: true,
 		admin: true,
 	})

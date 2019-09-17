@@ -39,6 +39,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		}
 
 		DynamicNicknameChange(s, guild.ID)
+		updateUserCounter(s, guild.ID)
 		MapMutex.Unlock()
 	}
 
@@ -54,6 +55,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		for _, guild := range e.Guilds {
 			RSSParser(s, guild.ID)
 			MapMutex.Lock()
+			updateUserCounter(s, guild.ID)
 			remindMeHandler(s, guild.ID)
 
 			// Goes through bannedUsers.json if it's not empty and unbans if needed
@@ -1179,5 +1181,31 @@ func DynamicNicknameChange(s *discordgo.Session, guildID string, oldPrefix ...st
 				_ = s.GuildMemberNickname(guildID, "@me", fmt.Sprintf("%v", s.State.User.Username))
 			}
 		}
+	}
+}
+
+// Updates the member counter map
+func updateUserCounter(s *discordgo.Session, guildID string) {
+
+	// Fetch guild
+	guild, err := s.State.Guild(guildID)
+	if err != nil {
+		guild, err = s.Guild(guildID)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+	}
+
+	// Check if member is already in UserCounter map and add him if he isn't
+	// Skips BOTs
+	for _, member := range guild.Members {
+		if member.User.Bot {
+			continue
+		}
+		if _, ok := UserCounter[member.User.ID]; ok {
+			continue
+		}
+		UserCounter[member.User.ID] = true
 	}
 }
