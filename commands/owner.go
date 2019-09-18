@@ -118,11 +118,11 @@ func init() {
 		elevated: true,
 		admin: true,
 	})
-	add(&command{
-		execute: usersCommand,
-		trigger: "users",
-		desc:    "Prints the number of users the BOT can see.",
-		elevated: true,
-		admin: true,
-	})
+	//add(&command{
+	//	execute: usersCommand,
+	//	trigger: "users",
+	//	desc:    "Prints the number of users the BOT can see.",
+	//	elevated: true,
+	//	admin: true,
+	//})
 }

@@ -39,7 +39,6 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		}
 
 		DynamicNicknameChange(s, guild.ID)
-		updateUserCounter(s, guild.ID)
 		MapMutex.Unlock()
 	}
 
@@ -55,7 +54,6 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		for _, guild := range e.Guilds {
 			RSSParser(s, guild.ID)
 			MapMutex.Lock()
-			updateUserCounter(s, guild.ID)
 			remindMeHandler(s, guild.ID)
 
 			// Goes through bannedUsers.json if it's not empty and unbans if needed
