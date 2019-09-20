@@ -63,6 +63,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 			}
 
 			t := time.Now()
+			var writeFlag bool
 			for i := len(GuildMap[guild.ID].BannedUsers) - 1; i >= 0; i-- {
 
 				difference := t.Sub(GuildMap[guild.ID].BannedUsers[i].UnbanDate)
@@ -113,13 +114,16 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 				GuildMap[guild.ID].BannedUsers = append(GuildMap[guild.ID].BannedUsers[:i], GuildMap[guild.ID].BannedUsers[i+1:]...)
 
 				// Writes to memberInfo.json and bannedUsers.json
-				WriteMemberInfo(GuildMap[guild.ID].MemberInfoMap, guild.ID)
-				_ = BannedUsersWrite(GuildMap[guild.ID].BannedUsers, guild.ID)
+				writeFlag = true
 
 				// Sends an embed message to bot-log
 				if !banFlag {
 					_ = UnbanEmbed(s, memberInfoUser, "", GuildMap[guild.ID].GuildConfig.BotLog.ID)
 				}
+			}
+			if writeFlag {
+				WriteMemberInfo(GuildMap[guild.ID].MemberInfoMap, guild.ID)
+				_ = BannedUsersWrite(GuildMap[guild.ID].BannedUsers, guild.ID)
 			}
 			MapMutex.Unlock()
 		}
