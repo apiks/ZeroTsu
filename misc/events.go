@@ -91,10 +91,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 				// Fetches all server bans so it can check if the memberInfoUser is banned there (whether he's been manually unbanned for example)
 				bans, err := s.GuildBans(guild.ID)
 				if err != nil {
-					_, err = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
-					if err != nil {
-						continue
-					}
+					_, _ = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 					continue
 				}
 
@@ -109,10 +106,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 				if banFlag {
 					err = s.GuildBanDelete(guild.ID, memberInfoUser.ID)
 					if err != nil {
-						_, err = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
-						if err != nil {
-							continue
-						}
+						_, _ = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 						continue
 					}
 				}
@@ -202,20 +196,14 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			// Writes emoji stats to disk
 			_, err := EmojiStatsWrite(GuildMap[guild.ID].EmojiStats, guild.ID)
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					continue
-				}
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				continue
 			}
 
 			// Writes user gain stats to disk
 			_, err = UserChangeStatsWrite(GuildMap[guild.ID].UserChangeStats, guild.ID)
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					continue
-				}
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				continue
 			}
 
@@ -223,36 +211,13 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 			if config.Website != "" {
 				err = VerifiedStatsWrite(GuildMap[guild.ID].VerifiedStats, guild.ID)
 				if err != nil {
-					_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-					if err != nil {
-						continue
-					}
+					_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 					continue
 				}
 			}
 
 			// Writes memberInfo to disk
 			WriteMemberInfo(GuildMap[guild.ID].MemberInfoMap, guild.ID)
-
-			// Fetches all server roles
-			roles, err := s.GuildRoles(guild.ID)
-			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					continue
-				}
-				continue
-			}
-			// Updates optin role stat
-			t := time.Now()
-			for chas := range GuildMap[guild.ID].ChannelStats {
-				if GuildMap[guild.ID].ChannelStats[chas].RoleCount == nil {
-					GuildMap[guild.ID].ChannelStats[chas].RoleCount = make(map[string]int)
-				}
-				if GuildMap[guild.ID].ChannelStats[chas].Optin {
-					GuildMap[guild.ID].ChannelStats[chas].RoleCount[t.Format(DateFormat)] = GetRoleUserAmount(guild, roles, GuildMap[guild.ID].ChannelStats[chas].Name)
-				}
-			}
 
 			// Writes channel stats to disk
 			_, err = ChannelStatsWrite(GuildMap[guild.ID].ChannelStats, guild.ID)
@@ -276,6 +241,23 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 			// Updates BOT nickname
 			DynamicNicknameChange(s, guild.ID)
+
+			// Fetches all server roles
+			roles, err := s.GuildRoles(guild.ID)
+			if err != nil {
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
+				continue
+			}
+			// Updates optin role stat
+			t := time.Now()
+			for chas := range GuildMap[guild.ID].ChannelStats {
+				if GuildMap[guild.ID].ChannelStats[chas].RoleCount == nil {
+					GuildMap[guild.ID].ChannelStats[chas].RoleCount = make(map[string]int)
+				}
+				if GuildMap[guild.ID].ChannelStats[chas].Optin {
+					GuildMap[guild.ID].ChannelStats[chas].RoleCount[t.Format(DateFormat)] = GetRoleUserAmount(guild, roles, GuildMap[guild.ID].ChannelStats[chas].Name)
+				}
+			}
 		}
 		MapMutex.Unlock()
 
@@ -298,7 +280,7 @@ func RSSParser(s *discordgo.Session, guildID string) {
 	// Save current threads as a copy so mapMutex isn't taken all the time when checking the feeds
 	rssThreads := GuildMap[guildID].RssThreads
 	rssThreadChecks := GuildMap[guildID].RssThreadChecks
-	bogLogID := GuildMap[guildID].GuildConfig.BotLog.ID
+	botLogID := GuildMap[guildID].GuildConfig.BotLog.ID
 
 	t := time.Now()
 	hours := time.Hour * 1440
@@ -315,10 +297,7 @@ func RSSParser(s *discordgo.Session, guildID string) {
 		}
 		err := RssThreadsTimerRemove(rssThreadChecks[p].Thread, rssThreadChecks[p].Date, guildID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))
-			if err != nil {
-				continue
-			}
+			_, _ = s.ChannelMessageSend(botLogID, err.Error()+"\n"+ErrorLocation(err))
 			continue
 		}
 	}
@@ -387,7 +366,7 @@ func RSSParser(s *discordgo.Session, guildID string) {
 			err := RssThreadsTimerWrite(thread, t, item.GUID, guildID)
 			if err != nil {
 				MapMutex.Unlock()
-				_, _ = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))
+				_, _ = s.ChannelMessageSend(botLogID, err.Error()+"\n"+ErrorLocation(err))
 				continue
 			}
 			// Updates rssThreadChecks var after the write
@@ -411,7 +390,6 @@ func RSSParser(s *discordgo.Session, guildID string) {
 
 			pins, err := s.ChannelMessagesPinned(message.ChannelID)
 			if err != nil {
-				_, _ = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))
 				continue
 			}
 			// Unpins if necessary
@@ -428,15 +406,11 @@ func RSSParser(s *discordgo.Session, guildID string) {
 
 				err = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
 				if err != nil {
-					_, _ = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))
 					continue
 				}
 			}
 			// Pins
-			err = s.ChannelMessagePin(message.ChannelID, message.ID)
-			if err != nil {
-				_, _ = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))
-			}
+			_ = s.ChannelMessagePin(message.ChannelID, message.ID)
 			pinnedItems[item] = true
 		}
 	}
@@ -487,10 +461,6 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 			if v.ChannelID == cha.ID {
 				err := s.GuildMemberRoleAdd(v.GuildID, v.UserID, chaRole.ID)
 				if err != nil {
-					_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-					if err != nil {
-						return
-					}
 					return
 				}
 				noRemovalRoles = append(noRemovalRoles, chaRole)
@@ -509,10 +479,6 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 			// Removes role
 			err := s.GuildMemberRoleRemove(v.GuildID, v.UserID, chaRole.ID)
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					return
-				}
 				return
 			}
 		}
@@ -546,15 +512,10 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		MapMutex.Unlock()
 	}
 
-
-
 	if strings.ToLower(m.Content) == fmt.Sprintf("<@%v> good bot", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v> good bot", s.State.User.ID) {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Thank you ❤\n\nPrefix: `%v`", guildPrefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Thank you ❤", guildPrefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 			return
 		}
 		return
@@ -563,10 +524,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if (m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID)) && m.Author.ID == "128312718779219968" {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Professor!\n\nPrefix: `%v`", guildPrefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 			return
 		}
 		return
@@ -578,10 +536,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if randomNum == 0 {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Bug hunter!\n\nPrefix: `%v`", guildPrefix))
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				return
 			}
 			return
@@ -589,10 +544,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if randomNum == 1 {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Player!\n\nPrefix: `%v`", guildPrefix))
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				return
 			}
 			return
@@ -600,10 +552,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if randomNum == 2 {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Big brain!\n\nPrefix: `%v`", guildPrefix))
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				return
 			}
 			return
@@ -611,10 +560,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if randomNum == 3 {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Poster expert!\n\nPrefix: `%v`", guildPrefix))
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				return
 			}
 			return
@@ -622,10 +568,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if randomNum == 4 {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Idiot!\n\nPrefix: `%v`", guildPrefix))
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				return
 			}
 			return
@@ -639,10 +582,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if randomNum == 0 {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Begone ethot.\n\nPrefix: `%v`", guildPrefix))
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				return
 			}
 			return
@@ -650,10 +590,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if randomNum == 1 {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Humph!\n\nPrefix: `%v`", guildPrefix))
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				return
 			}
 			return
@@ -661,10 +598,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if randomNum == 2 {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Wannabe ethot!\n\nPrefix: `%v`", guildPrefix))
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				return
 			}
 			return
@@ -672,10 +606,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if randomNum == 3 {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Not even worth my time.\n\nPrefix: `%v`", guildPrefix))
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				return
 			}
 			return
@@ -683,10 +614,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if randomNum == 4 {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Okay, maybe you're not that bad.\n\nPrefix: `%v`", guildPrefix))
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				return
 			}
 			return
@@ -700,10 +628,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if randomNum == 0 {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("https://cdn.discordapp.com/attachments/618463738504151086/619090216329674800/uiz31mhq12k11.gif\n\nPrefix: `%v`", guildPrefix))
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				return
 			}
 			return
@@ -711,10 +636,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if randomNum == 1 {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Onii-chan no ecchi!\n\nPrefix: `%v`", guildPrefix))
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				return
 			}
 			return
@@ -722,10 +644,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if randomNum == 2 {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Kusuguttai Neiru-kun.\n\nPrefix: `%v`", guildPrefix))
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				return
 			}
 			return
@@ -733,10 +652,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if randomNum == 3 {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Liking lolis isn't a crime, but I'll still visit you in prison.\n\nPrefix: `%v`", guildPrefix))
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				return
 			}
 			return
@@ -744,10 +660,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if randomNum == 4 {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Iris told me you wanted her to meow at you while she was still young.\n\nPrefix: `%v`", guildPrefix))
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 				return
 			}
 			return
@@ -758,10 +671,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if (m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID)) && darlingTrigger > 10 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Daaarling~\n\nPrefix: `%v`", guildPrefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 			return
 		}
 		darlingTrigger = 0
@@ -771,10 +681,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID) {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Baka!\n\nPrefix: `%v`", guildPrefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
 			return
 		}
 		darlingTrigger++
@@ -900,19 +807,7 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	// Sends user join message for r/anime discord server
 	if u.GuildID == "267799767843602452" {
-		_, err = s.ChannelMessageSend("566233292026937345", fmt.Sprintf("User joined the server: %v\nAccount age: %v", u.User.Mention(), creationDate.String()))
-		if err != nil {
-
-			MapMutex.Lock()
-			guildBotLog := GuildMap[u.GuildID].GuildConfig.BotLog.ID
-			MapMutex.Unlock()
-
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-			if err != nil {
-				return
-			}
-			return
-		}
+		_, _ = s.ChannelMessageSend("566233292026937345", fmt.Sprintf("User joined the server: %v\nAccount age: %v", u.User.Mention(), creationDate.String()))
 	}
 }
 

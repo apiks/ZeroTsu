@@ -258,14 +258,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	for j := 0; j < len(msgs); j++ {
-		_, err := s.ChannelMessageSend(m.ChannelID, msgs[j])
-		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
-			return
-		}
+		_, _ = s.ChannelMessageSend(m.ChannelID, msgs[j])
 	}
 }
 
