@@ -447,6 +447,7 @@ func dailyStats(s *discordgo.Session) {
 	folders, err := ioutil.ReadDir("database/guilds")
 	if err != nil {
 		log.Panicln(err)
+		return
 	}
 
 	misc.MapMutex.Lock()

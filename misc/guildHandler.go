@@ -261,6 +261,7 @@ func LoadGuilds() {
 		for _, file := range files {
 			LoadGuildFile(folderName, file)
 		}
+
 		// Loads default map settings
 		if GuildMap[folderName].GuildConfig.BotLog.ID != "" {
 			if dailystats, ok := GuildMap[folderName].Autoposts["dailystats"]; ok {

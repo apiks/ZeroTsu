@@ -276,6 +276,9 @@ func CommandErrorHandler(s *discordgo.Session, m *discordgo.Message, err error, 
 		if botLogID == "" {
 			return
 		}
+		if err.(*discordgo.RESTError).Response.Status == "500 Internal Server Error" {
+			return
+		}
 		_, _ = s.ChannelMessageSend(botLogID, err.Error())
 	}
 }

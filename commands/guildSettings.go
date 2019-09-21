@@ -69,7 +69,7 @@ func addCommandRole(s *discordgo.Session, m *discordgo.Message) {
 
 	// Adds the role to the guild command roles
 	misc.GuildMap[m.GuildID].GuildConfig.CommandRoles = append(misc.GuildMap[m.GuildID].GuildConfig.CommandRoles, role)
-	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	_ = misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	misc.MapMutex.Unlock()
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Role `%v` is now a privileged role.", role.Name))
@@ -271,7 +271,7 @@ func prefixCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Changes and writes new prefix to storage
 	misc.MapMutex.Lock()
 	misc.GuildMap[m.GuildID].GuildConfig.Prefix = commandStrings[1]
-	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	_ = misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
 	misc.DynamicNicknameChange(s, m.GuildID, guildPrefix)
 	misc.MapMutex.Unlock()
 
@@ -406,11 +406,7 @@ func optInUnderCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! 'Opt In Under' role is: `%v - %v`", roleName, roleID))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
-		return
+		_, _ = s.ChannelMessageSend(guildBotLog.ID, err.Error())
 	}
 }
 

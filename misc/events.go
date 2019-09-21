@@ -48,7 +48,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	// Sends server count to bot list sites if it's the public ZeroTsu
 	sendServers(s)
 
-	for range time.NewTicker(45 * time.Second).C {
+	for range time.NewTicker(55 * time.Second).C {
 
 		// Checks whether it has to post RSS threads and handle remindMes and handle bans
 		for _, guild := range e.Guilds {
@@ -305,7 +305,7 @@ func RSSParser(s *discordgo.Session, guildID string) {
 
 	// Sets up the feed parser
 	fp := gofeed.NewParser()
-	fp.Client = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport}, Timeout: time.Second * 20}
+	fp.Client = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport}, Timeout: time.Second * 10}
 
 	// Save all feeds early to save performance
 	var subMap = make(map[string]*gofeed.Feed)
@@ -371,7 +371,8 @@ func RSSParser(s *discordgo.Session, guildID string) {
 			rssThreadChecks = GuildMap[guildID].RssThreadChecks
 			MapMutex.Unlock()
 
-			// Sends feed item to chat
+			// Sends feed item to chat after 200 ms
+			time.Sleep(200 * time.Millisecond)
 			message, err := s.ChannelMessageSend(thread.ChannelID, item.Link)
 			if err != nil {
 				_, _ = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))

@@ -214,9 +214,7 @@ func processEachShow(index int, element *goquery.Selection) {
 	show.Key, _ = element.Parent().Parent().Parent().Find(".show-link").Attr("href")
 	show.Key = strings.ToLower(strings.TrimPrefix(show.Key, "/shows/"))
 
-	misc.MapMutex.Lock()
 	misc.AnimeSchedule[day] = append(misc.AnimeSchedule[day], show)
-	misc.MapMutex.Unlock()
 }
 
 // Scrapes https://AnimeSchedule.net for air times subbed
@@ -224,7 +222,7 @@ func UpdateAnimeSchedule() {
 
 	// Create HTTP client with timeout
 	client := &http.Client{
-		Timeout: 30 * time.Second,
+		Timeout: 15 * time.Second,
 	}
 
 	// Create and modify HTTP request before sending
@@ -255,8 +253,8 @@ func UpdateAnimeSchedule() {
 	for dayInt := range misc.AnimeSchedule {
 		delete(misc.AnimeSchedule, dayInt)
 	}
-	misc.MapMutex.Unlock()
 	document.Find(".columns h3").Each(processEachShow)
+	misc.MapMutex.Unlock()
 }
 
 // isTimeDST returns true if time t occurs within daylight saving time
