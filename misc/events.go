@@ -465,7 +465,7 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 				noRemovalRoles = append(noRemovalRoles, chaRole)
 			}
 
-			// Checks if this role should be removable
+			// Checks if this role should be removable.
 			for _, role := range noRemovalRoles {
 				if chaRole.ID == role.ID {
 					dontRemove = true
