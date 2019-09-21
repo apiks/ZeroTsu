@@ -42,11 +42,17 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		MapMutex.Unlock()
 	}
 
-	// Update playing status
+	// Updates playing status
 	MapMutex.Lock()
-	rand.Seed(time.Now().UnixNano())
-	randInt := rand.Intn(len(config.PlayingMsg))
-	_ = s.UpdateStatus(0, config.PlayingMsg[randInt])
+	if len(config.PlayingMsg) > 1 {
+		rand.Seed(time.Now().UnixNano())
+		randInt := rand.Intn(len(config.PlayingMsg))
+		_ = s.UpdateStatus(0, config.PlayingMsg[randInt])
+	} else if len(config.PlayingMsg) == 1 {
+		_ = s.UpdateStatus(0, config.PlayingMsg[0])
+	} else {
+		_ = s.UpdateStatus(0, "")
+	}
 	MapMutex.Unlock()
 
 	// Sends server count to bot list sites if it's the public ZeroTsu
@@ -170,11 +176,17 @@ func UnbanEmbed(s *discordgo.Session, user *UserInfo, mod string, botLog string)
 func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(20 * time.Minute).C {
 
-		// Update playing status
+		// Updates playing status
 		MapMutex.Lock()
-		rand.Seed(time.Now().UnixNano())
-		randInt := rand.Intn(len(config.PlayingMsg))
-		_ = s.UpdateStatus(0, config.PlayingMsg[randInt])
+		if len(config.PlayingMsg) > 1 {
+			rand.Seed(time.Now().UnixNano())
+			randInt := rand.Intn(len(config.PlayingMsg))
+			_ = s.UpdateStatus(0, config.PlayingMsg[randInt])
+		} else if len(config.PlayingMsg) == 1 {
+			_ = s.UpdateStatus(0, config.PlayingMsg[0])
+		} else {
+			_ = s.UpdateStatus(0, "")
+		}
 		MapMutex.Unlock()
 
 		MapMutex.Lock()

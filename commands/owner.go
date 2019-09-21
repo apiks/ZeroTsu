@@ -101,11 +101,23 @@ func removePlayingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Changes and removes playing msg from storage
 	misc.MapMutex.Lock()
 	var index int
+	var foundIndex bool
 	for i, msg := range config.PlayingMsg {
 		if msg == commandStrings[1] {
 			index = i
+			foundIndex = true
 			break
 		}
+	}
+	if !foundIndex {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such playing message.")
+		if err != nil {
+			misc.MapMutex.Unlock()
+			_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+			return
+		}
+		misc.MapMutex.Unlock()
+		return
 	}
 	config.PlayingMsg = append(config.PlayingMsg[:index], config.PlayingMsg[index+1:]...)
 	err := config.WriteConfig()
@@ -115,20 +127,27 @@ func removePlayingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Refreshes playing message
-	randMsg := rand.Intn(len(config.PlayingMsg)-1)
-	err = s.UpdateStatus(0, config.PlayingMsg[randMsg])
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Removed playing message: `%v`", commandStrings[1]))
+	if err != nil {
+		_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+	}
+
+	// Updates playing status
+	if len(config.PlayingMsg) > 1 {
+		rand.Seed(time.Now().UnixNano())
+		randInt := rand.Intn(len(config.PlayingMsg))
+		err = s.UpdateStatus(0, config.PlayingMsg[randInt])
+	} else if len(config.PlayingMsg) == 1 {
+		err = s.UpdateStatus(0, config.PlayingMsg[0])
+	} else {
+		err = s.UpdateStatus(0, "")
+	}
 	if err != nil {
 		misc.MapMutex.Unlock()
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 	misc.MapMutex.Unlock()
-
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Removed playing message: `%v`", commandStrings[1]))
-	if err != nil {
-		_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-	}
 }
 
 // Prints in how many servers the BOT is
