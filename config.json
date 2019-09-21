@@ -3,6 +3,6 @@
 	"ServerID": "267799767843602452",
 	"BotLogID": "284412480833191936",
 	"Website": "discord.r-anime.moe",
-	"PlayingMsg": "with her Darling",
+	"PlayingMsg": ["with her Darling"],
 	"OwnerID": "128312718779219968"
 }
