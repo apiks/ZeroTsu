@@ -461,7 +461,6 @@ func dailyStats(s *discordgo.Session) {
 		DailySchedule(s, guildID)
 
 		guildPrefix := misc.GuildMap[guildID].GuildConfig.Prefix
-		guildBotLog := misc.GuildMap[guildID].GuildConfig.BotLog.ID
 		var guildDailyStatsID string
 		if dailystats, ok := misc.GuildMap[guildID].Autoposts["dailystats"]; !ok {
 			continue
@@ -477,11 +476,6 @@ func dailyStats(s *discordgo.Session) {
 
 		_, err := s.ChannelMessageSend(guildDailyStatsID, fmt.Sprintf("Stats for **%v %v, %v**", Today.Month(), Today.Day(), Today.Year()))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error())
-			if err != nil {
-				log.Println(err)
-				continue
-			}
 			continue
 		}
 

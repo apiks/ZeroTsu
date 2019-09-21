@@ -87,29 +87,7 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Print the daily schedule
-	_, err := s.ChannelMessageSend(m.ChannelID, printMessage)
-	if err != nil && m.GuildID != "" {
-
-		var guildBotLog string
-		if m.GuildID != "" {
-			if m.Author.ID != s.State.User.ID {
-				misc.MapMutex.Lock()
-			}
-			guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-			misc.MapMutex.Unlock()
-			if m.Author.ID != s.State.User.ID {
-				misc.MapMutex.Unlock()
-			}
-		} else {
-			return
-		}
-
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
-		return
-	}
+	_, _ = s.ChannelMessageSend(m.ChannelID, printMessage)
 }
 
 // Gets a target weekday's anime schedule

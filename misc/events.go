@@ -375,7 +375,6 @@ func RSSParser(s *discordgo.Session, guildID string) {
 			time.Sleep(200 * time.Millisecond)
 			message, err := s.ChannelMessageSend(thread.ChannelID, item.Link)
 			if err != nil {
-				_, _ = s.ChannelMessageSend(bogLogID, err.Error()+"\n"+ErrorLocation(err))
 				continue
 			}
 
@@ -814,12 +813,8 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 				_, err := s.GuildMember(guildID, userID)
 				if err == nil {
 					pingMessage := fmt.Sprintf("<@%v> Remindme: %v", userID, remindMeSlice.RemindMeSlice[i].Message)
-					_, err = s.ChannelMessageSend(remindMeSlice.RemindMeSlice[i].CommandChannel, pingMessage)
+					_, err := s.ChannelMessageSend(remindMeSlice.RemindMeSlice[i].CommandChannel, pingMessage)
 					if err != nil {
-						_, err = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
-						if err != nil {
-							return
-						}
 						return
 					}
 				}
@@ -984,7 +979,7 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		}
 	}
 	GuildMap[u.GuildID].BannedUsers = append(GuildMap[u.GuildID].BannedUsers, temp)
-	BannedUsersWrite(GuildMap[u.GuildID].BannedUsers, u.GuildID)
+	_ = BannedUsersWrite(GuildMap[u.GuildID].BannedUsers, u.GuildID)
 
 	// Adds a bool to memberInfo that it's a suspected spambot account in case they try to reverify
 	tempMem = *GuildMap[u.GuildID].MemberInfoMap[u.User.ID]
