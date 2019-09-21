@@ -518,7 +518,7 @@ func init() {
 	add(&command{
 		execute:  showStats,
 		trigger:  "stats",
-		aliases:  []string{"channelstats", "channels"},
+		aliases:  []string{"channelstats", "channels", "stat", "chanstat", "chanstats", "statss"},
 		desc:     "Prints all channel stats.",
 		elevated: true,
 		category: "stats",

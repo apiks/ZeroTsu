@@ -43,7 +43,11 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	}
 
 	// Update playing status
-	_ = s.UpdateStatus(0, config.PlayingMsg)
+	MapMutex.Lock()
+	rand.Seed(time.Now().UnixNano())
+	randInt := rand.Intn(len(config.PlayingMsg))
+	_ = s.UpdateStatus(0, config.PlayingMsg[randInt])
+	MapMutex.Unlock()
 
 	// Sends server count to bot list sites if it's the public ZeroTsu
 	sendServers(s)
@@ -165,6 +169,13 @@ func UnbanEmbed(s *discordgo.Session, user *UserInfo, mod string, botLog string)
 // Periodic 20min events
 func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(20 * time.Minute).C {
+
+		// Update playing status
+		MapMutex.Lock()
+		rand.Seed(time.Now().UnixNano())
+		randInt := rand.Intn(len(config.PlayingMsg))
+		_ = s.UpdateStatus(0, config.PlayingMsg[randInt])
+		MapMutex.Unlock()
 
 		MapMutex.Lock()
 		for _, guild := range e.Guilds {

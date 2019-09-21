@@ -16,7 +16,7 @@ var (
 	BotLogID         string
 	OwnerID          string
 	Website          string
-	PlayingMsg       string
+	PlayingMsg       []string
 	RedditAppName    string
 	RedditAppSecret  string
 	DiscordAppSecret string
@@ -38,7 +38,7 @@ type configStruct struct {
 	VoteChannelCategoryID string `json:"VoteChannelCategoryID"`
 	Kaguya                string `json:"Kaguya"`
 	MsgAttachRemoval      string `json:"MsgAttachRemoval"`
-	PlayingMsg            string `json:"PlayingMsg"`
+	PlayingMsg            []string `json:"PlayingMsg"`
 }
 
 type configSecrets struct {

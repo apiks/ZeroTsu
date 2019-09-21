@@ -297,6 +297,7 @@ func init() {
 	add(&command{
 		execute:  scheduleCommand,
 		trigger:  "schedule",
+		aliases:  []string{"schedul", "schedu", "schedle", "schdule", "animeschedule", "anischedule"},
 		desc:     "Print anime air times SUBBED. Add a day to specify a day",
 		category: "normal",
 		DMAble: true,
