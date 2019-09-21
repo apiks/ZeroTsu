@@ -486,9 +486,9 @@ func RemindMeWrite(remindMe map[string]*RemindMeSlice) error {
 	// Checks if the user has hit the db limit
 	for _, remindMeSlice := range SharedInfo.RemindMes {
 		if remindMeSlice.Premium && len(remindMeSlice.RemindMeSlice) > 299 {
-			return fmt.Errorf("Error: You have reached the RemindMe limit (299) for this account.")
-		} else if !remindMeSlice.Premium && len(remindMeSlice.RemindMeSlice) > 99 {
-			return fmt.Errorf("Error: You have reached the RemindMe limit (100) for this account.")
+			return fmt.Errorf("Error: You have reached the RemindMe limit (300) for this premium account.")
+		} else if !remindMeSlice.Premium && len(remindMeSlice.RemindMeSlice) > 49 {
+			return fmt.Errorf("Error: You have reached the RemindMe limit (50) for this account. Please remove some or increase it to 300 by upgrading to a premium user at <https://patreon.com/apiks>")
 		}
 	}
 
@@ -529,9 +529,9 @@ func AnimeSubsWrite(animeSubs map[string][]ShowSub) error {
 func VoteInfoWrite(info map[string]*VoteInfo, guildID string) error {
 
 	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].VoteInfoMap) > 199 {
-		return fmt.Errorf("Error: You have reached the vote limit (200) for this server.")
-	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].VoteInfoMap) > 99 {
-		return fmt.Errorf("Error: You have reached the vote limit (100) for this server.")
+		return fmt.Errorf("Error: You have reached the vote limit (200) for this premium server.")
+	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].VoteInfoMap) > 49 {
+		return fmt.Errorf("Error: You have reached the vote limit (50) for this server. Please wait for some to be removed or increase them to 200 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
 
 	// Turns info slice into byte ready to be pushed to file
@@ -553,9 +553,9 @@ func VoteInfoWrite(info map[string]*VoteInfo, guildID string) error {
 func TempChaWrite(info map[string]*TempChaInfo, guildID string) error {
 
 	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].TempChaMap) > 199 {
-		return fmt.Errorf("Error: You have reached the temporary channel limit (200) for this server.")
-	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].TempChaMap) > 99 {
-		return fmt.Errorf("Error: You have reached the temporary channel limit (100) for this server.")
+		return fmt.Errorf("Error: You have reached the temporary channel limit (200) for this premium server.")
+	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].TempChaMap) > 49 {
+		return fmt.Errorf("Error: You have reached the temporary channel limit (50) for this server. Please wait for some to be removed or increase them to 200 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
 
 	// Turns info map into byte ready to be pushed to file
@@ -577,9 +577,9 @@ func TempChaWrite(info map[string]*TempChaInfo, guildID string) error {
 func ReactJoinWrite(info map[string]*ReactJoin, guildID string) error {
 
 	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].ReactJoinMap) > 399 {
-		return fmt.Errorf("Error: You have reached the react role giving limit (400) for this server.")
-	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].ReactJoinMap) > 149 {
-		return fmt.Errorf("Error: You have reached the react role giving limit (150) for this server.")
+		return fmt.Errorf("Error: You have reached the react autorole limit (400) for this premium server.")
+	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].ReactJoinMap) > 99 {
+		return fmt.Errorf("Error: You have reached the react autorole limit (100) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
 
 	// Turns info slice into byte ready to be pushed to file
@@ -601,9 +601,9 @@ func ReactJoinWrite(info map[string]*ReactJoin, guildID string) error {
 func RafflesWrite(raffle []Raffle, guildID string) error {
 
 	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].Raffles) > 199 {
-		return fmt.Errorf("Error: You have reached the raffle limit (200) for this server.")
+		return fmt.Errorf("Error: You have reached the raffle limit (200) for this premium server.")
 	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].Raffles) > 49 {
-		return fmt.Errorf("Error: You have reached the raffle limit (50) for this server.")
+		return fmt.Errorf("Error: You have reached the raffle limit (50) for this server. Please remove some or increase them to 200 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
 
 	// Turns that slice into bytes to be ready to written to file
@@ -625,9 +625,9 @@ func RafflesWrite(raffle []Raffle, guildID string) error {
 func WaifusWrite(waifu []Waifu, guildID string) error {
 
 	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].Waifus) > 399 {
-		return fmt.Errorf("Error: You have reached the waifu limit (400) for this server.")
+		return fmt.Errorf("Error: You have reached the waifu limit (400) for this premium server.")
 	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].Waifus) > 49 {
-		return fmt.Errorf("Error: You have reached the waifu limit (50) for this server.")
+		return fmt.Errorf("Error: You have reached the waifu limit (50) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
 
 	// Turns that slice into bytes to be ready to written to file
@@ -648,10 +648,10 @@ func WaifusWrite(waifu []Waifu, guildID string) error {
 // Writes WaifuTrades to waifutrades.json
 func WaifuTradesWrite(trade []WaifuTrade, guildID string) error {
 
-	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].WaifuTrades) > 299 {
-		return fmt.Errorf("Error: This server has reached the waifu trade limit (300).")
+	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].WaifuTrades) > 499 {
+		return fmt.Errorf("Error: This premium server has reached the waifu trade limit (500).")
 	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].WaifuTrades) > 149 {
-		return fmt.Errorf("Error: This server has reached the waifu trade limit (150).")
+		return fmt.Errorf("Error: This server has reached the waifu trade limit (150). Please contact the bot creator or increase the limit to 500 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
 
 	// Turns that slice into bytes to be ready to written to file
@@ -727,9 +727,9 @@ func RaffleRemove(raffle string, guildID string) error {
 func FiltersWrite(phrase string, guildID string) error {
 
 	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].Filters) > 299 {
-		return fmt.Errorf("Error: You have reached the filter limit (300) for this server.")
-	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].Filters) > 99 {
-		return fmt.Errorf("Error: You have reached the filter limit (100) for this server.")
+		return fmt.Errorf("Error: You have reached the filter limit (300) for this premium server.")
+	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].Filters) > 49 {
+		return fmt.Errorf("Error: You have reached the filter limit (50) for this server. Please remove some or increase them to 300 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
 
 	var filterStruct = Filter{phrase}
@@ -805,9 +805,9 @@ func FiltersRemove(phrase string, guildID string) error {
 func ExtensionsWrite(extension string, guildID string) error {
 
 	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].ExtensionList) > 199 {
-		return fmt.Errorf("Error: You have reached the file extension filter limit (200) for this server.")
-	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].ExtensionList) > 99 {
-		return fmt.Errorf("Error: You have reached the file extension filter (100) for this server.")
+		return fmt.Errorf("Error: You have reached the file extension filter limit (300) for this premium server.")
+	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].ExtensionList) > 49 {
+		return fmt.Errorf("Error: You have reached the file extension filter (50) for this server. Please remove some or increase them to 300 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
 
 	if strings.HasPrefix(extension, ".") {
@@ -894,9 +894,9 @@ func ExtensionsRemove(extension string, guildID string) error {
 func MessRequirementWrite(phrase string, channel string, filterType string, guildID string) error {
 
 	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].MessageRequirements) > 149 {
-		return fmt.Errorf("Error: You have reached the message requirement filter limit (149) for this server.")
+		return fmt.Errorf("Error: You have reached the message requirement filter limit (150) for this premium server.")
 	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].MessageRequirements) > 49 {
-		return fmt.Errorf("Error: You have reached the message requirement filter limit (49) for this server.")
+		return fmt.Errorf("Error: You have reached the message requirement filter limit (50) for this server. Please remove some or increase them to 150 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
 
 	var MessRequirementStruct = MessRequirement{phrase, filterType, channel, ""}
@@ -1037,9 +1037,9 @@ func SpoilerRolesDelete(roleID string, guildID string) {
 func RssThreadsWrite(subreddit, author, title, postType, channelID, guildID string, pin bool) error {
 
 	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].RssThreads) > 399 {
-		return fmt.Errorf("Error: You have reached the RSS thread limit (400) for this server.")
-	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].RssThreads) > 149 {
-		return fmt.Errorf("Error: You have reached the RSS thread limit (150) for this server.")
+		return fmt.Errorf("Error: You have reached the RSS thread autopost limit (400) for this server.")
+	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].RssThreads) > 99 {
+		return fmt.Errorf("Error: You have reached the RSS thread autopost limit (100) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
 
 	// Checks if a thread with these settings exist already
