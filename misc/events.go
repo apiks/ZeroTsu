@@ -447,7 +447,6 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 	}
 
 	voiceChannels = GuildMap[v.GuildID].GuildConfig.VoiceChas
-	guildBotLog := GuildMap[v.GuildID].GuildConfig.BotLog.ID
 	MapMutex.Unlock()
 
 	// Goes through each guild voice channel and removes/adds roles
