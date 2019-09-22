@@ -345,7 +345,7 @@ func removePunishmentEmbed(s *discordgo.Session, m *discordgo.Message, punishmen
 	var embedMess discordgo.MessageEmbed
 
 	// Sets punishment embed color
-	embedMess.Color = 0x00ff00
+	embedMess.Color = 16758465
 	embedMess.Title = fmt.Sprintf("Successfuly removed punishment: _%v_", punishment)
 
 	// Sends embed in channel

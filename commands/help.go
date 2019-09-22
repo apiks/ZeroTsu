@@ -92,7 +92,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 	}
 
 	// Set embed color
-	embedMess.Color = 0x00ff00
+	embedMess.Color = 16758465
 
 	// Sets user field
 	user.Name = "User:"
@@ -237,7 +237,7 @@ func helpChannelEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	misc.MapMutex.Unlock()
 
 	// Set embed color
-	embedMess.Color = 0x00ff00
+	embedMess.Color = 16758465
 
 	// Sets footer field
 	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
@@ -313,7 +313,7 @@ func helpFiltersEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	misc.MapMutex.Unlock()
 
 	// Set embed color
-	embedMess.Color = 0x00ff00
+	embedMess.Color = 16758465
 
 	// Sets footer field
 	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
@@ -389,7 +389,7 @@ func helpMiscEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	misc.MapMutex.Unlock()
 
 	// Set embed color
-	embedMess.Color = 0x00ff00
+	embedMess.Color = 16758465
 
 	// Sets footer field
 	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
@@ -470,7 +470,7 @@ func helpNormalEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	misc.MapMutex.Unlock()
 
 	// Set embed color
-	embedMess.Color = 0x00ff00
+	embedMess.Color = 16758465
 
 	// Sets footer field
 	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
@@ -547,7 +547,7 @@ func helpPunishmentEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	misc.MapMutex.Unlock()
 
 	// Set embed color
-	embedMess.Color = 0x00ff00
+	embedMess.Color = 16758465
 
 	// Sets footer field
 	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
@@ -629,7 +629,7 @@ func helpReactsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	misc.MapMutex.Unlock()
 
 	// Set embed color
-	embedMess.Color = 0x00ff00
+	embedMess.Color = 16758465
 
 	// Sets footer field
 	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
@@ -705,7 +705,7 @@ func helpRssEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	misc.MapMutex.Unlock()
 
 	// Set embed color
-	embedMess.Color = 0x00ff00
+	embedMess.Color = 16758465
 
 	// Sets footer field
 	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
@@ -781,7 +781,7 @@ func helpStatsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	misc.MapMutex.Unlock()
 
 	// Set embed color
-	embedMess.Color = 0x00ff00
+	embedMess.Color = 16758465
 
 	// Sets footer field
 	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
@@ -857,7 +857,7 @@ func helpRaffleEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	misc.MapMutex.Unlock()
 
 	// Set embed color
-	embedMess.Color = 0x00ff00
+	embedMess.Color = 16758465
 
 	// Sets footer field
 	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
@@ -939,7 +939,7 @@ func helpWaifuEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	misc.MapMutex.Unlock()
 
 	// Set embed color
-	embedMess.Color = 0x00ff00
+	embedMess.Color = 16758465
 
 	// Sets footer field
 	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
@@ -1015,7 +1015,7 @@ func helpAutopostEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	misc.MapMutex.Unlock()
 
 	// Set embed color
-	embedMess.Color = 0x00ff00
+	embedMess.Color = 16758465
 
 	// Sets footer field
 	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
@@ -1091,7 +1091,7 @@ func helpGuildSettingsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	misc.MapMutex.Unlock()
 
 	// Set embed color
-	embedMess.Color = 0x00ff00
+	embedMess.Color = 16758465
 
 	// Sets footer field
 	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
@@ -1241,7 +1241,7 @@ func init() {
 		DMAble:   true,
 	})
 	//add(&command{
-	///	execute:  helpPlaintextCommand,
+	//	execute:  helpPlaintextCommand,
 	//	trigger:  "helpplain",
 	//	desc:     "Prints all available commands in plain text.",
 	//	category: "normal",

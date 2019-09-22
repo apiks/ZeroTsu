@@ -37,10 +37,12 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[m.GuildID]; !ok {
 		misc.InitDB(m.GuildID)
 		misc.LoadGuilds()
 	}
+	misc.MapMutex.Unlock()
 
 	// Pulls info on message author
 	mem, err := s.State.Member(m.GuildID, m.Author.ID)
@@ -137,10 +139,12 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 		return
 	}
 
+	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[m.GuildID]; !ok {
 		misc.InitDB(m.GuildID)
 		misc.LoadGuilds()
 	}
+	misc.MapMutex.Unlock()
 
 	// Pulls info on message author
 	mem, err := s.State.Member(m.GuildID, m.Author.ID)
@@ -237,10 +241,12 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 		return
 	}
 
+	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[r.GuildID]; !ok {
 		misc.InitDB(r.GuildID)
 		misc.LoadGuilds()
 	}
+	misc.MapMutex.Unlock()
 
 	// Pulls info on message author
 	mem, err := s.State.Member(r.GuildID, r.UserID)
@@ -606,6 +612,9 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID
 	now := t.Format(time.RFC3339)
 	embedMess.Timestamp = now
 
+	// Sets ban embed color
+	embedMess.Color = 0xff0000
+
 	// Saves user avatar as thumbnail
 	embedThumbnail.URL = m.Author.AvatarURL("128")
 
@@ -867,10 +876,12 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[m.GuildID]; !ok {
 		misc.InitDB(m.GuildID)
 		misc.LoadGuilds()
 	}
+	misc.MapMutex.Unlock()
 
 	// Pulls info on message author
 	mem, err := s.State.Member(m.GuildID, m.Author.ID)

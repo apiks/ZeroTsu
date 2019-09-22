@@ -93,7 +93,7 @@ func init() {
 	add(&command{
 		execute:  aboutCommand,
 		trigger:  "about",
-		desc:     "Get info about me.",
+		desc:     "Display more information about me",
 		category: "normal",
 		DMAble: true,
 	})

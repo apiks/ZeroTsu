@@ -569,14 +569,13 @@ func ResetSubscriptions() {
 
 // Embed message for subscriptions
 func subEmbed(s *discordgo.Session, show misc.ShowAirTime, channelID string) error {
-
 	imageLink := fmt.Sprintf("https://animeschedule.net/img/shows/%v.webp", show.Key)
 	embed := &discordgo.MessageEmbed{
 		URL:         fmt.Sprintf("https://animeschedule.net/shows/%v", show.Key),
 		Title:       show.Name,
 		Description: fmt.Sprintf("__**%v**__ is out!", show.Episode),
 		Timestamp:   time.Now().Format(time.RFC3339),
-		Color:       0x00ff00,
+		Color:       16758465,
 		Image:       &discordgo.MessageEmbedImage{
 			Width:  30,
 			Height: 60,

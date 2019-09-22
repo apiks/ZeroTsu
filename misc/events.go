@@ -147,7 +147,7 @@ func UnbanEmbed(s *discordgo.Session, user *UserInfo, mod string, botLog string)
 	embedMess.Timestamp = now
 
 	// Set embed color
-	embedMess.Color = 0x00ff00
+	embedMess.Color = 16758465
 
 	if mod == "" {
 		embedMess.Title = fmt.Sprintf("%v#%v has been unbanned.", user.Username, user.Discrim)
@@ -465,7 +465,7 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 				noRemovalRoles = append(noRemovalRoles, chaRole)
 			}
 
-			// Checks if this role should be removable.
+			// Checks if this role should be removable
 			for _, role := range noRemovalRoles {
 				if chaRole.ID == role.ID {
 					dontRemove = true
