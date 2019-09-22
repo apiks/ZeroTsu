@@ -586,7 +586,6 @@ func subEmbed(s *discordgo.Session, show misc.ShowAirTime, channelID string) err
 
 	_, err := s.ChannelMessageSendEmbed(channelID, embed)
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 
