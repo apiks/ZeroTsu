@@ -25,7 +25,7 @@ func inviteEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embed := &discordgo.MessageEmbed{
 		URL:         inviteLink,
 		Title:       "Invite Link",
-		Description: "Be sure to assign command roles after inviting it if you want it to work with non-administrator permission moderators!",
+		Description: "Be sure to assign command roles after inviting me if you want it to work with non-administrator permission moderators!",
 		Color:       16758465,
 		Thumbnail: &discordgo.MessageEmbedThumbnail {
 			URL:s.State.User.AvatarURL("256"),
