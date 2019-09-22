@@ -80,16 +80,23 @@ func removePlayingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
+	var (
+		guildPrefix = "."
+		guildBotLog string
+	)
+
+	if m.GuildID != "" {
+		misc.MapMutex.Lock()
+		guildPrefix = misc.GuildMap[m.GuildID].GuildConfig.Prefix
+		guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+		misc.MapMutex.Unlock()
+	}
 
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vremoveplayingmsg [msg]`", guildPrefix))
-		if err != nil {
+		if err != nil && guildBotLog != "" {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
 				return
@@ -112,7 +119,7 @@ func removePlayingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	if !foundIndex {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such playing message.")
-		if err != nil {
+		if err != nil  && guildBotLog != "" {
 			misc.MapMutex.Unlock()
 			_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			return
@@ -122,14 +129,14 @@ func removePlayingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	config.PlayingMsg = append(config.PlayingMsg[:index], config.PlayingMsg[index+1:]...)
 	err := config.WriteConfig()
-	if err != nil {
+	if err != nil  && guildBotLog != "" {
 		misc.MapMutex.Unlock()
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Removed playing message: `%v`", commandStrings[1]))
-	if err != nil {
+	if err != nil  && guildBotLog != "" {
 		_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 	}
 
@@ -143,7 +150,7 @@ func removePlayingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 	} else {
 		err = s.UpdateStatus(0, "")
 	}
-	if err != nil {
+	if err != nil  && guildBotLog != "" {
 		misc.MapMutex.Unlock()
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
@@ -160,16 +167,29 @@ func serversCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I am in %v servers.", len(s.State.Guilds)))
 	if err != nil {
-
-		misc.MapMutex.Lock()
-		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-		misc.MapMutex.Unlock()
-
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
+		if m.GuildID != "" {
+			misc.MapMutex.Lock()
+			guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+			misc.MapMutex.Unlock()
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 		}
+	}
+}
+
+// Prints BOT uptime
+func uptimeCommand(s *discordgo.Session, m *discordgo.Message) {
+	if m.Author.ID != config.OwnerID {
 		return
+	}
+
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I've been online for %s.", misc.Uptime().Truncate(time.Second).String()))
+	if err != nil {
+		if m.GuildID != "" {
+			misc.MapMutex.Lock()
+			guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+			misc.MapMutex.Unlock()
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+		}
 	}
 }
 
@@ -193,7 +213,8 @@ func init() {
 	add(&command{
 		execute: playingMsgCommand,
 		trigger: "playingmsg",
-		desc:    "Prints or adds a BOT playing message.",
+		desc:    "Prints or adds a BOT playing message",
+		DMAble: true,
 		elevated: true,
 		admin: true,
 	})
@@ -201,14 +222,25 @@ func init() {
 		execute: removePlayingMsgCommand,
 		trigger: "removeplayingmsg",
 		aliases:  []string{"killplayingmsg"},
-		desc:    "Removes a BOT playing message.",
+		desc:    "Removes a BOT playing message",
+		DMAble: true,
 		elevated: true,
 		admin: true,
 	})
 	add(&command{
 		execute: serversCommand,
 		trigger: "servers",
-		desc:    "Prints the number of servers the BOT is in.",
+		desc:    "Prints the number of servers the BOT is in",
+		DMAble: true,
+		elevated: true,
+		admin: true,
+	})
+	add(&command{
+		execute:  uptimeCommand,
+		trigger:  "uptime",
+		desc:     "Print how long I've been on for",
+		category: "normal",
+		DMAble: true,
 		elevated: true,
 		admin: true,
 	})

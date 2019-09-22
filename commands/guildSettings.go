@@ -1376,6 +1376,7 @@ func init() {
 		execute:  pingMessageCommand,
 		trigger:  "pingmessage",
 		desc:     "Views or changes the current ping message.",
+		aliases:  []string{"pingmsg"},
 		elevated: true,
 		admin:    true,
 		category: "settings",
