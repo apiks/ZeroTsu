@@ -45,7 +45,7 @@ func init() {
 		execute:  inviteCommand,
 		trigger:  "invite",
 		aliases:  []string{"inv", "invit"},
-		desc:     "Display the my server invite link",
+		desc:     "Display my server invite link",
 		category: "normal",
 		DMAble: true,
 	})
