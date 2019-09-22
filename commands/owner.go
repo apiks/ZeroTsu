@@ -239,7 +239,6 @@ func init() {
 		execute:  uptimeCommand,
 		trigger:  "uptime",
 		desc:     "Print how long I've been on for",
-		category: "normal",
 		DMAble: true,
 		elevated: true,
 		admin: true,
