@@ -422,7 +422,6 @@ func animeSubsHandler(s *discordgo.Session) {
 					}
 					err := subEmbed(s, scheduleShow, misc.GuildMap[userID].Autoposts["newepisodes"].ID)
 					if err != nil {
-						_, _ = s.ChannelMessageSend(misc.GuildMap[userID].GuildConfig.BotLog.ID, err.Error())
 						continue
 					}
 					// Sets the show as notified for that guild
