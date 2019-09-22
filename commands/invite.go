@@ -1,32 +1,43 @@
 package commands
 
 import (
-	"fmt"
-
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
+const inviteLink = "https://discordapp.com/api/oauth2/authorize?client_id=614495694769618944&permissions=401960278&scope=bot"
+
 // Prints Public ZeroTsu's invite link
 func inviteCommand(s *discordgo.Session, m *discordgo.Message) {
-
-	inviteLink := "https://discordapp.com/api/oauth2/authorize?client_id=614495694769618944&permissions=401960278&scope=bot"
-
-	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Invite me to your server by using this link!\n\n<%v>", inviteLink))
+	err := inviteEmbed(s, m)
 	if err != nil {
-		var guildBotLog string
 		if m.GuildID != "" {
 			misc.MapMutex.Lock()
-			guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+			guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 			misc.MapMutex.Unlock()
-		} else {
-			return
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
 		}
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
-		return
+	}
+}
+
+func inviteEmbed(s *discordgo.Session, m *discordgo.Message) error {
+	embed := &discordgo.MessageEmbed{
+		URL:         inviteLink,
+		Title:       "Invite Link",
+		Description: "Be sure to assign command roles after inviting it if you want it to work with non-administrator permission moderators!",
+		Color:       16758465,
+		Thumbnail: &discordgo.MessageEmbedThumbnail {
+			URL:s.State.User.AvatarURL("256"),
+		},
 	}
 
+	_, err := s.ChannelMessageSendEmbed(m.ChannelID, embed)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func init() {
@@ -34,7 +45,7 @@ func init() {
 		execute:  inviteCommand,
 		trigger:  "invite",
 		aliases:  []string{"inv", "invit"},
-		desc:     "Print the BOT's invite link",
+		desc:     "Display the my server invite link",
 		category: "normal",
 		DMAble: true,
 	})
