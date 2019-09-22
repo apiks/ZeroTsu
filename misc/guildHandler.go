@@ -1234,11 +1234,18 @@ func IOReadDir(root string) ([]string, error) {
 }
 
 // Initializes BOT DB files
-func InitDB(guildID string) {
+func InitDB(s *discordgo.Session, guildID string) {
 
 	path := fmt.Sprintf("%v/%v", dbPath, guildID)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		os.Mkdir(path, 0777)
+		// Send message to support server mod log that a server has been created on the public ZeroTsu
+		if s.State.User.ID == "614495694769618944" {
+			guild, err := s.Guild(guildID)
+			if err == nil {
+				_, _ = s.ChannelMessageSend("619899424428130315", fmt.Sprintf("A DB entry has been created for guild: %v", guild.Name))
+			}
+		}
 	}
 	for _, name := range guildFileNames {
 		file, err := os.OpenFile(fmt.Sprintf("%v/%v/%v", dbPath, guildID, name), os.O_RDONLY|os.O_CREATE, 0666)
