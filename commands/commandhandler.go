@@ -99,7 +99,7 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[m.GuildID]; !ok {
-		misc.InitDB(m.GuildID)
+		misc.InitDB(s, m.GuildID)
 		misc.LoadGuilds()
 	}
 
