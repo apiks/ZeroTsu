@@ -330,7 +330,7 @@ func RSSParser(s *discordgo.Session, guildID string) {
 		}
 	}
 
-	threadsToPost := make(map[*gofeed.Item]*RssThread)
+	threadsToPost := make(map[*RssThread][]*gofeed.Item)
 
 	for _, thread := range rssThreads {
 
@@ -382,8 +382,8 @@ func RSSParser(s *discordgo.Session, guildID string) {
 			MapMutex.Unlock()
 
 			// Adds the thread to the threads to send map
-			if _, ok := threadsToPost[item]; !ok {
-				threadsToPost[item] = &thread
+			if _, ok := threadsToPost[&thread]; !ok {
+				threadsToPost[&thread] = append(threadsToPost[&thread], item)
 			}
 		}
 	}
@@ -391,50 +391,52 @@ func RSSParser(s *discordgo.Session, guildID string) {
 	// Sends the threads concurrently in slow mode
 	go func() {
 		redditFeedBlock = true
-		for item, thread := range threadsToPost {
-			// Sends the feed item
-			time.Sleep(time.Second * 3)
-			message, err := s.ChannelMessageSend(thread.ChannelID, item.Link)
-			if err != nil {
-				continue
-			}
-
-			// Pins/unpins the feed items if necessary
-			if !thread.Pin {
-				delete(threadsToPost, item)
-				continue
-			}
-			if _, ok := pinnedItems[item]; ok {
-				delete(threadsToPost, item)
-				continue
-			}
-
-			pins, err := s.ChannelMessagesPinned(message.ChannelID)
-			if err != nil {
-				delete(threadsToPost, item)
-				continue
-			}
-			// Unpins if necessary
-			for _, pin := range pins {
-
-				// Checks for whether the pin is one that should be unpinned
-				if pin.Author.ID != s.State.User.ID {
-					continue
-				}
-				if !strings.HasPrefix(strings.ToLower(pin.Content), fmt.Sprintf("https://www.reddit.com/r/%v/comments/", thread.Subreddit)) ||
-					!strings.HasPrefix(strings.ToLower(pin.Content), fmt.Sprintf("http://www.reddit.com/r/%v/comments/", thread.Subreddit)) {
-					continue
-				}
-
-				err = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
+		for thread, items := range threadsToPost {
+			for _, item := range items {
+				// Sends the feed item
+				time.Sleep(time.Second * 3)
+				message, err := s.ChannelMessageSend(thread.ChannelID, item.Link)
 				if err != nil {
 					continue
 				}
+
+				// Pins/unpins the feed items if necessary
+				if !thread.Pin {
+					delete(threadsToPost, thread)
+					continue
+				}
+				if _, ok := pinnedItems[item]; ok {
+					delete(threadsToPost, thread)
+					continue
+				}
+
+				pins, err := s.ChannelMessagesPinned(message.ChannelID)
+				if err != nil {
+					delete(threadsToPost, thread)
+					continue
+				}
+				// Unpins if necessary
+				for _, pin := range pins {
+
+					// Checks for whether the pin is one that should be unpinned
+					if pin.Author.ID != s.State.User.ID {
+						continue
+					}
+					if !strings.HasPrefix(strings.ToLower(pin.Content), fmt.Sprintf("https://www.reddit.com/r/%v/comments/", thread.Subreddit)) ||
+						!strings.HasPrefix(strings.ToLower(pin.Content), fmt.Sprintf("http://www.reddit.com/r/%v/comments/", thread.Subreddit)) {
+						continue
+					}
+
+					err = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
+					if err != nil {
+						continue
+					}
+				}
+				// Pins
+				_ = s.ChannelMessagePin(message.ChannelID, message.ID)
+				pinnedItems[item] = true
+				delete(threadsToPost, thread)
 			}
-			// Pins
-			_ = s.ChannelMessagePin(message.ChannelID, message.ID)
-			pinnedItems[item] = true
-			delete(threadsToPost, item)
 		}
 		redditFeedBlock = false
 	}()
