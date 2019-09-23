@@ -393,7 +393,7 @@ func RSSParser(s *discordgo.Session, guildID string) {
 		redditFeedBlock = true
 		for item, thread := range threadsToPost {
 			// Sends the feed item
-			time.Sleep(time.Second * 4)
+			time.Sleep(time.Second * 3)
 			message, err := s.ChannelMessageSend(thread.ChannelID, item.Link)
 			if err != nil {
 				continue
