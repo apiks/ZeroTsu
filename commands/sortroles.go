@@ -209,7 +209,7 @@ func init() {
 	add(&command{
 		execute:  sortRolesCommand,
 		trigger:  "sortroles",
-		desc:     "Sorts all spoiler roles alphabetically between dummy opt-in roles.",
+		desc:     "Sorts all spoiler roles alphabetically between dummy opt-in roles",
 		elevated: true,
 		category: "misc",
 	})

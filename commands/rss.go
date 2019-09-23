@@ -9,8 +9,8 @@ import (
 	"github.com/r-anime/ZeroTsu/misc"
 )
 
-// Sets an RSS by subreddit and other params
-func setRssCommand(s *discordgo.Session, m *discordgo.Message) {
+// Sets a reddit feed by subreddit and other params
+func setRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
 		subreddit string
@@ -31,7 +31,7 @@ func setRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	cmdStrs := strings.Split(messageLowercase, " ")
 
 	if len(cmdStrs) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"setrss [u/author]* [type]* [pin]* [r/subreddit] [title]*`\n\n* are optional.\n\nType refers to the post sort filter. Valid values are `hot`, `new` and `rising`. Defaults to `hot`.\nPin refers to whether to pin the post when the bot posts it and unpin the previous bot pin of the same subreddit. Use `true` or `false` as values.\nTitle is what a post title should start with for the BOT to post it. Leave empty for all posts.\n\nFor author and subreddit be sure to add the prefixes `u/` and `r/`. Does not work with hidden or quarantined subs.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"addfeed [u/author]* [type]* [pin]* [r/subreddit] [title]*`\n\n* are optional.\n\nType refers to the post sort filter. Valid values are `hot`, `new` and `rising`. Defaults to `hot`.\nPin refers to whether to pin the post when the bot posts it and unpin the previous bot pin of the same subreddit. Use `true` or `false` as values.\nTitle is what a post title should start with for the BOT to post it. Leave empty for all posts.\n\nFor author and subreddit be sure to add the prefixes `u/` and `r/`. Does not work with hidden or quarantined subs.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -103,7 +103,7 @@ func setRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	misc.MapMutex.Unlock()
 
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! This RSS setting has been saved."))
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! This reddit feed has been saved."))
 	if err != nil {
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
@@ -113,8 +113,8 @@ func setRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-// Removes a previously set RSS
-func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
+// Removes a previously set reddit feed
+func removeRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
 		subreddit 	string
@@ -130,9 +130,9 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
-	// Check if there are set RSS settings
+	// Check if there are set reddit feed settings
 	if len(misc.GuildMap[m.GuildID].RssThreads) == 0 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error. There are no set rss threads.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error. There are no set reddit feeds.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -151,11 +151,11 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	cmdStrs := strings.Split(messageLowercase, " ")
 
 	if len(cmdStrs) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"removerss [type]* [u/author]* [channel]* [r/subreddit] [title]*`\n\n* is optional\n\n" +
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"removefeed [type]* [u/author]* [channel]* [r/subreddit] [title]*`\n\n* is optional\n\n" +
 			"Type refers to the post sort filter. Valid values are `hot`, `new` and `rising`. Defaults to `hot`.\n" +
 			"\nAuthor is the name of the post author.\n" +
 			"\nChannel is the ID or name of a channel from which to remove\n" +
-			"\nTitle is what a post title should start with or be for the BOT to post it. Leave empty for all RSS settings fulfilling [type] and [r/subreddit].")
+			"\nTitle is what a post title should start with or be for the BOT to post it. Leave empty for all feeds fulfilling [type] and [r/subreddit].")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -224,7 +224,7 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	misc.MapMutex.Unlock()
 
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! This RSS setting has been removed."))
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! This reddit feed has been removed."))
 	if err != nil {
 		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 		if err != nil {
@@ -234,8 +234,8 @@ func removeRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-// Prints all currently set RSS
-func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
+// Prints all currently set reddit feeds
+func viewRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
 		message		 string
@@ -246,7 +246,7 @@ func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 
 	if len(misc.GuildMap[m.GuildID].RssThreads) == 0 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no set RSS threads.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no set reddit feeds.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 			if err != nil {
@@ -260,7 +260,7 @@ func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Iterates through all the rss settings if they exist and adds them to the message string and print them
+	// Iterates through all the reddit feeds if they exist and adds them to the message string and print them
 	for i := 0; i < len(misc.GuildMap[m.GuildID].RssThreads); i++ {
 		// Format print string
 		message += fmt.Sprintf("**r/%v**", misc.GuildMap[m.GuildID].RssThreads[i].Subreddit)
@@ -300,7 +300,7 @@ func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
 	for i := 0; i < len(splitMessage); i++ {
 		_, err := s.ChannelMessageSend(m.ChannelID, splitMessage[i])
 		if err != nil {
-			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot send rss message.")
+			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot send feed message.")
 			if err != nil {
 				_, _ = s.ChannelMessageSend(guildBotLog, err.Error())
 				return
@@ -311,27 +311,27 @@ func viewRssCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func init() {
 	add(&command{
-		execute:  setRssCommand,
-		trigger:  "setrss",
-		aliases: []string{"addrss"},
-		desc:     "Assigns a reddit RSS to the channel.",
+		execute:  setRedditFeedCommand,
+		trigger:  "addfeed",
+		aliases:  []string{"setfeed", "adfeed", "addreddit", "setreddit"},
+		desc:     "Adds a reddit feed to the channel",
 		elevated: true,
-		category: "rss",
+		category: "reddit",
 	})
 	add(&command{
-		execute:  removeRssCommand,
-		trigger:  "removerss",
-		aliases: []string{"killrss", "deleterss"},
-		desc:     "Removes a previously set reddit RSS.",
+		execute:  removeRedditFeedCommand,
+		trigger:  "removefeed",
+		aliases:  []string{"killfeed", "deletefeed", "removereddit", "killreddit", "deletereddit"},
+		desc:     "Removes a reddit feed",
 		elevated: true,
-		category: "rss",
+		category: "reddit",
 	})
 	add(&command{
-		execute:  viewRssCommand,
-		trigger:  "viewrss",
-		aliases:  []string{"showrss", "rssview", "rssshow", "viewrs", "showrs", "rss"},
-		desc:     "Prints all currently set reddit RSS.",
+		execute:  viewRedditFeedCommand,
+		trigger:  "feeds",
+		aliases:  []string{"showreddit", "redditview", "redditshow", "printfeed", "viewfeeds", "showfeeds", "showfeed", "viewfeed", "feed"},
+		desc:     "Prints all currently set Reddit feeds",
 		elevated: true,
-		category: "rss",
+		category: "reddit",
 	})
 }

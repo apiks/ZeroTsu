@@ -596,7 +596,7 @@ func init() {
 		execute:  subscribeCommand,
 		trigger:  "sub",
 		aliases:  []string{"subscribe", "subs", "animesub", "subanime", "addsub"},
-		desc:     "Subscribe to get DMs whenever a specific anime show's episodes are released (subbed where applicable.) Please have your DM settings accept messages from non-friends for it to work.",
+		desc:     "Get a message whenever an anime's new episode is released (subbed if possible). Please have your DM settings accept messages from non-friends",
 		category: "normal",
 		DMAble: true,
 	})
@@ -604,7 +604,7 @@ func init() {
 		execute:  unsubscribeCommand,
 		trigger:  "unsub",
 		aliases:  []string{"unsubscribe", "unsubs", "unanimesub", "unsubanime", "removesub", "killsub", "stopsub"},
-		desc:     "Unsubscribe from getting notifications about a specific anime.",
+		desc:     "Stop getting messages whenever an anime's new episodes are released",
 		category: "normal",
 		DMAble: true,
 	})
@@ -612,7 +612,7 @@ func init() {
 		execute:  viewSubscriptions,
 		trigger:  "subs",
 		aliases:  []string{"subscriptions", "animesubs", "showsubs", "showsubscriptions", "viewsubs", "viewsubscriptions"},
-		desc:     "Print which shows you are subscribed to get notifications for.",
+		desc:     "Print which shows you are getting new episode notifications for",
 		category: "normal",
 		DMAble: true,
 	})

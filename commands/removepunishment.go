@@ -357,22 +357,22 @@ func init() {
 	add(&command{
 		execute:  removeWarningCommand,
 		trigger:  "removewarning",
-		desc:     "Removes a user warning by index.",
+		desc:     "Removes a user warning by number",
 		elevated: true,
-		category: "punishment",
+		category: "moderation",
 	})
 	add(&command{
 		execute:  removeKickCommand,
 		trigger:  "removekick",
-		desc:     "Removes a user kick by index.",
+		desc:     "Removes a user kick by number",
 		elevated: true,
-		category: "punishment",
+		category: "moderation",
 	})
 	add(&command{
 		execute:  removeBanCommand,
 		trigger:  "removeban",
-		desc:     "Removes a user ban by index.",
+		desc:     "Removes a user ban by number",
 		elevated: true,
-		category: "punishment",
+		category: "moderation",
 	})
 }

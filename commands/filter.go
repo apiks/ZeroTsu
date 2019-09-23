@@ -39,7 +39,7 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[m.GuildID]; !ok {
-		misc.InitDB(m.GuildID)
+		misc.InitDB(s, m.GuildID)
 		misc.LoadGuilds()
 	}
 	misc.MapMutex.Unlock()
@@ -141,7 +141,7 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 
 	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[m.GuildID]; !ok {
-		misc.InitDB(m.GuildID)
+		misc.InitDB(s, m.GuildID)
 		misc.LoadGuilds()
 	}
 	misc.MapMutex.Unlock()
@@ -243,7 +243,7 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 
 	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[r.GuildID]; !ok {
-		misc.InitDB(r.GuildID)
+		misc.InitDB(s, r.GuildID)
 		misc.LoadGuilds()
 	}
 	misc.MapMutex.Unlock()
@@ -878,7 +878,7 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[m.GuildID]; !ok {
-		misc.InitDB(m.GuildID)
+		misc.InitDB(s, m.GuildID)
 		misc.LoadGuilds()
 	}
 	misc.MapMutex.Unlock()
@@ -947,7 +947,7 @@ func init() {
 		execute:  viewFiltersCommand,
 		trigger:  "filters",
 		aliases:  []string{"viewfilters", "viewfilter"},
-		desc:     "Prints all current filters.",
+		desc:     "Prints all current filters",
 		elevated: true,
 		category: "filters",
 	})
@@ -955,7 +955,7 @@ func init() {
 		execute:  addFilterCommand,
 		trigger:  "addfilter",
 		aliases:  []string{"filter", "setfilter"},
-		desc:     "Adds a phrase to the filters list. Works for reacts and emotes too. User regex for more complex filters.",
+		desc:     "Adds a phrase to the filters list. Works for reacts and emotes too. User regex for more complex filters",
 		elevated: true,
 		category: "filters",
 	})
@@ -963,7 +963,7 @@ func init() {
 		execute:  removeFilterCommand,
 		trigger:  "removefilter",
 		aliases:  []string{"deletefilter", "unfilter"},
-		desc:     "Removes a phrase from the filters list.",
+		desc:     "Removes a phrase from the filters list",
 		elevated: true,
 		category: "filters",
 	})
@@ -971,7 +971,7 @@ func init() {
 		execute:  viewMessRequirementCommand,
 		trigger:  "mrequirements",
 		aliases:  []string{"viewmrequirements", "showmrequirements", "messagerequirements", "messagereqirement", "viewmessrequirements", "messrequirements", "mrequirement", "messrequirement"},
-		desc:     "Prints all current message requirement filters.",
+		desc:     "Prints all current message requirement filters",
 		elevated: true,
 		category: "filters",
 	})
@@ -979,7 +979,7 @@ func init() {
 		execute:  addMessRequirementCommand,
 		trigger:  "mrequire",
 		aliases:  []string{"messrequire", "setmrequire", "setmessrequire", "setmessagerequire", "addmrequire", "messagerequire", "messrequire", "addmessrequire", "addmessagereqyure"},
-		desc:     "Adds a phrase to the message requirement list where it will remove messages that do not contain it.",
+		desc:     "Adds a phrase to the message requirement list where it will remove messages that do not contain it",
 		elevated: true,
 		category: "filters",
 	})
@@ -987,7 +987,7 @@ func init() {
 		execute:  removeMessRequirementCommand,
 		trigger:  "unmrequire",
 		aliases:  []string{"munrequire", "removemrequire", "removemrequirement", "deletemrequire", "deletemrequirement", "unmessrequire", "deletemessrequire", "removemessrequire"},
-		desc:     "Removes a phrase from the message requirement list.",
+		desc:     "Removes a phrase from the message requirement list",
 		elevated: true,
 		category: "filters",
 	})

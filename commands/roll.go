@@ -93,7 +93,7 @@ func init() {
 		execute:  rollCommand,
 		trigger:  "roll",
 		aliases:  []string{"rol", "r"},
-		desc:     "Rolls a number from 1 to 100. Specify a number to change the range.",
+		desc:     "Rolls a number from 1 to 100. Specify a positive number to change the range",
 		category: "normal",
 		DMAble: true,
 	})

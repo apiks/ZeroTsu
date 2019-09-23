@@ -26,12 +26,12 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		return
 	}
 
+	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[m.GuildID]; !ok {
-		misc.InitDB(m.GuildID)
+		misc.InitDB(s, m.GuildID)
 		misc.LoadGuilds()
 	}
 
-	misc.MapMutex.Lock()
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 	guildExtensionFilterType := misc.GuildMap[m.GuildID].GuildConfig.WhitelistFileFilter
 	misc.MapMutex.Unlock()
@@ -278,7 +278,7 @@ func init() {
 		execute:  filterExtensionCommand,
 		trigger:  "addextension",
 		aliases:  []string{"filterextension", "extension"},
-		desc:     "Adds a file extension to the extension blacklist/whitelist.",
+		desc:     "Adds a file extension to the extension blacklist/whitelist",
 		elevated: true,
 		category: "filters",
 	})
@@ -294,7 +294,7 @@ func init() {
 		execute:  viewExtensionsCommand,
 		trigger:  "extensions",
 		aliases:  []string{"filextensions", "filteredextensions", "printextensions"},
-		desc:     "Prints the file extension blacklist/whitelist.",
+		desc:     "Prints the file extension blacklist/whitelist",
 		elevated: true,
 		category: "filters",
 	})

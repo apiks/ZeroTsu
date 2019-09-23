@@ -76,7 +76,7 @@ func init() {
 	add(&command{
 		execute:  avatarCommand,
 		trigger:  "avatar",
-		desc:     "Show user avatar. Add [@mention] or [userID] to specify a user.",
+		desc:     "Show user avatar. Add a @mention or userID to specify a user",
 		category: "normal",
 		DMAble: true,
 	})

@@ -18,7 +18,10 @@ import (
 	"github.com/r-anime/ZeroTsu/config"
 )
 
-var darlingTrigger int
+var (
+	darlingTrigger int
+	redditFeedBlock bool
+)
 
 // Periodic events such as Unbanning and RSS timer every 30 sec
 func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
@@ -29,7 +32,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
 		// Initialize guild if missing
 		MapMutex.Lock()
-		InitDB(guild.ID)
+		InitDB(s, guild.ID)
 		writeAll(guild.ID)
 
 		// Clean up SpoilerRoles.json in each guild
@@ -58,9 +61,9 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	// Sends server count to bot list sites if it's the public ZeroTsu
 	sendServers(s)
 
-	for range time.NewTicker(55 * time.Second).C {
+	for range time.NewTicker(10 * time.Second).C {
 
-		// Checks whether it has to post RSS threads and handle remindMes and handle bans
+		// Checks whether it has to post Reddit feeds and handle remindMes and handle bans
 		for _, guild := range e.Guilds {
 			RSSParser(s, guild.ID)
 			MapMutex.Lock()
@@ -187,7 +190,7 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 		for _, guild := range e.Guilds {
 
 			if _, ok := GuildMap[guild.ID]; !ok {
-				InitDB(guild.ID)
+				InitDB(s, guild.ID)
 				LoadGuilds()
 			}
 
@@ -266,8 +269,13 @@ func TwentyMinTimer(s *discordgo.Session, e *discordgo.Ready) {
 	}
 }
 
-// Pulls the rss thread and prints it
+// Pulls the reddit feed threads and print them
 func RSSParser(s *discordgo.Session, guildID string) {
+
+	// Stops handling of new feed threads if there are some currently being sent
+	if redditFeedBlock {
+		return
+	}
 
 	var pinnedItems = make(map[*gofeed.Item]bool)
 
@@ -313,8 +321,6 @@ func RSSParser(s *discordgo.Session, guildID string) {
 	var subMap = make(map[string]*gofeed.Feed)
 	for _, thread := range rssThreads {
 		if _, ok := subMap[thread.Subreddit]; !ok {
-			// Wait a bit between each parse
-			time.Sleep(200 * time.Millisecond)
 			// Parse feed
 			feed, err := fp.ParseURL(fmt.Sprintf("http://www.reddit.com/r/%v/%v/.rss", thread.Subreddit, thread.PostType))
 			if err != nil {
@@ -323,6 +329,8 @@ func RSSParser(s *discordgo.Session, guildID string) {
 			subMap[fmt.Sprintf("%v:%v", thread.Subreddit, thread.PostType)] = feed
 		}
 	}
+
+	threadsToPost := make(map[*gofeed.Item]*RssThread)
 
 	for _, thread := range rssThreads {
 
@@ -373,8 +381,19 @@ func RSSParser(s *discordgo.Session, guildID string) {
 			rssThreadChecks = GuildMap[guildID].RssThreadChecks
 			MapMutex.Unlock()
 
-			// Sends feed item to chat after 200 ms
-			time.Sleep(200 * time.Millisecond)
+			// Adds the thread to the threads to send map
+			if _, ok := threadsToPost[item]; !ok {
+				threadsToPost[item] = &thread
+			}
+		}
+	}
+
+	// Sends the threads concurrently in slow mode
+	go func() {
+		redditFeedBlock = true
+		for item, thread := range threadsToPost {
+			// Sends the feed item
+			time.Sleep(time.Second * 4)
 			message, err := s.ChannelMessageSend(thread.ChannelID, item.Link)
 			if err != nil {
 				continue
@@ -382,14 +401,17 @@ func RSSParser(s *discordgo.Session, guildID string) {
 
 			// Pins/unpins the feed items if necessary
 			if !thread.Pin {
+				delete(threadsToPost, item)
 				continue
 			}
 			if _, ok := pinnedItems[item]; ok {
+				delete(threadsToPost, item)
 				continue
 			}
 
 			pins, err := s.ChannelMessagesPinned(message.ChannelID)
 			if err != nil {
+				delete(threadsToPost, item)
 				continue
 			}
 			// Unpins if necessary
@@ -412,8 +434,10 @@ func RSSParser(s *discordgo.Session, guildID string) {
 			// Pins
 			_ = s.ChannelMessagePin(message.ChannelID, message.ID)
 			pinnedItems[item] = true
+			delete(threadsToPost, item)
 		}
-	}
+		redditFeedBlock = false
+	}()
 }
 
 // Adds the voice role whenever a user joins the config voice chat
@@ -437,7 +461,7 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 
 	MapMutex.Lock()
 	if _, ok := GuildMap[v.GuildID]; !ok {
-		InitDB(v.GuildID)
+		InitDB(s, v.GuildID)
 		LoadGuilds()
 	}
 
@@ -503,7 +527,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.GuildID != "" {
 		MapMutex.Lock()
 		if _, ok := GuildMap[m.GuildID]; !ok {
-			InitDB(m.GuildID)
+			InitDB(s, m.GuildID)
 			LoadGuilds()
 		}
 		guildPrefix = GuildMap[m.GuildID].GuildConfig.Prefix
@@ -696,7 +720,7 @@ func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
 
 	MapMutex.Lock()
 	if _, ok := GuildMap[e.GuildID]; !ok {
-		InitDB(e.GuildID)
+		InitDB(s, e.GuildID)
 		LoadGuilds()
 	}
 
@@ -785,7 +809,7 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	MapMutex.Lock()
 	if _, ok := GuildMap[u.GuildID]; !ok {
-		InitDB(u.GuildID)
+		InitDB(s, u.GuildID)
 		LoadGuilds()
 	}
 	MapMutex.Unlock()
@@ -836,7 +860,7 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	MapMutex.Lock()
 	if _, ok := GuildMap[u.GuildID]; !ok {
-		InitDB(u.GuildID)
+		InitDB(s, u.GuildID)
 		LoadGuilds()
 	}
 
@@ -973,7 +997,7 @@ func cleanSpoilerRoles(s *discordgo.Session, guildID string) error {
 // Handles BOT joining a server
 func GuildCreate(s *discordgo.Session, g *discordgo.GuildCreate) {
 	MapMutex.Lock()
-	InitDB(g.Guild.ID)
+	InitDB(s, g.Guild.ID)
 	LoadGuilds()
 	MapMutex.Unlock()
 

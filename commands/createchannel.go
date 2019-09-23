@@ -379,7 +379,7 @@ func init() {
 	add(&command{
 		execute:  createChannelCommand,
 		trigger:  "create",
-		desc:     "Creates a channel.",
+		desc:     "Creates a text channel with settings",
 		elevated: true,
 		category: "channel",
 	})

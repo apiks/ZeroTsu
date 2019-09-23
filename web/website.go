@@ -922,7 +922,7 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[u.GuildID]; !ok {
-		misc.InitDB(u.GuildID)
+		misc.InitDB(s, u.GuildID)
 		misc.LoadGuilds()
 	}
 

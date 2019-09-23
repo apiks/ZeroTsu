@@ -74,7 +74,7 @@ func init() {
 		execute:  pickCommand,
 		trigger:  "pick",
 		aliases:  []string{"pic", "pik", "p"},
-		desc:     "Picks one thing from a specified number of things.",
+		desc:     "Picks a random item from a list of items",
 		category: "normal",
 		DMAble: true,
 	})

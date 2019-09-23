@@ -143,8 +143,8 @@ func init() {
 	add(&command{
 		execute:  unbanCommand,
 		trigger:  "unban",
-		desc:     "Unbans a user.",
+		desc:     "Unbans a user",
 		elevated: true,
-		category: "punishment",
+		category: "moderation",
 	})
 }

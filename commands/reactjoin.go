@@ -28,7 +28,7 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 
 	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[r.GuildID]; !ok {
-		misc.InitDB(r.GuildID)
+		misc.InitDB(s, r.GuildID)
 		misc.LoadGuilds()
 	}
 
@@ -124,7 +124,7 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 
 	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[r.GuildID]; !ok {
-		misc.InitDB(r.GuildID)
+		misc.InitDB(s, r.GuildID)
 		misc.LoadGuilds()
 	}
 
@@ -1118,7 +1118,7 @@ func init() {
 		execute:  setReactJoinCommand,
 		trigger:  "setreact",
 		aliases:  []string{"setreactjoin", "addreact"},
-		desc:     "Sets a react join on a specific message, role and emote. [REACTS]",
+		desc:     "Sets a react join on a specific message, role and emote [REACTS]",
 		elevated: true,
 		category: "reacts",
 	})
@@ -1126,7 +1126,7 @@ func init() {
 		execute:  removeReactJoinCommand,
 		trigger:  "removereact",
 		aliases:  []string{"removereactjoin", "deletereact"},
-		desc:     "Removes a set react join. [REACTS]",
+		desc:     "Removes a set react join [REACTS]",
 		elevated: true,
 		category: "reacts",
 	})
@@ -1134,7 +1134,7 @@ func init() {
 		execute:  viewReactJoinsCommand,
 		trigger:  "viewreacts",
 		aliases:  []string{"viewreactjoins", "viewreact", "viewreacts", "reacts", "react"},
-		desc:     "Views all set react joins. [REACTS]",
+		desc:     "Views all set react joins [REACTS]",
 		elevated: true,
 		category: "reacts",
 	})
@@ -1142,7 +1142,7 @@ func init() {
 		execute:     joinCommand,
 		trigger:     "join",
 		aliases:     []string{"joinchannel"},
-		desc:        "Join a spoiler channel.",
+		desc:        "Join a spoiler channel",
 		deleteAfter: true,
 		category:    "normal",
 	})
@@ -1150,7 +1150,7 @@ func init() {
 		execute:     leaveCommand,
 		trigger:     "leave",
 		aliases:     []string{"leavechannel"},
-		desc:        "Leave a spoiler channel.",
+		desc:        "Leave a spoiler channel",
 		deleteAfter: true,
 		category:    "normal",
 	})

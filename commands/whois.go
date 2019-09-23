@@ -399,16 +399,16 @@ func init() {
 	add(&command{
 		execute:  whoisCommand,
 		trigger:  "whois",
-		desc:     "Pulls mod information about a user.",
+		desc:     "Print mod information about a user",
 		elevated: true,
-		category: "misc",
+		category: "moderation",
 	})
 	add(&command{
 		execute:  showTimestampsCommand,
 		trigger:  "timestamp",
 		aliases:  []string{"timestamps"},
-		desc:     "Shows all punishments for a user and their timestamps.",
+		desc:     "Prints all punishments for a user and their timestamps",
 		elevated: true,
-		category: "punishment",
+		category: "moderation",
 	})
 }

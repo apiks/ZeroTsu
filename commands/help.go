@@ -13,7 +13,7 @@ import (
 
 // Command categories in sorted form and map form(map for descriptions)
 var (
-	categoriesSorted = [...]string{"Autopost", "Channel", "Filters", "Misc", "Normal", "Punishment", "Reacts", "Rss", "Stats", "Raffles", "Waifus", "Settings"}
+	categoriesSorted = [...]string{"Autopost", "Channel", "Filters", "Misc", "Normal", "Moderation", "Reacts", "Reddit", "Stats", "Raffles", "Waifus", "Settings"}
 	categoriesMap    = make(map[string]string)
 )
 
@@ -115,13 +115,13 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 	// Sets usage field if elevated
 	if elevated {
 		// Sets footer field
-		embedFooter.Text = fmt.Sprintf("Usage: %vh-category | (Example: %vh-settings)", guildPrefix, guildPrefix)
+		embedFooter.Text = fmt.Sprintf("Usage: %vh-category | Example: %vh-settings", guildPrefix, guildPrefix)
 		embedMess.Footer = &embedFooter
 	}
 
 	if !elevated {
 		// Sets commands field
-		userCommands.Name = "Command:"
+		userCommands.Name = "**Command:**"
 		userCommands.Inline = true
 
 		// Iterates through non-mod commands and adds them to the embed sorted
@@ -148,7 +148,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 		misc.MapMutex.Unlock()
 
 		// Sets footer field
-		embedFooter.Text = fmt.Sprintf("Tip: Type %v<command> to see a detailed description.", guildPrefix)
+		embedFooter.Text = fmt.Sprintf("Tip: Type %v<command> to see a detailed description", guildPrefix)
 		embedMess.Footer = &embedFooter
 	} else {
 		// Sets elevated commands field
@@ -173,7 +173,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 					continue
 				}
 			}
-			adminCategories.Value += fmt.Sprintf("%v - %v\n", categoriesSorted[i], categoriesMap[categoriesSorted[i]])
+			adminCategories.Value += fmt.Sprintf("**%v** - %v\n", categoriesSorted[i], categoriesMap[categoriesSorted[i]])
 		}
 		misc.MapMutex.Unlock()
 	}
@@ -240,7 +240,7 @@ func helpChannelEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -316,7 +316,7 @@ func helpFiltersEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -392,7 +392,7 @@ func helpMiscEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -406,12 +406,6 @@ func helpMiscEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	}
 	sort.Strings(commands)
 	for i := 0; i < len(commands); i++ {
-		if config.Website == "" {
-			if commandMap[commands[i]].trigger == "verify" ||
-				commandMap[commands[i]].trigger == "unverify" {
-				continue
-			}
-		}
 		if commandMap[commands[i]].category == "misc" {
 			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], commandMap[commands[i]].desc)
 		}
@@ -473,7 +467,7 @@ func helpNormalEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -513,8 +507,8 @@ func helpNormalEmbed(s *discordgo.Session, m *discordgo.Message) error {
 }
 
 // Mod command help page
-func helpPunishmentCommand(s *discordgo.Session, m *discordgo.Message) {
-	err := helpPunishmentEmbed(s, m)
+func helpModerationCommand(s *discordgo.Session, m *discordgo.Message) {
+	err := helpModerationEmbed(s, m)
 	if err != nil {
 
 		misc.MapMutex.Lock()
@@ -527,7 +521,7 @@ func helpPunishmentCommand(s *discordgo.Session, m *discordgo.Message) {
 }
 
 // Mod command help page embed
-func helpPunishmentEmbed(s *discordgo.Session, m *discordgo.Message) error {
+func helpModerationEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	var (
 		embedMess   discordgo.MessageEmbed
@@ -550,7 +544,7 @@ func helpPunishmentEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -564,7 +558,13 @@ func helpPunishmentEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	}
 	sort.Strings(commands)
 	for i := 0; i < len(commands); i++ {
-		if commandMap[commands[i]].category == "punishment" {
+		if config.Website == "" {
+			if commandMap[commands[i]].trigger == "verify" ||
+				commandMap[commands[i]].trigger == "unverify" {
+				continue
+			}
+		}
+		if commandMap[commands[i]].category == "moderation" {
 			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], commandMap[commands[i]].desc)
 		}
 	}
@@ -632,7 +632,7 @@ func helpReactsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -671,8 +671,8 @@ func helpReactsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 }
 
 // Mod command help page
-func helpRssCommand(s *discordgo.Session, m *discordgo.Message) {
-	err := helpRssEmbed(s, m)
+func helpRedditCommand(s *discordgo.Session, m *discordgo.Message) {
+	err := helpRedditEmbed(s, m)
 	if err != nil {
 
 		misc.MapMutex.Lock()
@@ -685,7 +685,7 @@ func helpRssCommand(s *discordgo.Session, m *discordgo.Message) {
 }
 
 // Mod command help page embed
-func helpRssEmbed(s *discordgo.Session, m *discordgo.Message) error {
+func helpRedditEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	var (
 		embedMess   discordgo.MessageEmbed
@@ -708,7 +708,7 @@ func helpRssEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -722,7 +722,7 @@ func helpRssEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	}
 	sort.Strings(commands)
 	for i := 0; i < len(commands); i++ {
-		if commandMap[commands[i]].category == "rss" {
+		if commandMap[commands[i]].category == "reddit" {
 			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], commandMap[commands[i]].desc)
 		}
 	}
@@ -784,7 +784,7 @@ func helpStatsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -860,7 +860,7 @@ func helpRaffleEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -942,7 +942,7 @@ func helpWaifuEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -1018,7 +1018,7 @@ func helpAutopostEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -1094,7 +1094,7 @@ func helpGuildSettingsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description.", guildPrefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildPrefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -1236,114 +1236,108 @@ func init() {
 		execute:  helpEmbedCommand,
 		trigger:  "help",
 		aliases:  []string{"h"},
-		desc:     "Print all available commands in embed form.",
+		desc:     "Print all commands available to you",
 		category: "normal",
 		DMAble:   true,
 	})
-	//add(&command{
-	//	execute:  helpPlaintextCommand,
-	//	trigger:  "helpplain",
-	//	desc:     "Prints all available commands in plain text.",
-	//	category: "normal",
-	//})
 	add(&command{
 		execute:  helpChannelCommand,
 		trigger:  "h-channel",
-		aliases:  []string{"h[channel]", "hchannels", "h[channels]", "h-chanel", "help-channel", "help-chanel", "hchannel", "h-channels", "help-channels"},
-		desc:     "Print all channel related commands.",
+		aliases:  []string{"h[channel]", "hchannels", "h[channels]", "h-chanel", "help-channel", "help-chanel", "hchannel", "h-channels", "help-channels", "channel"},
+		desc:     "Print all channel related commands",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpFiltersCommand,
 		trigger:  "h-filters",
 		aliases:  []string{"h[filters]", "hfilter", "h[filters]", "h-filter", "help-filters", "help-filter", "hfilters"},
-		desc:     "Print all commands related to filters.",
+		desc:     "Print all commands related to filters",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpMiscCommand,
 		trigger:  "h-misc",
-		aliases:  []string{"h[misc]", "hmiscellaneous", "h[miscellaneous]", "help-misc", "hmisc"},
-		desc:     "Print all miscellaneous mod commands.",
+		aliases:  []string{"h[misc]", "hmiscellaneous", "h[miscellaneous]", "help-misc", "hmisc", "misc"},
+		desc:     "Print all miscellaneous mod commands",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpNormalCommand,
 		trigger:  "h-normal",
-		aliases:  []string{"h[normal]", "h-norma", "h-norm", "help-normal", "hnormal"},
-		desc:     "Print all normal user commands.",
+		aliases:  []string{"h[normal]", "h-norma", "h-norm", "help-normal", "hnormal", "normal"},
+		desc:     "Print all normal user commands",
 		elevated: true,
 	})
 	add(&command{
-		execute:  helpPunishmentCommand,
-		trigger:  "h-punishment",
-		aliases:  []string{"h[punishment]", "hpunishments", "h[punishments]", "h-punish", "h-pun", "help-punishment", "help-punishments", "h-punishments", "hpunishment"},
-		desc:     "Print all mod punishment commands.",
+		execute:  helpModerationCommand,
+		trigger:  "h-moderation",
+		aliases:  []string{"h[moderation]", "hmoderation", "h-mod", "h-mode", "help-moderation", "moderation"},
+		desc:     "Print all mod moderation commands",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpReactsCommand,
 		trigger:  "h-reacts",
 		aliases:  []string{"helpreacts", "helpreacts", "hreact", "h-react", "help-reacts", "help-react", "hreacts"},
-		desc:     "Print all react mod commands.",
+		desc:     "Print all react mod commands",
 		elevated: true,
 	})
 	add(&command{
-		execute:  helpRssCommand,
-		trigger:  "h-rss",
-		aliases:  []string{"h[rss]", "help-rss", "hrss"},
-		desc:     "Print all RSS feed from sub commands.",
+		execute:  helpRedditCommand,
+		trigger:  "h-reddit",
+		aliases:  []string{"h[reddit]", "help-reddit", "hreddit", "reddit"},
+		desc:     "Print all Reddit feed commands",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpStatsCommand,
 		trigger:  "h-stats",
 		aliases:  []string{"h[stats]", "hstat", "h[stat]", "help-stats", "hstats", "h-stats", "help-stats"},
-		desc:     "Print all channel and emoji stats commands.",
+		desc:     "Print all channel & emoji stat commands",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpRaffleCommand,
 		trigger:  "h-raffles",
-		aliases:  []string{"h[raffle]", "hraffles", "h[raffles]", "help-raffle", "help-raffles", "h-raffle", "hraffle"},
-		desc:     "Print all raffle commands.",
+		aliases:  []string{"h[raffle]", "hraffles", "h[raffles]", "help-raffle", "help-raffles", "h-raffle", "hraffle", "raffle"},
+		desc:     "Print all raffle commands",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpWaifuCommand,
 		trigger:  "h-waifu",
 		aliases:  []string{"h[waifu]", "hwaifus", "h[waifus]", "help-waifu", "help-waifus", "h-waifus", "hwaifu"},
-		desc:     "Print all waifu commands.",
+		desc:     "Print all waifu commands",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpAutopostCommand,
 		trigger:  "h-autopost",
-		aliases:  []string{"h[autopost]", "hautopost", "h[auto]", "h[autoposts]", "hautopost", "hautoposts", "hautos", "hauto", "h-autopost", "help-autopost", "help-auto", "h-autos"},
-		desc:     "Print all server setting commands.",
+		aliases:  []string{"h[autopost]", "hautopost", "h[auto]", "h[autoposts]", "hautopost", "hautoposts", "hautos", "hauto", "h-autopost", "help-autopost", "help-auto", "h-autos", "autopost"},
+		desc:     "Print all autopost commands",
 		elevated: true,
 	})
 	add(&command{
 		execute:  helpGuildSettingsCommand,
 		trigger:  "h-settings",
-		aliases:  []string{"h[set]", "hsetting", "h[setting]", "h[settings]", "hset", "hsets", "hsetts", "hsett", "h-set", "help-settings", "help-set", "hsettings"},
-		desc:     "Print all server setting commands.",
+		aliases:  []string{"h[set]", "hsetting", "h[setting]", "h[settings]", "hset", "hsets", "hsetts", "hsett", "h-set", "help-settings", "help-set", "hsettings", "settings"},
+		desc:     "Print all server setting commands",
 		elevated: true,
 		admin:    true,
 	})
 
 	misc.MapMutex.Lock()
-	categoriesMap["Channel"] = "Mod channel-related commands."
-	categoriesMap["Filters"] = "Word and emoji filters."
-	categoriesMap["Misc"] = "Miscellaneous mod commands."
-	categoriesMap["Normal"] = "Normal user commands."
-	categoriesMap["Punishment"] = "Warnings, kicks and bans."
-	categoriesMap["Reacts"] = "Channel join via react commands."
-	categoriesMap["Rss"] = "Reddit RSS feed commands."
-	categoriesMap["Stats"] = "Channel and emoji stats."
-	categoriesMap["Raffles"] = "Raffle commands."
-	categoriesMap["Waifus"] = "Waifu commands."
-	categoriesMap["Autopost"] = "Autopost commands."
-	categoriesMap["Settings"] = "Server setting commands."
+	categoriesMap["Channel"] = "Mod channel-related commands"
+	categoriesMap["Filters"] = "Phrase, extension and emoji filters"
+	categoriesMap["Misc"] = "Miscellaneous Mod commands"
+	categoriesMap["Normal"] = "Normal User commands"
+	categoriesMap["Moderation"] = "Moderation commands"
+	categoriesMap["Reacts"] = "React Autorole commands"
+	categoriesMap["Reddit"] = "Reddit Feed commands"
+	categoriesMap["Stats"] = "Channel & Emoji Stats commands"
+	categoriesMap["Raffles"] = "Raffle commands"
+	categoriesMap["Waifus"] = "Waifu commands"
+	categoriesMap["Autopost"] = "Autopost commands"
+	categoriesMap["Settings"] = "Server setting commands"
 	misc.MapMutex.Unlock()
 }

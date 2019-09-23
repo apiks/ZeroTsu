@@ -114,7 +114,7 @@ func init() {
 	add(&command{
 		execute:  sortCategoryCommand,
 		trigger:  "sortcategory",
-		desc:     "Sorts a category alphabetically.",
+		desc:     "Sorts a category alphabetically",
 		elevated: true,
 		category: "misc",
 	})

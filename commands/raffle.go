@@ -106,7 +106,7 @@ func RaffleReactJoin(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 
 	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[r.GuildID]; !ok {
-		misc.InitDB(r.GuildID)
+		misc.InitDB(s, r.GuildID)
 		misc.LoadGuilds()
 	}
 
@@ -149,7 +149,7 @@ func RaffleReactLeave(s *discordgo.Session, r *discordgo.MessageReactionRemove) 
 
 	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[r.GuildID]; !ok {
-		misc.InitDB(r.GuildID)
+		misc.InitDB(s, r.GuildID)
 		misc.LoadGuilds()
 	}
 
@@ -552,21 +552,21 @@ func init() {
 		execute:  raffleParticipateCommand,
 		aliases:  []string{"joinraffle", "enterraffle"},
 		trigger:  "jraffle",
-		desc:     "Allows you to participate in a raffle.",
+		desc:     "Allows you to participate in a raffle",
 		category: "raffles",
 	})
 	add(&command{
 		execute:  raffleLeaveCommand,
 		aliases:  []string{"leaveraffle"},
 		trigger:  "lraffle",
-		desc:     "Removes you from a raffle.",
+		desc:     "Removes you from a raffle",
 		category: "raffles",
 	})
 	add(&command{
 		execute:  craffleCommand,
 		aliases:  []string{"createraffle", "addraffle", "setraffle"},
 		trigger:  "craffle",
-		desc:     "Create a raffle.",
+		desc:     "Create a raffle",
 		elevated: true,
 		category: "raffles",
 	})
@@ -574,7 +574,7 @@ func init() {
 		execute:  raffleWinnerCommand,
 		aliases:  []string{"pickrafflewin", "pickrafflewinner", "rafflewin", "winraffle", "raffwin"},
 		trigger:  "rafflewinner",
-		desc:     "Picks a random winner from those participating in a raffle.",
+		desc:     "Picks a random winner from those participating in a raffle",
 		elevated: true,
 		category: "raffles",
 	})
@@ -582,7 +582,7 @@ func init() {
 		execute:  removeRaffleCommand,
 		aliases:  []string{"deleteraffle", "killraffle"},
 		trigger:  "removeraffle",
-		desc:     "Removes a previously set raffle.",
+		desc:     "Removes a previously set raffle",
 		elevated: true,
 		category: "raffles",
 	})
@@ -590,7 +590,7 @@ func init() {
 		execute:  viewRafflesCommand,
 		aliases:  []string{"vraffles", "vraffle", "viewraffle", "raffles"},
 		trigger:  "viewraffles",
-		desc:     "Shows existing raffles.",
+		desc:     "Shows existing raffles",
 		elevated: true,
 		category: "raffles",
 	})

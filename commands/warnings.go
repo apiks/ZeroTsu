@@ -275,15 +275,15 @@ func init() {
 	add(&command{
 		execute:  addWarningCommand,
 		trigger:  "addwarning",
-		desc:     "Adds a warning to a user without telling them",
+		desc:     "Adds a warning to a user without messaging them",
 		elevated: true,
-		category: "punishment",
+		category: "moderation",
 	})
 	add(&command{
 		execute:  issueWarningCommand,
 		trigger:  "issuewarning",
-		desc:     "Issues a warning to a user and tells them",
+		desc:     "Issues a warning to a user and messages them",
 		elevated: true,
-		category: "punishment",
+		category: "moderation",
 	})
 }

@@ -35,7 +35,7 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[m.GuildID]; !ok {
-		misc.InitDB(m.GuildID)
+		misc.InitDB(s, m.GuildID)
 		misc.LoadGuilds()
 	}
 
@@ -333,7 +333,7 @@ func OnMemberJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[u.GuildID]; !ok {
-		misc.InitDB(u.GuildID)
+		misc.InitDB(s, u.GuildID)
 		misc.LoadGuilds()
 	}
 
@@ -359,7 +359,7 @@ func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 
 	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[u.GuildID]; !ok {
-		misc.InitDB(u.GuildID)
+		misc.InitDB(s, u.GuildID)
 		misc.LoadGuilds()
 	}
 
@@ -512,7 +512,7 @@ func init() {
 		execute:  showStats,
 		trigger:  "stats",
 		aliases:  []string{"channelstats", "channels", "stat", "chanstat", "chanstats", "statss"},
-		desc:     "Prints all channel stats.",
+		desc:     "Prints all channel stats",
 		elevated: true,
 		category: "stats",
 	})

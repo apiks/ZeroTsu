@@ -327,8 +327,8 @@ func init() {
 		execute:  banCommand,
 		trigger:  "ban",
 		aliases:  []string{"b", "hammer"},
-		desc:     "Bans a user for a set period of time.",
+		desc:     "Bans a user for a set period of time",
 		elevated: true,
-		category: "punishment",
+		category: "moderation",
 	})
 }

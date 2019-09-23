@@ -780,7 +780,7 @@ func init() {
 		execute:  addWaifu,
 		trigger:  "addwaifu",
 		aliases:  []string{"addwife"},
-		desc:     "Adds a waifu to the waifu list. [WAIFU]",
+		desc:     "Adds a waifu to the waifu list [WAIFU]",
 		elevated: true,
 		category: "waifus",
 	})
@@ -788,7 +788,7 @@ func init() {
 		execute:  removeWaifu,
 		trigger:  "removewaifu",
 		aliases:  []string{"removewife", "deletewaifu", "deletewife"},
-		desc:     "Removes a waifu from the waifu list. [WAIFU]",
+		desc:     "Removes a waifu from the waifu list [WAIFU]",
 		elevated: true,
 		category: "waifus",
 	})
@@ -796,7 +796,7 @@ func init() {
 		execute:  viewWaifus,
 		trigger:  "viewwaifus",
 		aliases:  []string{"showwaifus", "vwaifus", "waifulist", "listwaifu", "waifus"},
-		desc:     "Shows the current list of waifus. [WAIFU]",
+		desc:     "Shows the current list of waifus [WAIFU]",
 		elevated: true,
 		category: "waifus",
 	})
@@ -804,42 +804,42 @@ func init() {
 		execute:  rollWaifu,
 		trigger:  "rollwaifu",
 		aliases:  []string{"rollwife", "wiferoll", "waifuroll"},
-		desc:     "Rolls a random waifu. [WAIFU]",
+		desc:     "Rolls a random waifu [WAIFU]",
 		category: "waifus",
 	})
 	add(&command{
 		execute:  myWaifu,
 		trigger:  "waifu",
 		aliases:  []string{"mywaifu", "mywife", "showwaifu", "waifushow", "viewwaifu", "viewwife"},
-		desc:     "Shows what your assigned waifu is. [WAIFU]",
+		desc:     "Shows what your assigned waifu is [WAIFU]",
 		category: "waifus",
 	})
 	add(&command{
 		execute:  tradeWaifu,
 		trigger:  "tradewaifu",
 		aliases:  []string{"tradewife", "sellwaifu", "starttrade", "tradestart"},
-		desc:     "Trades two waifus between two users if both agree. [WAIFU]",
+		desc:     "Trades two waifus between two users if both agree [WAIFU]",
 		category: "waifus",
 	})
 	add(&command{
 		execute:  acceptTrade,
 		trigger:  "accepttrade",
 		aliases:  []string{"tradeaccept", "buywaifu"},
-		desc:     "Accepts a proposed waifu trade. [WAIFU]",
+		desc:     "Accepts a proposed waifu trade [WAIFU]",
 		category: "waifus",
 	})
 	add(&command{
 		execute:  cancelTrade,
 		trigger:  "canceltrade",
 		aliases:  []string{"tradecancel", "stoptrade", "tradestop"},
-		desc:     "Cancels a proposed waifu trade. [WAIFU]",
+		desc:     "Cancels a proposed waifu trade [WAIFU]",
 		category: "waifus",
 	})
 	add(&command{
 		execute:  showOwners,
 		trigger:  "owners",
 		aliases:  []string{"showowners", "viewowners", "tradestop"},
-		desc:     "Prints all waifus and how many owners they have. [WAIFU]",
+		desc:     "Prints all waifus and how many owners they have [WAIFU]",
 		elevated: true,
 		category: "waifus",
 	})

@@ -104,7 +104,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 	MapMutex.Lock()
 	if _, ok := GuildMap[e.GuildID]; !ok {
-		InitDB(e.GuildID)
+		InitDB(s, e.GuildID)
 		LoadGuilds()
 	}
 
@@ -245,7 +245,7 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 
 	MapMutex.Lock()
 	if _, ok := GuildMap[e.GuildID]; !ok {
-		InitDB(e.GuildID)
+		InitDB(s, e.GuildID)
 		LoadGuilds()
 	}
 
@@ -336,7 +336,7 @@ func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 
 	MapMutex.Lock()
 	if _, ok := GuildMap[e.GuildID]; !ok {
-		InitDB(e.GuildID)
+		InitDB(s, e.GuildID)
 		LoadGuilds()
 	}
 

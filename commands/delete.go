@@ -404,7 +404,7 @@ func init() {
 		execute:  deleteChannel,
 		trigger:  "killchannel",
 		aliases:  []string{"deletechannel", "removechannel"},
-		desc:     "Removes a channel, its role, and all associated reacts and RSS feeds.",
+		desc:     "Removes a channel, its role, and all associated reacts and Reddit feeds",
 		elevated: true,
 		category: "channel",
 	})
@@ -412,7 +412,7 @@ func init() {
 		execute:  deleteCategory,
 		trigger:  "killcategory",
 		aliases:  []string{"deletecategory", "removecategory"},
-		desc:     "Removes every channel in a category, their roles, and all associated reacts (if not using Kaguya) and RSS feeds.",
+		desc:     "Removes every channel in a category, their roles, and all associated reacts and Reddit feeds",
 		elevated: true,
 		category: "misc",
 	})
@@ -420,7 +420,7 @@ func init() {
 		execute:  deleteChannelReacts,
 		trigger:  "killchannelreacts",
 		aliases:  []string{"removechannelreacts", "removechannelreact", "killchannelreact", "deletechannelreact", "deletechannelreacts"},
-		desc:     "Removes all reacts linked to a specific channel. [REACTS]",
+		desc:     "Removes all reacts linked to a specific channel [REACTS]",
 		elevated: true,
 		category: "reacts",
 	})
@@ -428,7 +428,7 @@ func init() {
 		execute:  deleteCategoryReacts,
 		trigger:  "killcategoryreacts",
 		aliases:  []string{"removecategoryreacts", "removecategoryreact", "killcategoryreact", "deletecategoryreact", "deletecategoryreacts"},
-		desc:     "Removes all reacts linked to a specific category. [REACTS]",
+		desc:     "Removes all reacts linked to a specific category [REACTS]",
 		elevated: true,
 		category: "reacts",
 	})

@@ -297,7 +297,7 @@ func init() {
 		execute:  lockCommand,
 		trigger:  "lock",
 		aliases:  []string{"lockchannel", "channellock"},
-		desc:     "Locks a channel.",
+		desc:     "Locks a channel",
 		elevated: true,
 		category: "channel",
 	})
@@ -305,7 +305,7 @@ func init() {
 		execute:  unlockCommand,
 		trigger:  "unlock",
 		aliases:  []string{"unlockchannel", "channelunlock"},
-		desc:     "Unlocks a channel.",
+		desc:     "Unlocks a channel",
 		elevated: true,
 		category: "channel",
 	})

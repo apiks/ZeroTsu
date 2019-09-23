@@ -318,6 +318,11 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 		misc.MapMutex.Lock()
 		for _, guild := range e.Guilds {
 
+			if _, ok := misc.GuildMap[guild.ID]; !ok {
+				misc.InitDB(s, guild.ID)
+				misc.LoadGuilds()
+			}
+
 			if !misc.GuildMap[guild.ID].GuildConfig.VoteModule {
 				continue
 			}

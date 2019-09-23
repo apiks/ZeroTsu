@@ -129,7 +129,7 @@ func ListenForDeletedRoleHandler(s *discordgo.Session, g *discordgo.GuildRoleDel
 
 	MapMutex.Lock()
 	if _, ok := GuildMap[g.GuildID]; !ok {
-		InitDB(g.GuildID)
+		InitDB(s, g.GuildID)
 		LoadGuilds()
 	}
 

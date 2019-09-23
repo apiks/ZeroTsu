@@ -281,15 +281,15 @@ func init() {
 	add(&command{
 		execute:  verifyCommand,
 		trigger:  "verify",
-		desc:     "Verifies a user with a reddit username.",
+		desc:     "Verifies a user with a reddit username",
 		elevated: true,
-		category: "misc",
+		category: "moderation",
 	})
 	add(&command{
 		execute:  unverifyCommand,
 		trigger:  "unverify",
-		desc:     "Unverifies a user.",
+		desc:     "Unverifies a user",
 		elevated: true,
-		category: "misc",
+		category: "moderation",
 	})
 }
