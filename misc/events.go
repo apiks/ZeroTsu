@@ -61,7 +61,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	// Sends server count to bot list sites if it's the public ZeroTsu
 	sendServers(s)
 
-	for range time.NewTicker(55 * time.Second).C {
+	for range time.NewTicker(10 * time.Second).C {
 
 		// Checks whether it has to post Reddit feeds and handle remindMes and handle bans
 		for _, guild := range e.Guilds {
@@ -320,17 +320,18 @@ func RSSParser(s *discordgo.Session, guildID string) {
 	// Save all feeds early to save performance
 	var subMap = make(map[string]*gofeed.Feed)
 	for _, thread := range rssThreads {
-		if _, ok := subMap[thread.Subreddit]; !ok {
-			// Parse feed
-			feed, err := fp.ParseURL(fmt.Sprintf("http://www.reddit.com/r/%v/%v/.rss", thread.Subreddit, thread.PostType))
-			if err != nil {
-				return
-			}
-			subMap[fmt.Sprintf("%v:%v", thread.Subreddit, thread.PostType)] = feed
+		if _, ok := subMap[thread.Subreddit]; ok {
+			continue
 		}
+		// Parse feed
+		feed, err := fp.ParseURL(fmt.Sprintf("http://www.reddit.com/r/%v/%v/.rss", thread.Subreddit, thread.PostType))
+		if err != nil {
+			return
+		}
+		subMap[fmt.Sprintf("%v:%v", thread.Subreddit, thread.PostType)] = feed
 	}
 
-	threadsToPost := make(map[*RssThread][]*gofeed.Item)
+	threadsToPost := make(map[RssThread][]*gofeed.Item)
 
 	for _, thread := range rssThreads {
 
@@ -381,10 +382,8 @@ func RSSParser(s *discordgo.Session, guildID string) {
 			rssThreadChecks = GuildMap[guildID].RssThreadChecks
 			MapMutex.Unlock()
 
-			// Adds the thread to the threads to send map
-			if _, ok := threadsToPost[&thread]; !ok {
-				threadsToPost[&thread] = append(threadsToPost[&thread], item)
-			}
+			// Adds the item to the threads to send map
+			threadsToPost[thread] = append(threadsToPost[thread], item)
 		}
 	}
 
