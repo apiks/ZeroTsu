@@ -402,17 +402,14 @@ func RSSParser(s *discordgo.Session, guildID string) {
 
 				// Pins/unpins the feed items if necessary
 				if !thread.Pin {
-					delete(threadsToPost, thread)
 					continue
 				}
 				if _, ok := pinnedItems[item]; ok {
-					delete(threadsToPost, thread)
 					continue
 				}
 
 				pins, err := s.ChannelMessagesPinned(message.ChannelID)
 				if err != nil {
-					delete(threadsToPost, thread)
 					continue
 				}
 				// Unpins if necessary
@@ -435,8 +432,8 @@ func RSSParser(s *discordgo.Session, guildID string) {
 				// Pins
 				_ = s.ChannelMessagePin(message.ChannelID, message.ID)
 				pinnedItems[item] = true
-				delete(threadsToPost, thread)
 			}
+			delete(threadsToPost, thread)
 		}
 		redditFeedBlock = false
 	}()
