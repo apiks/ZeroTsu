@@ -187,7 +187,7 @@ func processEachShow(index int, element *goquery.Selection) {
 	show.Episode = element.Parent().Parent().Parent().Find(".episode-counter").Text()
 	show.Episode = strings.Replace(show.Episode, "\n", "", -1)
 	show.AirTime = element.Find(".air-time").Text()
-	show.Delayed = element.Find(".delay").Text()
+	show.Delayed = element.Parent().Parent().Parent().Find(".delay").Text()
 	show.Delayed = strings.Trim(show.Delayed, "\n")
 	show.Key, _ = element.Parent().Parent().Parent().Find(".show-link").Attr("href")
 	show.Key = strings.ToLower(strings.TrimPrefix(show.Key, "/shows/"))
