@@ -394,7 +394,7 @@ func RSSParser(s *discordgo.Session, guildID string) {
 			for _, item := range items {
 				// Sends the feed item
 				time.Sleep(time.Second * 3)
-				message, err := s.ChannelMessageSend(thread.ChannelID, item.Link)
+				message, err := feedEmbed(s, thread, item)
 				if err != nil {
 					continue
 				}
@@ -418,15 +418,17 @@ func RSSParser(s *discordgo.Session, guildID string) {
 					if pin.Author.ID != s.State.User.ID {
 						continue
 					}
-					if !strings.HasPrefix(strings.ToLower(pin.Content), fmt.Sprintf("https://www.reddit.com/r/%v/comments/", thread.Subreddit)) ||
-						!strings.HasPrefix(strings.ToLower(pin.Content), fmt.Sprintf("http://www.reddit.com/r/%v/comments/", thread.Subreddit)) {
+					if len(pin.Embeds) == 0 {
+						continue
+					}
+					if pin.Embeds[0].Author == nil {
+						continue
+					}
+					if !strings.HasPrefix(strings.ToLower(pin.Embeds[0].Author.URL), fmt.Sprintf("https://www.reddit.com/r/%v/comments/", thread.Subreddit)) {
 						continue
 					}
 
-					err = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
-					if err != nil {
-						continue
-					}
+					_ = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
 				}
 				// Pins
 				_ = s.ChannelMessagePin(message.ChannelID, message.ID)
@@ -436,6 +438,61 @@ func RSSParser(s *discordgo.Session, guildID string) {
 		}
 		redditFeedBlock = false
 	}()
+}
+
+func feedEmbed(s *discordgo.Session, thread RssThread, item *gofeed.Item) (*discordgo.Message, error) {
+	var (
+		embedImage = &discordgo.MessageEmbedImage{}
+		imageLink  = "https://"
+		footerText = fmt.Sprintf("r/%v - %v", thread.Subreddit, thread.PostType)
+	)
+
+	// Append custom user author to footer if he exists in thread
+	if thread.Author != "" {
+		footerText += fmt.Sprintf(" - u/%v", thread.Author)
+	}
+
+	// Parse image if it exists between a preset number of allowed domains
+	imageStrings := strings.Split(item.Content, "[link]")
+	if len(imageStrings) > 1 {
+		imageStrings = strings.Split(imageStrings[0], "https://")
+		imageLink += strings.Split(imageStrings[len(imageStrings)-1], "\"")[0]
+	}
+	if strings.HasPrefix(imageLink, "https://i.redd.it/") ||
+		strings.HasPrefix(imageLink, "https://i.imgur.com/") ||
+		strings.HasPrefix(imageLink, "https://i.gyazo.com/") {
+		if strings.Contains(imageLink, ".jpg") ||
+			strings.Contains(imageLink, ".jpeg") ||
+			strings.Contains(imageLink, ".png") ||
+			strings.Contains(imageLink, ".webp") ||
+			strings.Contains(imageLink, ".gifv") ||
+			strings.Contains(imageLink, ".gif") {
+			embedImage.URL = imageLink
+		}
+	}
+
+	embed := &discordgo.MessageEmbed {
+		Author: &discordgo.MessageEmbedAuthor {
+			URL:          item.Link,
+			Name:         item.Title,
+			IconURL:      "https://images-eu.ssl-images-amazon.com/images/I/418PuxYS63L.png",
+			ProxyIconURL: "",
+		},
+		Description: item.Description,
+		Timestamp:   item.Published,
+		Color:       16758465,
+		Footer:      &discordgo.MessageEmbedFooter {
+			Text:	 footerText,
+		},
+		Image:       embedImage,
+	}
+
+	message, err := s.ChannelMessageSendEmbed(thread.ChannelID, embed)
+	if err != nil {
+		return nil, err
+	}
+
+	return message, nil
 }
 
 // Adds the voice role whenever a user joins the config voice chat
