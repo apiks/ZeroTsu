@@ -80,6 +80,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 		guildBotLog string
 		guildWaifuModule bool
 		guildReactsModule bool
+		guildVoteModule bool
 	)
 
 	if m.GuildID != "" {
@@ -88,6 +89,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 		guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
 		guildWaifuModule = misc.GuildMap[m.GuildID].GuildConfig.WaifuModule
 		guildReactsModule = misc.GuildMap[m.GuildID].GuildConfig.ReactsModule
+		guildVoteModule = misc.GuildMap[m.GuildID].GuildConfig.VoteModule
 		misc.MapMutex.Unlock()
 	}
 
@@ -139,6 +141,11 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 			if !commandMap[commands[i]].elevated {
 				if commandMap[commands[i]].category == "waifus" {
 					if !guildWaifuModule {
+						continue
+					}
+				}
+				if commandMap[commands[i]].trigger == "startvote" {
+					if !guildVoteModule {
 						continue
 					}
 				}
