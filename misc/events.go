@@ -61,7 +61,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	// Sends server count to bot list sites if it's the public ZeroTsu
 	sendServers(s)
 
-	for range time.NewTicker(10 * time.Second).C {
+	for range time.NewTicker(55 * time.Second).C {
 
 		// Checks whether it has to post Reddit feeds and handle remindMes and handle bans
 		for _, guild := range e.Guilds {
