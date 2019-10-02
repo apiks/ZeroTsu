@@ -282,6 +282,20 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		time.Sleep(100 * time.Millisecond)
 	}
 
+	// Category Permissions that overwrite if needed
+	if channel.Category != "" {
+		category, err := s.Channel(channel.Category)
+		if err == nil {
+			for _, catPerm := range category.PermissionOverwrites {
+				err = s.ChannelPermissionSet(newCha.ID, catPerm.ID, "role", catPerm.Allow, catPerm.Deny)
+				if err != nil {
+					misc.CommandErrorHandler(s, m, err, guildBotLog)
+					return
+				}
+			}
+		}
+	}
+
 	// Sets channel description if it exists
 	if channel.Description != "" {
 		descriptionEdit.Topic = channel.Description
