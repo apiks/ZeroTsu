@@ -23,7 +23,9 @@ func aboutCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	err := aboutEmbed(s, m, guildPrefix)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		if guildBotLog != "" {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+		}
 	}
 }
 
@@ -49,6 +51,23 @@ func aboutEmbed(s *discordgo.Session, m *discordgo.Message, prefix string) error
 				{
 					Name:   "**Supporter Perks:**",
 					Value:  "Consider becoming a [Patron](https://patreon.com/apiks) if you want to support me\n\n**-** Increased database limits for you and a server of your choice\n**-** Development Updates\n**-** Custom BOT Ping Messages\n**-** Be in the BOT Playing Field",
+					Inline: false,
+				},
+			},
+			Color:       16758465,
+			Thumbnail: &discordgo.MessageEmbedThumbnail {
+				URL:s.State.User.AvatarURL("256"),
+			},
+		}
+	} else if s.State.User.ID == "432579417974374400" {
+		embed = &discordgo.MessageEmbed {
+			URL:         "https://github.com/r-anime/ZeroTsu",
+			Title:       s.State.User.Username,
+			Description: "Written in **Go** by _Apiks#8969_ with a focus on Moderation",
+			Fields: []*discordgo.MessageEmbedField {
+				{
+					Name:   "\n**Features:**",
+					Value:  "**-** Moderation Toolset & Member System\n**-** Autopost Anime Episodes (_subbed_) & Daily Anime Schedule\n**-** Autopost Reddit Feed\n**-** React-based Auto Role\n**-** Channel & Emoji stats\n**-** Raffles\n**-** and more!\n[Invite Link](https://discordapp.com/api/oauth2/authorize?client_id=614495694769618944&permissions=401960278&scope=bot)",
 					Inline: false,
 				},
 			},
