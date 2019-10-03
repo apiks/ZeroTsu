@@ -246,14 +246,10 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	for _, goodRole := range misc.GuildMap[m.GuildID].GuildConfig.CommandRoles {
 		// Mod perms
-		err = s.ChannelPermissionSet(newCha.ID, goodRole.ID, "role", misc.FullSpoilerPerms, 0)
-		if err != nil {
-			if m.Author.ID != s.State.User.ID {
-				misc.MapMutex.Unlock()
-			}
-			misc.CommandErrorHandler(s, m, err, guildBotLog)
-			return
-		}
+		_ = s.ChannelPermissionSet(newCha.ID, goodRole.ID, "role", misc.FullSpoilerPerms, 0)
+	}
+	if m.Author.ID != s.State.User.ID {
+		misc.MapMutex.Unlock()
 	}
 	// Assign perms for the BOT
 	err = s.ChannelPermissionSet(newCha.ID, s.State.User.ID, "member", misc.FullSpoilerPerms, 0)
@@ -263,9 +259,6 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
-	}
-	if m.Author.ID != s.State.User.ID {
-		misc.MapMutex.Unlock()
 	}
 
 	time.Sleep(100 * time.Millisecond)
@@ -321,8 +314,11 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 			for _, catPerm := range category.PermissionOverwrites {
 				err = s.ChannelPermissionSet(newCha.ID, catPerm.ID, "role", catPerm.Allow, catPerm.Deny)
 				if err != nil {
-					misc.CommandErrorHandler(s, m, err, guildBotLog)
-					return
+					err = s.ChannelPermissionSet(newCha.ID, catPerm.ID, "member", catPerm.Allow, catPerm.Deny)
+					if err != nil {
+						misc.CommandErrorHandler(s, m, err, guildBotLog)
+						return
+					}
 				}
 			}
 		}
