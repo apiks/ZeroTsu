@@ -208,6 +208,38 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
+	// If it can't find airing role then create it
+	if channel.Type == "airing" && airing == "" {
+		_, _ = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Warning: Airing channel type was specified but no airing role was found. Creating role `airing`. Please use `%vsortroles` afterwards or manually put it between the dummy opt-in roles.", guildPrefix))
+
+		airingRole, err := s.GuildRoleCreate(m.GuildID)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return
+		}
+		_, err = s.GuildRoleEdit(m.GuildID, airingRole.ID, "airing", 0, false, 0, false)
+		if err != nil {
+			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			return
+		}
+		airing = airingRole.ID
+
+		// Adds the role to the SpoilerMap and writes to storage
+		tempRole := discordgo.Role{
+			ID:   airingRole.ID,
+			Name: "airing",
+		}
+		// Locks mutex based on whether the bot called the command or not because it's already being locked in channelvote
+		if m.Author.ID != s.State.User.ID {
+			misc.MapMutex.Lock()
+		}
+		misc.GuildMap[m.GuildID].SpoilerMap[airingRole.ID] = &tempRole
+		misc.SpoilerRolesWrite(misc.GuildMap[m.GuildID].SpoilerMap, m.GuildID)
+		if m.Author.ID != s.State.User.ID {
+			misc.MapMutex.Unlock()
+		}
+	}
+
 	// Assigns channel permission overwrites
 	if m.Author.ID != s.State.User.ID {
 		misc.MapMutex.Lock()

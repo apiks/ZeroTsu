@@ -166,14 +166,13 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 		}
 
-		for i := 0; i < len(spoilerRoles); i++ {
+		for i := range spoilerRoles {
 			spoilerRoles[i].Position = misc.GuildMap[m.GuildID].GuildConfig.OptInAbove.Position + len(spoilerRoles) - i
 			misc.GuildMap[m.GuildID].SpoilerMap[spoilerRoles[i].ID].Position = spoilerRoles[i].Position
 		}
 		if m.Author.ID != s.State.User.ID {
 			misc.MapMutex.Unlock()
 		}
-
 		// Pushes the sorted list to the server
 		_, err = s.GuildRoleReorder(m.GuildID, spoilerRoles)
 		if err != nil {
