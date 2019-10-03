@@ -798,6 +798,18 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	if !roleExists {
+		name = strings.Replace(name, " ", "-", -1)
+		for i := 0; i < len(deb); i++ {
+			if deb[i].Name == name {
+				roleID = deb[i].ID
+				if strings.Contains(deb[i].ID, roleID) {
+					roleExists = true
+					break
+				}
+			}
+		}
+	}
+	if !roleExists {
 
 		// Sends error message to user in DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
@@ -998,6 +1010,18 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 			if strings.Contains(deb[i].ID, roleID) {
 				roleExists = true
 				break
+			}
+		}
+	}
+	if !roleExists {
+		name = strings.Replace(name, " ", "-", -1)
+		for i := 0; i < len(deb); i++ {
+			if deb[i].Name == name {
+				roleID = deb[i].ID
+				if strings.Contains(deb[i].ID, roleID) {
+					roleExists = true
+					break
+				}
 			}
 		}
 	}
