@@ -487,10 +487,18 @@ func feedEmbed(s *discordgo.Session, thread RssThread, item *gofeed.Item) (*disc
 		Image:       embedImage,
 	}
 
-	message, err := s.ChannelMessageSendEmbed(thread.ChannelID, embed)
+	// Creates the complex message to send
+	data := &discordgo.MessageSend {
+		Content: item.Link,
+		Embed:   embed,
+	}
+
+	// Sends the message
+	message, err := s.ChannelMessageSendComplex(thread.ChannelID, data)
 	if err != nil {
 		return nil, err
 	}
+
 
 	return message, nil
 }
