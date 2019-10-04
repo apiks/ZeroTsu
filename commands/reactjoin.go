@@ -168,16 +168,7 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 				if len(role) >= 17 {
 					if _, err := strconv.ParseInt(role, 10, 64); err == nil {
 						// Removes the role
-						err := s.GuildMemberRoleRemove(r.GuildID, r.UserID, role)
-						if err != nil {
-							_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-							if err != nil {
-								misc.MapMutex.Unlock()
-								return
-							}
-							misc.MapMutex.Unlock()
-							return
-						}
+						_ = s.GuildMemberRoleRemove(r.GuildID, r.UserID, role)
 						misc.MapMutex.Unlock()
 						return
 					}
@@ -187,11 +178,7 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 						// Removes the role
 						err := s.GuildMemberRoleRemove(r.GuildID, r.UserID, serverRole.ID)
 						if err != nil {
-							_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-							if err != nil {
-								misc.MapMutex.Unlock()
-								return
-							}
+							_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 							misc.MapMutex.Unlock()
 							return
 						}
