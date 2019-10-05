@@ -11,7 +11,7 @@
 
 * Extensive member system that tracks past member usernames, nicknames, mod-issued warnings, kicks, bans, whether in the server, timestamps for punishments, server join date and account creation date
 
-* Punishment system where you can issue warnings, kick or ban people for a set period of time with the bot and log that using the member system, or remove those punishments and unban. Also shows timestamps for all of those. Automatically unbans for temp bans.
+* Punishment system where you can issue warnings, mute, kick or ban people for a set period of time with the bot and log that using the member system, or remove those punishments and unban. Also shows timestamps for all of those. Automatically unbans for temp bans.
 
 * Website verification system for reddit account linking and confirmation before being able to use the server [r/anime only]
 
