@@ -131,7 +131,7 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	if !roleExists {
 		for _, modRole := range misc.GuildMap[m.GuildID].GuildConfig.CommandRoles {
-			err = s.ChannelPermissionSet(m.ChannelID, modRole.ID, "role", discordgo.PermissionAll, 0)
+			err = s.ChannelPermissionSet(m.ChannelID, modRole.ID, "role", discordgo.PermissionSendMessages, 0)
 			if err != nil {
 				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
@@ -263,7 +263,7 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	if !roleExists {
 		for _, modRole := range misc.GuildMap[m.GuildID].GuildConfig.CommandRoles {
-			err = s.ChannelPermissionSet(m.ChannelID, modRole.ID, "role", discordgo.PermissionAll, 0)
+			err = s.ChannelPermissionSet(m.ChannelID, modRole.ID, "role", discordgo.PermissionSendMessages, 0)
 			if err != nil {
 				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 				if err != nil {
