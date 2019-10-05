@@ -69,7 +69,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 		if misc.GuildMap[m.GuildID].PunishedUsers[i].ID == userID {
 			banFlag = true
 
-			// Removes the ban from BannedUsersSlice
+			// Removes the ban from punishedUsers
 			misc.GuildMap[m.GuildID].PunishedUsers = append(misc.GuildMap[m.GuildID].PunishedUsers[:i], misc.GuildMap[m.GuildID].PunishedUsers[i+1:]...)
 			break
 		}

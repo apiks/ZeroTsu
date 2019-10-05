@@ -126,10 +126,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sends embed bot-log message
-	err = KickEmbed(s, m, userMem.User, reason, guildBotLog)
-	if err != nil {
-		return
-	}
+	_ = KickEmbed(s, m, userMem.User, reason, guildBotLog)
 }
 
 func KickEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, reason string, channelID string) error {

@@ -247,14 +247,12 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	if userMem != nil {
 		err = BanEmbed(s, m, userMem.User, reason, UnbanDate, perma, m.ChannelID)
 		if err != nil {
-			log.Println("ban 1")
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}
 	} else {
 		err = BanEmbed(s, m, user, reason, UnbanDate, perma, m.ChannelID)
 		if err != nil {
-			log.Println("ban 2")
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
 			return
 		}

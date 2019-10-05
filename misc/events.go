@@ -142,10 +142,7 @@ func unbanHandler(s *discordgo.Session, guildID string, i int, bans []*discordgo
 
 	// Sends an embed message to bot-log
 	if banFlag && ok {
-		err := UnbanEmbed(s, memberInfoUser, "", GuildMap[guildID].GuildConfig.BotLog.ID)
-		if err != nil {
-			log.Println(err)
-		}
+		_ = UnbanEmbed(s, memberInfoUser, "", GuildMap[guildID].GuildConfig.BotLog.ID)
 	}
 
 	if ok {
@@ -222,10 +219,7 @@ func unmuteHandler(s *discordgo.Session, guildID string, i int) {
 
 	// Sends an embed message to bot-log
 	if muteFlag && ok {
-		err = UnmuteEmbed(s, memberInfoUser, "", GuildMap[guildID].GuildConfig.BotLog.ID)
-		if err != nil {
-			log.Println(err)
-		}
+		_ = UnmuteEmbed(s, memberInfoUser, "", GuildMap[guildID].GuildConfig.BotLog.ID)
 	}
 
 	if ok {
@@ -1028,13 +1022,11 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 			}
 		}
 	}
-	MapMutex.Unlock()
 
 	if u.GuildID != "267799767843602452" {
+		MapMutex.Unlock()
 		return
 	}
-
-	MapMutex.Lock()
 	if _, ok := GuildMap[u.GuildID]; !ok {
 		InitDB(s, u.GuildID)
 		LoadGuilds()
