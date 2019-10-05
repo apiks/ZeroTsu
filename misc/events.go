@@ -76,8 +76,9 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 			// Fetches all server bans so it can check if the memberInfo User is banned there (whether he's been manually unbanned for example)
 			bans, err := s.GuildBans(guild.ID)
 			if err != nil {
+				MapMutex.Unlock()
 				_, _ = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
-				return
+				continue
 			}
 
 			for i := len(GuildMap[guild.ID].PunishedUsers) - 1; i >= 0; i-- {
@@ -87,7 +88,6 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 				}
 				unmuteHandler(s, guild.ID, i)
 			}
-
 			MapMutex.Unlock()
 		}
 	}
