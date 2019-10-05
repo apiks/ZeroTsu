@@ -322,6 +322,17 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		category, err := s.Channel(channel.Category)
 		if err == nil {
 			for _, catPerm := range category.PermissionOverwrites {
+
+				// Special behavior for everyone perm
+				if catPerm.ID == m.GuildID {
+					err = s.ChannelPermissionSet(newCha.ID, catPerm.ID, "role", catPerm.Allow, catPerm.Deny|discordgo.PermissionReadMessages)
+					if err != nil {
+						misc.CommandErrorHandler(s, m, err, guildBotLog)
+						return
+					}
+					continue
+				}
+
 				err = s.ChannelPermissionSet(newCha.ID, catPerm.ID, "role", catPerm.Allow, catPerm.Deny)
 				if err != nil {
 					err = s.ChannelPermissionSet(newCha.ID, catPerm.ID, "member", catPerm.Allow, catPerm.Deny)
