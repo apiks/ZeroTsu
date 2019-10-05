@@ -19,7 +19,7 @@ var (
 	GuildMap       = make(map[string]*guildInfo)
 	SharedInfo     *sharedInfo
 	dbPath         = "database/guilds"
-	guildFileNames = [...]string{"bannedUsers.json", "filters.json", "messReqs.json", "spoilerRoles.json", "rssThreads.json",
+	guildFileNames = [...]string{"bannedUsers.json", "punishedUsers.json", "filters.json", "messReqs.json", "spoilerRoles.json", "rssThreads.json",
 		"rssThreadCheck.json", "raffles.json", "waifus.json", "waifuTrades.json", "memberInfo.json", "emojiStats.json",
 		"channelStats.json", "userChangeStats.json", "verifiedStats.json", "voteInfo.json", "tempCha.json",
 		"reactJoin.json", "guildSettings.json", "autoposts.json"}
@@ -31,7 +31,7 @@ type guildInfo struct {
 	GuildID     	string
 	GuildConfig 	GuildSettings
 
-	BannedUsers         []BannedUsers
+	PunishedUsers       []PunishedUsers
 	Filters             []Filter
 	MessageRequirements []MessRequirement
 	SpoilerRoles        []discordgo.Role
@@ -67,6 +67,7 @@ type GuildSettings struct {
 	CommandRoles        []Role     `json:"CommandRoles"`
 	OptInUnder          OptinRole  `json:"OptInUnder"`
 	OptInAbove          OptinRole  `json:"OptInAbove"`
+	MutedRole			*Role	   `json:"MutedRole"`
 	VoiceChas           []VoiceCha `json:"VoiceChas"`
 	VoteModule          bool       `json:"VoteModule"`
 	VoteChannelCategory Cha        `json:"VoteChannelCategory"`
@@ -236,7 +237,7 @@ func LoadGuilds() {
 		GuildMap[folderName] = &guildInfo{
 			GuildID:             folderName,
 			GuildConfig:         GuildSettings{Prefix: ".", VoteModule: false, WaifuModule: false, ReactsModule: true, WhitelistFileFilter: false, PingMessage: "Hmm? Do you want some honey, darling? Open wide~~", Premium: false},
-			BannedUsers:         nil,
+			PunishedUsers:       nil,
 			Filters:             nil,
 			MessageRequirements: nil,
 			SpoilerRoles:        nil,
@@ -245,12 +246,12 @@ func LoadGuilds() {
 			Raffles:             nil,
 			Waifus:              nil,
 			WaifuTrades:         nil,
-			MemberInfoMap:      make(map[string]*UserInfo),
-			SpoilerMap:         make(map[string]*discordgo.Role),
-			EmojiStats:         make(map[string]*Emoji),
-			ChannelStats:       make(map[string]*Channel),
-			UserChangeStats:    make(map[string]int),
-			VerifiedStats:      make(map[string]int),
+			MemberInfoMap:       make(map[string]*UserInfo),
+			SpoilerMap:          make(map[string]*discordgo.Role),
+			EmojiStats:          make(map[string]*Emoji),
+			ChannelStats:        make(map[string]*Channel),
+			UserChangeStats:     make(map[string]int),
+			VerifiedStats:       make(map[string]int),
 			VoteInfoMap:        make(map[string]*VoteInfo),
 			TempChaMap:         make(map[string]*TempChaInfo),
 			ReactJoinMap:       make(map[string]*ReactJoin),
@@ -316,7 +317,15 @@ func LoadGuildFile(guildID string, file string) {
 	// Takes the data and puts it into the appropriate field
 	switch file {
 	case "bannedUsers.json":
-		_ = json.Unmarshal(infoByte, &GuildMap[guildID].BannedUsers)
+		// BannedUsers is a depreciated name, so rename it to the new one
+		err = os.Rename(fmt.Sprintf("%s/%s/bannedUsers.json", dbPath, guildID), fmt.Sprintf("%s/%s/punishedUsers.json", dbPath, guildID))
+		if err != nil {
+			log.Println(err)
+		}
+		// Then load the renamed file
+		LoadGuildFile(guildID, "punishedUsers.json")
+	case "punishedUsers.json":
+		_ = json.Unmarshal(infoByte, &GuildMap[guildID].PunishedUsers)
 	case "filters.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].Filters)
 	case "messReqs.json":
@@ -669,15 +678,15 @@ func WaifuTradesWrite(trade []WaifuTrade, guildID string) error {
 	return nil
 }
 
-// Writes to bannedUsers.json from bannedUsersSlice
-func BannedUsersWrite(bannedUsers []BannedUsers, guildID string) error {
+// Writes to punishedUsers.json from []PunishedUsers
+func PunishedUsersWrite(bannedUsers []PunishedUsers, guildID string) error {
 	// Turns that slice into bytes to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(bannedUsers, "", "    ")
 	if err != nil {
 		return err
 	}
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/bannedUsers.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/punishedUsers.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
@@ -1248,6 +1257,9 @@ func InitDB(s *discordgo.Session, guildID string) {
 		}
 	}
 	for _, name := range guildFileNames {
+		if name == "bannedUsers.json" {
+			continue
+		}
 		file, err := os.OpenFile(fmt.Sprintf("%v/%v/%v", dbPath, guildID, name), os.O_RDONLY|os.O_CREATE, 0666)
 		if err != nil {
 			log.Println(err)
@@ -1334,6 +1346,15 @@ func SetupGuildSub(guildID string) {
 	_ = AnimeSubsWrite(SharedInfo.AnimeSubs)
 }
 
+// Returns if a file really exists
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
+
 // Writes/Refreshes all DBs
 func writeAll(guildID string) {
 	LoadSharedDB()
@@ -1352,6 +1373,6 @@ func writeAll(guildID string) {
 	_ = WaifusWrite(GuildMap[guildID].Waifus, guildID)
 	_ = WaifuTradesWrite(GuildMap[guildID].WaifuTrades, guildID)
 	_ = AutopostsWrite(GuildMap[guildID].Autoposts, guildID)
-	_ = BannedUsersWrite(GuildMap[guildID].BannedUsers, guildID)
+	_ = PunishedUsersWrite(GuildMap[guildID].PunishedUsers, guildID)
 	_ = GuildSettingsWrite(GuildMap[guildID].GuildConfig, guildID)
 }

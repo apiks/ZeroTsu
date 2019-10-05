@@ -19,6 +19,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		pastUsernames string
 		pastNicknames string
 		warnings      string
+		mutes		  string
 		kicks         string
 		bans          string
 		unbanDate     string
@@ -133,6 +134,24 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		warnings = "None"
 	}
 
+	// Puts mutes into a slice
+	if len(user.Mutes) != 0 {
+		for i := 0; i < len(user.Mutes); i++ {
+			if len(mutes) == 0 {
+				// Converts index to string and appends warning
+				iStr := strconv.Itoa(i + 1)
+				mutes = user.Mutes[i] + " [" + iStr + "]"
+			} else {
+				// Converts index to string and appends new warning to old ones
+				iStr := strconv.Itoa(i + 1)
+				mutes = mutes + ", " + user.Mutes[i] + " [" + iStr + "]"
+
+			}
+		}
+	} else {
+		mutes = "None"
+	}
+
 	// Puts kicks into a slice
 	if len(user.Kicks) != 0 {
 		for i := 0; i < len(user.Kicks); i++ {
@@ -187,6 +206,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	message := "**User:** " + user.Username + "#" + user.Discrim + " | **ID:** " + user.ID +
 		"\n\n**Past Usernames:** " + pastUsernames +
 		"\n\n**Past Nicknames:** " + pastNicknames + "\n\n**Warnings:** " + warnings +
+		"\n\n**Mutes:** " + mutes +
 		"\n\n**Kicks:** " + kicks + "\n\n**Bans:** " + bans +
 		"\n\n**Join Date:** " + user.JoinDate
 	if config.Website != "" {

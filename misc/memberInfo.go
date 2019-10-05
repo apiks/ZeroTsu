@@ -32,11 +32,13 @@ type UserInfo struct {
 	PastUsernames    []string     `json:"pastUsernames,omitempty"`
 	PastNicknames    []string     `json:"pastNicknames,omitempty"`
 	Warnings         []string     `json:"warnings,omitempty"`
+	Mutes			 []string	  `json:"mutes,omitempty"`
 	Kicks            []string     `json:"kicks,omitempty"`
 	Bans             []string     `json:"bans,omitempty"`
 	JoinDate         string       `json:"joinDate"`
 	RedditUsername   string       `json:"redditUser,omitempty"`
 	VerifiedDate     string       `json:"verifiedDate,omitempty"`
+	UnmuteDate		 string		  `json:"unmuteDate,omitempty"`
 	UnbanDate        string       `json:"unbanDate,omitempty"`
 	Timestamps       []Punishment `json:"timestamps,omitempty"`
 	Waifu            Waifu        `json:"waifu,omitempty"`
@@ -44,10 +46,11 @@ type UserInfo struct {
 }
 
 // Creates a struct type in which we'll hold every banned user
-type BannedUsers struct {
-	ID        string    `json:"id"`
-	User      string    `json:"user"`
-	UnbanDate time.Time `json:"unbanDate"`
+type PunishedUsers struct {
+	ID        	string    	`json:"id"`
+	User      	string    	`json:"user"`
+	UnbanDate 	time.Time 	`json:"unbanDate"`
+	UnmuteDate 	time.Time 	`json:"unmuteDate"`
 }
 
 // Struct where we'll hold punishment timestamps

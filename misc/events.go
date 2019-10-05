@@ -26,8 +26,6 @@ var (
 // Periodic events such as Unbanning and RSS timer every 30 sec
 func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
-	var banFlag bool
-
 	for _, guild := range e.Guilds {
 
 		// Initialize guild if missing
@@ -69,72 +67,172 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 			MapMutex.Lock()
 			remindMeHandler(s, guild.ID)
 
-			// Goes through bannedUsers.json if it's not empty and unbans if needed
-			if len(GuildMap[guild.ID].BannedUsers) == 0 {
+			// Goes through punishedUsers.json if it's not empty and removes punishments if needed
+			if len(GuildMap[guild.ID].PunishedUsers) == 0 {
 				MapMutex.Unlock()
 				continue
 			}
 
-			t := time.Now()
-			var writeFlag bool
-			for i := len(GuildMap[guild.ID].BannedUsers) - 1; i >= 0; i-- {
-
-				difference := t.Sub(GuildMap[guild.ID].BannedUsers[i].UnbanDate)
-				if difference <= 0 {
-					continue
-				}
-
-				banFlag = false
-
-				// Checks if user is in MemberInfo and saves him if true
-				memberInfoUser, ok := GuildMap[guild.ID].MemberInfoMap[GuildMap[guild.ID].BannedUsers[i].ID]
-				if !ok {
-					continue
-				}
-				// Fetches all server bans so it can check if the memberInfoUser is banned there (whether he's been manually unbanned for example)
-				bans, err := s.GuildBans(guild.ID)
-				if err != nil {
-					_, _ = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
-					continue
-				}
-
-				// Set flag for whether user is a banned user, and then check for that flag so you can continue from the upper loop if error
-				for _, ban := range bans {
-					if ban.User.ID == memberInfoUser.ID {
-						banFlag = true
-						break
-					}
-				}
-				// Unbans memberInfoUser if possible
-				if banFlag {
-					err = s.GuildBanDelete(guild.ID, memberInfoUser.ID)
-					if err != nil {
-						_, _ = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
-						continue
-					}
-				}
-
-				// Removes unban date entirely
-				GuildMap[guild.ID].MemberInfoMap[memberInfoUser.ID].UnbanDate = ""
-
-				// Removes the memberInfoUser ban from bannedUsers.json
-				GuildMap[guild.ID].BannedUsers = append(GuildMap[guild.ID].BannedUsers[:i], GuildMap[guild.ID].BannedUsers[i+1:]...)
-
-				// Writes to memberInfo.json and bannedUsers.json
-				writeFlag = true
-
-				// Sends an embed message to bot-log
-				if !banFlag {
-					_ = UnbanEmbed(s, memberInfoUser, "", GuildMap[guild.ID].GuildConfig.BotLog.ID)
-				}
+			// Fetches all server bans so it can check if the memberInfo User is banned there (whether he's been manually unbanned for example)
+			bans, err := s.GuildBans(guild.ID)
+			if err != nil {
+				_, _ = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
+				return
 			}
-			if writeFlag {
-				WriteMemberInfo(GuildMap[guild.ID].MemberInfoMap, guild.ID)
-				_ = BannedUsersWrite(GuildMap[guild.ID].BannedUsers, guild.ID)
+
+			for i := len(GuildMap[guild.ID].PunishedUsers) - 1; i >= 0; i-- {
+				fieldRemoved := unbanHandler(s, guild.ID, i, bans)
+				if fieldRemoved {
+					continue
+				}
+				unmuteHandler(s, guild.ID, i)
 			}
+
 			MapMutex.Unlock()
 		}
 	}
+}
+
+func unbanHandler(s *discordgo.Session, guildID string, i int, bans []*discordgo.GuildBan) bool {
+	t := time.Now()
+	zeroTimeValue := time.Time{}
+
+	if GuildMap[guildID].PunishedUsers[i].UnbanDate == zeroTimeValue {
+		return false
+	}
+	banDifference := t.Sub(GuildMap[guildID].PunishedUsers[i].UnbanDate)
+	if banDifference <= 0 {
+		return false
+	}
+
+	// Set flag for whether user is a banned user
+	banFlag := false
+	for _, ban := range bans {
+		if ban.User.ID == GuildMap[guildID].PunishedUsers[i].ID {
+			banFlag = true
+			break
+		}
+	}
+	// Unbans User if possible and needed
+	if banFlag {
+		err := s.GuildBanDelete(guildID, GuildMap[guildID].PunishedUsers[i].ID)
+		if err != nil {
+			_, _ = s.ChannelMessageSend(GuildMap[guildID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
+			return false
+		}
+	}
+
+	// Removes unban date entirely
+	memberInfoUser, ok := GuildMap[guildID].MemberInfoMap[GuildMap[guildID].PunishedUsers[i].ID]
+	if ok {
+		GuildMap[guildID].MemberInfoMap[GuildMap[guildID].PunishedUsers[i].ID].UnbanDate = ""
+	}
+
+	// Removes the unbanDate from punishedUsers.json
+	if GuildMap[guildID].PunishedUsers[i].UnmuteDate != zeroTimeValue {
+		temp := PunishedUsers {
+			ID:         GuildMap[guildID].PunishedUsers[i].ID,
+			User:       GuildMap[guildID].PunishedUsers[i].User,
+			UnmuteDate: GuildMap[guildID].PunishedUsers[i].UnmuteDate,
+		}
+		GuildMap[guildID].PunishedUsers[i] = temp
+	} else {
+		GuildMap[guildID].PunishedUsers = append(GuildMap[guildID].PunishedUsers[:i], GuildMap[guildID].PunishedUsers[i+1:]...)
+	}
+
+
+	// Sends an embed message to bot-log
+	if banFlag && ok {
+		err := UnbanEmbed(s, memberInfoUser, "", GuildMap[guildID].GuildConfig.BotLog.ID)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
+	if ok {
+		WriteMemberInfo(GuildMap[guildID].MemberInfoMap, guildID)
+	}
+	_ = PunishedUsersWrite(GuildMap[guildID].PunishedUsers, guildID)
+
+	return true
+}
+
+func unmuteHandler(s *discordgo.Session, guildID string, i int) {
+	t := time.Now()
+	zeroTimeValue := time.Time{}
+
+	if GuildMap[guildID].PunishedUsers[i].UnmuteDate == zeroTimeValue {
+		return
+	}
+	muteDifference := t.Sub(GuildMap[guildID].PunishedUsers[i].UnmuteDate)
+	if muteDifference <= 0 {
+		return
+	}
+
+	// Set flag for whether user has the muted role and unmutes them
+	muteFlag := false
+	mem, err := s.State.Member(guildID, GuildMap[guildID].PunishedUsers[i].ID)
+	if err != nil {
+		mem, _ = s.GuildMember(guildID, GuildMap[guildID].PunishedUsers[i].ID)
+	}
+	if mem != nil {
+		for _, roleID := range mem.Roles {
+			if GuildMap[guildID].GuildConfig.MutedRole != nil {
+				if roleID == GuildMap[guildID].GuildConfig.MutedRole.ID {
+					err := s.GuildMemberRoleRemove(guildID, GuildMap[guildID].PunishedUsers[i].ID, roleID)
+					if err == nil {
+						muteFlag = true
+					}
+					break
+				}
+			} else {
+				deb, _ := s.GuildRoles(guildID)
+				for _, role := range deb {
+					if strings.ToLower(role.Name) == "muted" || strings.ToLower(role.Name) == "t-mute" {
+						err := s.GuildMemberRoleRemove(guildID, GuildMap[guildID].PunishedUsers[i].ID, role.ID)
+						if err == nil {
+							muteFlag = true
+						}
+						break
+					}
+				}
+			}
+			if muteFlag {
+				break
+			}
+		}
+	}
+
+	// Removes unmute date entirely
+	memberInfoUser, ok := GuildMap[guildID].MemberInfoMap[GuildMap[guildID].PunishedUsers[i].ID]
+	if ok {
+		GuildMap[guildID].MemberInfoMap[memberInfoUser.ID].UnmuteDate = ""
+	}
+
+	// Removes the unmuteDate from punishedUsers.json
+	if GuildMap[guildID].PunishedUsers[i].UnbanDate != zeroTimeValue {
+		temp := PunishedUsers {
+			ID:         GuildMap[guildID].PunishedUsers[i].ID,
+			User:       GuildMap[guildID].PunishedUsers[i].User,
+			UnbanDate: GuildMap[guildID].PunishedUsers[i].UnbanDate,
+		}
+		GuildMap[guildID].PunishedUsers[i] = temp
+	} else {
+		GuildMap[guildID].PunishedUsers = append(GuildMap[guildID].PunishedUsers[:i], GuildMap[guildID].PunishedUsers[i+1:]...)
+	}
+
+	// Sends an embed message to bot-log
+	if muteFlag && ok {
+		err = UnmuteEmbed(s, memberInfoUser, "", GuildMap[guildID].GuildConfig.BotLog.ID)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
+	if ok {
+		WriteMemberInfo(GuildMap[guildID].MemberInfoMap, guildID)
+	}
+	_ = PunishedUsersWrite(GuildMap[guildID].PunishedUsers, guildID)
 }
 
 func UnbanEmbed(s *discordgo.Session, user *UserInfo, mod string, botLog string) error {
@@ -156,6 +254,38 @@ func UnbanEmbed(s *discordgo.Session, user *UserInfo, mod string, botLog string)
 		embedMess.Title = fmt.Sprintf("%v#%v has been unbanned.", user.Username, user.Discrim)
 	} else {
 		embedMess.Title = fmt.Sprintf("%v#%v has been unbanned by %v.", user.Username, user.Discrim, mod)
+	}
+
+	// Adds everything together
+	embedMess.Fields = embed
+
+	// Sends embed in bot-log
+	_, err := s.ChannelMessageSendEmbed(botLog, &embedMess)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func UnmuteEmbed(s *discordgo.Session, user *UserInfo, mod string, botLog string) error {
+
+	var (
+		embedMess discordgo.MessageEmbed
+		embed     []*discordgo.MessageEmbedField
+	)
+
+	// Sets timestamp of unban
+	t := time.Now()
+	now := t.Format(time.RFC3339)
+	embedMess.Timestamp = now
+
+	// Set embed color
+	embedMess.Color = 16758465
+
+	if mod == "" {
+		embedMess.Title = fmt.Sprintf("%v#%v has been unmuted.", user.Username, user.Discrim)
+	} else {
+		embedMess.Title = fmt.Sprintf("%v#%v has been unmuted by %v.", user.Username, user.Discrim, mod)
 	}
 
 	// Adds everything together
@@ -789,7 +919,7 @@ func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
 
 	guildBotLog := GuildMap[e.GuildID].GuildConfig.BotLog.ID
 
-	for _, user := range GuildMap[e.GuildID].BannedUsers {
+	for _, user := range GuildMap[e.GuildID].PunishedUsers {
 		if user.ID == e.User.ID {
 			MapMutex.Unlock()
 			return
@@ -852,6 +982,7 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 }
 
 // Sends a message to a channel to log whenever a user joins. Intended use was to catch spambots for r/anime
+// Now also serves for the mute command
 func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -865,6 +996,40 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	if u.GuildID == "" {
 		return
 	}
+
+	// Gives the user the muted role if he is muted and has rejoined the server
+	MapMutex.Lock()
+	for _, punishedUser := range GuildMap[u.GuildID].PunishedUsers {
+		if punishedUser.ID == u.User.ID {
+			t := time.Now()
+			zeroTimeValue := time.Time{}
+			if punishedUser.UnmuteDate == zeroTimeValue {
+				continue
+			}
+			muteDifference := t.Sub(punishedUser.UnmuteDate)
+			if muteDifference > 0 {
+				continue
+			}
+
+			if GuildMap[u.GuildID].GuildConfig.MutedRole != nil {
+				if GuildMap[u.GuildID].GuildConfig.MutedRole.ID != "" {
+					_ = s.GuildMemberRoleAdd(u.GuildID, punishedUser.ID, GuildMap[u.GuildID].GuildConfig.MutedRole.ID)
+				}
+			} else {
+				// Pulls info on server roles
+				deb, _ := s.GuildRoles(u.GuildID)
+
+				// Checks by string for a muted role
+				for _, role := range deb {
+					if strings.ToLower(role.Name) == "muted" || strings.ToLower(role.Name) == "t-mute" {
+						_ = s.GuildMemberRoleAdd(u.GuildID, punishedUser.ID, role.ID)
+						break
+					}
+				}
+			}
+		}
+	}
+	MapMutex.Unlock()
 
 	if u.GuildID != "267799767843602452" {
 		return
@@ -915,7 +1080,7 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		creationDate time.Time
 		now          time.Time
 
-		temp    BannedUsers
+		temp    PunishedUsers
 		tempMem UserInfo
 
 		dmMessage string
@@ -977,13 +1142,13 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	temp.ID = u.User.ID
 	temp.User = u.User.Username
 	temp.UnbanDate = time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
-	for index, val := range GuildMap[u.GuildID].BannedUsers {
+	for index, val := range GuildMap[u.GuildID].PunishedUsers {
 		if val.ID == u.User.ID {
-			GuildMap[u.GuildID].BannedUsers = append(GuildMap[u.GuildID].BannedUsers[:index], GuildMap[u.GuildID].BannedUsers[index+1:]...)
+			GuildMap[u.GuildID].PunishedUsers = append(GuildMap[u.GuildID].PunishedUsers[:index], GuildMap[u.GuildID].PunishedUsers[index+1:]...)
 		}
 	}
-	GuildMap[u.GuildID].BannedUsers = append(GuildMap[u.GuildID].BannedUsers, temp)
-	_ = BannedUsersWrite(GuildMap[u.GuildID].BannedUsers, u.GuildID)
+	GuildMap[u.GuildID].PunishedUsers = append(GuildMap[u.GuildID].PunishedUsers, temp)
+	_ = PunishedUsersWrite(GuildMap[u.GuildID].PunishedUsers, u.GuildID)
 
 	// Adds a bool to memberInfo that it's a suspected spambot account in case they try to reverify
 	tempMem = *GuildMap[u.GuildID].MemberInfoMap[u.User.ID]

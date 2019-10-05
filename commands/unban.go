@@ -50,7 +50,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Goes through every banned user from BannedUsersSlice and if the user is in it, confirms that user is a temp ban
 	misc.MapMutex.Lock()
-	if len(misc.GuildMap[m.GuildID].BannedUsers) == 0 {
+	if len(misc.GuildMap[m.GuildID].PunishedUsers) == 0 {
 		_, err = s.ChannelMessageSend(m.ChannelID, "No bans found.")
 		if err != nil {
 			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
@@ -65,12 +65,12 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	for i := 0; i < len(misc.GuildMap[m.GuildID].BannedUsers); i++ {
-		if misc.GuildMap[m.GuildID].BannedUsers[i].ID == userID {
+	for i := 0; i < len(misc.GuildMap[m.GuildID].PunishedUsers); i++ {
+		if misc.GuildMap[m.GuildID].PunishedUsers[i].ID == userID {
 			banFlag = true
 
 			// Removes the ban from BannedUsersSlice
-			misc.GuildMap[m.GuildID].BannedUsers = append(misc.GuildMap[m.GuildID].BannedUsers[:i], misc.GuildMap[m.GuildID].BannedUsers[i+1:]...)
+			misc.GuildMap[m.GuildID].PunishedUsers = append(misc.GuildMap[m.GuildID].PunishedUsers[:i], misc.GuildMap[m.GuildID].PunishedUsers[i+1:]...)
 			break
 		}
 	}
@@ -119,7 +119,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.GuildMap[m.GuildID].MemberInfoMap[userID].UnbanDate = t.Format("2006-01-02 15:04:05")
 		misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	}
-	_ = misc.BannedUsersWrite(misc.GuildMap[m.GuildID].BannedUsers, m.GuildID)
+	_ = misc.PunishedUsersWrite(misc.GuildMap[m.GuildID].PunishedUsers, m.GuildID)
 	misc.MapMutex.Unlock()
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%v#%v__ has been unbanned.", user.Username, user.Discriminator))
@@ -134,7 +134,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Sends an embed message to bot-log if possible
 	misc.MapMutex.Lock()
 	if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
-		err = misc.UnbanEmbed(s, misc.GuildMap[m.GuildID].MemberInfoMap[userID], m.Author.Username, guildBotLog)
+		_ = misc.UnbanEmbed(s, misc.GuildMap[m.GuildID].MemberInfoMap[userID], m.Author.Username, guildBotLog)
 	}
 	misc.MapMutex.Unlock()
 }

@@ -1241,6 +1241,98 @@ func pingMessageCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
+// Adds a role as the muted role
+func setMutedRole(s *discordgo.Session, m *discordgo.Message) {
+
+	var role misc.Role
+
+	misc.MapMutex.Lock()
+	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
+	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	misc.MapMutex.Unlock()
+
+	messageLowercase := strings.ToLower(m.Content)
+	commandStrings := strings.SplitN(messageLowercase, " ", 2)
+
+	if len(commandStrings) == 1 {
+		misc.MapMutex.Lock()
+		if misc.GuildMap[m.GuildID].GuildConfig.MutedRole == nil || misc.GuildMap[m.GuildID].GuildConfig.MutedRole.ID == "" {
+			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("The muted role is not set. Please use `%vsetmuted [Role ID]` to set it.", guildPrefix))
+			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+				if err != nil {
+					misc.MapMutex.Unlock()
+					return
+				}
+				misc.MapMutex.Unlock()
+				return
+			}
+			misc.MapMutex.Unlock()
+			return
+		}
+
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("The current muted role is `%v - %v`.\nPlease use `%vsetmuted [Role ID]` to change it.",  misc.GuildMap[m.GuildID].GuildConfig.MutedRole.Name,  misc.GuildMap[m.GuildID].GuildConfig.MutedRole.ID, guildPrefix))
+		if err != nil {
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+			if err != nil {
+				misc.MapMutex.Unlock()
+				return
+			}
+			misc.MapMutex.Unlock()
+			return
+		}
+		misc.MapMutex.Unlock()
+		return
+	}
+
+	// Parse role for roleID
+	role.ID, role.Name = misc.RoleParser(s, commandStrings[1], m.GuildID)
+	if role.ID == "" {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such role exists.")
+		if err != nil {
+			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+			if err != nil {
+				return
+			}
+			return
+		}
+		return
+	}
+
+	// Checks if the role already exists as a muted role
+	misc.MapMutex.Lock()
+	if misc.GuildMap[m.GuildID].GuildConfig.MutedRole != nil {
+		if misc.GuildMap[m.GuildID].GuildConfig.MutedRole.ID == role.ID {
+			_, err := s.ChannelMessageSend(m.ChannelID, "Error: That role is already the muted role.")
+			if err != nil {
+				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+				if err != nil {
+					misc.MapMutex.Unlock()
+					return
+				}
+				misc.MapMutex.Unlock()
+				return
+			}
+			misc.MapMutex.Unlock()
+			return
+		}
+	}
+
+	// Sets the role as the muted role and writes to disk
+	misc.GuildMap[m.GuildID].GuildConfig.MutedRole = &role
+	_ = misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	misc.MapMutex.Unlock()
+
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Role `%v` is now the muted role.", role.Name))
+	if err != nil {
+		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+		if err != nil {
+			return
+		}
+		return
+	}
+}
+
 func init() {
 	add(&command{
 		execute:  addCommandRole,
@@ -1375,8 +1467,17 @@ func init() {
 	add(&command{
 		execute:  pingMessageCommand,
 		trigger:  "pingmessage",
-		desc:     "Views or changes the current ping message.",
 		aliases:  []string{"pingmsg"},
+		desc:     "Views or changes the current ping message.",
+		elevated: true,
+		admin:    true,
+		category: "settings",
+	})
+	add(&command{
+		execute:  setMutedRole,
+		trigger:  "setmuted",
+		aliases:  []string{"setmutedrole", "addmuted", "addmutedrole"},
+		desc:     "Sets a role as the muted role",
 		elevated: true,
 		admin:    true,
 		category: "settings",

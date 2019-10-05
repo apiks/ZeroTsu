@@ -43,6 +43,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	guildMutedRoleID := misc.GuildMap[m.GuildID].GuildConfig.MutedRole.ID
 	if m.Author.ID != s.State.User.ID {
 		misc.MapMutex.Unlock()
 	}
@@ -197,14 +198,23 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
-	// Finds ID of Muted role and Airing role
+
+	// Finds ID of muted role
+	if guildMutedRoleID != "" {
+		muted = guildMutedRoleID
+	} else {
+		for _, role := range deb {
+			if strings.ToLower(role.Name) == "muted" || strings.ToLower(role.Name) == "t-mute" {
+				muted = role.ID
+				break
+			}
+		}
+	}
+
+	// Finds ID Airing role
 	for i := 0; i < len(deb); i++ {
-		if deb[i].Name == "Muted" {
-			muted = deb[i].ID
-		} else if channel.Type == "airing" && deb[i].Name == "airing" {
+		if channel.Type == "airing" && strings.ToLower(deb[i].Name) == "airing" {
 			airing = deb[i].ID
-		} else if deb[i].Name == "t-mute" {
-			tmute = deb[i].ID
 		}
 	}
 

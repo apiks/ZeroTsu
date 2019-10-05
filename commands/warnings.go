@@ -101,10 +101,6 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	err = WarningEmbed(s, m, userMem.User, warning, m.ChannelID, true)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
 		return
 	}
 }
@@ -214,10 +210,6 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	err = WarningEmbed(s, m, userMem.User, warning, m.ChannelID, false)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
 		return
 	}
 }
