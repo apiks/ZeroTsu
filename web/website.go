@@ -808,9 +808,9 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 
 				// Checks if banned suspected spambot accounts verified
 				if misc.GuildMap[config.ServerID].MemberInfoMap[userID].SuspectedSpambot {
-					for i, banUser := range misc.GuildMap[config.ServerID].BannedUsers {
+					for i, banUser := range misc.GuildMap[config.ServerID].PunishedUsers {
 						if banUser.ID == userID {
-							misc.GuildMap[config.ServerID].BannedUsers = append(misc.GuildMap[config.ServerID].BannedUsers[:i], misc.GuildMap[config.ServerID].BannedUsers[i+1:]...)
+							misc.GuildMap[config.ServerID].PunishedUsers = append(misc.GuildMap[config.ServerID].PunishedUsers[:i], misc.GuildMap[config.ServerID].PunishedUsers[i+1:]...)
 							break
 						}
 					}
