@@ -343,14 +343,14 @@ func GetRoleUserAmount(guild *discordgo.Guild, roles []*discordgo.Role, roleName
 // Puts banned users in bannedUsersSlice on bot startup from memberInfo
 func GetBannedUsers() {
 	var (
-		bannedUserInfo BannedUsers
+		bannedUserInfo PunishedUsers
 		flag           bool
 	)
 
 	MapMutex.Lock()
 	for guildID, _ := range GuildMap {
 		for _, user := range GuildMap[guildID].MemberInfoMap {
-			for _, ban := range GuildMap[guildID].BannedUsers {
+			for _, ban := range GuildMap[guildID].PunishedUsers {
 				if user.ID == ban.ID {
 					flag = true
 					break
@@ -380,9 +380,9 @@ func GetBannedUsers() {
 			bannedUserInfo.ID = user.ID
 			bannedUserInfo.User = user.Username
 			bannedUserInfo.UnbanDate = date
-			GuildMap[guildID].BannedUsers = append(GuildMap[guildID].BannedUsers, bannedUserInfo)
+			GuildMap[guildID].PunishedUsers = append(GuildMap[guildID].PunishedUsers, bannedUserInfo)
 		}
-		BannedUsersWrite(GuildMap[guildID].BannedUsers, guildID)
+		PunishedUsersWrite(GuildMap[guildID].PunishedUsers, guildID)
 	}
 	MapMutex.Unlock()
 }
@@ -757,14 +757,4 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 	MapMutex.Unlock()
 
 	return err
-}
-
-// Replaces all instances of spaces in a string with hyphens
-func RemoveSpaces(str string) string {
-	return strings.Replace(str, " ", "-", -1)
-}
-
-// Replaces all instances of hyphens in a string with spaces
-func RemoveHyphens(str string) string {
-	return strings.Replace(str, "-", " ", -1)
 }
