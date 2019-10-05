@@ -19,6 +19,7 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 		success            string
 		remaining          string
 		commandStringsCopy []string
+		guildMutedRoleID   string
 
 		validSlice bool
 		punishedUserExists bool
@@ -34,7 +35,9 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 	misc.MapMutex.Lock()
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	guildMutedRoleID := misc.GuildMap[m.GuildID].GuildConfig.MutedRole.ID
+	if misc.GuildMap[m.GuildID].GuildConfig.MutedRole != nil {
+		guildMutedRoleID = misc.GuildMap[m.GuildID].GuildConfig.MutedRole.ID
+	}
 	misc.MapMutex.Unlock()
 
 	commandStrings := strings.SplitN(m.Content, " ", 4)

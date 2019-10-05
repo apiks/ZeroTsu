@@ -28,6 +28,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		roleName         string
 		descriptionSlice []string
 		fixed            bool
+		guildMutedRoleID string
 
 		categoryNum = 0
 
@@ -43,7 +44,9 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	guildMutedRoleID := misc.GuildMap[m.GuildID].GuildConfig.MutedRole.ID
+	if misc.GuildMap[m.GuildID].GuildConfig.MutedRole != nil {
+		guildMutedRoleID = misc.GuildMap[m.GuildID].GuildConfig.MutedRole.ID
+	}
 	if m.Author.ID != s.State.User.ID {
 		misc.MapMutex.Unlock()
 	}

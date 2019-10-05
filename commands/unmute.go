@@ -12,11 +12,14 @@ import (
 func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var muteFlag = false
+	var guildMutedRoleID string
 
 	misc.MapMutex.Lock()
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
 	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	guildMutedRoleID := misc.GuildMap[m.GuildID].GuildConfig.MutedRole.ID
+	if misc.GuildMap[m.GuildID].GuildConfig.MutedRole != nil {
+		guildMutedRoleID = misc.GuildMap[m.GuildID].GuildConfig.MutedRole.ID
+	}
 	misc.MapMutex.Unlock()
 
 	messageLowercase := strings.ToLower(m.Content)
