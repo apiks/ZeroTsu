@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"log"
 	"strconv"
 	"strings"
 	"time"
