@@ -77,7 +77,6 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 			bans, err := s.GuildBans(guild.ID)
 			if err != nil {
 				MapMutex.Unlock()
-				_, _ = s.ChannelMessageSend(GuildMap[guild.ID].GuildConfig.BotLog.ID, err.Error()+"\n"+ErrorLocation(err))
 				continue
 			}
 
