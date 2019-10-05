@@ -13,6 +13,7 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var muteFlag = false
 	var guildMutedRoleID string
+	var tookRole bool
 
 	misc.MapMutex.Lock()
 	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
@@ -143,6 +144,7 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Removes the mute
 	if guildMutedRoleID != "" {
 		_ = s.GuildMemberRoleRemove(m.GuildID, userID, guildMutedRoleID)
+		tookRole = true
 	} else {
 		// Pulls info on server roles
 		deb, err := s.GuildRoles(m.GuildID)
@@ -155,9 +157,19 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 		for _, role := range deb {
 			if strings.ToLower(role.Name) == "muted" || strings.ToLower(role.Name) == "t-mute" {
 				_ = s.GuildMemberRoleRemove(m.GuildID, userID, role.ID)
+				tookRole = true
 				break
 			}
 		}
+	}
+
+	if !tookRole {
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: This server does not have a set muted role. Please use `%vsetmuted [Role ID]` before trying this command again.", guildPrefix))
+		if err != nil {
+			_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+			return
+		}
+		return
 	}
 
 	// Saves time of unmute command usage
