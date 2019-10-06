@@ -360,10 +360,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					_, err = s.ChannelMessageSend(messageReact.ChannelID, "Channel vote has ended. `"+misc.GuildMap[guild.ID].VoteInfoMap[k].Channel+"` has failed to "+
 						"gather the necessary "+numStr+" votes.")
 					if err != nil {
-						_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-						if err != nil {
-							continue
-						}
+						_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 						continue
 					}
 
@@ -444,11 +441,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					_, err = s.ChannelMessageSend(messageReact.ChannelID, "Channel `"+temp.Channel+"` was successfully created! Those that have voted were given the role. Use `"+
 						guildPrefix+"join "+role+"` to join if you do not have it.")
 					if err != nil {
-						_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-						if err != nil {
-							inChanCreation = false
-							continue
-						}
+						_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 						inChanCreation = false
 						continue
 					}
@@ -456,11 +449,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					_, err = s.ChannelMessageSend(messageReact.ChannelID, "Channel `"+temp.Channel+"` was successfully created! Those that have voted were given the role. Use `"+
 						guildPrefix+"join "+role+"` otherwise.")
 					if err != nil {
-						_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-						if err != nil {
-							inChanCreation = false
-							continue
-						}
+						_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 						inChanCreation = false
 						continue
 					}
@@ -470,11 +459,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 				roles, err := s.GuildRoles(guild.ID)
 				if err != nil {
-					_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-					if err != nil {
-						inChanCreation = false
-						continue
-					}
+					_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 					inChanCreation = false
 					continue
 				}
@@ -488,11 +473,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				// Gets the users who voted and gives them the role
 				users, err := s.MessageReactions(temp.MessageReact.ChannelID, temp.MessageReact.ID, "👍", 100)
 				if err != nil {
-					_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-					if err != nil {
-						inChanCreation = false
-						continue
-					}
+					_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 					inChanCreation = false
 					continue
 				}
@@ -504,10 +485,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 					err := s.GuildMemberRoleAdd(guild.ID, users[i].ID, role)
 					if err != nil {
-						_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-						if err != nil {
-							continue
-						}
+						_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 						continue
 					}
 				}
@@ -516,10 +494,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				if temp.ChannelType == "temp" || temp.ChannelType == "temporary" {
 					_, err = s.ChannelMessageSend(guildBotLog, fmt.Sprintf("Temp channel `%v` has been created from a vote by user %v#%v.", temp.Channel, temp.User.Username, temp.User.Discriminator))
 					if err != nil {
-						_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-						if err != nil {
-							continue
-						}
+						_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 						continue
 					}
 					continue
@@ -536,10 +511,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					if cha[i].Name == v.RoleName {
 						mess, err := s.ChannelMessages(cha[i].ID, 1, "", "", "")
 						if err != nil {
-							_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-							if err != nil {
-								continue
-							}
+							_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 							continue
 						}
 
@@ -547,10 +519,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 						if len(mess) != 0 {
 							timestamp, err = mess[0].Timestamp.Parse()
 							if err != nil {
-								_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-								if err != nil {
-									continue
-								}
+								_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 								continue
 							}
 						} else {
@@ -566,29 +535,20 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 						if difference > 0 {
 							_, err = s.ChannelMessageSend(guildBotLog, fmt.Sprintf("Temp channel `%v` has been deleted due to being inactive for 3 hours.", cha[i].Name))
 							if err != nil {
-								_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-								if err != nil {
-									continue
-								}
+								_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 								continue
 							}
 
 							// Deletes channel and role
 							_, err := s.ChannelDelete(cha[i].ID)
 							if err != nil {
-								_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-								if err != nil {
-									continue
-								}
+								_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 								continue
 							}
 
 							err = s.GuildRoleDelete(guild.ID, k)
 							if err != nil {
-								_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-								if err != nil {
-									continue
-								}
+								_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
 								continue
 							}
 
