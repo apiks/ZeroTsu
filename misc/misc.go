@@ -276,9 +276,12 @@ func CommandErrorHandler(s *discordgo.Session, m *discordgo.Message, err error, 
 		if botLogID == "" {
 			return
 		}
-		if err.(*discordgo.RESTError).Response.Status == "500: Internal Server Error" {
-			return
+		if _, ok := err.(*discordgo.RESTError); ok {
+			if err.(*discordgo.RESTError).Response.Status == "500: Internal Server Error" {
+				return
+			}
 		}
+
 		_, _ = s.ChannelMessageSend(botLogID, err.Error())
 	}
 }
@@ -757,4 +760,14 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 	MapMutex.Unlock()
 
 	return err
+}
+
+// Replaces all instances of spaces in a string with hyphens
+func RemoveSpaces(str string) string {
+	return strings.Replace(str, " ", "-", -1)
+}
+
+// Replaces all instances of hyphens in a string with spaces
+func RemoveHyphens(str string) string {
+	return strings.Replace(str, "-", " ", -1)
 }
