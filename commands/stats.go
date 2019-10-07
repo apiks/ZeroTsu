@@ -443,6 +443,9 @@ func dailyStats(s *discordgo.Session) {
 		return
 	}
 
+	// Sleeps until anime schedule is definitely updated
+	time.Sleep(10 * time.Second)
+
 	misc.MapMutex.Lock()
 	for _, f := range folders {
 		if !f.IsDir() {

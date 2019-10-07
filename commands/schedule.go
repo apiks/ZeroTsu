@@ -129,11 +129,11 @@ func getDaySchedule(weekday int) string {
 					westAmericanTimezoneString, _ := t.In(PDT).Zone()
 
 					if show.Delayed == "" {
-						printMessage += fmt.Sprintf("**%v %v** - **|** %v %v **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, t.UTC().In(BST).Format("15:04"), ukTimezoneString,
+						printMessage += fmt.Sprintf("**%v %v** - %v %v **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, t.UTC().In(BST).Format("15:04"), ukTimezoneString,
 							t.UTC().In(PDT).Format("15:04"), westAmericanTimezoneString,
 							t.UTC().In(JST).Format("15:04"), jstTimezoneString)
 					} else {
-						printMessage += fmt.Sprintf("**%v %v** __%v__ - **|** %v %v **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, show.Delayed, t.UTC().In(BST).Format("15:04"), ukTimezoneString,
+						printMessage += fmt.Sprintf("**%v %v** __%v__ - %v %v **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, show.Delayed, t.UTC().In(BST).Format("15:04"), ukTimezoneString,
 							t.UTC().In(PDT).Format("15:04"), westAmericanTimezoneString,
 							t.UTC().In(JST).Format("15:04"), jstTimezoneString)
 					}
@@ -141,11 +141,11 @@ func getDaySchedule(weekday int) string {
 					westAmericanTimezoneString, _ := t.In(PST).Zone()
 
 					if show.Delayed == "" {
-						printMessage += fmt.Sprintf("**%v %v** - **|** %v GMT **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, t.UTC().Format("15:04"),
+						printMessage += fmt.Sprintf("**%v %v** - %v GMT **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, t.UTC().Format("15:04"),
 							t.UTC().In(PST).Format("15:04"), westAmericanTimezoneString,
 							t.UTC().In(JST).Format("15:04"), jstTimezoneString)
 					} else {
-						printMessage += fmt.Sprintf("**%v %v** __%v__ - **|** %v GMT **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, show.Delayed, t.UTC().Format("15:04"),
+						printMessage += fmt.Sprintf("**%v %v** __%v__ - %v GMT **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, show.Delayed, t.UTC().Format("15:04"),
 							t.UTC().In(PST).Format("15:04"), westAmericanTimezoneString,
 							t.UTC().In(JST).Format("15:04"), jstTimezoneString)
 					}
@@ -184,10 +184,10 @@ func processEachShow(index int, element *goquery.Selection) {
 	}
 
 	show.Name = element.Find(".show-name").Text()
-	show.Episode = element.Parent().Parent().Parent().Find(".episode-counter").Text()
+	show.Episode = "Ep " + element.Parent().Parent().Parent().Find(".episode-number").Text()
 	show.Episode = strings.Replace(show.Episode, "\n", "", -1)
 	show.AirTime = element.Find(".air-time").Text()
-	show.Delayed = element.Parent().Parent().Parent().Find(".delay").Text()
+	show.Delayed = strings.TrimPrefix(element.Parent().Parent().Parent().Find(".delay").Text()," ")
 	show.Delayed = strings.Trim(show.Delayed, "\n")
 	show.Key, _ = element.Parent().Parent().Parent().Find(".show-link").Attr("href")
 	show.Key = strings.ToLower(strings.TrimPrefix(show.Key, "/shows/"))
@@ -200,7 +200,7 @@ func UpdateAnimeSchedule() {
 
 	// Create HTTP client with timeout
 	client := &http.Client{
-		Timeout: 15 * time.Second,
+		Timeout: 10 * time.Second,
 	}
 
 	// Create and modify HTTP request before sending
