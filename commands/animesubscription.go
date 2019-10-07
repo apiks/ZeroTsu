@@ -123,7 +123,7 @@ Loop:
 	}
 
 	if showName == "" {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid airing show name.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid airing show name. It has to have started airing. Make sure you're using the anime name from `" + guildPrefix + "schedule`")
 		if err != nil {
 			misc.MapMutex.Unlock()
 			misc.CommandErrorHandler(s, m, err, guildBotLog)
