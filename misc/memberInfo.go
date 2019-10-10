@@ -106,6 +106,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	}
 
 	MapMutex.Lock()
+	defer MapMutex.Unlock()
 	if _, ok := GuildMap[e.GuildID]; !ok {
 		InitDB(s, e.GuildID)
 		LoadGuilds()
@@ -158,7 +159,6 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	// Fetches user from memberInfo if possible
 	memberInfoUser, ok := GuildMap[e.GuildID].MemberInfoMap[user.User.ID]
 	if !ok {
-		MapMutex.Unlock()
 		return
 	}
 
@@ -220,13 +220,11 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 	// Saves the updates to memberInfoMap and writes to disk if need be
 	if !writeFlag {
-		MapMutex.Unlock()
 		return
 	}
 
 	GuildMap[e.GuildID].MemberInfoMap[user.User.ID] = memberInfoUser
 	WriteMemberInfo(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
-	MapMutex.Unlock()
 }
 
 // OnMemberUpdate listens for member updates to compare usernames, nicknames and discrim
@@ -247,20 +245,19 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	var writeFlag bool
 
 	MapMutex.Lock()
+	defer MapMutex.Unlock()
 	if _, ok := GuildMap[e.GuildID]; !ok {
 		InitDB(s, e.GuildID)
 		LoadGuilds()
 	}
 
 	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
-		MapMutex.Unlock()
 		return
 	}
 
 	// Fetches user from memberInfo if possible
 	memberInfoUser, ok := GuildMap[e.GuildID].MemberInfoMap[e.User.ID]
 	if !ok {
-		MapMutex.Unlock()
 		return
 	}
 
@@ -310,14 +307,12 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 
 	// Checks if username or discrim were changed, else do NOT write to disk
 	if !writeFlag {
-		MapMutex.Unlock()
 		return
 	}
 
 	// Saves the updates to memberInfoMap and writes to disk
 	GuildMap[e.GuildID].MemberInfoMap[e.User.ID] = memberInfoUser
 	WriteMemberInfo(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
-	MapMutex.Unlock()
 }
 
 // OnPresenceUpdate listens for user updates to compare usernames and discrim
@@ -338,20 +333,19 @@ func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 	var writeFlag bool
 
 	MapMutex.Lock()
+	defer MapMutex.Unlock()
 	if _, ok := GuildMap[e.GuildID]; !ok {
 		InitDB(s, e.GuildID)
 		LoadGuilds()
 	}
 
 	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
-		MapMutex.Unlock()
 		return
 	}
 
 	// Fetches user from memberInfo if possible
 	memberInfoUser, ok := GuildMap[e.GuildID].MemberInfoMap[e.User.ID]
 	if !ok {
-		MapMutex.Unlock()
 		return
 	}
 
@@ -401,14 +395,12 @@ func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 
 	// Checks if username or discrim were changed, else do NOT write to disk
 	if !writeFlag {
-		MapMutex.Unlock()
 		return
 	}
 
 	// Saves the updates to memberInfoMap and writes to disk
 	GuildMap[e.GuildID].MemberInfoMap[e.User.ID] = memberInfoUser
 	WriteMemberInfo(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
-	MapMutex.Unlock()
 }
 
 // Encrypt string to base64 crypto using AES
@@ -509,7 +501,6 @@ func DuplicateRecursion(guildID string) {
 				}
 			}
 		}
-
 	}
 }
 
@@ -517,6 +508,7 @@ func DuplicateRecursion(guildID string) {
 func UsernameCleanup(s *discordgo.Session, e *discordgo.Ready) {
 	var progress int
 	MapMutex.Lock()
+	defer MapMutex.Unlock()
 	for _, guild := range e.Guilds {
 		for _, mapUser := range GuildMap[guild.ID].MemberInfoMap {
 			user, err := s.User(mapUser.ID)
@@ -547,7 +539,6 @@ func UsernameCleanup(s *discordgo.Session, e *discordgo.Ready) {
 			WriteMemberInfo(GuildMap[guild.ID].MemberInfoMap, f.Name())
 		}
 	}
-	MapMutex.Unlock()
 
 	fmt.Println("FINISHED WITH USERNAMES")
 }
