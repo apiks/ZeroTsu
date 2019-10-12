@@ -192,7 +192,7 @@ func processEachShow(index int, element *goquery.Selection) {
 	show.Key, _ = element.Parent().Parent().Parent().Find(".show-link").Attr("href")
 	show.Key = strings.ToLower(strings.TrimPrefix(show.Key, "/shows/"))
 
-	misc.AnimeSchedule[day] = append(misc.AnimeSchedule[day], show)
+	misc.AnimeSchedule[day] = append(misc.AnimeSchedule[day], &show)
 }
 
 // Scrapes https://AnimeSchedule.net for air times subbed

@@ -57,7 +57,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 			for _, rssTimer := range misc.GuildMap[m.GuildID].RssThreadChecks {
 				if rssTimer.Thread.ChannelID == channelID {
 					rssTimerFlag = true
-					err := misc.RssThreadsTimerRemove(rssTimer.Thread, rssTimer.Date, m.GuildID)
+					err := misc.RssThreadsTimerRemove(rssTimer.Thread, m.GuildID)
 					if err != nil {
 						misc.MapMutex.Unlock()
 						misc.CommandErrorHandler(s, m, err, guildBotLog)

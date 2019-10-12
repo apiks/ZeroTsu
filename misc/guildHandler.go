@@ -24,19 +24,19 @@ var (
 		"channelStats.json", "userChangeStats.json", "verifiedStats.json", "voteInfo.json", "tempCha.json",
 		"reactJoin.json", "guildSettings.json", "autoposts.json"}
 	sharedFileNames = [...]string{"remindMes.json", "animeSubs.json"}
-	AnimeSchedule = make(map[int][]ShowAirTime)
+	AnimeSchedule = make(map[int][]*ShowAirTime)
 )
 
 type guildInfo struct {
 	GuildID     	string
-	GuildConfig 	GuildSettings
+	GuildConfig 	*GuildSettings
 
-	PunishedUsers       []PunishedUsers
+	PunishedUsers       []*PunishedUsers
 	Filters             []Filter
 	MessageRequirements []MessRequirement
-	SpoilerRoles        []discordgo.Role
-	RssThreads          []RssThread
-	RssThreadChecks     []RssThreadCheck
+	SpoilerRoles        []*discordgo.Role
+	RssThreads          []*RssThread
+	RssThreadChecks     []*RssThreadCheck
 	Raffles             []Raffle
 	Waifus              []Waifu
 	WaifuTrades         []WaifuTrade
@@ -57,7 +57,7 @@ type guildInfo struct {
 
 type sharedInfo struct {
 	RemindMes       map[string]*RemindMeSlice
-	AnimeSubs		map[string][]ShowSub
+	AnimeSubs		map[string][]*ShowSub
 }
 
 // Guild settings for misc things
@@ -151,7 +151,7 @@ type RssThread struct {
 }
 
 type RssThreadCheck struct {
-	Thread    RssThread `json:"Thread"`
+	Thread    *RssThread `json:"Thread"`
 	Date      time.Time `json:"Date"`
 	GUID	  string	`json:"GUID"`
 }
@@ -236,7 +236,7 @@ func LoadGuilds() {
 
 		GuildMap[folderName] = &guildInfo{
 			GuildID:             folderName,
-			GuildConfig:         GuildSettings{Prefix: ".", VoteModule: false, WaifuModule: false, ReactsModule: true, WhitelistFileFilter: false, PingMessage: "Hmm? Do you want some honey, darling? Open wide~~", Premium: false},
+			GuildConfig:         &GuildSettings{Prefix: ".", VoteModule: false, WaifuModule: false, ReactsModule: true, WhitelistFileFilter: false, PingMessage: "Hmm? Do you want some honey, darling? Open wide~~", Premium: false},
 			PunishedUsers:       nil,
 			Filters:             nil,
 			MessageRequirements: nil,
@@ -298,7 +298,7 @@ func LoadSharedDB() {
 
 	SharedInfo = &sharedInfo{
 		RemindMes: make(map[string]*RemindMeSlice),
-		AnimeSubs: make(map[string][]ShowSub),
+		AnimeSubs: make(map[string][]*ShowSub),
 	}
 
 	for _, file := range files {
@@ -337,7 +337,7 @@ func LoadGuildFile(guildID string, file string) {
 		}
 		// Fills spoilerMap with roles from the spoilerRoles.json file if latter is not empty
 		for i := 0; i < len(GuildMap[guildID].SpoilerRoles); i++ {
-			GuildMap[guildID].SpoilerMap[GuildMap[guildID].SpoilerRoles[i].ID] = &GuildMap[guildID].SpoilerRoles[i]
+			GuildMap[guildID].SpoilerMap[GuildMap[guildID].SpoilerRoles[i].ID] = GuildMap[guildID].SpoilerRoles[i]
 		}
 	case "rssThreads.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].RssThreads)
@@ -517,7 +517,7 @@ func RemindMeWrite(remindMe map[string]*RemindMeSlice) error {
 }
 
 // Writes anime notfication subscription to animeSubs.json
-func AnimeSubsWrite(animeSubs map[string][]ShowSub) error {
+func AnimeSubsWrite(animeSubs map[string][]*ShowSub) error {
 
 	// Turns that slice into bytes to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(animeSubs, "", "    ")
@@ -679,7 +679,7 @@ func WaifuTradesWrite(trade []WaifuTrade, guildID string) error {
 }
 
 // Writes to punishedUsers.json from []PunishedUsers
-func PunishedUsersWrite(bannedUsers []PunishedUsers, guildID string) error {
+func PunishedUsersWrite(bannedUsers []*PunishedUsers, guildID string) error {
 	// Turns that slice into bytes to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(bannedUsers, "", "    ")
 	if err != nil {
@@ -990,7 +990,7 @@ func SpoilerRolesWrite(SpoilerMapWrite map[string]*discordgo.Role, guildID strin
 	// Appends the new spoiler role to a slice of all of the old ones if it doesn't exist
 	if len(GuildMap[guildID].SpoilerRoles) == 0 {
 		for k := range SpoilerMapWrite {
-			GuildMap[guildID].SpoilerRoles = append(GuildMap[guildID].SpoilerRoles, *SpoilerMapWrite[k])
+			GuildMap[guildID].SpoilerRoles = append(GuildMap[guildID].SpoilerRoles, SpoilerMapWrite[k])
 		}
 	} else {
 		for k := range SpoilerMapWrite {
@@ -1005,7 +1005,7 @@ func SpoilerRolesWrite(SpoilerMapWrite map[string]*discordgo.Role, guildID strin
 			}
 
 			if !roleExists {
-				GuildMap[guildID].SpoilerRoles = append(GuildMap[guildID].SpoilerRoles, *SpoilerMapWrite[k])
+				GuildMap[guildID].SpoilerRoles = append(GuildMap[guildID].SpoilerRoles, SpoilerMapWrite[k])
 			}
 		}
 	}
@@ -1060,7 +1060,7 @@ func RssThreadsWrite(subreddit, author, title, postType, channelID, guildID stri
 	}
 
 	// Appends the thread to the guild's threads
-	GuildMap[guildID].RssThreads = append(GuildMap[guildID].RssThreads, RssThread{subreddit, title, author, pin, postType, channelID})
+	GuildMap[guildID].RssThreads = append(GuildMap[guildID].RssThreads, &RssThread{subreddit, title, author, pin, postType, channelID})
 
 	// Turns that struct slice into bytes ready to written to file
 	marshaledStruct, err := json.MarshalIndent(GuildMap[guildID].RssThreads, "", "    ")
@@ -1133,7 +1133,7 @@ func RssThreadsRemove(subreddit, title, author, postType, channelID, guildID str
 }
 
 // Writes an rssThread with a date to rssThreadCheck.json
-func RssThreadsTimerWrite(thread RssThread, date time.Time, GUID, guildID string) error {
+func RssThreadsTimerWrite(thread *RssThread, date time.Time, GUID, guildID string) error {
 
 	// Appends the new item to a slice of all of the old ones if it doesn't exist
 	for _, check := range GuildMap[guildID].RssThreadChecks {
@@ -1142,7 +1142,7 @@ func RssThreadsTimerWrite(thread RssThread, date time.Time, GUID, guildID string
 		}
 	}
 
-	GuildMap[guildID].RssThreadChecks = append(GuildMap[guildID].RssThreadChecks, RssThreadCheck{thread, date, GUID})
+	GuildMap[guildID].RssThreadChecks = append(GuildMap[guildID].RssThreadChecks, &RssThreadCheck{thread, date, GUID})
 
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(GuildMap[guildID].RssThreadChecks, "", "    ")
@@ -1160,7 +1160,7 @@ func RssThreadsTimerWrite(thread RssThread, date time.Time, GUID, guildID string
 }
 
 // Removes rssThread from rssThreadCheck.json
-func RssThreadsTimerRemove(thread RssThread, date time.Time, guildID string) error {
+func RssThreadsTimerRemove(thread *RssThread, guildID string) error {
 
 	var threadExists bool
 
@@ -1193,7 +1193,7 @@ func RssThreadsTimerRemove(thread RssThread, date time.Time, guildID string) err
 }
 
 // Writes guild settings to guildSettings.json
-func GuildSettingsWrite(info GuildSettings, guildID string) error {
+func GuildSettingsWrite(info *GuildSettings, guildID string) error {
 
 	// Turns info map into byte ready to be pushed to file
 	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
@@ -1290,7 +1290,7 @@ func InitDB(s *discordgo.Session, guildID string) {
 }
 
 func SetupGuildSub(guildID string) {
-	var shows []ShowSub
+	var shows []*ShowSub
 
 	now := time.Now()
 	now = now.UTC()
@@ -1337,7 +1337,7 @@ func SetupGuildSub(guildID string) {
 				guildSub.Notified = false
 			}
 
-			shows = append(shows, *guildSub)
+			shows = append(shows, guildSub)
 		}
 	}
 

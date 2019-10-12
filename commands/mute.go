@@ -170,10 +170,10 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
-	muteTimestamp.Timestamp = t
+	muteTimestamp.Timestamp = &t
 	muteTimestamp.Punishment = reason
 	muteTimestamp.Type = "Mute"
-	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, muteTimestamp)
+	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, &muteTimestamp)
 
 	// Writes to memberInfo.json
 	misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
@@ -187,21 +187,22 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if perma {
-		temp.UnmuteDate = time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
+		foreverMutedDate := time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
+		temp.UnmuteDate = &foreverMutedDate
 	} else {
-		temp.UnmuteDate = UnmuteDate
+		temp.UnmuteDate = &UnmuteDate
 	}
 
 	// Adds or updates the now muted user in PunishedUsers
 	for index, val := range misc.GuildMap[m.GuildID].PunishedUsers {
 		if val.ID == userID {
 			temp.UnbanDate = val.UnbanDate
-			misc.GuildMap[m.GuildID].PunishedUsers[index] = temp
+			misc.GuildMap[m.GuildID].PunishedUsers[index] = &temp
 			punishedUserExists = true
 		}
 	}
 	if !punishedUserExists {
-		misc.GuildMap[m.GuildID].PunishedUsers = append(misc.GuildMap[m.GuildID].PunishedUsers, temp)
+		misc.GuildMap[m.GuildID].PunishedUsers = append(misc.GuildMap[m.GuildID].PunishedUsers, &temp)
 	}
 	_ = misc.PunishedUsersWrite(misc.GuildMap[m.GuildID].PunishedUsers, m.GuildID)
 	misc.MapMutex.Unlock()

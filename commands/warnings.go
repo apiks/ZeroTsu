@@ -86,10 +86,10 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
-	warningTimestamp.Timestamp = t
+	warningTimestamp.Timestamp = &t
 	warningTimestamp.Punishment = warning
 	warningTimestamp.Type = "Warning"
-	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, warningTimestamp)
+	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, &warningTimestamp)
 
 	// Writes to memberInfo.json
 	misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
@@ -188,10 +188,10 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
-	warningTimestamp.Timestamp = t
+	warningTimestamp.Timestamp = &t
 	warningTimestamp.Punishment = warning
 	warningTimestamp.Type = "Warning"
-	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, warningTimestamp)
+	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, &warningTimestamp)
 
 	// Writes to memberInfo.json
 	misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)

@@ -40,8 +40,8 @@ type UserInfo struct {
 	VerifiedDate     string       `json:"verifiedDate,omitempty"`
 	UnmuteDate		 string		  `json:"unmuteDate,omitempty"`
 	UnbanDate        string       `json:"unbanDate,omitempty"`
-	Timestamps       []Punishment `json:"timestamps,omitempty"`
-	Waifu            Waifu        `json:"waifu,omitempty"`
+	Timestamps       []*Punishment `json:"timestamps,omitempty"`
+	Waifu            *Waifu        `json:"waifu,omitempty"`
 	SuspectedSpambot bool
 }
 
@@ -49,15 +49,15 @@ type UserInfo struct {
 type PunishedUsers struct {
 	ID        	string    	`json:"id"`
 	User      	string    	`json:"user"`
-	UnbanDate 	time.Time 	`json:"unbanDate"`
-	UnmuteDate 	time.Time 	`json:"unmuteDate"`
+	UnbanDate 	*time.Time 	`json:"unbanDate"`
+	UnmuteDate 	*time.Time 	`json:"unmuteDate"`
 }
 
 // Struct where we'll hold punishment timestamps
 type Punishment struct {
 	Punishment string    `json:"punishment"`
 	Type       string    `json:"type"`
-	Timestamp  time.Time `json:"timestamp"`
+	Timestamp  *time.Time `json:"timestamp"`
 }
 
 // Initializes user in memberInfo if he doesn't exist there
@@ -223,7 +223,6 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		return
 	}
 
-	GuildMap[e.GuildID].MemberInfoMap[user.User.ID] = memberInfoUser
 	WriteMemberInfo(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
 }
 
@@ -311,7 +310,6 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	}
 
 	// Saves the updates to memberInfoMap and writes to disk
-	GuildMap[e.GuildID].MemberInfoMap[e.User.ID] = memberInfoUser
 	WriteMemberInfo(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
 }
 
@@ -399,7 +397,6 @@ func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 	}
 
 	// Saves the updates to memberInfoMap and writes to disk
-	GuildMap[e.GuildID].MemberInfoMap[e.User.ID] = memberInfoUser
 	WriteMemberInfo(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
 }
 

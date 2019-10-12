@@ -112,9 +112,9 @@ Loop:
 
 				// Add that show to the user anime subs list and break out of loops
 				if hasAiredToday {
-					misc.SharedInfo.AnimeSubs[m.Author.ID] = append(misc.SharedInfo.AnimeSubs[m.Author.ID], misc.ShowSub{Show: show.Name, Notified: true,})
+					misc.SharedInfo.AnimeSubs[m.Author.ID] = append(misc.SharedInfo.AnimeSubs[m.Author.ID], &misc.ShowSub{Show: show.Name, Notified: true,})
 				} else {
-					misc.SharedInfo.AnimeSubs[m.Author.ID] = append(misc.SharedInfo.AnimeSubs[m.Author.ID], misc.ShowSub{Show: show.Name, Notified: false,})
+					misc.SharedInfo.AnimeSubs[m.Author.ID] = append(misc.SharedInfo.AnimeSubs[m.Author.ID], &misc.ShowSub{Show: show.Name, Notified: false,})
 				}
 				showName = show.Name
 				break Loop
@@ -349,7 +349,7 @@ func animeSubsHandler(s *discordgo.Session) {
 		}
 	}()
 
-	var todayShows []misc.ShowAirTime
+	var todayShows []*misc.ShowAirTime
 
 	now := time.Now()
 
@@ -464,7 +464,7 @@ func resetSubNotified() {
 		}
 	}()
 
-	var todayShows []misc.ShowAirTime
+	var todayShows []*misc.ShowAirTime
 
 	now := time.Now()
 	misc.MapMutex.Lock()
@@ -510,7 +510,7 @@ func ResetSubscriptions() {
 		}
 	}()
 
-	var todayShows []misc.ShowAirTime
+	var todayShows []*misc.ShowAirTime
 
 	now := time.Now()
 
@@ -568,7 +568,7 @@ func ResetSubscriptions() {
 }
 
 // Embed message for subscriptions
-func subEmbed(s *discordgo.Session, show misc.ShowAirTime, channelID string) error {
+func subEmbed(s *discordgo.Session, show *misc.ShowAirTime, channelID string) error {
 	imageLink := fmt.Sprintf("https://animeschedule.net/img/shows/%v.webp", show.Key)
 	embed := &discordgo.MessageEmbed{
 		URL:         fmt.Sprintf("https://animeschedule.net/shows/%v", show.Key),

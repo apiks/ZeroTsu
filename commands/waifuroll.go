@@ -258,7 +258,7 @@ func rollWaifu(s *discordgo.Session, m *discordgo.Message) {
 
 	randomWaifuIndex = rand.Intn(waifuLen)
 	waifuRoll = misc.GuildMap[m.GuildID].Waifus[randomWaifuIndex]
-	misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID].Waifu = waifuRoll
+	misc.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID].Waifu = &waifuRoll
 	misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	misc.MapMutex.Unlock()
 

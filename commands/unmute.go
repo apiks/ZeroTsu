@@ -81,13 +81,13 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 			zeroTimeValue := time.Time{}
 
 			// Removes the mute from punishedUsers
-			if misc.GuildMap[m.GuildID].PunishedUsers[i].UnbanDate != zeroTimeValue {
+			if misc.GuildMap[m.GuildID].PunishedUsers[i].UnbanDate != &zeroTimeValue {
 				temp := misc.PunishedUsers {
 					ID:         misc.GuildMap[m.GuildID].PunishedUsers[i].ID,
 					User:       misc.GuildMap[m.GuildID].PunishedUsers[i].User,
 					UnbanDate: misc.GuildMap[m.GuildID].PunishedUsers[i].UnbanDate,
 				}
-				misc.GuildMap[m.GuildID].PunishedUsers[i] = temp
+				misc.GuildMap[m.GuildID].PunishedUsers[i] = &temp
 			} else {
 				misc.GuildMap[m.GuildID].PunishedUsers = append(misc.GuildMap[m.GuildID].PunishedUsers[:i], misc.GuildMap[m.GuildID].PunishedUsers[i+1:]...)
 			}

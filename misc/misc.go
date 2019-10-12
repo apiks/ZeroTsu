@@ -2,7 +2,6 @@ package misc
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"net/http"
 	"regexp"
@@ -341,53 +340,6 @@ func GetRoleUserAmount(guild *discordgo.Guild, roles []*discordgo.Role, roleName
 		}
 	}
 	return users
-}
-
-// Puts banned users in bannedUsersSlice on bot startup from memberInfo
-func GetBannedUsers() {
-	var (
-		bannedUserInfo PunishedUsers
-		flag           bool
-	)
-
-	MapMutex.Lock()
-	for guildID, _ := range GuildMap {
-		for _, user := range GuildMap[guildID].MemberInfoMap {
-			for _, ban := range GuildMap[guildID].PunishedUsers {
-				if user.ID == ban.ID {
-					flag = true
-					break
-				}
-			}
-			if flag {
-				flag = false
-				continue
-			}
-			if user.UnbanDate == "_Never_" ||
-				user.UnbanDate == "" ||
-				user.UnbanDate == "No ban" {
-				continue
-			}
-			date, err := time.Parse(time.RFC3339, user.UnbanDate)
-			if err != nil {
-				date, err = time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", user.UnbanDate)
-				if err != nil {
-					date, err = time.Parse("2006-01-02 15:04:05", user.UnbanDate)
-					if err != nil {
-						log.Println("in getBannedUsers date err")
-						log.Println(err)
-						continue
-					}
-				}
-			}
-			bannedUserInfo.ID = user.ID
-			bannedUserInfo.User = user.Username
-			bannedUserInfo.UnbanDate = date
-			GuildMap[guildID].PunishedUsers = append(GuildMap[guildID].PunishedUsers, bannedUserInfo)
-		}
-		PunishedUsersWrite(GuildMap[guildID].PunishedUsers, guildID)
-	}
-	MapMutex.Unlock()
 }
 
 // Checks if a message contains a channel or user mentions and changes them to a non-mention if true

@@ -166,10 +166,10 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
-	banTimestamp.Timestamp = t
+	banTimestamp.Timestamp = &t
 	banTimestamp.Punishment = reason
 	banTimestamp.Type = "Ban"
-	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, banTimestamp)
+	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, &banTimestamp)
 
 	// Writes to memberInfo.json
 	misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
@@ -183,21 +183,22 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if perma {
-		temp.UnbanDate = time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
+		foreverBannedDate := time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
+		temp.UnbanDate = &foreverBannedDate
 	} else {
-		temp.UnbanDate = UnbanDate
+		temp.UnbanDate = &UnbanDate
 	}
 
 	// Adds or updates the now banned user in PunishedUsers
 	for index, val := range misc.GuildMap[m.GuildID].PunishedUsers {
 		if val.ID == userID {
 			temp.UnmuteDate = val.UnmuteDate
-			misc.GuildMap[m.GuildID].PunishedUsers[index] = temp
+			misc.GuildMap[m.GuildID].PunishedUsers[index] = &temp
 			punishedUserExists = true
 		}
 	}
 	if !punishedUserExists {
-		misc.GuildMap[m.GuildID].PunishedUsers = append(misc.GuildMap[m.GuildID].PunishedUsers, temp)
+		misc.GuildMap[m.GuildID].PunishedUsers = append(misc.GuildMap[m.GuildID].PunishedUsers, &temp)
 	}
 	_ = misc.PunishedUsersWrite(misc.GuildMap[m.GuildID].PunishedUsers, m.GuildID)
 	misc.MapMutex.Unlock()
