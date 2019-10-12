@@ -76,8 +76,8 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 		printMessage = getDaySchedule(day)
 	}
 
-	// Add AnimeSchedule.net
-	if m.GuildID != "267799767843602452" {
+	// Add AnimeSchedule.net if public ZeroTsu
+	if config.ServerID != "267799767843602452" {
 		printMessage += "\n\nFull Week: <https://AnimeSchedule.net>"
 	}
 

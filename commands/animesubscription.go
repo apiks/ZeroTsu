@@ -33,7 +33,7 @@ func subscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	if len(commandStrings) == 1 {
 
-		if m.GuildID == "267799767843602452" {
+		if config.ServerID == "267799767843602452" {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vsub [anime]`\n\nAnime is the anime name from the schedule command", guildPrefix))
 			if err != nil {
 				misc.CommandErrorHandler(s, m, err, guildBotLog)
@@ -170,7 +170,7 @@ func unsubscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
 	if len(commandStrings) == 1 {
-		if m.GuildID == "267799767843602452" {
+		if config.ServerID == "267799767843602452" {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vunsub [anime]`\n\nAnime is the anime name from the schedule command", guildPrefix))
 			if err != nil {
 				misc.CommandErrorHandler(s, m, err, guildBotLog)
