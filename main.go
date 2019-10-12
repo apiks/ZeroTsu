@@ -68,9 +68,6 @@ func Start() {
 	goBot.AddHandler(misc.GuildCreate)
 	goBot.AddHandler(misc.GuildDelete)
 
-	// Reads all banned users from memberInfo on bot start
-	misc.GetBannedUsers()
-
 	// Updates schedule command print message on load
 	commands.UpdateAnimeSchedule()
 	commands.ResetSubscriptions()
