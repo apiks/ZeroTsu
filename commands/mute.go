@@ -170,7 +170,7 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
-	muteTimestamp.Timestamp = &t
+	muteTimestamp.Timestamp = t
 	muteTimestamp.Punishment = reason
 	muteTimestamp.Type = "Mute"
 	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, &muteTimestamp)
@@ -187,10 +187,9 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if perma {
-		foreverMutedDate := time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
-		temp.UnmuteDate = &foreverMutedDate
+		temp.UnmuteDate = time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
 	} else {
-		temp.UnmuteDate = &UnmuteDate
+		temp.UnmuteDate = UnmuteDate
 	}
 
 	// Adds or updates the now muted user in PunishedUsers

@@ -96,10 +96,10 @@ func unbanHandler(s *discordgo.Session, guildID string, i int, bans []*discordgo
 	t := time.Now()
 	zeroTimeValue := time.Time{}
 
-	if GuildMap[guildID].PunishedUsers[i].UnbanDate == &zeroTimeValue {
+	if GuildMap[guildID].PunishedUsers[i].UnbanDate == zeroTimeValue {
 		return false
 	}
-	banDifference := t.Sub(*GuildMap[guildID].PunishedUsers[i].UnbanDate)
+	banDifference := t.Sub(GuildMap[guildID].PunishedUsers[i].UnbanDate)
 	if banDifference <= 0 {
 		return false
 	}
@@ -128,7 +128,7 @@ func unbanHandler(s *discordgo.Session, guildID string, i int, bans []*discordgo
 	}
 
 	// Removes the unbanDate from punishedUsers.json
-	if GuildMap[guildID].PunishedUsers[i].UnmuteDate != &zeroTimeValue {
+	if GuildMap[guildID].PunishedUsers[i].UnmuteDate != zeroTimeValue {
 		temp := PunishedUsers {
 			ID:         GuildMap[guildID].PunishedUsers[i].ID,
 			User:       GuildMap[guildID].PunishedUsers[i].User,
@@ -157,10 +157,10 @@ func unmuteHandler(s *discordgo.Session, guildID string, i int) {
 	t := time.Now()
 	zeroTimeValue := time.Time{}
 
-	if GuildMap[guildID].PunishedUsers[i].UnmuteDate == &zeroTimeValue {
+	if GuildMap[guildID].PunishedUsers[i].UnmuteDate == zeroTimeValue {
 		return
 	}
-	muteDifference := t.Sub(*GuildMap[guildID].PunishedUsers[i].UnmuteDate)
+	muteDifference := t.Sub(GuildMap[guildID].PunishedUsers[i].UnmuteDate)
 	if muteDifference <= 0 {
 		return
 	}
@@ -206,7 +206,7 @@ func unmuteHandler(s *discordgo.Session, guildID string, i int) {
 	}
 
 	// Removes the unmuteDate from punishedUsers.json
-	if GuildMap[guildID].PunishedUsers[i].UnbanDate != &zeroTimeValue {
+	if GuildMap[guildID].PunishedUsers[i].UnbanDate != zeroTimeValue {
 		temp := PunishedUsers {
 			ID:         GuildMap[guildID].PunishedUsers[i].ID,
 			User:       GuildMap[guildID].PunishedUsers[i].User,
@@ -996,10 +996,10 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		if punishedUser.ID == u.User.ID {
 			t := time.Now()
 			zeroTimeValue := time.Time{}
-			if punishedUser.UnmuteDate == &zeroTimeValue {
+			if punishedUser.UnmuteDate == zeroTimeValue {
 				continue
 			}
-			muteDifference := t.Sub(*punishedUser.UnmuteDate)
+			muteDifference := t.Sub(punishedUser.UnmuteDate)
 			if muteDifference > 0 {
 				continue
 			}
@@ -1132,8 +1132,7 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	// Adds the spambot ban to PunishedUsers so it doesn't trigger the OnGuildBan func
 	temp.ID = u.User.ID
 	temp.User = u.User.Username
-	foreverUnbanDate := time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
-	temp.UnbanDate = &foreverUnbanDate
+	temp.UnbanDate = time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
 	for index, val := range GuildMap[u.GuildID].PunishedUsers {
 		if val.ID == u.User.ID {
 			GuildMap[u.GuildID].PunishedUsers = append(GuildMap[u.GuildID].PunishedUsers[:index], GuildMap[u.GuildID].PunishedUsers[index+1:]...)

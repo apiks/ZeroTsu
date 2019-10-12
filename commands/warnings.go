@@ -86,7 +86,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
-	warningTimestamp.Timestamp = &t
+	warningTimestamp.Timestamp = t
 	warningTimestamp.Punishment = warning
 	warningTimestamp.Type = "Warning"
 	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, &warningTimestamp)
@@ -188,7 +188,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
-	warningTimestamp.Timestamp = &t
+	warningTimestamp.Timestamp = t
 	warningTimestamp.Punishment = warning
 	warningTimestamp.Type = "Warning"
 	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, &warningTimestamp)

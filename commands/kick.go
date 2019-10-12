@@ -91,7 +91,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
-	kickTimestamp.Timestamp = &t
+	kickTimestamp.Timestamp = t
 	kickTimestamp.Punishment = reason
 	kickTimestamp.Type = "Kick"
 	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, &kickTimestamp)

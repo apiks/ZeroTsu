@@ -166,7 +166,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		misc.CommandErrorHandler(s, m, err, guildBotLog)
 		return
 	}
-	banTimestamp.Timestamp = &t
+	banTimestamp.Timestamp = t
 	banTimestamp.Punishment = reason
 	banTimestamp.Type = "Ban"
 	misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, &banTimestamp)
@@ -183,10 +183,9 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if perma {
-		foreverBannedDate := time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
-		temp.UnbanDate = &foreverBannedDate
+		temp.UnbanDate = time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
 	} else {
-		temp.UnbanDate = &UnbanDate
+		temp.UnbanDate = UnbanDate
 	}
 
 	// Adds or updates the now banned user in PunishedUsers

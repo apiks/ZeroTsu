@@ -49,15 +49,15 @@ type UserInfo struct {
 type PunishedUsers struct {
 	ID        	string    	`json:"id"`
 	User      	string    	`json:"user"`
-	UnbanDate 	*time.Time 	`json:"unbanDate"`
-	UnmuteDate 	*time.Time 	`json:"unmuteDate"`
+	UnbanDate 	time.Time 	`json:"unbanDate"`
+	UnmuteDate 	time.Time 	`json:"unmuteDate"`
 }
 
 // Struct where we'll hold punishment timestamps
 type Punishment struct {
 	Punishment string    `json:"punishment"`
 	Type       string    `json:"type"`
-	Timestamp  *time.Time `json:"timestamp"`
+	Timestamp  time.Time `json:"timestamp"`
 }
 
 // Initializes user in memberInfo if he doesn't exist there
