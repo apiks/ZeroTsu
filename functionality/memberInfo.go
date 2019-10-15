@@ -110,7 +110,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	HandleNewGuild(s, e.GuildID)
 
 	// If memberInfo is empty, it initializes
-	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
+	if GuildMap[e.GuildID].MemberInfoMap == nil || len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
 
 		// Initializes the first user of memberInfo
 		InitializeUser(user, e.GuildID)
@@ -220,7 +220,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		return
 	}
 
-	WriteMemberInfo(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
+	_ = WriteMemberInfo(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
 }
 
 // OnMemberUpdate listens for member updates to compare usernames, nicknames and discrim
@@ -244,7 +244,7 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	defer MapMutex.Unlock()
 	HandleNewGuild(s, e.GuildID)
 
-	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
+	if GuildMap[e.GuildID].MemberInfoMap == nil || len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
 		return
 	}
 
@@ -304,7 +304,7 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	}
 
 	// Saves the updates to memberInfoMap and writes to disk
-	WriteMemberInfo(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
+	_ = WriteMemberInfo(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
 }
 
 // OnPresenceUpdate listens for user updates to compare usernames and discrim
@@ -328,7 +328,7 @@ func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 	defer MapMutex.Unlock()
 	HandleNewGuild(s, e.GuildID)
 
-	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
+	if GuildMap[e.GuildID].MemberInfoMap == nil || len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
 		return
 	}
 
@@ -388,7 +388,7 @@ func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 	}
 
 	// Saves the updates to memberInfoMap and writes to disk
-	WriteMemberInfo(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
+	_ = WriteMemberInfo(GuildMap[e.GuildID].MemberInfoMap, e.GuildID)
 }
 
 // Encrypt string to base64 crypto using AES
@@ -459,7 +459,7 @@ func DuplicateUsernamesAndNicknamesCleanup() {
 		}
 		MapMutex.Lock()
 		DuplicateRecursion(f.Name())
-		WriteMemberInfo(GuildMap[f.Name()].MemberInfoMap, f.Name())
+		_ = WriteMemberInfo(GuildMap[f.Name()].MemberInfoMap, f.Name())
 		MapMutex.Unlock()
 	}
 
@@ -524,7 +524,7 @@ func UsernameCleanup(s *discordgo.Session, e *discordgo.Ready) {
 			if !f.IsDir() {
 				continue
 			}
-			WriteMemberInfo(GuildMap[guild.ID].MemberInfoMap, f.Name())
+			_ = WriteMemberInfo(GuildMap[guild.ID].MemberInfoMap, f.Name())
 		}
 	}
 

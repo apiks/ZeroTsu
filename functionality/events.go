@@ -32,6 +32,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
 		DynamicNicknameChange(s, guild.ID)
 	}
+	LoadGuilds()
 
 	// Updates playing status
 	if len(config.PlayingMsg) > 1 {
@@ -69,18 +70,17 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 	guildSettings := GuildMap[v.GuildID].GetGuildSettings()
 	MapMutex.Unlock()
 
-	if len(guildSettings.VoiceChas) == 0 {
+	if guildSettings.VoiceChas == nil || len(guildSettings.VoiceChas) == 0 {
 		return
 	}
 
 	var (
-		voiceChannels  = guildSettings.VoiceChas
 		noRemovalRoles []*Role
 		dontRemove     bool
 	)
 
 	// Goes through each guild voice channel and removes/adds roles
-	for _, cha := range voiceChannels {
+	for _, cha := range guildSettings.VoiceChas {
 		for _, chaRole := range cha.Roles {
 
 			// Resets value
@@ -337,7 +337,7 @@ func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
 	if guildSettings.BotLog.ID == "" {
 		return
 	}
-	_, _ = s.ChannelMessageSend(guildSettings.BotLog.ID, fmt.Sprintf("%v#%v was manually permabanned. ID: %v", e.User.Username, e.User.Discriminator, e.User.ID))
+	_, _ = s.ChannelMessageSend(guildSettings.BotLog.ID, fmt.Sprintf("%s#%s was manually permabanned. ID: %s", e.User.Username, e.User.Discriminator, e.User.ID))
 }
 
 // Sends a message to a channel to log whenever a user joins. Intended use was to catch spambots for r/anime
@@ -358,6 +358,8 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	// Gives the user the muted role if he is muted and has rejoined the server
 	MapMutex.Lock()
+	HandleNewGuild(s, u.GuildID)
+
 	for _, punishedUser := range GuildMap[u.GuildID].PunishedUsers {
 		if punishedUser.ID == u.User.ID {
 			t := time.Now()
@@ -388,16 +390,11 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 			}
 		}
 	}
+	MapMutex.Unlock()
 
 	if u.GuildID != "267799767843602452" {
-		MapMutex.Unlock()
 		return
 	}
-	if _, ok := GuildMap[u.GuildID]; !ok {
-		InitDB(s, u.GuildID)
-		LoadGuilds()
-	}
-	MapMutex.Unlock()
 
 	creationDate, err := CreationTime(u.User.ID)
 	if err != nil {

@@ -123,11 +123,11 @@ func Start() {
 	goBot.AddHandler(commands.OnMessageEmojiReact)
 	goBot.AddHandler(commands.OnMessageEmojiUnreact)
 
-	// Channel ChannelStats
+	// Channel Stats
 	goBot.AddHandler(commands.OnMessageChannel)
 	goBot.AddHandler(commands.DailyStatsTimer)
 
-	// Twenty Minute Timer
+	// Periodic Write Events
 	goBot.AddHandler(functionality.WriteEvents)
 
 	// Voice Role Event Handler
@@ -170,7 +170,7 @@ func Start() {
 
 	err = goBot.Open()
 	if err != nil {
-		panic("Critical error: BOT cannot start. " + err.Error())
+		panic("Critical error: BOT cannot start: " + err.Error())
 	}
 
 	// Start tracking uptime from here

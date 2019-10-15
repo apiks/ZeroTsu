@@ -48,6 +48,7 @@ func discordBotsGuildCount(client *http.Client, guildCount string) {
 	_, err = client.Do(req)
 	if err != nil {
 		log.Println(err)
+		return
 	}
 }
 
@@ -66,6 +67,7 @@ func discordBoatsGuildCount(client *http.Client, guildCount string) {
 	_, err = client.Do(req)
 	if err != nil {
 		log.Println(err)
+		return
 	}
 }
 
@@ -84,5 +86,6 @@ func discordBotsOnDiscordGuildCount(client *http.Client, guildCount string) {
 	_, err = client.Do(req)
 	if err != nil {
 		log.Println(err)
+		return
 	}
 }
