@@ -2,14 +2,16 @@ package functionality
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/mmcdole/gofeed"
-	"github.com/r-anime/ZeroTsu/config"
 	"log"
 	"math/rand"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/mmcdole/gofeed"
+
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 var redditFeedBlock bool

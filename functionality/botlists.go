@@ -2,11 +2,14 @@ package functionality
 
 import (
 	"bytes"
-	"github.com/bwmarrin/discordgo"
 	"log"
 	"net/http"
 	"net/url"
 	"strconv"
+
+	"github.com/bwmarrin/discordgo"
+
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 // Send number of servers via post request

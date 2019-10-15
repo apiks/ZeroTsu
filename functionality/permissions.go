@@ -1,9 +1,11 @@
 package functionality
 
 import (
-	"github.com/bwmarrin/discordgo"
-	"github.com/r-anime/ZeroTsu/config"
 	"log"
+
+	"github.com/bwmarrin/discordgo"
+
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 const (

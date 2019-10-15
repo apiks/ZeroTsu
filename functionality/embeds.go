@@ -2,11 +2,12 @@ package functionality
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/mmcdole/gofeed"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/mmcdole/gofeed"
 )
 
 const inviteLink = "https://discordapp.com/api/oauth2/authorize?client_id=614495694769618944&permissions=401960278&scope=bot"
