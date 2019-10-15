@@ -6,7 +6,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/misc"
+	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 // Sorts all spoiler roles created with the create command between the two opt-in dummy roles alphabetically
@@ -21,36 +21,41 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	if m.Author.ID != s.State.User.ID {
-		misc.MapMutex.Lock()
+		functionality.MapMutex.Lock()
 	}
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	if len(misc.GuildMap[m.GuildID].SpoilerMap) == 0 {
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	if len(functionality.GuildMap[m.GuildID].SpoilerMap) == 0 {
 		if m.Author.ID != s.State.User.ID {
-			misc.MapMutex.Unlock()
+			functionality.MapMutex.Unlock()
+		}
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No Spoiler roles detected. Please use `"+guildSettings.Prefix+"create` command to create a valid role before using this command")
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
 		}
 		return
 	}
 	if m.Author.ID != s.State.User.ID {
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 	}
 
 	// Confirms whether optins exist
 	if m.Author.ID == s.State.User.ID {
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 	}
-	err := misc.OptInsHandler(s, m.ChannelID, m.GuildID)
+	err := functionality.OptInsHandler(s, m.ChannelID, m.GuildID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 	if m.Author.ID == s.State.User.ID {
-		misc.MapMutex.Lock()
+		functionality.MapMutex.Lock()
 	}
 
 	// Fetches info from the server and puts it in debPre
 	debPre, err := s.GuildRoles(m.GuildID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
@@ -62,7 +67,7 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pushes the refreshed positions to the server
 	_, err = s.GuildRoleReorder(m.GuildID, spoilerRoles)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
@@ -74,54 +79,54 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Fetches the refreshed info from the server and puts it in deb
 	deb, err := s.GuildRoles(m.GuildID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
 	// Saves the original opt-in-above position
 	if m.Author.ID != s.State.User.ID {
-		misc.MapMutex.Lock()
+		functionality.MapMutex.Lock()
 	}
 	for i := 0; i < len(deb); i++ {
-		if deb[i].ID == misc.GuildMap[m.GuildID].GuildConfig.OptInAbove.ID {
-			misc.GuildMap[m.GuildID].GuildConfig.OptInAbove.Position = deb[i].Position
+		if deb[i].ID == functionality.GuildMap[m.GuildID].GuildConfig.OptInAbove.ID {
+			functionality.GuildMap[m.GuildID].GuildConfig.OptInAbove.Position = deb[i].Position
 		}
 	}
 
 	// Adds all spoiler roles in SpoilerMap in the spoilerRoles slice
 	// Adds all non-spoiler roles under opt-in-above (including it) in the underSpoilerRoles slice
 	for i := 0; i < len(deb); i++ {
-		_, ok := misc.GuildMap[m.GuildID].SpoilerMap[deb[i].ID]
+		_, ok := functionality.GuildMap[m.GuildID].SpoilerMap[deb[i].ID]
 		if ok {
-			spoilerRoles = append(spoilerRoles, misc.GuildMap[m.GuildID].SpoilerMap[deb[i].ID])
-			if deb[i].Position < misc.GuildMap[m.GuildID].GuildConfig.OptInAbove.Position {
+			spoilerRoles = append(spoilerRoles, functionality.GuildMap[m.GuildID].SpoilerMap[deb[i].ID])
+			if deb[i].Position < functionality.GuildMap[m.GuildID].GuildConfig.OptInAbove.Position {
 				controlNum++
 			}
 		} else if !ok &&
-			deb[i].Position <= misc.GuildMap[m.GuildID].GuildConfig.OptInAbove.Position &&
+			deb[i].Position <= functionality.GuildMap[m.GuildID].GuildConfig.OptInAbove.Position &&
 			deb[i].ID != m.GuildID {
 			underSpoilerRoles = append(underSpoilerRoles, deb[i])
 		}
 	}
 	if m.Author.ID != s.State.User.ID {
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 	}
 
 	// If there are spoiler roles under opt-in-above it goes in to move and sort
 	if controlNum > 0 {
 
 		// Sorts the spoilerRoles slice (all spoiler roles) alphabetically
-		sort.Sort(misc.SortRoleByAlphabet(spoilerRoles))
+		sort.Sort(functionality.SortRoleByAlphabet(spoilerRoles))
 
 		// Moves the sorted spoiler roles above opt-in-above
 		if m.Author.ID != s.State.User.ID {
-			misc.MapMutex.Lock()
+			functionality.MapMutex.Lock()
 		}
 		for i := 0; i < len(spoilerRoles); i++ {
-			spoilerRoles[i].Position = misc.GuildMap[m.GuildID].GuildConfig.OptInAbove.Position
+			spoilerRoles[i].Position = functionality.GuildMap[m.GuildID].GuildConfig.OptInAbove.Position
 		}
 		if m.Author.ID != s.State.User.ID {
-			misc.MapMutex.Unlock()
+			functionality.MapMutex.Unlock()
 		}
 
 		// Moves every non-spoiler role below opt-in-above (including it) down an amount equal to the amount of roles in the
@@ -136,7 +141,7 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 		//Pushes the ordered role list to the server
 		_, err = s.GuildRoleReorder(m.GuildID, rolesOrdered)
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 
@@ -145,38 +150,38 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Fetches info from the server and puts it in debPost
 		debPost, err := s.GuildRoles(m.GuildID)
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 
 		// Refreshes deb
 		deb, err = s.GuildRoles(m.GuildID)
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 
 		// Saves the new opt-in-above position
 		if m.Author.ID != s.State.User.ID {
-			misc.MapMutex.Lock()
+			functionality.MapMutex.Lock()
 		}
 		for i := 0; i < len(debPost); i++ {
-			if deb[i].ID == misc.GuildMap[m.GuildID].GuildConfig.OptInAbove.ID {
-				misc.GuildMap[m.GuildID].GuildConfig.OptInAbove.Position = deb[i].Position
+			if deb[i].ID == functionality.GuildMap[m.GuildID].GuildConfig.OptInAbove.ID {
+				functionality.GuildMap[m.GuildID].GuildConfig.OptInAbove.Position = deb[i].Position
 			}
 		}
 
 		for i := range spoilerRoles {
-			spoilerRoles[i].Position = misc.GuildMap[m.GuildID].GuildConfig.OptInAbove.Position + len(spoilerRoles) - i
-			misc.GuildMap[m.GuildID].SpoilerMap[spoilerRoles[i].ID].Position = spoilerRoles[i].Position
+			spoilerRoles[i].Position = functionality.GuildMap[m.GuildID].GuildConfig.OptInAbove.Position + len(spoilerRoles) - i
+			functionality.GuildMap[m.GuildID].SpoilerMap[spoilerRoles[i].ID].Position = spoilerRoles[i].Position
 		}
 		if m.Author.ID != s.State.User.ID {
-			misc.MapMutex.Unlock()
+			functionality.MapMutex.Unlock()
 		}
 		// Pushes the sorted list to the server
 		_, err = s.GuildRoleReorder(m.GuildID, spoilerRoles)
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 
@@ -186,30 +191,24 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err = s.ChannelMessageSend(m.ChannelID, "Roles sorted.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 	} else {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Spoiler roles already sorted or the spoiler roles are above the opt-in-above (in which case please move them manually.)")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 	}
 }
 
 func init() {
-	add(&command{
-		execute:  sortRolesCommand,
-		trigger:  "sortroles",
-		desc:     "Sorts all spoiler roles alphabetically between dummy opt-in roles",
-		elevated: true,
-		category: "misc",
+	functionality.Add(&functionality.Command{
+		Execute:    sortRolesCommand,
+		Trigger:    "sortroles",
+		Desc:       "Sorts all spoiler roles alphabetically between dummy opt-in roles",
+		Permission: functionality.Mod,
+		Module:     "misc",
 	})
 }

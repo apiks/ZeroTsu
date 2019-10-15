@@ -9,7 +9,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/config"
-	"github.com/r-anime/ZeroTsu/misc"
+	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 // Handles playing message view or change
@@ -19,56 +19,55 @@ func playingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
+	var guildSettings = &functionality.GuildSettings{
+		Prefix: ".",
+	}
+
+	if m.GuildID != "" {
+		functionality.MapMutex.Lock()
+		*guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
+		functionality.MapMutex.Unlock()
+	}
 
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
 	// Displays current playing message if it's only that
 	if len(commandStrings) == 1 {
 		var playingMsgs string
-		misc.MapMutex.Lock()
+		functionality.MapMutex.Lock()
 		for _, msg := range config.PlayingMsg {
 			playingMsgs += fmt.Sprintf("\n`%v`,", msg)
 		}
-		misc.MapMutex.Unlock()
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current playing messages are: %v \n\nTo add more messages please use `%vplayingmsg [new message]`", playingMsgs, guildPrefix))
+		functionality.MapMutex.Unlock()
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current playing messages are: %v \n\nTo add more messages please use `%vplayingmsg [new message]`", playingMsgs, guildSettings.Prefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Changes and writes new playing message to storage
-	misc.MapMutex.Lock()
+	functionality.MapMutex.Lock()
 	config.PlayingMsg = append(config.PlayingMsg, commandStrings[1])
 	err := config.WriteConfig()
 	if err != nil {
-		misc.MapMutex.Unlock()
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		functionality.MapMutex.Unlock()
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 
 	// Refreshes playing message
 	err = s.UpdateStatus(0, commandStrings[1])
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New playing message added is: `%v`", commandStrings[1]))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 }
@@ -80,34 +79,29 @@ func removePlayingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	var (
-		guildPrefix = "."
-		guildBotLog string
-	)
+	var guildSettings = &functionality.GuildSettings{
+		Prefix: ".",
+	}
 
 	if m.GuildID != "" {
-		misc.MapMutex.Lock()
-		guildPrefix = misc.GuildMap[m.GuildID].GuildConfig.Prefix
-		guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Lock()
+		*guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
+		functionality.MapMutex.Unlock()
 	}
 
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vremoveplayingmsg [msg]`", guildPrefix))
-		if err != nil && guildBotLog != "" {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vremoveplayingmsg [msg]`", guildSettings.Prefix))
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Changes and removes playing msg from storage
-	misc.MapMutex.Lock()
+	functionality.MapMutex.Lock()
 	var index int
 	var foundIndex bool
 	for i, msg := range config.PlayingMsg {
@@ -119,25 +113,25 @@ func removePlayingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	if !foundIndex {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such playing message.")
-		if err != nil  && guildBotLog != "" {
-			misc.MapMutex.Unlock()
-			_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+		if err != nil {
+			functionality.MapMutex.Unlock()
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 		return
 	}
 	config.PlayingMsg = append(config.PlayingMsg[:index], config.PlayingMsg[index+1:]...)
 	err := config.WriteConfig()
-	if err != nil  && guildBotLog != "" {
-		misc.MapMutex.Unlock()
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+	if err != nil {
+		functionality.MapMutex.Unlock()
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Removed playing message: `%v`", commandStrings[1]))
-	if err != nil  && guildBotLog != "" {
-		_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+	if err != nil {
+		functionality.LogError(s, guildSettings.BotLog, err)
 	}
 
 	// Updates playing status
@@ -150,12 +144,12 @@ func removePlayingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 	} else {
 		err = s.UpdateStatus(0, "")
 	}
-	if err != nil  && guildBotLog != "" {
-		misc.MapMutex.Unlock()
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+	if err != nil {
+		functionality.MapMutex.Unlock()
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 }
 
 // Prints in how many servers the BOT is
@@ -168,10 +162,10 @@ func serversCommand(s *discordgo.Session, m *discordgo.Message) {
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I am in %v servers.", len(s.State.Guilds)))
 	if err != nil {
 		if m.GuildID != "" {
-			misc.MapMutex.Lock()
-			guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-			misc.MapMutex.Unlock()
-			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			functionality.MapMutex.Lock()
+			guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+			functionality.MapMutex.Unlock()
+			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		}
 	}
 }
@@ -182,72 +176,45 @@ func uptimeCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I've been online for %s.", misc.Uptime().Truncate(time.Second).String()))
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I've been online for %s.", functionality.Uptime().Truncate(time.Second).String()))
 	if err != nil {
 		if m.GuildID != "" {
-			misc.MapMutex.Lock()
-			guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-			misc.MapMutex.Unlock()
-			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			functionality.MapMutex.Lock()
+			guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+			functionality.MapMutex.Unlock()
+			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		}
 	}
 }
 
-// Prints how many users the BOT observes
-func usersCommand(s *discordgo.Session, m *discordgo.Message) {
-
-	if m.Author.ID != config.OwnerID {
-		return
-	}
-
-	misc.MapMutex.Lock()
-	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I can see %v users.", len(misc.UserCounter)))
-	if err != nil {
-		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-		_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-	}
-	misc.MapMutex.Unlock()
-}
-
 func init() {
-	add(&command{
-		execute: playingMsgCommand,
-		trigger: "playingmsg",
-		desc:    "Prints or adds a BOT playing message",
-		DMAble: true,
-		elevated: true,
-		admin: true,
+	functionality.Add(&functionality.Command{
+		Execute:    playingMsgCommand,
+		Trigger:    "playingmsg",
+		Desc:       "Prints or adds a BOT playing message",
+		DMAble:     true,
+		Permission: functionality.Owner,
 	})
-	add(&command{
-		execute: removePlayingMsgCommand,
-		trigger: "removeplayingmsg",
-		aliases:  []string{"killplayingmsg"},
-		desc:    "Removes a BOT playing message",
-		DMAble: true,
-		elevated: true,
-		admin: true,
+	functionality.Add(&functionality.Command{
+		Execute:    removePlayingMsgCommand,
+		Trigger:    "removeplayingmsg",
+		Aliases:    []string{"killplayingmsg"},
+		Desc:       "Removes a BOT playing message",
+		DMAble:     true,
+		Permission: functionality.Owner,
 	})
-	add(&command{
-		execute: serversCommand,
-		trigger: "servers",
-		desc:    "Prints the number of servers the BOT is in",
-		DMAble: true,
-		elevated: true,
-		admin: true,
+	functionality.Add(&functionality.Command{
+		Execute:    serversCommand,
+		Trigger:    "servers",
+		Desc:       "Prints the number of servers the BOT is in",
+		DMAble:     true,
+		Permission: functionality.Owner,
 	})
-	add(&command{
-		execute:  uptimeCommand,
-		trigger:  "uptime",
-		desc:     "Print how long I've been on for",
-		DMAble: true,
-		elevated: true,
-		admin: true,
+	functionality.Add(&functionality.Command{
+		Execute:    uptimeCommand,
+		Trigger:    "uptime",
+		Desc:       "Print how long I've been on for",
+		DMAble:     true,
+		Permission: functionality.Owner,
 	})
-	//add(&command{
-	//	execute: usersCommand,
-	//	trigger: "users",
-	//	desc:    "Prints the number of users the BOT can see.",
-	//	elevated: true,
-	//	admin: true,
-	//})
 }

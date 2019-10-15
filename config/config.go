@@ -10,18 +10,18 @@ import (
 // File for BOT, server, channel and role info
 
 var (
-	Token            string
-	BotID            string
-	ServerID         string
-	BotLogID         string
-	OwnerID          string
-	Website          string
-	PlayingMsg       []string
-	RedditAppName    string
-	RedditAppSecret  string
-	DiscordAppSecret string
-	DiscordBotsSecret string
-	DiscordBoatsSecret string
+	Token               string
+	BotID               string
+	ServerID            string
+	BotLogID            string
+	OwnerID             string
+	Website             string
+	PlayingMsg          []string
+	RedditAppName       string
+	RedditAppSecret     string
+	DiscordAppSecret    string
+	DiscordBotsSecret   string
+	DiscordBoatsSecret  string
 	BotsOnDiscordSecret string
 
 	config        *configStruct
@@ -29,24 +29,24 @@ var (
 )
 
 type configStruct struct {
-	Token                 string `json:"-"`
-	BotID                 string `json:"BotID"`
-	ServerID              string `json:"ServerID"`
-	BotLogID              string `json:"BotLogID"`
-	OwnerID               string `json:"OwnerID"`
-	Website               string `json:"Website"`
-	VoteChannelCategoryID string `json:"VoteChannelCategoryID"`
-	Kaguya                string `json:"Kaguya"`
-	MsgAttachRemoval      string `json:"MsgAttachRemoval"`
+	Token                 string   `json:"-"`
+	BotID                 string   `json:"BotID"`
+	ServerID              string   `json:"ServerID"`
+	BotLogID              string   `json:"BotLogID"`
+	OwnerID               string   `json:"OwnerID"`
+	Website               string   `json:"Website"`
+	VoteChannelCategoryID string   `json:"VoteChannelCategoryID"`
+	Kaguya                string   `json:"Kaguya"`
+	MsgAttachRemoval      string   `json:"MsgAttachRemoval"`
 	PlayingMsg            []string `json:"PlayingMsg"`
 }
 
 type configSecrets struct {
-	RedditAppName    string `json:"RedditName"`
-	RedditAppSecret  string `json:"RedditSecret"`
-	DiscordAppSecret string `json:"DiscordSecret"`
-	DiscordBotsSecret string `json:"DiscordBotsSecret"`
-	DiscordBoatsSecret string `json:"DiscordBoatsSecret"`
+	RedditAppName       string `json:"RedditName"`
+	RedditAppSecret     string `json:"RedditSecret"`
+	DiscordAppSecret    string `json:"DiscordSecret"`
+	DiscordBotsSecret   string `json:"DiscordBotsSecret"`
+	DiscordBoatsSecret  string `json:"DiscordBoatsSecret"`
 	BotsOnDiscordSecret string `json:"BotsOnDiscordSecret"`
 }
 

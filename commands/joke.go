@@ -7,7 +7,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/misc"
+	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 const jokeURL = "https://official-joke-api.herokuapp.com/random_joke"
@@ -40,10 +40,10 @@ func jokeCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Joke website is not working properly. Please notify Apiks#8969 about it.")
 		if err != nil {
 			if m.GuildID != "" {
-				misc.MapMutex.Lock()
-				guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-				misc.MapMutex.Unlock()
-				misc.CommandErrorHandler(s, m, err, guildBotLog)
+				functionality.MapMutex.Lock()
+				guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+				functionality.MapMutex.Unlock()
+				functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 				return
 			}
 			return
@@ -54,20 +54,20 @@ func jokeCommand(s *discordgo.Session, m *discordgo.Message) {
 	_, err = s.ChannelMessageSend(m.ChannelID, joke.Setup+"\n\n"+joke.Punchline)
 	if err != nil {
 		if m.GuildID != "" {
-			misc.MapMutex.Lock()
-			guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-			misc.MapMutex.Unlock()
-			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			functionality.MapMutex.Lock()
+			guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+			functionality.MapMutex.Unlock()
+			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		}
 	}
 }
 
 func init() {
-	add(&command{
-		execute:  jokeCommand,
-		trigger:  "joke",
-		desc:     "Prints a (bad) joke",
-		category: "normal",
-		DMAble: true,
+	functionality.Add(&functionality.Command{
+		Execute: jokeCommand,
+		Trigger: "joke",
+		Desc:    "Prints a (bad) joke",
+		Module:  "normal",
+		DMAble:  true,
 	})
 }

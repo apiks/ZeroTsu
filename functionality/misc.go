@@ -1,4 +1,4 @@
-package misc
+package functionality
 
 import (
 	"fmt"
@@ -17,8 +17,8 @@ import (
 // File for misc. functions, commands and variables.
 
 const (
-	UserAgent         = "script:github.com/r-anime/zerotsu:v1.0.0 (by /u/thechosenapiks, /u/geo1088)"
-	DateFormat        = "2006-01-02"
+	UserAgent  = "script:github.com/r-anime/zerotsu:v1.0.0 (by /u/thechosenapiks, /u/geo1088)"
+	DateFormat = "2006-01-02"
 )
 
 var (
@@ -26,8 +26,6 @@ var (
 	ReadSpoilerPerms = discordgo.PermissionReadMessages + discordgo.PermissionReadMessageHistory
 
 	StartTime time.Time
-
-	UserCounter = make(map[string]bool)
 )
 
 // Sorts roles alphabetically
@@ -36,7 +34,6 @@ type SortRoleByAlphabet []*discordgo.Role
 func (r SortRoleByAlphabet) Len() int {
 	return len(r)
 }
-
 func (r SortRoleByAlphabet) Less(i, j int) bool {
 
 	iRunes := []rune(r[i].Name)
@@ -67,7 +64,6 @@ func (r SortRoleByAlphabet) Less(i, j int) bool {
 	return false
 
 }
-
 func (r SortRoleByAlphabet) Swap(i, j int) {
 	r[i], r[j] = r[j], r[i]
 }
@@ -78,7 +74,6 @@ type SortChannelByAlphabet []*discordgo.Channel
 func (r SortChannelByAlphabet) Len() int {
 	return len(r)
 }
-
 func (r SortChannelByAlphabet) Less(i, j int) bool {
 
 	iRunes := []rune(r[i].Name)
@@ -109,7 +104,6 @@ func (r SortChannelByAlphabet) Less(i, j int) bool {
 	return false
 
 }
-
 func (r SortChannelByAlphabet) Swap(i, j int) {
 	r[i], r[j] = r[j], r[i]
 }
@@ -269,10 +263,13 @@ func ChMentionID(channelID string) string {
 }
 
 // Sends error message to channel command is in. If that throws an error send error message to bot log channel
-func CommandErrorHandler(s *discordgo.Session, m *discordgo.Message, err error, botLogID string) {
+func CommandErrorHandler(s *discordgo.Session, m *discordgo.Message, botLog *Cha, err error) {
 	_, err = s.ChannelMessageSend(m.ChannelID, err.Error())
 	if err != nil {
-		if botLogID == "" {
+		if botLog == nil {
+			return
+		}
+		if botLog.ID == "" {
 			return
 		}
 		if _, ok := err.(*discordgo.RESTError); ok {
@@ -281,11 +278,23 @@ func CommandErrorHandler(s *discordgo.Session, m *discordgo.Message, err error, 
 			}
 		}
 
-		_, _ = s.ChannelMessageSend(botLogID, err.Error())
+		_, _ = s.ChannelMessageSend(botLog.ID, err.Error())
 	}
 }
 
-// SplitLongMessage takes a message and splits it if it's longer than 1900. By Kagumi
+// Logs the error in the guild BotLog
+func LogError(s *discordgo.Session, botLog *Cha, err error) {
+	if botLog == nil {
+		return
+	}
+	if botLog.ID == "" {
+		return
+	}
+	_, _ = s.ChannelMessageSend(botLog.ID, err.Error())
+	return
+}
+
+// SplitLongMessage takes a message and splits it if it's longer than 1900
 func SplitLongMessage(message string) (split []string) {
 	const maxLength = 1900
 	if len(message) > maxLength {
@@ -330,7 +339,7 @@ func GetRoleUserAmount(guild *discordgo.Guild, roles []*discordgo.Role, roleName
 			break
 		}
 	}
-	// If a user has the requested role, add +1 to users var
+	// If a user has the requested role, Add +1 to users var
 	for userID := range guild.Members {
 		for roleIndex := range guild.Members[userID].Roles {
 			if guild.Members[userID].Roles[roleIndex] == roleID {
@@ -434,13 +443,10 @@ func ChannelParser(s *discordgo.Session, channel string, guildID string) (string
 	if err != nil {
 
 		MapMutex.Lock()
-		guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
+		guildSettings := GuildMap[guildID].GetGuildSettings()
 		MapMutex.Unlock()
 
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-		if err != nil {
-			return channelID, channelName
-		}
+		LogError(s, guildSettings.BotLog, err)
 		return channelID, channelName
 	}
 	for _, cha := range channels {
@@ -485,13 +491,10 @@ func CategoryParser(s *discordgo.Session, category string, guildID string) (stri
 	if err != nil {
 
 		MapMutex.Lock()
-		guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
+		guildSettings := GuildMap[guildID].GetGuildSettings()
 		MapMutex.Unlock()
 
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-		if err != nil {
-			return categoryID, categoryID
-		}
+		LogError(s, guildSettings.BotLog, err)
 		return categoryID, categoryName
 	}
 	for _, cha := range channels {
@@ -539,13 +542,10 @@ func RoleParser(s *discordgo.Session, role string, guildID string) (string, stri
 	if err != nil {
 
 		MapMutex.Lock()
-		guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
+		guildSettings := GuildMap[guildID].GetGuildSettings()
 		MapMutex.Unlock()
 
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+ErrorLocation(err))
-		if err != nil {
-			return roleID, roleName
-		}
+		LogError(s, guildSettings.BotLog, err)
 		return roleID, roleName
 	}
 	for _, roleIteration := range roles {
@@ -592,7 +592,6 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 	var (
 		optInUnderExists bool
 		optInAboveExists bool
-		err              error
 	)
 
 	// Saves guild roles
@@ -602,39 +601,47 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 	}
 
 	MapMutex.Lock()
-	guildBotLog := GuildMap[guildID].GuildConfig.BotLog.ID
-
-	// Checks if optins exist
-	if GuildMap[guildID].GuildConfig.OptInUnder.ID != "" {
-		for _, role := range roles {
-			if role.ID == GuildMap[guildID].GuildConfig.OptInUnder.ID {
-				optInUnderExists = true
-				break
-			}
-		}
-	}
-	if GuildMap[guildID].GuildConfig.OptInAbove.ID != "" {
-		for _, role := range roles {
-			if role.ID == GuildMap[guildID].GuildConfig.OptInAbove.ID {
-				optInAboveExists = true
-				break
-			}
-		}
-	}
-
+	guildSettings := GuildMap[guildID].GetGuildSettings()
 	MapMutex.Unlock()
 
+	// Checks if optins exist
+	if guildSettings.OptInUnder != nil {
+		if guildSettings.OptInUnder.ID != "" {
+			for _, role := range roles {
+				if role.ID == guildSettings.OptInUnder.ID {
+					optInUnderExists = true
+					break
+				}
+			}
+		}
+	}
+
+	if guildSettings.OptInAbove != nil {
+		if guildSettings.OptInAbove.ID != "" {
+			for _, role := range roles {
+				if role.ID == guildSettings.OptInAbove.ID {
+					optInAboveExists = true
+					break
+				}
+			}
+		}
+	}
+
 	if optInUnderExists && optInAboveExists {
-		return err
+		return nil
 	}
 
 	// Handles opt-in-under
 	if !optInUnderExists {
-		var optIn OptinRole
+		var optIn Role
 
 		_, err := s.ChannelMessageSend(channelID, "Necessary opt-in-under role not detected. Trying to create it.")
 		if err != nil {
-			_, _ = s.ChannelMessageSend(guildBotLog, "Necessary opt-in-under role not detected. Trying to create it.")
+			if guildSettings.BotLog != nil {
+				if guildSettings.BotLog.ID != "" {
+					_, _ = s.ChannelMessageSend(guildSettings.BotLog.ID, "Necessary opt-in-under role not detected. Trying to create it.")
+				}
+			}
 		}
 
 		// Creates opt-in-under role
@@ -654,17 +661,19 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 		optIn.Position = 5
 
 		// Saves the new opt-in guild data
-		MapMutex.Lock()
-		GuildMap[guildID].GuildConfig.OptInUnder = optIn
-		MapMutex.Unlock()
+		guildSettings.OptInUnder = &optIn
 	}
 	// Handles opt-in-above
 	if !optInAboveExists {
-		var optIn OptinRole
+		var optIn Role
 
 		_, err := s.ChannelMessageSend(channelID, "Necessary opt-in-above role not detected. Trying to create it.")
 		if err != nil {
-			_, _ = s.ChannelMessageSend(guildBotLog, "Necessary opt-in-above role not detected. Trying to create it.")
+			if guildSettings.BotLog != nil {
+				if guildSettings.BotLog.ID != "" {
+					_, _ = s.ChannelMessageSend(guildSettings.BotLog.ID, "Necessary opt-in-above role not detected. Trying to create it.")
+				}
+			}
 		}
 
 		// Creates opt-in-above role
@@ -684,9 +693,7 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 		optIn.Position = 2
 
 		// Saves the new opt-in guild data
-		MapMutex.Lock()
-		GuildMap[guildID].GuildConfig.OptInAbove = optIn
-		MapMutex.Unlock()
+		guildSettings.OptInAbove = &optIn
 	}
 
 	// Reorders the optin roles with space inbetween them
@@ -694,21 +701,21 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 	if err != nil {
 		return err
 	}
-	MapMutex.Lock()
 	for i, role := range deb {
-		if role.ID == GuildMap[guildID].GuildConfig.OptInUnder.ID {
-			deb[i].Position = GuildMap[guildID].GuildConfig.OptInUnder.Position
+		if role.ID == guildSettings.OptInUnder.ID {
+			deb[i].Position = guildSettings.OptInUnder.Position
 		}
-		if role.ID == GuildMap[guildID].GuildConfig.OptInAbove.ID {
-			deb[i].Position = GuildMap[guildID].GuildConfig.OptInAbove.Position
+		if role.ID == guildSettings.OptInAbove.ID {
+			deb[i].Position = guildSettings.OptInAbove.Position
 		}
 	}
 	_, err = s.GuildRoleReorder(guildID, deb)
 	if err != nil {
-		MapMutex.Unlock()
 		return err
 	}
-	GuildSettingsWrite(GuildMap[guildID].GuildConfig, guildID)
+	MapMutex.Lock()
+	GuildMap[guildID].GuildConfig = &guildSettings
+	_ = GuildSettingsWrite(GuildMap[guildID].GuildConfig, guildID)
 	MapMutex.Unlock()
 
 	return err

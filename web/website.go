@@ -18,7 +18,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/config"
-	"github.com/r-anime/ZeroTsu/misc"
+	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 var (
@@ -77,7 +77,7 @@ type ChannelStats struct {
 }
 
 type ChannelPick struct {
-	ChannelStats map[string]*misc.Channel
+	ChannelStats map[string]*functionality.Channel
 	Flag         bool
 	Stats        ChannelStats
 	Error        bool
@@ -101,8 +101,8 @@ func (d byDate) Swap(i, j int) {
 }
 
 func (d byDate) Less(i, j int) bool {
-	t1, _ := time.Parse(misc.DateFormat, d[i])
-	t2, _ := time.Parse(misc.DateFormat, d[j])
+	t1, _ := time.Parse(functionality.DateFormat, d[i])
+	t2, _ := time.Parse(functionality.DateFormat, d[j])
 	return t1.Before(t2)
 }
 
@@ -160,8 +160,8 @@ func ChannelStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Checks for nil entry assignment error and saves from that (could be abused to stop bot)
 	if id != "" {
-		misc.MapMutex.Lock()
-		if misc.GuildMap[config.ServerID].ChannelStats[id] == nil {
+		functionality.MapMutex.Lock()
+		if functionality.GuildMap[config.ServerID].ChannelStats[id] == nil {
 			pick.Error = false
 			// Loads the html & css stats files
 			t, err := template.ParseFiles("./web/assets/channelstats.html")
@@ -171,16 +171,16 @@ func ChannelStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 					fmt.Println(err.Error())
 				}
 			}
-			misc.MapMutex.Unlock()
+			functionality.MapMutex.Unlock()
 			return
 		}
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 	}
 
 	if id == "" {
-		pick.ChannelStats = make(map[string]*misc.Channel)
-		misc.MapMutex.Lock()
-		pick.ChannelStats = misc.GuildMap[config.ServerID].ChannelStats
+		pick.ChannelStats = make(map[string]*functionality.Channel)
+		functionality.MapMutex.Lock()
+		pick.ChannelStats = functionality.GuildMap[config.ServerID].ChannelStats
 		// Loads the html & css stats files
 		t, err := template.ParseFiles("./web/assets/channelstats.html")
 		if err == nil {
@@ -189,26 +189,26 @@ func ChannelStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 				fmt.Println(err.Error())
 			}
 		}
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 		return
 	} else {
-		misc.MapMutex.Lock()
+		functionality.MapMutex.Lock()
 		pick.Flag = true
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 	}
 
 	// Save dates, sort them and then assign messages in order of the dates
-	misc.MapMutex.Lock()
-	for date := range misc.GuildMap[config.ServerID].ChannelStats[id].Messages {
+	functionality.MapMutex.Lock()
+	for date := range functionality.GuildMap[config.ServerID].ChannelStats[id].Messages {
 		dateLabels = append(dateLabels, date)
 	}
 	sort.Sort(byDate(dateLabels))
 	for i := 0; i < len(dateLabels); i++ {
-		messageCount = append(messageCount, misc.GuildMap[config.ServerID].ChannelStats[id].Messages[dateLabels[i]])
-		totalMessages += misc.GuildMap[config.ServerID].ChannelStats[id].Messages[dateLabels[i]]
+		messageCount = append(messageCount, functionality.GuildMap[config.ServerID].ChannelStats[id].Messages[dateLabels[i]])
+		totalMessages += functionality.GuildMap[config.ServerID].ChannelStats[id].Messages[dateLabels[i]]
 	}
 
-	stats.Name = misc.GuildMap[config.ServerID].ChannelStats[id].Name
+	stats.Name = functionality.GuildMap[config.ServerID].ChannelStats[id].Name
 	stats.Dates = dateLabels
 	stats.Messages = messageCount
 	stats.TotalMessages = totalMessages
@@ -225,7 +225,7 @@ func ChannelStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(err.Error())
 		}
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 }
 
 func UserChangeStatsPageHandler(w http.ResponseWriter, r *http.Request) {
@@ -246,14 +246,14 @@ func UserChangeStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Save dates, sort them and then assign user change int in order of the dates
-	misc.MapMutex.Lock()
-	for date := range misc.GuildMap[config.ServerID].UserChangeStats {
+	functionality.MapMutex.Lock()
+	for date := range functionality.GuildMap[config.ServerID].UserChangeStats {
 		dateLabels = append(dateLabels, date)
-		totalChange += misc.GuildMap[config.ServerID].UserChangeStats[date]
+		totalChange += functionality.GuildMap[config.ServerID].UserChangeStats[date]
 	}
 	sort.Sort(byDate(dateLabels))
 	for i := 0; i < len(dateLabels); i++ {
-		changeCount = append(changeCount, misc.GuildMap[config.ServerID].UserChangeStats[dateLabels[i]])
+		changeCount = append(changeCount, functionality.GuildMap[config.ServerID].UserChangeStats[dateLabels[i]])
 	}
 
 	stats.Dates = dateLabels
@@ -270,7 +270,7 @@ func UserChangeStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(err.Error())
 		}
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 }
 
 // Handles the verification
@@ -303,7 +303,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Create entry in UserCookieMap if it doesn't exist. Otherwise just update tempUser with map value
-	misc.MapMutex.Lock()
+	functionality.MapMutex.Lock()
 	if _, ok := SafeCookieMap.userCookieMap[cookie.Value]; !ok {
 		tempUser.Cookie = cookie.Value
 		tempUser.Expiry = expire
@@ -312,7 +312,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		tempUser = *SafeCookieMap.userCookieMap[cookie.Value]
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 
 	// Fetches queries from link if they exist
 	queryValues := r.URL.Query()
@@ -325,7 +325,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	if errorVar != "" {
 		// Set error
 		tempUser.Error = "Error: Permission not given in verification. If this was a mistake please try to verify again."
-		misc.MapMutex.Lock()
+		functionality.MapMutex.Lock()
 		SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
 
 		// Loads the html & css verification files
@@ -341,14 +341,14 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 			tempUser.Error = ""
 			SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
 		}
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 		return
 	}
 
 	// Saves the ID in the user cookie map if it exists
 	if id != "" {
 		// Decrypts encrypted id from url
-		trueid, validid := misc.Decrypt(misc.Key, id)
+		trueid, validid := functionality.Decrypt(functionality.Key, id)
 
 		if validid {
 			// If the user is verifying to another account with this cookie reset the old cookie values
@@ -363,38 +363,38 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 			// Set new decrypted user ID to verify
 			tempUser.ID = trueid
-			misc.MapMutex.Lock()
+			functionality.MapMutex.Lock()
 			SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
-			misc.MapMutex.Unlock()
+			functionality.MapMutex.Unlock()
 		}
 	}
 
 	// Saves the code in the user cookie map if it exists
 	if code != "" {
 		tempUser.Code = code
-		misc.MapMutex.Lock()
+		functionality.MapMutex.Lock()
 		SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 	}
 
 	// Sets the username + discrim combo if it exists in memberinfo via ID, also sorts out the reddit verified status
-	misc.MapMutex.Lock()
-	if _, ok := misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID]; ok {
-		usernameDiscrim := misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].Username + "#" + misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].Discrim
+	functionality.MapMutex.Lock()
+	if _, ok := functionality.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID]; ok {
+		usernameDiscrim := functionality.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].Username + "#" + functionality.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].Discrim
 		tempUser.UsernameDiscrim = usernameDiscrim
 
 		// Overwrites userCookieMap redditName value with the memberinfo one to avoid abuse in changing their reddit usernames
-		if misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].RedditUsername != "" {
+		if functionality.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].RedditUsername != "" {
 			tempUser.RedditVerifiedStatus = true
-			tempUser.RedditName = misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].RedditUsername
+			tempUser.RedditName = functionality.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].RedditUsername
 		}
 		SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
 	}
 
 	// Verifies user if they have a reddit account linked in memberInfo already, skipping the entire verification process
 	if SafeCookieMap.userCookieMap[cookie.Value].ID != "" {
-		if _, ok := misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID]; ok {
-			if misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].RedditUsername != "" {
+		if _, ok := functionality.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID]; ok {
+			if functionality.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].RedditUsername != "" {
 				// Verifies user
 				err := Verify(cookie, r)
 				if err != nil {
@@ -415,7 +415,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 						tempUser.Error = ""
 						SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
 					}
-					misc.MapMutex.Unlock()
+					functionality.MapMutex.Unlock()
 					return
 				}
 				verified = true
@@ -445,7 +445,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				// Verifies user if reddit verification was already completed succesfully
 				if SafeCookieMap.userCookieMap[cookie.Value].AccOldEnough && SafeCookieMap.userCookieMap[cookie.Value].ID != "" &&
 					SafeCookieMap.userCookieMap[cookie.Value].RedditVerifiedStatus && SafeCookieMap.userCookieMap[cookie.Value].RedditName != "" {
-					if _, ok := misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID]; ok {
+					if _, ok := functionality.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID]; ok {
 						err := Verify(cookie, r)
 						if err != nil {
 							// Sets error message
@@ -477,7 +477,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					tempUser.Error = ""
 					SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
 				}
-				misc.MapMutex.Unlock()
+				functionality.MapMutex.Unlock()
 				return
 			}
 		}
@@ -513,7 +513,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					if SafeCookieMap.userCookieMap[cookie.Value].ID != "" &&
 						SafeCookieMap.userCookieMap[cookie.Value].DiscordVerifiedStatus &&
 						SafeCookieMap.userCookieMap[cookie.Value].RedditName != "" {
-						if _, ok := misc.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID]; ok {
+						if _, ok := functionality.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID]; ok {
 							err := Verify(cookie, r)
 							if err != nil {
 								// Sets error message
@@ -546,7 +546,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		tempUser.Error = ""
 		SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 }
 
 // Verifies user on reddit and returns their reddit username
@@ -573,7 +573,7 @@ func getRedditUsername(code string) (string, float64, error) {
 	}
 
 	// Sets needed request parameters User Agent and Basic Auth
-	req.Header.Set("User-Agent", misc.UserAgent)
+	req.Header.Set("User-Agent", functionality.UserAgent)
 	req.SetBasicAuth(config.RedditAppName, config.RedditAppSecret)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -603,7 +603,7 @@ func getRedditUsername(code string) (string, float64, error) {
 
 	// Sets needed reqAPI parameters
 	reqAPI.Header.Add("Authorization", "Bearer "+access.RedditAccessToken)
-	reqAPI.Header.Add("User-Agent", misc.UserAgent)
+	reqAPI.Header.Add("User-Agent", functionality.UserAgent)
 
 	// Does the GET request and puts it into the respAPI
 	respAPI, err := client.Do(reqAPI)
@@ -634,7 +634,7 @@ func getRedditUsername(code string) (string, float64, error) {
 
 	// Sets needed reqAPIBan parameters
 	reqAPIBan.Header.Add("Authorization", "Bearer "+access.RedditAccessToken)
-	reqAPIBan.Header.Add("User-Agent", misc.UserAgent)
+	reqAPIBan.Header.Add("User-Agent", functionality.UserAgent)
 
 	// Does the GET request and puts it into the respAPI
 	respAPIBan, err := client.Do(reqAPIBan)
@@ -728,7 +728,7 @@ func getDiscordUsernameDiscrim(code string) (string, string, string, error) {
 func Verify(cookieValue *http.Cookie, r *http.Request) error {
 
 	var (
-		temp   misc.UserInfo
+		temp   functionality.UserInfo
 		userID string
 	)
 
@@ -741,7 +741,7 @@ func Verify(cookieValue *http.Cookie, r *http.Request) error {
 	}()
 
 	// Confirms that the map is not empty
-	if len(misc.GuildMap[config.ServerID].MemberInfoMap) == 0 {
+	if len(functionality.GuildMap[config.ServerID].MemberInfoMap) == 0 {
 		return fmt.Errorf("Critical Error: MemberInfo is empty. Please notify a mod.")
 	}
 	// Checks if cookie has expired while doing this
@@ -752,7 +752,7 @@ func Verify(cookieValue *http.Cookie, r *http.Request) error {
 		return fmt.Errorf("Rare Error: CookieValue is not in UserCookieMap. Please notify a mod.")
 	}
 	userID = SafeCookieMap.userCookieMap[cookieValue.Value].ID
-	if _, ok := misc.GuildMap[config.ServerID].MemberInfoMap[userID]; !ok {
+	if _, ok := functionality.GuildMap[config.ServerID].MemberInfoMap[userID]; !ok {
 		return fmt.Errorf("Critical Error: Either user does not exist in MemberInfo or the user ID does not exist. Please notify a mod.")
 	}
 
@@ -762,10 +762,10 @@ func Verify(cookieValue *http.Cookie, r *http.Request) error {
 	joinDate := t.Format("2006-01-02 15:04:05") + " " + z
 
 	// Assigns needed values to temp
-	temp = *misc.GuildMap[config.ServerID].MemberInfoMap[userID]
+	temp = *functionality.GuildMap[config.ServerID].MemberInfoMap[userID]
 	temp.RedditUsername = SafeCookieMap.userCookieMap[cookieValue.Value].RedditName
 	temp.VerifiedDate = joinDate
-	misc.GuildMap[config.ServerID].MemberInfoMap[userID] = &temp
+	functionality.GuildMap[config.ServerID].MemberInfoMap[userID] = &temp
 
 	// Saves the userID for verified timer
 	verifyMap[userID] = userID
@@ -776,10 +776,10 @@ func Verify(cookieValue *http.Cookie, r *http.Request) error {
 	}
 
 	// Writes the username to memberInfo.json
-	misc.WriteMemberInfo(misc.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
+	functionality.WriteMemberInfo(functionality.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
 
 	// Adds to verified stats
-	misc.GuildMap[config.ServerID].VerifiedStats[t.Format(misc.DateFormat)]++
+	functionality.GuildMap[config.ServerID].VerifiedStats[t.Format(functionality.DateFormat)]++
 	return nil
 }
 
@@ -802,15 +802,15 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 	// Checks every 10 seconds if a user in the verifyMap needs to be given the role, also clears UserCookieMap if expiry date has passed
 	for range time.NewTicker(10 * time.Second).C {
 
-		misc.MapMutex.Lock()
+		functionality.MapMutex.Lock()
 		if len(verifyMap) != 0 {
 			for userID := range verifyMap {
 
 				// Checks if banned suspected spambot accounts verified
-				if misc.GuildMap[config.ServerID].MemberInfoMap[userID].SuspectedSpambot {
-					for i, banUser := range misc.GuildMap[config.ServerID].PunishedUsers {
+				if functionality.GuildMap[config.ServerID].MemberInfoMap[userID].SuspectedSpambot {
+					for i, banUser := range functionality.GuildMap[config.ServerID].PunishedUsers {
 						if banUser.ID == userID {
-							misc.GuildMap[config.ServerID].PunishedUsers = append(misc.GuildMap[config.ServerID].PunishedUsers[:i], misc.GuildMap[config.ServerID].PunishedUsers[i+1:]...)
+							functionality.GuildMap[config.ServerID].PunishedUsers = append(functionality.GuildMap[config.ServerID].PunishedUsers[:i], functionality.GuildMap[config.ServerID].PunishedUsers[i+1:]...)
 							break
 						}
 					}
@@ -823,8 +823,8 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 						}
 						continue
 					}
-					misc.GuildMap[config.ServerID].MemberInfoMap[userID].SuspectedSpambot = false
-					misc.WriteMemberInfo(misc.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
+					functionality.GuildMap[config.ServerID].MemberInfoMap[userID].SuspectedSpambot = false
+					functionality.WriteMemberInfo(functionality.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
 				}
 
 				// Checks if the user is in the server before continuing. Very important to avoid bugs
@@ -836,7 +836,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 				// Puts all server roles in roles
 				roles, err := s.GuildRoles(config.ServerID)
 				if err != nil {
-					_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+					_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+functionality.ErrorLocation(err))
 					if err != nil {
 						continue
 					}
@@ -854,7 +854,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 				// Assigns Verified role to user
 				err = s.GuildMemberRoleAdd(config.ServerID, userID, roleID)
 				if err != nil {
-					_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+					_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+functionality.ErrorLocation(err))
 					if err != nil {
 						continue
 					}
@@ -866,7 +866,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 				if !check {
 					user, err := s.GuildMember(config.ServerID, userID)
 					if err != nil {
-						_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+						_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+functionality.ErrorLocation(err))
 						if err != nil {
 							delete(verifyMap, userID)
 							continue
@@ -874,8 +874,8 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 						delete(verifyMap, userID)
 						continue
 					}
-					misc.InitializeUser(user, config.ServerID)
-					misc.WriteMemberInfo(misc.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
+					functionality.InitializeUser(user, config.ServerID)
+					functionality.WriteMemberInfo(functionality.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
 				}
 				delete(verifyMap, userID)
 			}
@@ -883,7 +883,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 
 		// Clears userCookieMap based on expiry date
 		if len(SafeCookieMap.userCookieMap) != 0 {
-			misc.MapMutex.Unlock()
+			functionality.MapMutex.Unlock()
 			continue
 		}
 		now := time.Now()
@@ -893,7 +893,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 				break
 			}
 		}
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 	}
 }
 
@@ -920,31 +920,31 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 	userID = user.User.ID
 
-	misc.MapMutex.Lock()
-	if _, ok := misc.GuildMap[u.GuildID]; !ok {
-		misc.InitDB(s, u.GuildID)
-		misc.LoadGuilds()
+	functionality.MapMutex.Lock()
+	if _, ok := functionality.GuildMap[u.GuildID]; !ok {
+		functionality.InitDB(s, u.GuildID)
+		functionality.LoadGuilds()
 	}
 
 	// Checks if the user is an already verified one
-	if len(misc.GuildMap[config.ServerID].MemberInfoMap) == 0 {
-		misc.MapMutex.Unlock()
+	if len(functionality.GuildMap[config.ServerID].MemberInfoMap) == 0 {
+		functionality.MapMutex.Unlock()
 		return
 	}
-	if misc.GuildMap[config.ServerID].MemberInfoMap[userID] == nil {
-		misc.MapMutex.Unlock()
+	if functionality.GuildMap[config.ServerID].MemberInfoMap[userID] == nil {
+		functionality.MapMutex.Unlock()
 		return
 	}
-	if misc.GuildMap[config.ServerID].MemberInfoMap[userID].RedditUsername == "" {
-		misc.MapMutex.Unlock()
+	if functionality.GuildMap[config.ServerID].MemberInfoMap[userID].RedditUsername == "" {
+		functionality.MapMutex.Unlock()
 		return
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 
 	// Puts all server roles in roles
 	roles, err := s.GuildRoles(config.ServerID)
 	if err != nil {
-		_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+functionality.ErrorLocation(err))
 		if err != nil {
 			return
 		}
@@ -961,16 +961,16 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	// Assigns role
 	err = s.GuildMemberRoleAdd(config.ServerID, userID, roleID)
 	if err != nil {
-		_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+misc.ErrorLocation(err))
+		_, err := s.ChannelMessageSend(config.BotLogID, err.Error()+"\n"+functionality.ErrorLocation(err))
 		if err != nil {
 			return
 		}
 		return
 	}
 
-	misc.MapMutex.Lock()
+	functionality.MapMutex.Lock()
 	_ = CheckAltAccount(s, userID)
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 }
 
 // Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Verification version
@@ -986,17 +986,17 @@ func CheckAltAccount(s *discordgo.Session, id string) bool {
 		}
 	}()
 
-	if len(misc.GuildMap[config.ServerID].MemberInfoMap) == 0 {
+	if len(functionality.GuildMap[config.ServerID].MemberInfoMap) == 0 {
 		return false
 	}
-	if misc.GuildMap[config.ServerID].MemberInfoMap[id] == nil {
+	if functionality.GuildMap[config.ServerID].MemberInfoMap[id] == nil {
 		return false
 	}
 
 	// Iterates through all users in memberInfo.json
-	for _, userOne := range misc.GuildMap[config.ServerID].MemberInfoMap {
+	for _, userOne := range functionality.GuildMap[config.ServerID].MemberInfoMap {
 		// Checks if the current user has the same reddit username as userCookieMap user
-		if userOne.RedditUsername == misc.GuildMap[config.ServerID].MemberInfoMap[id].RedditUsername {
+		if userOne.RedditUsername == functionality.GuildMap[config.ServerID].MemberInfoMap[id].RedditUsername {
 			alts = append(alts, userOne.ID)
 		}
 	}

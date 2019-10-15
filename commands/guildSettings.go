@@ -6,78 +6,63 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/misc"
+	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 // Adds a role to the command role list
 func addCommandRole(s *discordgo.Session, m *discordgo.Message) {
 
-	var role misc.Role
+	var role functionality.Role
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(messageLowercase, " ", 2)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"addocommandrole [Role ID]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"addocommandrole [Role ID]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Parse role for roleID
-	role.ID, role.Name = misc.RoleParser(s, commandStrings[1], m.GuildID)
+	role.ID, role.Name = functionality.RoleParser(s, commandStrings[1], m.GuildID)
 	if role.ID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such role exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Checks if the role already exists as a command role
-	misc.MapMutex.Lock()
-	for _, commandRole := range misc.GuildMap[m.GuildID].GuildConfig.CommandRoles {
+	for _, commandRole := range guildSettings.CommandRoles {
 		if commandRole.ID == role.ID {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: That role is already a command role.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-				if err != nil {
-					misc.MapMutex.Unlock()
-					return
-				}
-				misc.MapMutex.Unlock()
+				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
-			misc.MapMutex.Unlock()
 			return
 		}
 	}
 
 	// Adds the role to the guild command roles
-	misc.GuildMap[m.GuildID].GuildConfig.CommandRoles = append(misc.GuildMap[m.GuildID].GuildConfig.CommandRoles, role)
-	_ = misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
-	misc.MapMutex.Unlock()
+	guildSettings.CommandRoles = append(guildSettings.CommandRoles, &role)
+	functionality.MapMutex.Lock()
+	functionality.GuildMap[m.GuildID].GuildConfig = &guildSettings
+	_ = functionality.GuildSettingsWrite(functionality.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	functionality.MapMutex.Unlock()
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Role `%v` is now a privileged role.", role.Name))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 }
@@ -87,43 +72,35 @@ func removeCommandRole(s *discordgo.Session, m *discordgo.Message) {
 
 	var roleExists bool
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(messageLowercase, " ", 2)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"removecommandrole [Role ID]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"removecommandrole [Role ID]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Parse role for roleID
-	roleID, roleName := misc.RoleParser(s, commandStrings[1], m.GuildID)
+	roleID, roleName := functionality.RoleParser(s, commandStrings[1], m.GuildID)
 	if roleID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such role exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Checks if that role is in the command role list
-	misc.MapMutex.Lock()
-	for _, commandRole := range misc.GuildMap[m.GuildID].GuildConfig.CommandRoles {
+	for _, commandRole := range guildSettings.CommandRoles {
 		if commandRole.ID == roleID {
 			roleExists = true
 			break
@@ -133,33 +110,27 @@ func removeCommandRole(s *discordgo.Session, m *discordgo.Message) {
 	if !roleExists {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such role in the command role list.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				misc.MapMutex.Unlock()
-				return
-			}
-			misc.MapMutex.Unlock()
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		misc.MapMutex.Unlock()
 		return
 	}
 
-	for i, role := range misc.GuildMap[m.GuildID].GuildConfig.CommandRoles {
+	for i, role := range guildSettings.CommandRoles {
 		if role.ID == roleID {
-			misc.GuildMap[m.GuildID].GuildConfig.CommandRoles = append(misc.GuildMap[m.GuildID].GuildConfig.CommandRoles[:i], misc.GuildMap[m.GuildID].GuildConfig.CommandRoles[i+1:]...)
+			guildSettings.CommandRoles = append(guildSettings.CommandRoles[:i], guildSettings.CommandRoles[i+1:]...)
 			break
 		}
 	}
-	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
-	misc.MapMutex.Unlock()
+
+	functionality.MapMutex.Lock()
+	functionality.GuildMap[m.GuildID].GuildConfig = &guildSettings
+	_ = functionality.GuildSettingsWrite(functionality.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	functionality.MapMutex.Unlock()
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Role `%v` has been removed from the command role list.", roleName))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 }
@@ -172,59 +143,44 @@ func viewCommandRoles(s *discordgo.Session, m *discordgo.Message) {
 		splitMessage []string
 	)
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
 	if len(commandStrings) != 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"commandroles`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"commandroles`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
-	misc.MapMutex.Lock()
-	if len(misc.GuildMap[m.GuildID].GuildConfig.CommandRoles) == 0 {
+	if len(guildSettings.CommandRoles) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no privileged command roles.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				misc.MapMutex.Unlock()
-				return
-			}
-			misc.MapMutex.Unlock()
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		misc.MapMutex.Unlock()
 		return
 	}
 
-	for _, role := range misc.GuildMap[m.GuildID].GuildConfig.CommandRoles {
+	for _, role := range guildSettings.CommandRoles {
 		message += fmt.Sprintf("**Name:** `%v` | **ID:** `%v`\n", role.Name, role.ID)
 	}
-	misc.MapMutex.Unlock()
 
 	// Splits the message if it's over 1900 characters
 	if len(message) > 1900 {
-		splitMessage = misc.SplitLongMessage(message)
+		splitMessage = functionality.SplitLongMessage(message)
 	}
 
 	// Prints split or unsplit
 	if splitMessage == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -234,10 +190,7 @@ func viewCommandRoles(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: cannot send commandroles message.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
 		}
@@ -247,42 +200,35 @@ func viewCommandRoles(s *discordgo.Session, m *discordgo.Message) {
 // Handles prefix view or change
 func prefixCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	mLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(mLowercase, " ", 2)
 
 	// Displays current prefix
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current prefix is: `%v` \n\n To change prefix please use `%vprefix [new prefix]`", guildPrefix, guildPrefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current prefix is: `%v` \n\n To change prefix please use `%vprefix [new prefix]`", guildSettings.Prefix, guildSettings.Prefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Changes and writes new prefix to storage
-	misc.MapMutex.Lock()
-	misc.GuildMap[m.GuildID].GuildConfig.Prefix = commandStrings[1]
-	_ = misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
-	misc.DynamicNicknameChange(s, m.GuildID, guildPrefix)
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	functionality.GuildMap[m.GuildID].GuildConfig.Prefix = commandStrings[1]
+	_ = functionality.GuildSettingsWrite(functionality.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	functionality.DynamicNicknameChange(s, m.GuildID, guildSettings.Prefix)
+	functionality.MapMutex.Unlock()
 
-	guildPrefix = commandStrings[1]
+	guildSettings.Prefix = commandStrings[1]
 
-	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New prefix is: `%v`", guildPrefix))
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New prefix is: `%v`", guildSettings.Prefix))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 }
@@ -292,60 +238,52 @@ func botLogCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var message string
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	mLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(mLowercase, " ", 2)
 
 	// Displays current botlog channel
 	if len(commandStrings) == 1 {
-		if guildBotLog.ID == "" {
-			message = fmt.Sprintf("Error: Bot Log is currently not set. Please use `%vbotlog [channel]`", guildPrefix)
+		if guildSettings.BotLog == nil {
+			message = fmt.Sprintf("Error: Bot Log is currently not set. Please use `%vbotlog [channel]`", guildSettings.Prefix)
+		} else if guildSettings.BotLog.ID == "" {
+			message = fmt.Sprintf("Error: Bot Log is currently not set. Please use `%vbotlog [channel]`", guildSettings.Prefix)
 		} else {
-			message = fmt.Sprintf("Current Bot Log is: `%v - %v` \n\n To change Bot Log please use `%vbotlog [channel]`", guildBotLog.Name, guildBotLog.ID, guildPrefix)
+			message = fmt.Sprintf("Current Bot Log is: `%v - %v` \n\n To change Bot Log please use `%vbotlog [channel]`", guildSettings.BotLog.Name, guildSettings.BotLog.ID, guildSettings.Prefix)
 		}
 
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Parses channel
-	chaID, chaName := misc.ChannelParser(s, commandStrings[1], m.GuildID)
+	chaID, chaName := functionality.ChannelParser(s, commandStrings[1], m.GuildID)
 	if chaID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such channel exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Changes and writes new bot log to storage
-	misc.MapMutex.Lock()
-	misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID = chaID
-	misc.GuildMap[m.GuildID].GuildConfig.BotLog.Name = chaName
-	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	functionality.GuildMap[m.GuildID].GuildConfig.BotLog = &functionality.Cha{Name: chaName, ID: chaID}
+	_ = functionality.GuildSettingsWrite(functionality.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	functionality.MapMutex.Unlock()
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Bot Log is: `%v - %v`", chaName, chaID))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		guildSettings.BotLog = &functionality.Cha{Name: chaName, ID: chaID}
+		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 }
@@ -355,58 +293,51 @@ func optInUnderCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var message string
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog
-	guildOptInUnder := misc.GuildMap[m.GuildID].GuildConfig.OptInUnder
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	mLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(mLowercase, " ", 2)
 
 	// Displays current optinunder role
 	if len(commandStrings) == 1 {
-		if guildOptInUnder.ID == "" {
-			message = fmt.Sprintf("Error: 'Opt In Under' role is currently not set. Please use `%voptinunder [role]`", guildPrefix)
+		if guildSettings.OptInUnder == nil {
+			message = fmt.Sprintf("Error: 'Opt In Under' role is currently not set. Please use `%voptinunder [role]`", guildSettings.Prefix)
+		} else if guildSettings.OptInUnder.ID == "" {
+			message = fmt.Sprintf("Error: 'Opt In Under' role is currently not set. Please use `%voptinunder [role]`", guildSettings.Prefix)
 		} else {
-			message = fmt.Sprintf("Current 'Opt In Under' role is: `%v - %v` \n\n To change 'Opt In Under' role please use `%voptinunder [role]`", guildOptInUnder.Name, guildOptInUnder.ID, guildPrefix)
+			message = fmt.Sprintf("Current 'Opt In Under' role is: `%v - %v` \n\n To change 'Opt In Under' role please use `%voptinunder [role]`", guildSettings.OptInUnder.Name, guildSettings.OptInUnder.ID, guildSettings.Prefix)
 		}
 
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Parses role
-	roleID, roleName := misc.RoleParser(s, commandStrings[1], m.GuildID)
+	roleID, roleName := functionality.RoleParser(s, commandStrings[1], m.GuildID)
 	if roleID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such role exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Changes and writes new optinunder role to storage
-	misc.MapMutex.Lock()
-	misc.GuildMap[m.GuildID].GuildConfig.OptInUnder.ID = roleID
-	misc.GuildMap[m.GuildID].GuildConfig.OptInUnder.Name = roleName
-	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	functionality.GuildMap[m.GuildID].GuildConfig.OptInAbove = &functionality.Role{Name: roleName, ID: roleID}
+	_ = functionality.GuildSettingsWrite(functionality.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	functionality.MapMutex.Unlock()
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! 'Opt In Under' role is: `%v - %v`", roleName, roleID))
 	if err != nil {
-		_, _ = s.ChannelMessageSend(guildBotLog.ID, err.Error())
+		functionality.LogError(s, guildSettings.BotLog, err)
 	}
 }
 
@@ -415,50 +346,43 @@ func optInAboveCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var message string
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog
-	guildOptInAbove := misc.GuildMap[m.GuildID].GuildConfig.OptInAbove
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	mLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(mLowercase, " ", 2)
 
 	// Displays current optinabove role
 	if len(commandStrings) == 1 {
-		if guildOptInAbove.ID == "" {
-			message = fmt.Sprintf("Error: 'Opt In Above' role is currently not set. Please use `%voptinunder [role]`", guildPrefix)
+		if guildSettings.OptInAbove == nil {
+			message = fmt.Sprintf("Error: 'Opt In Above' role is currently not set. Please use `%voptinunder [role]`", guildSettings.Prefix)
+		} else if guildSettings.OptInAbove.ID == "" {
+			message = fmt.Sprintf("Error: 'Opt In Above' role is currently not set. Please use `%voptinunder [role]`", guildSettings.Prefix)
 		} else {
-			message = fmt.Sprintf("Current 'Opt In Above' role is: `%v - %v` \n\n To change 'Opt In Above' role please use `%voptinabove [role]`", guildOptInAbove.Name, guildOptInAbove.ID, guildPrefix)
+			message = fmt.Sprintf("Current 'Opt In Above' role is: `%v - %v` \n\n To change 'Opt In Above' role please use `%voptinabove [role]`", guildSettings.OptInAbove.Name, guildSettings.OptInAbove.ID, guildSettings.Prefix)
 		}
 
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Parses role
-	roleID, roleName := misc.RoleParser(s, commandStrings[1], m.GuildID)
+	roleID, roleName := functionality.RoleParser(s, commandStrings[1], m.GuildID)
 
 	// Changes and writes new optinabove role to storage
-	misc.MapMutex.Lock()
-	misc.GuildMap[m.GuildID].GuildConfig.OptInAbove.ID = roleID
-	misc.GuildMap[m.GuildID].GuildConfig.OptInAbove.Name = roleName
-	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	functionality.GuildMap[m.GuildID].GuildConfig.OptInAbove = &functionality.Role{Name: roleName, ID: roleID}
+	_ = functionality.GuildSettingsWrite(functionality.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	functionality.MapMutex.Unlock()
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! 'Opt In Above' role is: `%v - %v`", roleName, roleID))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 }
@@ -467,99 +391,78 @@ func optInAboveCommand(s *discordgo.Session, m *discordgo.Message) {
 func addVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		cha   misc.VoiceCha
-		role  misc.Role
+		cha   functionality.VoiceCha
+		role  functionality.Role
 		merge bool
 	)
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
 
 	if len(commandStrings) < 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"addvoice [channel ID] [role]` \n\n")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"addvoice [channel ID] [role]` \n\n")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Parse channel
-	cha.ID, cha.Name = misc.ChannelParser(s, commandStrings[1], m.GuildID)
+	cha.ID, cha.Name = functionality.ChannelParser(s, commandStrings[1], m.GuildID)
 	if cha.ID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such channel exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 	voiceCheck, err := s.Channel(cha.ID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 	if voiceCheck.Type != discordgo.ChannelTypeGuildVoice {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a voice channel. Please use a voice channel.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 	// Parse role
-	role.ID, role.Name = misc.RoleParser(s, commandStrings[2], m.GuildID)
+	role.ID, role.Name = functionality.RoleParser(s, commandStrings[2], m.GuildID)
 	if role.ID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such role exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
-	misc.MapMutex.Lock()
-
 	// Checks if the role is already set
-	for i, voiceCha := range misc.GuildMap[m.GuildID].GuildConfig.VoiceChas {
+	for i, voiceCha := range guildSettings.VoiceChas {
 		if voiceCha.ID == cha.ID {
 			for _, roleIteration := range voiceCha.Roles {
 				if roleIteration.ID == role.ID {
 					_, err := s.ChannelMessageSend(m.ChannelID, "Error: That role is already set to that channel.")
 					if err != nil {
-						_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-						if err != nil {
-							misc.MapMutex.Unlock()
-							return
-						}
-						misc.MapMutex.Unlock()
+						functionality.LogError(s, guildSettings.BotLog, err)
 						return
 					}
-					misc.MapMutex.Unlock()
 					return
 				}
 			}
 			// Adds the voice channel and role to the guild voice channels
 			cha.Roles = voiceCha.Roles
-			cha.Roles = append(cha.Roles, role)
-			misc.GuildMap[m.GuildID].GuildConfig.VoiceChas[i].Roles = cha.Roles
+			cha.Roles = append(cha.Roles, &role)
+			guildSettings.VoiceChas[i].Roles = cha.Roles
 			merge = true
 			break
 		}
@@ -567,18 +470,18 @@ func addVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 
 	// Adds the voice channel and role to the guild voice channels
 	if !merge {
-		cha.Roles = append(cha.Roles, role)
-		misc.GuildMap[m.GuildID].GuildConfig.VoiceChas = append(misc.GuildMap[m.GuildID].GuildConfig.VoiceChas, cha)
+		cha.Roles = append(cha.Roles, &role)
+		guildSettings.VoiceChas = append(guildSettings.VoiceChas, &cha)
 	}
-	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
-	misc.MapMutex.Unlock()
+
+	functionality.MapMutex.Lock()
+	functionality.GuildMap[m.GuildID].GuildConfig = &guildSettings
+	_ = functionality.GuildSettingsWrite(functionality.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	functionality.MapMutex.Unlock()
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Channel `%v` will now give role `%v` when a user joins and take it away when they leave.", cha.Name, role.Name))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 }
@@ -593,53 +496,43 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 		chaExists       bool
 		chaDeleted      bool
 
-		cha  misc.VoiceCha
-		role misc.Role
+		cha  functionality.VoiceCha
+		role functionality.Role
 	)
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(messageLowercase, " ", 3)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"removevoice [channel ID] [role]*`\n\n***** is optional")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"removevoice [channel ID] [role]*`\n\n***** is optional")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Parse channel
-	cha.ID, cha.Name = misc.ChannelParser(s, commandStrings[1], m.GuildID)
+	cha.ID, cha.Name = functionality.ChannelParser(s, commandStrings[1], m.GuildID)
 	if cha.ID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such channel exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 	// Parse role
 	if len(commandStrings) == 3 {
-		role.ID, role.Name = misc.RoleParser(s, commandStrings[2], m.GuildID)
+		role.ID, role.Name = functionality.RoleParser(s, commandStrings[2], m.GuildID)
 		if role.ID == "" {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such role exists.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
 			return
@@ -650,8 +543,7 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if that channel exists in the voice channel list
-	misc.MapMutex.Lock()
-	for _, voiceCha := range misc.GuildMap[m.GuildID].GuildConfig.VoiceChas {
+	for _, voiceCha := range guildSettings.VoiceChas {
 		if voiceCha.ID == cha.ID {
 			chaExists = true
 			break
@@ -661,21 +553,15 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 	if !chaExists {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such voice channel has been set.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				misc.MapMutex.Unlock()
-				return
-			}
-			misc.MapMutex.Unlock()
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		misc.MapMutex.Unlock()
 		return
 	}
 
 	// Delete only the role if there, else delete the entire channel
 	if roleExistsInCmd {
-		for i, voiceCha := range misc.GuildMap[m.GuildID].GuildConfig.VoiceChas {
+		for i, voiceCha := range guildSettings.VoiceChas {
 			if voiceCha.ID == cha.ID {
 				for j, roleIteration := range voiceCha.Roles {
 					if roleIteration.ID == role.ID {
@@ -684,24 +570,26 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 							chaDeleted = true
 						}
 
-						misc.GuildMap[m.GuildID].GuildConfig.VoiceChas[i].Roles = append(misc.GuildMap[m.GuildID].GuildConfig.VoiceChas[i].Roles[:j], misc.GuildMap[m.GuildID].GuildConfig.VoiceChas[i].Roles[j+1:]...)
+						guildSettings.VoiceChas[i].Roles = append(guildSettings.VoiceChas[i].Roles[:j], guildSettings.VoiceChas[i].Roles[j+1:]...)
 						break
 					}
 				}
 			}
 		}
 	} else {
-		for i, voiceCha := range misc.GuildMap[m.GuildID].GuildConfig.VoiceChas {
+		for i, voiceCha := range guildSettings.VoiceChas {
 			if voiceCha.ID == cha.ID {
-				misc.GuildMap[m.GuildID].GuildConfig.VoiceChas = append(misc.GuildMap[m.GuildID].GuildConfig.VoiceChas[:i], misc.GuildMap[m.GuildID].GuildConfig.VoiceChas[i+1:]...)
+				guildSettings.VoiceChas = append(guildSettings.VoiceChas[:i], guildSettings.VoiceChas[i+1:]...)
 				chaDeleted = true
 				break
 			}
 		}
 	}
 
-	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	functionality.GuildMap[m.GuildID].GuildConfig = &guildSettings
+	_ = functionality.GuildSettingsWrite(functionality.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	functionality.MapMutex.Unlock()
 
 	if chaDeleted {
 		message = fmt.Sprintf("Success! Entire channel`%v` and all associated roles has been removed from the voice channel list.", cha.Name)
@@ -711,10 +599,7 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err := s.ChannelMessageSend(m.ChannelID, message)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 }
@@ -727,63 +612,48 @@ func viewVoiceChaRoles(s *discordgo.Session, m *discordgo.Message) {
 		splitMessage []string
 	)
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
 	if len(commandStrings) != 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"voiceroles`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"voiceroles`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
-	misc.MapMutex.Lock()
-	if len(misc.GuildMap[m.GuildID].GuildConfig.VoiceChas) == 0 {
+	if len(guildSettings.VoiceChas) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no set voice channel roles.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				misc.MapMutex.Unlock()
-				return
-			}
-			misc.MapMutex.Unlock()
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		misc.MapMutex.Unlock()
 		return
 	}
 
-	for _, cha := range misc.GuildMap[m.GuildID].GuildConfig.VoiceChas {
+	for _, cha := range guildSettings.VoiceChas {
 		message += fmt.Sprintf("**%v : %v**\n\n", cha.Name, cha.ID)
 		for _, role := range cha.Roles {
 			message += fmt.Sprintf("`%v - %v`\n", role.Name, role.ID)
 		}
 		message += "——————\n"
 	}
-	misc.MapMutex.Unlock()
 
 	// Splits the message if it's over 1900 characters
 	if len(message) > 1900 {
-		splitMessage = misc.SplitLongMessage(message)
+		splitMessage = functionality.SplitLongMessage(message)
 	}
 
 	// Prints split or unsplit
 	if splitMessage == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -793,10 +663,7 @@ func viewVoiceChaRoles(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: cannot send voice channel roles message.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
 		}
@@ -808,61 +675,51 @@ func voteCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var message string
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog
-	guildVoteCategory := misc.GuildMap[m.GuildID].GuildConfig.VoteChannelCategory
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	mLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(mLowercase, " ", 2)
 
 	// Displays current vote category
 	if len(commandStrings) == 1 {
-		if guildVoteCategory.ID == "" {
-			message = fmt.Sprintf("Error: Vote Category is currently not set. Please use `%vvotecategory [category]`", guildPrefix)
+		if guildSettings.VoteChannelCategory == nil {
+			message = fmt.Sprintf("Error: Vote Module is currently not set. Please use `%vvotecategory [category]`", guildSettings.Prefix)
+		} else if guildSettings.VoteChannelCategory.ID == "" {
+			message = fmt.Sprintf("Error: Vote Module is currently not set. Please use `%vvotecategory [category]`", guildSettings.Prefix)
 		} else {
-			message = fmt.Sprintf("Current Vote Category is: `%v - %v` \n\n To change Vote Category please use `%vvotecategory [category]`", guildVoteCategory.Name, guildVoteCategory.ID, guildPrefix)
+			message = fmt.Sprintf("Current Vote Module is: `%v - %v` \n\n To change Vote Module please use `%vvotecategory [category]`", guildSettings.VoteChannelCategory.Name, guildSettings.VoteChannelCategory.ID, guildSettings.Prefix)
 		}
 
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Parses category
-	catID, catName := misc.CategoryParser(s, commandStrings[1], m.GuildID)
+	catID, catName := functionality.CategoryParser(s, commandStrings[1], m.GuildID)
 	if catID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such category exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Changes and writes new vote category to storage
-	misc.MapMutex.Lock()
-	misc.GuildMap[m.GuildID].GuildConfig.VoteChannelCategory.ID = catID
-	misc.GuildMap[m.GuildID].GuildConfig.VoteChannelCategory.Name = catName
-	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	functionality.GuildMap[m.GuildID].GuildConfig.VoteChannelCategory = &functionality.Cha{Name: catName, ID: catID}
+	_ = functionality.GuildSettingsWrite(functionality.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	functionality.MapMutex.Unlock()
 
-	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Vote Category is: `%v - %v`", catName, catID))
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Vote Module is: `%v - %v`", catName, catID))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 }
@@ -875,38 +732,31 @@ func voteModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 		module  bool
 	)
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog
-	guildVoteModule := misc.GuildMap[m.GuildID].GuildConfig.VoteModule
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	mLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(mLowercase, " ", 2)
 
 	// Displays current module setting
 	if len(commandStrings) == 1 {
-		if !guildVoteModule {
-			message = fmt.Sprintf("Vote module is disabled. Please use `%vvotemodule true` to enable it.", guildPrefix)
+		if guildSettings.VoteModule {
+			message = fmt.Sprintf("Vote module is disabled. Please use `%vvotemodule true` to enable it.", guildSettings.Prefix)
 		} else {
-			message = fmt.Sprintf("Vote module is enabled. Please use `%vvotemodule false` to disable it.", guildPrefix)
+			message = fmt.Sprintf("Vote module is enabled. Please use `%vvotemodule false` to disable it.", guildSettings.Prefix)
 		}
+
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	} else if len(commandStrings) > 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vvotemodule [true/false]`", guildPrefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vvotemodule [true/false]`", guildSettings.Prefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -926,27 +776,21 @@ func voteModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	} else {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid value. Please use `true` or `false`.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Changes and writes module bool to guild
-	misc.MapMutex.Lock()
-	misc.GuildMap[m.GuildID].GuildConfig.VoteModule = module
-	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	functionality.GuildMap[m.GuildID].GuildConfig.VoteModule = module
+	_ = functionality.GuildSettingsWrite(functionality.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	functionality.MapMutex.Unlock()
 
 	_, err := s.ChannelMessageSend(m.ChannelID, message)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 }
@@ -959,38 +803,30 @@ func waifuModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 		module  bool
 	)
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog
-	guildWaifuModule := misc.GuildMap[m.GuildID].GuildConfig.WaifuModule
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	mLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(mLowercase, " ", 2)
 
 	// Displays current module setting
 	if len(commandStrings) == 1 {
-		if !guildWaifuModule {
-			message = fmt.Sprintf("Waifus module is disabled. Please use `%vwaifumodule true` to enable it.", guildPrefix)
+		if !guildSettings.WaifuModule {
+			message = fmt.Sprintf("Waifus module is disabled. Please use `%vwaifumodule true` to enable it.", guildSettings.Prefix)
 		} else {
-			message = fmt.Sprintf("Waifus module is enabled. Please use `%vwaifumodule false` to disable it.", guildPrefix)
+			message = fmt.Sprintf("Waifus module is enabled. Please use `%vwaifumodule false` to disable it.", guildSettings.Prefix)
 		}
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	} else if len(commandStrings) > 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vwaifumodule [true/false]`", guildPrefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vwaifumodule [true/false]`", guildSettings.Prefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -1010,27 +846,21 @@ func waifuModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	} else {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid value. Please use `true` or `false`.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Changes and writes module bool to guild
-	misc.MapMutex.Lock()
-	misc.GuildMap[m.GuildID].GuildConfig.WaifuModule = module
-	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	functionality.GuildMap[m.GuildID].GuildConfig.WaifuModule = module
+	_ = functionality.GuildSettingsWrite(functionality.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	functionality.MapMutex.Unlock()
 
 	_, err := s.ChannelMessageSend(m.ChannelID, message)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 }
@@ -1043,38 +873,30 @@ func reactModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 		module  bool
 	)
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog
-	guildReactsModule := misc.GuildMap[m.GuildID].GuildConfig.ReactsModule
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	mLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(mLowercase, " ", 2)
 
 	// Displays current module setting
 	if len(commandStrings) == 1 {
-		if !guildReactsModule {
-			message = fmt.Sprintf("Reacts module is disabled. Please use `%vreactmodule true` to enable it.", guildPrefix)
+		if !guildSettings.ReactsModule {
+			message = fmt.Sprintf("Reacts module is disabled. Please use `%vreactmodule true` to enable it.", guildSettings.Prefix)
 		} else {
-			message = fmt.Sprintf("Reacts module is enabled. Please use `%vreactmodule false` to disable it.", guildPrefix)
+			message = fmt.Sprintf("Reacts module is enabled. Please use `%vreactmodule false` to disable it.", guildSettings.Prefix)
 		}
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	} else if len(commandStrings) > 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vreactmodule [true/false]`", guildPrefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vreactmodule [true/false]`", guildSettings.Prefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -1094,27 +916,21 @@ func reactModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	} else {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid value. Please use `true` or `false`.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Changes and writes module bool to guild
-	misc.MapMutex.Lock()
-	misc.GuildMap[m.GuildID].GuildConfig.ReactsModule = module
-	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	functionality.GuildMap[m.GuildID].GuildConfig.ReactsModule = module
+	_ = functionality.GuildSettingsWrite(functionality.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	functionality.MapMutex.Unlock()
 
 	_, err := s.ChannelMessageSend(m.ChannelID, message)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 }
@@ -1123,42 +939,34 @@ func reactModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 func whitelistFileFilter(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		message   string
-		module    bool
+		message string
+		module  bool
 	)
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog
-	guildFileFilter := misc.GuildMap[m.GuildID].GuildConfig.WhitelistFileFilter
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	mLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(mLowercase, " ", 2)
 
 	// Displays current module setting
 	if len(commandStrings) == 1 {
-		if !guildFileFilter {
-			message = fmt.Sprintf("Whitelist File Filter version is disabled. Using a Blacklist File Filter. Please use `%vwhitelist true` to enable it.", guildPrefix)
+		if !guildSettings.WhitelistFileFilter {
+			message = fmt.Sprintf("Whitelist File Filter version is disabled. Using a Blacklist File Filter. Please use `%vwhitelist true` to enable it.", guildSettings.Prefix)
 		} else {
-			message = fmt.Sprintf("WhitelistFile Filter version is enabled. Please use `%vwhitelist false` to disable it and enable the Blacklist File Filter instead.", guildPrefix)
+			message = fmt.Sprintf("WhitelistFile Filter version is enabled. Please use `%vwhitelist false` to disable it and enable the Blacklist File Filter instead.", guildSettings.Prefix)
 		}
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error())
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	} else if len(commandStrings) > 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vwhitelist [true/false]`", guildPrefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vwhitelist [true/false]`", guildSettings.Prefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error())
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -1178,65 +986,55 @@ func whitelistFileFilter(s *discordgo.Session, m *discordgo.Message) {
 	} else {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid value. Please use `true` or `false`.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog.ID, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Changes and writes module bool to guild
-	misc.MapMutex.Lock()
-	misc.GuildMap[m.GuildID].GuildConfig.WhitelistFileFilter = module
-	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	functionality.GuildMap[m.GuildID].GuildConfig.WhitelistFileFilter = module
+	_ = functionality.GuildSettingsWrite(functionality.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	functionality.MapMutex.Unlock()
 
 	_, err := s.ChannelMessageSend(m.ChannelID, message)
 	if err != nil {
-		_, _ = s.ChannelMessageSend(guildBotLog.ID, err.Error())
+		functionality.LogError(s, guildSettings.BotLog, err)
+		return
 	}
 }
 
 // Handles ping message view or change
 func pingMessageCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	guildPingMessage := misc.GuildMap[m.GuildID].GuildConfig.PingMessage
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	commandStrings := strings.SplitN(m.Content, " ", 2)
 
 	// Displays current prefix
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current ping message is: `%v` \n\n To change ping message please use `%vpingmessage [new ping]`", guildPingMessage, guildPrefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current ping message is: `%v` \n\n To change ping message please use `%vpingmessage [new ping]`", guildSettings.PingMessage, guildSettings.Prefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Changes and writes new ping message to storage
-	misc.MapMutex.Lock()
-	misc.GuildMap[m.GuildID].GuildConfig.PingMessage = commandStrings[1]
-	misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	functionality.GuildMap[m.GuildID].GuildConfig.PingMessage = commandStrings[1]
+	_ = functionality.GuildSettingsWrite(functionality.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	functionality.MapMutex.Unlock()
 
-	guildPingMessage = commandStrings[1]
+	guildSettings.PingMessage = commandStrings[1]
 
-	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New ping message is: `%v`", guildPingMessage))
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New ping message is: `%s`", guildSettings.PingMessage))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 }
@@ -1244,242 +1042,199 @@ func pingMessageCommand(s *discordgo.Session, m *discordgo.Message) {
 // Adds a role as the muted role
 func setMutedRole(s *discordgo.Session, m *discordgo.Message) {
 
-	var role misc.Role
+	var role functionality.Role
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(messageLowercase, " ", 2)
 
 	if len(commandStrings) == 1 {
-		misc.MapMutex.Lock()
-		if misc.GuildMap[m.GuildID].GuildConfig.MutedRole == nil || misc.GuildMap[m.GuildID].GuildConfig.MutedRole.ID == "" {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("The muted role is not set. Please use `%vsetmuted [Role ID]` to set it.", guildPrefix))
+		if guildSettings.MutedRole == nil || guildSettings.MutedRole.ID == "" {
+			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("The muted role is not set. Please use `%ssetmuted [Role ID]` to set it.", guildSettings.Prefix))
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-				if err != nil {
-					misc.MapMutex.Unlock()
-					return
-				}
-				misc.MapMutex.Unlock()
+				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
-			misc.MapMutex.Unlock()
 			return
 		}
 
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("The current muted role is `%v - %v`.\nPlease use `%vsetmuted [Role ID]` to change it.",  misc.GuildMap[m.GuildID].GuildConfig.MutedRole.Name,  misc.GuildMap[m.GuildID].GuildConfig.MutedRole.ID, guildPrefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("The current muted role is `%s - %s`.\nPlease use `%ssetmuted [Role ID]` to change it.", guildSettings.MutedRole.Name, guildSettings.MutedRole.ID, guildSettings.Prefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				misc.MapMutex.Unlock()
-				return
-			}
-			misc.MapMutex.Unlock()
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		misc.MapMutex.Unlock()
 		return
 	}
 
 	// Parse role for roleID
-	role.ID, role.Name = misc.RoleParser(s, commandStrings[1], m.GuildID)
+	role.ID, role.Name = functionality.RoleParser(s, commandStrings[1], m.GuildID)
 	if role.ID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such role exists.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Checks if the role already exists as a muted role
-	misc.MapMutex.Lock()
-	if misc.GuildMap[m.GuildID].GuildConfig.MutedRole != nil {
-		if misc.GuildMap[m.GuildID].GuildConfig.MutedRole.ID == role.ID {
+	if guildSettings.MutedRole != nil {
+		if guildSettings.MutedRole.ID == role.ID {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: That role is already the muted role.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-				if err != nil {
-					misc.MapMutex.Unlock()
-					return
-				}
-				misc.MapMutex.Unlock()
+				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
-			misc.MapMutex.Unlock()
 			return
 		}
 	}
 
 	// Sets the role as the muted role and writes to disk
-	misc.GuildMap[m.GuildID].GuildConfig.MutedRole = &role
-	_ = misc.GuildSettingsWrite(misc.GuildMap[m.GuildID].GuildConfig, m.GuildID)
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	functionality.GuildMap[m.GuildID].GuildConfig.MutedRole = &role
+	_ = functionality.GuildSettingsWrite(functionality.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	functionality.MapMutex.Unlock()
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Role `%v` is now the muted role.", role.Name))
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 }
 
 func init() {
-	add(&command{
-		execute:  addCommandRole,
-		trigger:  "addcommandrole",
-		aliases:  []string{"setcommandrole"},
-		desc:     "Adds a privileged role",
-		elevated: true,
-		admin:    true,
-		category: "settings",
+	functionality.Add(&functionality.Command{
+		Execute:    addCommandRole,
+		Trigger:    "addcommandrole",
+		Aliases:    []string{"setcommandrole"},
+		Desc:       "Adds a privileged role",
+		Permission: functionality.Admin,
+		Module:     "settings",
 	})
-	add(&command{
-		execute:  removeCommandRole,
-		trigger:  "removecommandrole",
-		aliases:  []string{"killcommandrole"},
-		desc:     "Removes a privileged role",
-		elevated: true,
-		admin:    true,
-		category: "settings",
+	functionality.Add(&functionality.Command{
+		Execute:    removeCommandRole,
+		Trigger:    "removecommandrole",
+		Aliases:    []string{"killcommandrole"},
+		Desc:       "Removes a privileged role",
+		Permission: functionality.Admin,
+		Module:     "settings",
 	})
-	add(&command{
-		execute:  viewCommandRoles,
-		trigger:  "commandroles",
-		aliases:  []string{"vcommandroles", "viewcommandrole", "commandrole", "viewcommandroles", "showcommandroles"},
-		desc:     "Prints all privileged roles",
-		elevated: true,
-		admin:    true,
-		category: "settings",
+	functionality.Add(&functionality.Command{
+		Execute:    viewCommandRoles,
+		Trigger:    "commandroles",
+		Aliases:    []string{"vcommandroles", "viewcommandrole", "commandrole", "viewcommandroles", "showcommandroles"},
+		Desc:       "Prints all privileged roles",
+		Permission: functionality.Admin,
+		Module:     "settings",
 	})
-	add(&command{
-		execute:  prefixCommand,
-		trigger:  "prefix",
-		desc:     "Views or changes the current prefix.",
-		elevated: true,
-		admin:    true,
-		category: "settings",
+	functionality.Add(&functionality.Command{
+		Execute:    prefixCommand,
+		Trigger:    "prefix",
+		Desc:       "Views or changes the current prefix.",
+		Permission: functionality.Admin,
+		Module:     "settings",
 	})
-	add(&command{
-		execute:  botLogCommand,
-		trigger:  "botlog",
-		desc:     "Views or changes the current Bot Log.",
-		elevated: true,
-		admin:    true,
-		category: "settings",
+	functionality.Add(&functionality.Command{
+		Execute:    botLogCommand,
+		Trigger:    "botlog",
+		Desc:       "Views or changes the current Bot Log.",
+		Permission: functionality.Admin,
+		Module:     "settings",
 	})
-	add(&command{
-		execute:  optInUnderCommand,
-		trigger:  "optinunder",
-		desc:     "Views or changes the current `Opt In Under` role.",
-		elevated: true,
-		admin:    true,
-		category: "settings",
+	functionality.Add(&functionality.Command{
+		Execute:    optInUnderCommand,
+		Trigger:    "optinunder",
+		Desc:       "Views or changes the current `Opt In Under` role.",
+		Permission: functionality.Admin,
+		Module:     "settings",
 	})
-	add(&command{
-		execute:  optInAboveCommand,
-		trigger:  "optinabove",
-		desc:     "Views or changes the current `Opt In Above` role.",
-		elevated: true,
-		admin:    true,
-		category: "settings",
+	functionality.Add(&functionality.Command{
+		Execute:    optInAboveCommand,
+		Trigger:    "optinabove",
+		Desc:       "Views or changes the current `Opt In Above` role.",
+		Permission: functionality.Admin,
+		Module:     "settings",
 	})
-	add(&command{
-		execute:  addVoiceChaRole,
-		trigger:  "addvoice",
-		aliases:  []string{"addvoicechannelrole", "addvoicecharole", "addvoicerole", "addvoicerole", "addvoicechannelrole", "addvoicerole"},
-		desc:     "Sets a voice channel as one that will give users the specified role when they join it",
-		elevated: true,
-		admin:    true,
-		category: "settings",
+	functionality.Add(&functionality.Command{
+		Execute:    addVoiceChaRole,
+		Trigger:    "addvoice",
+		Aliases:    []string{"addvoicechannelrole", "addvoicecharole", "addvoicerole", "addvoicerole", "addvoicechannelrole", "addvoicerole"},
+		Desc:       "Sets a voice channel as one that will give users the specified role when they join it",
+		Permission: functionality.Admin,
+		Module:     "settings",
 	})
-	add(&command{
-		execute:  removeVoiceChaRole,
-		trigger:  "removevoice",
-		aliases:  []string{"removevoicechannelrole", "removevoicechannelrole", "killvoicecharole", "killvoicechannelrole", "killvoicechannelidrole", "removevoicechannelidrole", "removevoicecharole", "removevoicerole", "removevoicerole", "killvoice"},
-		desc:     "Stops a voice channel from giving its associated role on user join",
-		elevated: true,
-		admin:    true,
-		category: "settings",
+	functionality.Add(&functionality.Command{
+		Execute:    removeVoiceChaRole,
+		Trigger:    "removevoice",
+		Aliases:    []string{"removevoicechannelrole", "removevoicechannelrole", "killvoicecharole", "killvoicechannelrole", "killvoicechannelidrole", "removevoicechannelidrole", "removevoicecharole", "removevoicerole", "removevoicerole", "killvoice"},
+		Desc:       "Stops a voice channel from giving its associated role on user join",
+		Permission: functionality.Admin,
+		Module:     "settings",
 	})
-	add(&command{
-		execute:  viewVoiceChaRoles,
-		trigger:  "voiceroles",
-		aliases:  []string{"vvoicerole", "viewvoicechannels", "viewvoicechannel", "viewvoicechaids", "viewvoicechannelids", "viewvoivechannelid", "viewvoicecharole", "voicerole", "voicechannelroles", "viewvoicecharoles", "voice", "voices"},
-		desc:     "Prints all set voice channels and their associated roles",
-		elevated: true,
-		admin:    true,
-		category: "settings",
+	functionality.Add(&functionality.Command{
+		Execute:    viewVoiceChaRoles,
+		Trigger:    "voiceroles",
+		Aliases:    []string{"viewvoicechannels", "viewvoicechannel", "viewvoicechaids", "viewvoicechannelids", "viewvoivechannelid", "viewvoicecharole", "voicerole", "voicechannelroles", "viewvoicecharoles", "voice", "voices"},
+		Desc:       "Prints all set voice channels and their associated roles",
+		Permission: functionality.Admin,
+		Module:     "settings",
 	})
-	add(&command{
-		execute:  voteCategoryCommand,
-		trigger:  "votecategory",
-		desc:     "Views or changes the current Vote Category where non-admin temp vote channels will be auto placed and sorted [VOTE]",
-		elevated: true,
-		admin:    true,
-		category: "settings",
+	functionality.Add(&functionality.Command{
+		Execute:    voteCategoryCommand,
+		Trigger:    "votecategory",
+		Desc:       "Views or changes the current Vote Module where non-admin temp vote channels will be auto placed and sorted [VOTE]",
+		Permission: functionality.Admin,
+		Module:     "settings",
 	})
-	add(&command{
-		execute:  voteModuleCommand,
-		trigger:  "votemodule",
-		aliases:  []string{"votemod"},
-		desc:     "Vote Module. [VOTE]",
-		elevated: true,
-		admin:    true,
-		category: "settings",
+	functionality.Add(&functionality.Command{
+		Execute:    voteModuleCommand,
+		Trigger:    "votemodule",
+		Aliases:    []string{"votemod"},
+		Desc:       "Vote Module. [VOTE]",
+		Permission: functionality.Admin,
+		Module:     "settings",
 	})
-	add(&command{
-		execute:  waifuModuleCommand,
-		trigger:  "waifumodule",
-		aliases:  []string{"waifumod"},
-		desc:     "Waifu Module. [WAIFU]",
-		elevated: true,
-		admin:    true,
-		category: "settings",
+	functionality.Add(&functionality.Command{
+		Execute:    waifuModuleCommand,
+		Trigger:    "waifumodule",
+		Aliases:    []string{"waifumod"},
+		Desc:       "Waifu Module. [WAIFU]",
+		Permission: functionality.Admin,
+		Module:     "settings",
 	})
-	add(&command{
-		execute:  reactModuleCommand,
-		trigger:  "reactmodule",
-		aliases:  []string{"reactumod", "reactsmodule", "reactsmod"},
-		desc:     "React Module. [REACTS]",
-		elevated: true,
-		admin:    true,
-		category: "settings",
+	functionality.Add(&functionality.Command{
+		Execute:    reactModuleCommand,
+		Trigger:    "reactmodule",
+		Aliases:    []string{"reactumod", "reactsmodule", "reactsmod"},
+		Desc:       "React Module. [REACTS]",
+		Permission: functionality.Admin,
+		Module:     "settings",
 	})
-	add(&command{
-		execute:  whitelistFileFilter,
-		trigger:  "whitelist",
-		aliases:  []string{"filefilter", "attachmentremove", "attachremoval", "fileremove", "fileremoval", "attachmentremoval", "filesfilter", "whitelistfilter", "whitelistfile", "filewhitelist"},
-		desc:     "Switch between a whitelist attachment file filter (removes all attachments except whitelisted ones) and a blacklist attachment file filter (remove only specified file extensions)",
-		elevated: true,
-		admin:    true,
-		category: "settings",
+	functionality.Add(&functionality.Command{
+		Execute:    whitelistFileFilter,
+		Trigger:    "whitelist",
+		Aliases:    []string{"filefilter", "attachmentremove", "attachremoval", "fileremove", "fileremoval", "attachmentremoval", "filesfilter", "whitelistfilter", "whitelistfile", "filewhitelist"},
+		Desc:       "Switch between a whitelist attachment file filter (removes all attachments except whitelisted ones) and a blacklist attachment file filter (remove only specified file extensions)",
+		Permission: functionality.Admin,
+		Module:     "settings",
 	})
-	add(&command{
-		execute:  pingMessageCommand,
-		trigger:  "pingmessage",
-		aliases:  []string{"pingmsg"},
-		desc:     "Views or changes the current ping message.",
-		elevated: true,
-		admin:    true,
-		category: "settings",
+	functionality.Add(&functionality.Command{
+		Execute:    pingMessageCommand,
+		Trigger:    "pingmessage",
+		Aliases:    []string{"pingmsg"},
+		Desc:       "Views or changes the current ping message.",
+		Permission: functionality.Admin,
+		Module:     "settings",
 	})
-	add(&command{
-		execute:  setMutedRole,
-		trigger:  "setmuted",
-		aliases:  []string{"setmutedrole", "addmuted", "addmutedrole"},
-		desc:     "Sets a role as the muted role",
-		elevated: true,
-		admin:    true,
-		category: "settings",
+	functionality.Add(&functionality.Command{
+		Execute:    setMutedRole,
+		Trigger:    "setmuted",
+		Aliases:    []string{"setmutedrole", "addmuted", "addmutedrole"},
+		Desc:       "Sets a role as the muted role",
+		Permission: functionality.Admin,
+		Module:     "settings",
 	})
 }

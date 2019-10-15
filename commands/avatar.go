@@ -6,30 +6,28 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/misc"
+	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 // Returns user avatar in channel as message
 func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	var (
-		guildPrefix = "."
-		guildBotLog string
-	)
+	var guildSettings = &functionality.GuildSettings{
+		Prefix: ".",
+	}
 
 	if m.GuildID != "" {
-		misc.MapMutex.Lock()
-		guildPrefix = misc.GuildMap[m.GuildID].GuildConfig.Prefix
-		guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Lock()
+		*guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
+		functionality.MapMutex.Unlock()
 	}
 
 	commandStrings := strings.Split(m.Content, " ")
 
 	if len(commandStrings) > 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage `%vavatar [user]`", guildPrefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage `%vavatar [user]`", guildSettings.Prefix))
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -38,46 +36,46 @@ func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Fetches user
 		mem, err := s.User(m.Author.ID)
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		// Sends user who used the command's avatar
 		_, err = s.ChannelMessageSend(m.ChannelID, mem.AvatarURL("256"))
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Pulls userID from 2nd parameter of commandStrings
-	userID, err := misc.GetUserID(m, commandStrings)
+	userID, err := functionality.GetUserID(m, commandStrings)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
 	// Fetches user
 	mem, err := s.User(userID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
 	// Sends avatar
 	_, err = s.ChannelMessageSend(m.ChannelID, mem.AvatarURL("256"))
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 }
 
 func init() {
-	add(&command{
-		execute:  avatarCommand,
-		trigger:  "avatar",
-		desc:     "Show user avatar. Add a @mention or userID to specify a user",
-		category: "normal",
-		DMAble: true,
+	functionality.Add(&functionality.Command{
+		Execute: avatarCommand,
+		Trigger: "avatar",
+		Desc:    "Show user avatar. Add a @mention or userID to specify a user",
+		Module:  "normal",
+		DMAble:  true,
 	})
 }

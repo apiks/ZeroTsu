@@ -9,7 +9,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/misc"
+	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 var (
@@ -37,12 +37,12 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	misc.MapMutex.Lock()
-	if _, ok := misc.GuildMap[m.GuildID]; !ok {
-		misc.InitDB(s, m.GuildID)
-		misc.LoadGuilds()
+	functionality.MapMutex.Lock()
+	if _, ok := functionality.GuildMap[m.GuildID]; !ok {
+		functionality.InitDB(s, m.GuildID)
+		functionality.LoadGuilds()
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 
 	// Pulls info on message author
 	mem, err := s.State.Member(m.GuildID, m.Author.ID)
@@ -52,13 +52,13 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 	}
-	misc.MapMutex.Lock()
+	functionality.MapMutex.Lock()
 	// Checks if user is mod or bot before checking the message
-	if HasElevatedPermissions(s, mem.User.ID, m.GuildID) {
-		misc.MapMutex.Unlock()
+	if functionality.HasElevatedPermissions(s, mem.User.ID, m.GuildID) {
+		functionality.MapMutex.Unlock()
 		return
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 
 	var (
 		mLowercase    string
@@ -97,17 +97,14 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Sends embed mod message
-	err = FilterEmbed(s, m.Message, removals, m.ChannelID)
+	err = functionality.FilterEmbed(s, m.Message, removals, m.ChannelID)
 	if err != nil {
 
-		misc.MapMutex.Lock()
-		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Lock()
+		guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+		functionality.MapMutex.Unlock()
 
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 
@@ -139,12 +136,12 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 		return
 	}
 
-	misc.MapMutex.Lock()
-	if _, ok := misc.GuildMap[m.GuildID]; !ok {
-		misc.InitDB(s, m.GuildID)
-		misc.LoadGuilds()
+	functionality.MapMutex.Lock()
+	if _, ok := functionality.GuildMap[m.GuildID]; !ok {
+		functionality.InitDB(s, m.GuildID)
+		functionality.LoadGuilds()
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 
 	// Pulls info on message author
 	mem, err := s.State.Member(m.GuildID, m.Author.ID)
@@ -155,12 +152,12 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 		}
 	}
 	// Checks if user is mod or bot before checking the message
-	misc.MapMutex.Lock()
-	if HasElevatedPermissions(s, mem.User.ID, m.GuildID) {
-		misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	if functionality.HasElevatedPermissions(s, mem.User.ID, m.GuildID) {
+		functionality.MapMutex.Unlock()
 		return
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 
 	var (
 		mLowercase    string
@@ -199,17 +196,14 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	}
 
 	// Sends embed mod message
-	err = FilterEmbed(s, m.Message, removals, m.ChannelID)
+	err = functionality.FilterEmbed(s, m.Message, removals, m.ChannelID)
 	if err != nil {
 
-		misc.MapMutex.Lock()
-		guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Lock()
+		guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+		functionality.MapMutex.Unlock()
 
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 
@@ -241,12 +235,12 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 		return
 	}
 
-	misc.MapMutex.Lock()
-	if _, ok := misc.GuildMap[r.GuildID]; !ok {
-		misc.InitDB(s, r.GuildID)
-		misc.LoadGuilds()
+	functionality.MapMutex.Lock()
+	if _, ok := functionality.GuildMap[r.GuildID]; !ok {
+		functionality.InitDB(s, r.GuildID)
+		functionality.LoadGuilds()
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 
 	// Pulls info on message author
 	mem, err := s.State.Member(r.GuildID, r.UserID)
@@ -257,12 +251,12 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 		}
 	}
 	// Checks if user is mod or bot before checking the message
-	misc.MapMutex.Lock()
-	if HasElevatedPermissions(s, mem.User.ID, r.GuildID) {
-		misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	if functionality.HasElevatedPermissions(s, mem.User.ID, r.GuildID) {
+		functionality.MapMutex.Unlock()
 		return
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 
 	var badReactExists bool
 
@@ -278,11 +272,12 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 	err = s.MessageReactionRemove(r.ChannelID, r.MessageID, r.Emoji.APIName(), r.UserID)
 	if err != nil {
 
-		misc.MapMutex.Lock()
-		guildBotLog := misc.GuildMap[r.GuildID].GuildConfig.BotLog.ID
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Lock()
+		guildSettings := functionality.GuildMap[r.GuildID].GetGuildSettings()
+		functionality.MapMutex.Unlock()
 
-		_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+		functionality.LogError(s, guildSettings.BotLog, err)
+		return
 	}
 }
 
@@ -317,16 +312,16 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 		mentionRegex := regexp.MustCompile(`(?m)<@!?\d+>`)
 		mentionCheck = mentionRegex.FindAllString(mLowercase, -1)
 		if mentionCheck != nil {
-			misc.MapMutex.Lock()
+			functionality.MapMutex.Lock()
 			for _, mention := range mentionCheck {
 				userID = strings.TrimPrefix(mention, "<@")
 				userID = strings.TrimPrefix(userID, "!")
 				userID = strings.TrimSuffix(userID, ">")
 
 				// Checks first in memberInfo. Only checks serverside if it doesn't exist. Saves performance
-				if len(misc.GuildMap[m.GuildID].MemberInfoMap) != 0 {
-					if _, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
-						mentions += " " + strings.ToLower(misc.GuildMap[m.GuildID].MemberInfoMap[userID].Nickname)
+				if len(functionality.GuildMap[m.GuildID].MemberInfoMap) != 0 {
+					if _, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
+						mentions += " " + strings.ToLower(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Nickname)
 						continue
 					}
 				}
@@ -341,13 +336,13 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 				}
 				mentions += " " + strings.ToLower(user.Nick)
 			}
-			misc.MapMutex.Unlock()
+			functionality.MapMutex.Unlock()
 		}
 	}
 
 	// Iterates through all the filters to see if the message contained a filtered phrase
-	misc.MapMutex.Lock()
-	for _, filter := range misc.GuildMap[m.GuildID].Filters {
+	functionality.MapMutex.Lock()
+	for _, filter := range functionality.GuildMap[m.GuildID].Filters {
 
 		// Regex check the filter phrase in the message
 		re := regexp.MustCompile(filter.Filter)
@@ -370,12 +365,12 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 
 	// If a bad phrase exists return true to filter it
 	if len(badPhraseSlice) != 0 {
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 		return true, badPhraseSlice
 	}
 
 	// Iterates through all of the message requirements to see if the message follows a set requirement {
-	for i, requirement := range misc.GuildMap[m.GuildID].MessageRequirements {
+	for i, requirement := range functionality.GuildMap[m.GuildID].MessageRequirements {
 		if requirement.Channel != m.ChannelID {
 			continue
 		}
@@ -387,28 +382,28 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 
 		// If a required phrase exists in the message or mentions, check if it should be removed
 		if messRequireCheck != nil {
-			misc.GuildMap[m.GuildID].MessageRequirements[i].LastUserID = m.Author.ID
+			functionality.GuildMap[m.GuildID].MessageRequirements[i].LastUserID = m.Author.ID
 			continue
 		}
 		if messRequireCheckMentions != nil {
-			misc.GuildMap[m.GuildID].MessageRequirements[i].LastUserID = m.Author.ID
+			functionality.GuildMap[m.GuildID].MessageRequirements[i].LastUserID = m.Author.ID
 			continue
 		}
 
 		if requirement.Type == "soft" {
 			if requirement.LastUserID == "" {
-				misc.GuildMap[m.GuildID].MessageRequirements[i].LastUserID = m.Author.ID
+				functionality.GuildMap[m.GuildID].MessageRequirements[i].LastUserID = m.Author.ID
 			} else if requirement.LastUserID != m.Author.ID {
-				misc.MapMutex.Unlock()
+				functionality.MapMutex.Unlock()
 				return true, nil
 			}
 		}
 		if requirement.Type == "hard" {
-			misc.MapMutex.Unlock()
+			functionality.MapMutex.Unlock()
 			return true, nil
 		}
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 
 	return false, nil
 }
@@ -419,8 +414,8 @@ func isFilteredReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) bool
 	var reactName string
 
 	// Iterates through all the filters to see if the react contained a filtered phrase
-	misc.MapMutex.Lock()
-	for _, filter := range misc.GuildMap[r.GuildID].Filters {
+	functionality.MapMutex.Lock()
+	for _, filter := range functionality.GuildMap[r.GuildID].Filters {
 
 		// Assigns the filter to a string that can be changed to the normal API mode name later
 		reactName = filter.Filter
@@ -442,10 +437,10 @@ func isFilteredReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) bool
 			continue
 		}
 
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 		return true
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 
 	return false
 }
@@ -453,35 +448,32 @@ func isFilteredReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) bool
 // Adds a filter phrase to storage and memory
 func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	commandStrings := strings.SplitN(strings.ToLower(m.Content), " ", 2)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vfilter [phrase]`\n\n[phrase] is either regex expression (preferable) or just a simple string.", guildPrefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vfilter [phrase]`\n\n[phrase] is either regex expression (preferable) or just a simple string.", guildSettings.Prefix))
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Writes the phrase to filters.json and checks if the requirement was already in storage
-	err := misc.FiltersWrite(commandStrings[1], m.GuildID)
+	err := functionality.FiltersWrite(commandStrings[1], m.GuildID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been added to the filter list.", commandStrings[1]))
 	if err != nil {
-		_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+		functionality.LogError(s, guildSettings.BotLog, err)
+		return
 	}
 }
 
@@ -493,49 +485,44 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 		commandStrings []string
 	)
 
-	misc.MapMutex.Lock()
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 
-	if len(misc.GuildMap[m.GuildID].Filters) == 0 {
+	if len(functionality.GuildMap[m.GuildID].Filters) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no filters.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				misc.MapMutex.Unlock()
-				return
-			}
-			misc.MapMutex.Unlock()
+			functionality.MapMutex.Unlock()
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 		return
 	}
-
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 
 	mLowercase = strings.ToLower(m.Content)
 	commandStrings = strings.SplitN(mLowercase, " ", 2)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vunfilter [phrase]`\n\n[phrase] is the filter phrase that was used when creating a filter.", guildPrefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%sunfilter [phrase]`\n\n[phrase] is the filter phrase that was used when creating a filter.", guildSettings.Prefix))
 		if err != nil {
-			_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Removes phrase from storage and memory
-	err := misc.FiltersRemove(commandStrings[1], m.GuildID)
+	err := functionality.FiltersRemove(commandStrings[1], m.GuildID)
 	if err != nil {
-		_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been removed from the filter list.", commandStrings[1]))
 	if err != nil {
-		_, _ = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
+		functionality.LogError(s, guildSettings.BotLog, err)
+		return
 	}
 }
 
@@ -544,114 +531,37 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var filters string
 
-	misc.MapMutex.Lock()
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 
-	if len(misc.GuildMap[m.GuildID].Filters) == 0 {
+	if len(functionality.GuildMap[m.GuildID].Filters) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no filters.")
 		if err != nil {
-			_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				misc.MapMutex.Unlock()
-				return
-			}
-			misc.MapMutex.Unlock()
+			functionality.MapMutex.Unlock()
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 		return
 	}
 
 	// Iterates through all the filters in memory and adds them to the filters string
-	for _, filter := range misc.GuildMap[m.GuildID].Filters {
+	for _, filter := range functionality.GuildMap[m.GuildID].Filters {
 		filters += fmt.Sprintf("**%v**\n", filter.Filter)
 	}
 	filters = strings.TrimSuffix(filters, "\n")
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 
 	// Splits and sends message
-	splitMessage := misc.SplitLongMessage(filters)
+	splitMessage := functionality.SplitLongMessage(filters)
 	for i := 0; i < len(splitMessage); i++ {
 		_, err := s.ChannelMessageSend(m.ChannelID, splitMessage[i])
 		if err != nil {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot send filters message.")
-			if err != nil {
-				_, _ = s.ChannelMessageSend(guildBotLog, err.Error())
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 	}
-}
-
-func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID string) error {
-
-	var (
-		embedMess      discordgo.MessageEmbed
-		embedThumbnail discordgo.MessageEmbedThumbnail
-
-		// Embed slice and its fields
-		embedField        []*discordgo.MessageEmbedField
-		embedFieldFilter  discordgo.MessageEmbedField
-		embedFieldMessage discordgo.MessageEmbedField
-		embedFieldChannel discordgo.MessageEmbedField
-
-		content string
-	)
-
-	misc.MapMutex.Lock()
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
-
-	// Checks if the message contains a mention and replaces it with the actual nick instead of ID
-	content = m.Content
-	content = misc.MentionParser(s, content, m.GuildID)
-
-	// Sets timestamp for removal
-	t := time.Now()
-	now := t.Format(time.RFC3339)
-	embedMess.Timestamp = now
-
-	// Sets ban embed color
-	embedMess.Color = 0xff0000
-
-	// Saves user avatar as thumbnail
-	embedThumbnail.URL = m.Author.AvatarURL("128")
-
-	// Sets field titles
-	embedFieldFilter.Name = "Filtered:"
-	embedFieldMessage.Name = "Message:"
-	embedFieldChannel.Name = "Channel:"
-
-	// Sets field content
-	embedFieldFilter.Value = fmt.Sprintf("**%v**", removals)
-	embedFieldMessage.Value = fmt.Sprintf("`%v`", content)
-	embedFieldChannel.Value = misc.ChMentionID(channelID)
-
-	// Sets field inline
-	embedFieldFilter.Inline = true
-	embedFieldChannel.Inline = true
-
-	// Adds the two fields to embedField slice (because embedMess.Fields requires slice input)
-	embedField = append(embedField, &embedFieldFilter)
-	embedField = append(embedField, &embedFieldChannel)
-	embedField = append(embedField, &embedFieldMessage)
-
-	// Sets embed title and its description (which it uses the same way as a field)
-	embedMess.Title = "User:"
-	embedMess.Description = m.Author.Mention()
-
-	// Adds user thumbnail and the two other fields as well
-	embedMess.Thumbnail = &embedThumbnail
-	embedMess.Fields = embedField
-
-	// Sends embed in bot-log channel
-	_, err := s.ChannelMessageSendEmbed(guildBotLog, &embedMess)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Adds a message requirement phrase to storage and memory
@@ -665,10 +575,9 @@ func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 		phrase          string
 	)
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	mLowercase = strings.ToLower(m.Content)
 	commandStrings = strings.SplitN(mLowercase, " ", 4)
@@ -677,10 +586,10 @@ func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 		message := fmt.Sprintf("Usage: `%vmrequire [channel]* [type]* [phrase]`\n\n[channel] is a ping or ID to the channel where the requirement will only be done.\n"+
 			"[type] can either be soft or hard. Soft means a user must mention the phrase in their first message and is okay until someone else types a message. Hard means all messages must contain that phrase. Defaults to soft.\n"+
 			"[phrase] is either regex expression (preferable) or just a simple string.\n\n"+
-			"***** is optional.", guildPrefix)
+			"***** is optional.", guildSettings.Prefix)
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -689,7 +598,7 @@ func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 2 {
 		phrase = commandStrings[1]
 	} else if len(commandStrings) == 3 {
-		channelID, _ = misc.ChannelParser(s, commandStrings[1], m.GuildID)
+		channelID, _ = functionality.ChannelParser(s, commandStrings[1], m.GuildID)
 		if channelID == "" {
 			if commandStrings[1] == "soft" ||
 				commandStrings[1] == "hard" {
@@ -703,7 +612,7 @@ func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 			phrase = commandStrings[2]
 		}
 	} else if len(commandStrings) == 4 {
-		channelID, _ = misc.ChannelParser(s, commandStrings[1], m.GuildID)
+		channelID, _ = functionality.ChannelParser(s, commandStrings[1], m.GuildID)
 		if channelID == "" {
 			if commandStrings[1] == "soft" ||
 				commandStrings[1] == "hard" {
@@ -727,15 +636,15 @@ func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Writes the phrase to messrequirement.json and checks if the requirement was already in storage
-	err := misc.MessRequirementWrite(phrase, channelID, requirementType, m.GuildID)
+	err := functionality.MessRequirementWrite(phrase, channelID, requirementType, m.GuildID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been added to the message requirement list.", phrase))
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 }
@@ -750,38 +659,29 @@ func removeMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 		phrase         string
 	)
 
-	misc.MapMutex.Lock()
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 
-	if len(misc.GuildMap[m.GuildID].MessageRequirements) == 0 {
+	if len(functionality.GuildMap[m.GuildID].MessageRequirements) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no message requirements.")
 		if err != nil {
-			_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				misc.MapMutex.Unlock()
-				return
-			}
-			misc.MapMutex.Unlock()
+			functionality.MapMutex.Unlock()
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 		return
 	}
-
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 
 	mLowercase = strings.ToLower(m.Content)
 	commandStrings = strings.SplitN(mLowercase, " ", 3)
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vunmrequire [channel]* [phrase]`\n\n[channel] is the channel for which that message requirement was set.\n"+
-			"`[phrase]` is the phrase that was used when creating a message requirement.\n\n ***** are optional.", guildPrefix))
+			"`[phrase]` is the phrase that was used when creating a message requirement.\n\n ***** are optional.", guildSettings.Prefix))
 		if err != nil {
-			_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -789,7 +689,7 @@ func removeMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Resolves optional parameter
 	if len(commandStrings) == 3 {
-		channelID, _ = misc.ChannelParser(s, commandStrings[1], m.GuildID)
+		channelID, _ = functionality.ChannelParser(s, commandStrings[1], m.GuildID)
 		if channelID == "" {
 			phrase = commandStrings[1] + " " + commandStrings[2]
 		} else {
@@ -800,15 +700,15 @@ func removeMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Removes the phrase from storage and memory
-	err := misc.MessRequirementRemove(phrase, channelID, m.GuildID)
+	err := functionality.MessRequirementRemove(phrase, channelID, m.GuildID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%v` has been removed from the message requirement list.", phrase))
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 }
@@ -818,42 +718,38 @@ func viewMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var mRequirements string
 
-	misc.MapMutex.Lock()
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 
-	if len(misc.GuildMap[m.GuildID].MessageRequirements) == 0 {
+	if len(functionality.GuildMap[m.GuildID].MessageRequirements) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no message requirements.")
 		if err != nil {
-			_, err := s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				misc.MapMutex.Unlock()
-				return
-			}
-			misc.MapMutex.Unlock()
+			functionality.MapMutex.Unlock()
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 		return
 	}
 
 	// Iterates through all the message requirements in memory and adds them to the mRequirements string
-	for _, requirement := range misc.GuildMap[m.GuildID].MessageRequirements {
+	for _, requirement := range functionality.GuildMap[m.GuildID].MessageRequirements {
 		if requirement.Channel == "" {
 			requirement.Channel = "All channels"
 		}
 		mRequirements += fmt.Sprintf("**%v** - **%v** - **%v**\n", requirement.Phrase, requirement.Channel, requirement.Type)
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 	mRequirements = strings.TrimSuffix(mRequirements, "\n")
 
 	// Splits and sends message
-	splitMessage := misc.SplitLongMessage(mRequirements)
+	splitMessage := functionality.SplitLongMessage(mRequirements)
 	for i := 0; i < len(splitMessage); i++ {
 		_, err := s.ChannelMessageSend(m.ChannelID, splitMessage[i])
 		if err != nil {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot send message requirements message.")
 			if err != nil {
-				_, _ = s.ChannelMessageSend(guildBotLog, err.Error())
+				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
 		}
@@ -876,12 +772,9 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	misc.MapMutex.Lock()
-	if _, ok := misc.GuildMap[m.GuildID]; !ok {
-		misc.InitDB(s, m.GuildID)
-		misc.LoadGuilds()
-	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	functionality.HandleNewGuild(s, m.GuildID)
+	functionality.MapMutex.Unlock()
 
 	// Pulls info on message author
 	mem, err := s.State.Member(m.GuildID, m.Author.ID)
@@ -892,34 +785,38 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 	// Checks if user is mod or bot before checking the message
-	misc.MapMutex.Lock()
-	if HasElevatedPermissions(s, mem.User.ID, m.GuildID) {
-		misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	if functionality.HasElevatedPermissions(s, mem.User.ID, m.GuildID) {
+		functionality.MapMutex.Unlock()
 		return
 	}
 
-	// Counter for how many rapidly sent user messages a user has
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 
+	// Counter for how many rapidly sent user messages a user has
 	if spamFilterMap[m.Author.ID] < 4 {
 		spamFilterMap[m.Author.ID]++
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 		return
 	}
 
 	// Stops filter if there is an unusual high size of messages to be deleted from a user (i.e. discord lags)
 	if spamFilterMap[m.Author.ID] > 15 {
-		_, err = s.ChannelMessageSend(guildBotLog, "Error: My spam filter has been disabled due to massive overflow of requests.")
-		if err != nil {
-			spamFilterIsBroken = true
-			misc.MapMutex.Unlock()
-			return
+		if guildSettings.BotLog != nil {
+			if guildSettings.BotLog.ID != "" {
+				_, err = s.ChannelMessageSend(guildSettings.BotLog.ID, "Error: My spam filter has been disabled due to massive overflow of requests.")
+				if err != nil {
+					spamFilterIsBroken = true
+					functionality.MapMutex.Unlock()
+					return
+				}
+			}
 		}
 		spamFilterIsBroken = true
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 		return
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 
 	// Deletes the message if over 4 rapidly sent messages
 	err = s.ChannelMessageDelete(m.ChannelID, m.ID)
@@ -931,64 +828,64 @@ func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
 // Handles expiring user spam filter map counter
 func SpamFilterTimer(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(4 * time.Second).C {
-		misc.MapMutex.Lock()
+		functionality.MapMutex.Lock()
 		for userID := range spamFilterMap {
 			if spamFilterMap[userID] > 0 {
 				spamFilterMap[userID]--
 			}
 		}
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 	}
 }
 
 // Adds filter commands to the commandHandler
 func init() {
-	add(&command{
-		execute:  viewFiltersCommand,
-		trigger:  "filters",
-		aliases:  []string{"viewfilters", "viewfilter"},
-		desc:     "Prints all current filters",
-		elevated: true,
-		category: "filters",
+	functionality.Add(&functionality.Command{
+		Execute:    viewFiltersCommand,
+		Trigger:    "filters",
+		Aliases:    []string{"viewfilters", "viewfilter"},
+		Desc:       "Prints all current filters",
+		Permission: functionality.Mod,
+		Module:     "filters",
 	})
-	add(&command{
-		execute:  addFilterCommand,
-		trigger:  "addfilter",
-		aliases:  []string{"filter", "setfilter"},
-		desc:     "Adds a phrase to the filters list. Works for reacts and emotes too. User regex for more complex filters",
-		elevated: true,
-		category: "filters",
+	functionality.Add(&functionality.Command{
+		Execute:    addFilterCommand,
+		Trigger:    "addfilter",
+		Aliases:    []string{"filter", "setfilter"},
+		Desc:       "Adds a phrase to the filters list. Works for reacts and emotes too. User regex for more complex filters",
+		Permission: functionality.Mod,
+		Module:     "filters",
 	})
-	add(&command{
-		execute:  removeFilterCommand,
-		trigger:  "removefilter",
-		aliases:  []string{"deletefilter", "unfilter"},
-		desc:     "Removes a phrase from the filters list",
-		elevated: true,
-		category: "filters",
+	functionality.Add(&functionality.Command{
+		Execute:    removeFilterCommand,
+		Trigger:    "removefilter",
+		Aliases:    []string{"deletefilter", "unfilter"},
+		Desc:       "Removes a phrase from the filters list",
+		Permission: functionality.Mod,
+		Module:     "filters",
 	})
-	add(&command{
-		execute:  viewMessRequirementCommand,
-		trigger:  "mrequirements",
-		aliases:  []string{"viewmrequirements", "showmrequirements", "messagerequirements", "messagereqirement", "viewmessrequirements", "messrequirements", "mrequirement", "messrequirement"},
-		desc:     "Prints all current message requirement filters",
-		elevated: true,
-		category: "filters",
+	functionality.Add(&functionality.Command{
+		Execute:    viewMessRequirementCommand,
+		Trigger:    "mrequirements",
+		Aliases:    []string{"viewmrequirements", "showmrequirements", "messagerequirements", "messagereqirement", "viewmessrequirements", "messrequirements", "mrequirement", "messrequirement"},
+		Desc:       "Prints all current message requirement filters",
+		Permission: functionality.Mod,
+		Module:     "filters",
 	})
-	add(&command{
-		execute:  addMessRequirementCommand,
-		trigger:  "mrequire",
-		aliases:  []string{"messrequire", "setmrequire", "setmessrequire", "setmessagerequire", "addmrequire", "messagerequire", "messrequire", "addmessrequire", "addmessagereqyure"},
-		desc:     "Adds a phrase to the message requirement list where it will remove messages that do not contain it",
-		elevated: true,
-		category: "filters",
+	functionality.Add(&functionality.Command{
+		Execute:    addMessRequirementCommand,
+		Trigger:    "mrequire",
+		Aliases:    []string{"messrequire", "setmrequire", "setmessrequire", "setmessagerequire", "addmrequire", "messagerequire", "messrequire", "addmessrequire", "addmessagereqyure"},
+		Desc:       "Adds a phrase to the message requirement list where it will remove messages that do not contain it",
+		Permission: functionality.Mod,
+		Module:     "filters",
 	})
-	add(&command{
-		execute:  removeMessRequirementCommand,
-		trigger:  "unmrequire",
-		aliases:  []string{"munrequire", "removemrequire", "removemrequirement", "deletemrequire", "deletemrequirement", "unmessrequire", "deletemessrequire", "removemessrequire"},
-		desc:     "Removes a phrase from the message requirement list",
-		elevated: true,
-		category: "filters",
+	functionality.Add(&functionality.Command{
+		Execute:    removeMessRequirementCommand,
+		Trigger:    "unmrequire",
+		Aliases:    []string{"munrequire", "removemrequire", "removemrequirement", "deletemrequire", "deletemrequirement", "unmessrequire", "deletemessrequire", "removemessrequire"},
+		Desc:       "Removes a phrase from the message requirement list",
+		Permission: functionality.Mod,
+		Module:     "filters",
 	})
 }

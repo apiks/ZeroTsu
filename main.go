@@ -10,7 +10,7 @@ import (
 
 	"github.com/r-anime/ZeroTsu/commands"
 	"github.com/r-anime/ZeroTsu/config"
-	"github.com/r-anime/ZeroTsu/misc"
+	"github.com/r-anime/ZeroTsu/functionality"
 	"github.com/r-anime/ZeroTsu/web"
 )
 
@@ -27,10 +27,10 @@ func main() {
 		panic(err)
 	}
 	// Load all guild and shared info
-	misc.MapMutex.Lock()
-	misc.LoadSharedDB()
-	misc.LoadGuilds()
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	functionality.LoadSharedDB()
+	functionality.LoadGuilds()
+	functionality.MapMutex.Unlock()
 
 	Start()
 
@@ -64,15 +64,13 @@ func Start() {
 		log.Println(err)
 	}
 
-	// Guild join and leave
-	goBot.AddHandler(misc.GuildCreate)
-	goBot.AddHandler(misc.GuildDelete)
+	// Guild listener and leave
+	goBot.AddHandler(functionality.GuildCreate)
+	goBot.AddHandler(functionality.GuildDelete)
 
 	// Updates schedule command print message on load
 	commands.UpdateAnimeSchedule()
 	commands.ResetSubscriptions()
-
-	//misc.ReadImages()
 
 	// Cleans up duplicate usernames and nicknames (Run once per cleanup, keep off unless needed)
 	//misc.DuplicateUsernamesAndNicknamesCleanup()
@@ -81,10 +79,11 @@ func Start() {
 	//goBot.AddHandlerOnce(misc.UsernameCleanup)
 
 	// Periodic events and status
-	goBot.AddHandler(misc.StatusReady)
+	goBot.AddHandler(functionality.StatusReady)
+	goBot.AddHandler(functionality.CommonEvents)
 
 	// Listens for a role deletion
-	goBot.AddHandler(misc.ListenForDeletedRoleHandler)
+	goBot.AddHandler(functionality.ListenForDeletedRoleHandler)
 
 	// Phrase Filter
 	goBot.AddHandler(commands.FilterHandler)
@@ -111,9 +110,9 @@ func Start() {
 	goBot.AddHandler(commands.ChannelVoteTimer)
 
 	// MemberInfo
-	goBot.AddHandler(misc.OnMemberJoinGuild)
-	goBot.AddHandler(misc.OnMemberUpdate)
-	goBot.AddHandler(misc.OnPresenceUpdate)
+	goBot.AddHandler(functionality.OnMemberJoinGuild)
+	goBot.AddHandler(functionality.OnMemberUpdate)
+	goBot.AddHandler(functionality.OnPresenceUpdate)
 
 	// Verified Role and Cookie Map Expiry Deletion Handler
 	goBot.AddHandler(web.VerifiedRoleAdd)
@@ -129,10 +128,10 @@ func Start() {
 	goBot.AddHandler(commands.DailyStatsTimer)
 
 	// Twenty Minute Timer
-	goBot.AddHandler(misc.TwentyMinTimer)
+	goBot.AddHandler(functionality.WriteEvents)
 
 	// Voice Role Event Handler
-	goBot.AddHandler(misc.VoiceRoleHandler)
+	goBot.AddHandler(functionality.VoiceRoleHandler)
 
 	// User stats
 	goBot.AddHandler(commands.OnMemberJoin)
@@ -143,24 +142,24 @@ func Start() {
 	goBot.AddHandler(commands.SpamFilterTimer)
 
 	// Bot fluff
-	goBot.AddHandler(misc.OnBotPing)
+	goBot.AddHandler(functionality.OnBotPing)
 
 	// Manual ban handler
-	goBot.AddHandler(misc.OnGuildBan)
+	goBot.AddHandler(functionality.OnGuildBan)
 
 	// Abstraction of a command handler
-	goBot.AddHandler(commands.HandleCommand)
+	goBot.AddHandler(functionality.HandleCommand)
 
 	// Raffle react handler
 	goBot.AddHandler(commands.RaffleReactJoin)
 	goBot.AddHandler(commands.RaffleReactLeave)
 
 	// Logs each user that joins the server
-	goBot.AddHandler(misc.GuildJoin)
+	goBot.AddHandler(functionality.GuildJoin)
 
 	// Auto spambot ban for r/anime
 	if config.ServerID == "267799767843602452" {
-		goBot.AddHandler(misc.SpambotJoin)
+		goBot.AddHandler(functionality.SpambotJoin)
 	}
 
 	// Anime subscription handler
@@ -171,11 +170,11 @@ func Start() {
 
 	err = goBot.Open()
 	if err != nil {
-		panic("Critical error: BOT cannot start.")
+		panic("Critical error: BOT cannot start. " + err.Error())
 	}
 
 	// Start tracking uptime from here
-	misc.StartTime = time.Now()
+	functionality.StartTime = time.Now()
 
 	log.Println("BOT is running!")
 }

@@ -6,7 +6,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/misc"
+	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 // Sorts all channels in a given category alphabetically
@@ -20,24 +20,20 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	if m.Author.ID != s.State.User.ID {
-		misc.MapMutex.Lock()
+		functionality.MapMutex.Lock()
 	}
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	if m.Author.ID != s.State.User.ID {
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 	}
 
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"sortcategory [category]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"sortcategory [category]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -46,7 +42,7 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Fetches all channels from the server and puts it in deb
 	deb, err := s.GuildChannels(m.GuildID)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
@@ -65,12 +61,9 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if category exists
 	if categoryID == "" {
-		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Invalid Category")
+		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Invalid Module")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -84,14 +77,14 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sorts the categoryChannels slice alphabetically
-	sort.Sort(misc.SortChannelByAlphabet(categoryChannels))
+	sort.Sort(functionality.SortChannelByAlphabet(categoryChannels))
 
 	// Updates the alphabetically sorted channels' position
 	for i := 0; i < len(categoryChannels); i++ {
 		chaEdit.Position = categoryPosition + i + 1
 		_, err = s.ChannelEditComplex(categoryChannels[i].ID, &chaEdit)
 		if err != nil {
-			misc.CommandErrorHandler(s, m, err, guildBotLog)
+			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 	}
@@ -100,22 +93,19 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	_, err = s.ChannelMessageSend(m.ChannelID, "Category `"+commandStrings[1]+"` sorted")
+	_, err = s.ChannelMessageSend(m.ChannelID, "Module `"+commandStrings[1]+"` sorted")
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 }
 
 func init() {
-	add(&command{
-		execute:  sortCategoryCommand,
-		trigger:  "sortcategory",
-		desc:     "Sorts a category alphabetically",
-		elevated: true,
-		category: "misc",
+	functionality.Add(&functionality.Command{
+		Execute:    sortCategoryCommand,
+		Trigger:    "sortcategory",
+		Desc:       "Sorts a category alphabetically",
+		Permission: functionality.Mod,
+		Module:     "misc",
 	})
 }

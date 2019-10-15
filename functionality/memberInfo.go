@@ -1,4 +1,4 @@
-package misc
+package functionality
 
 import (
 	"crypto/aes"
@@ -25,21 +25,21 @@ var (
 
 // UserInfo is the in memory storage of each user's information
 type UserInfo struct {
-	ID               string       `json:"id"`
-	Discrim          string       `json:"discrim"`
-	Username         string       `json:"username"`
-	Nickname         string       `json:"nickname,omitempty"`
-	PastUsernames    []string     `json:"pastUsernames,omitempty"`
-	PastNicknames    []string     `json:"pastNicknames,omitempty"`
-	Warnings         []string     `json:"warnings,omitempty"`
-	Mutes			 []string	  `json:"mutes,omitempty"`
-	Kicks            []string     `json:"kicks,omitempty"`
-	Bans             []string     `json:"bans,omitempty"`
-	JoinDate         string       `json:"joinDate"`
-	RedditUsername   string       `json:"redditUser,omitempty"`
-	VerifiedDate     string       `json:"verifiedDate,omitempty"`
-	UnmuteDate		 string		  `json:"unmuteDate,omitempty"`
-	UnbanDate        string       `json:"unbanDate,omitempty"`
+	ID               string        `json:"id"`
+	Discrim          string        `json:"discrim"`
+	Username         string        `json:"username"`
+	Nickname         string        `json:"nickname,omitempty"`
+	PastUsernames    []string      `json:"pastUsernames,omitempty"`
+	PastNicknames    []string      `json:"pastNicknames,omitempty"`
+	Warnings         []string      `json:"warnings,omitempty"`
+	Mutes            []string      `json:"mutes,omitempty"`
+	Kicks            []string      `json:"kicks,omitempty"`
+	Bans             []string      `json:"bans,omitempty"`
+	JoinDate         string        `json:"joinDate"`
+	RedditUsername   string        `json:"redditUser,omitempty"`
+	VerifiedDate     string        `json:"verifiedDate,omitempty"`
+	UnmuteDate       string        `json:"unmuteDate,omitempty"`
+	UnbanDate        string        `json:"unbanDate,omitempty"`
 	Timestamps       []*Punishment `json:"timestamps,omitempty"`
 	Waifu            *Waifu        `json:"waifu,omitempty"`
 	SuspectedSpambot bool
@@ -47,10 +47,10 @@ type UserInfo struct {
 
 // Creates a struct type in which we'll hold every banned user
 type PunishedUsers struct {
-	ID        	string    	`json:"id"`
-	User      	string    	`json:"user"`
-	UnbanDate 	time.Time 	`json:"unbanDate"`
-	UnmuteDate 	time.Time 	`json:"unmuteDate"`
+	ID         string    `json:"id"`
+	User       string    `json:"user"`
+	UnbanDate  time.Time `json:"unbanDate"`
+	UnmuteDate time.Time `json:"unmuteDate"`
 }
 
 // Struct where we'll hold punishment timestamps
@@ -91,8 +91,8 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	}()
 
 	var (
-		flag        bool
-		writeFlag   bool
+		flag      bool
+		writeFlag bool
 	)
 
 	if e.GuildID == "" {
@@ -107,10 +107,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 	MapMutex.Lock()
 	defer MapMutex.Unlock()
-	if _, ok := GuildMap[e.GuildID]; !ok {
-		InitDB(s, e.GuildID)
-		LoadGuilds()
-	}
+	HandleNewGuild(s, e.GuildID)
 
 	// If memberInfo is empty, it initializes
 	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
@@ -245,10 +242,7 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 
 	MapMutex.Lock()
 	defer MapMutex.Unlock()
-	if _, ok := GuildMap[e.GuildID]; !ok {
-		InitDB(s, e.GuildID)
-		LoadGuilds()
-	}
+	HandleNewGuild(s, e.GuildID)
 
 	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
 		return
@@ -332,10 +326,7 @@ func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 
 	MapMutex.Lock()
 	defer MapMutex.Unlock()
-	if _, ok := GuildMap[e.GuildID]; !ok {
-		InitDB(s, e.GuildID)
-		LoadGuilds()
-	}
+	HandleNewGuild(s, e.GuildID)
 
 	if len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
 		return

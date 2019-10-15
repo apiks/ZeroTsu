@@ -9,7 +9,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/config"
-	"github.com/r-anime/ZeroTsu/misc"
+	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 // Sends memberInfo user information to channel
@@ -19,7 +19,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		pastUsernames string
 		pastNicknames string
 		warnings      string
-		mutes		  string
+		mutes         string
 		kicks         string
 		bans          string
 		unbanDate     string
@@ -28,30 +28,26 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		creationDate  time.Time
 	)
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.SplitN(messageLowercase, " ", 2)
 
 	if len(commandStrings) < 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"whois [@user, userID, or username#discrim]`\n\n"+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"whois [@user, userID, or username#discrim]`\n\n"+
 			"Note: this command supports username#discrim where username contains spaces.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
-	userID, err := misc.GetUserID(m, commandStrings)
+	userID, err := functionality.GetUserID(m, commandStrings)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
@@ -65,30 +61,26 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if user is in MemberInfo and assigns to user variable. Else initializes user.
-	misc.MapMutex.Lock()
-	user, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]
+	functionality.MapMutex.Lock()
+	user, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
 	if !ok {
 		if mem == nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server and internal database. Cannot whois until user joins the server.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-				if err != nil {
-					misc.MapMutex.Unlock()
-					return
-				}
-				misc.MapMutex.Unlock()
+				functionality.MapMutex.Unlock()
+				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
-			misc.MapMutex.Unlock()
+			functionality.MapMutex.Unlock()
 			return
 		}
 
 		// Initializes user if he doesn't exist and is in server
-		misc.InitializeUser(mem, m.GuildID)
-		user = misc.GuildMap[m.GuildID].MemberInfoMap[userID]
-		misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+		functionality.InitializeUser(mem, m.GuildID)
+		user = functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
+		functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 
 	// Puts past usernames into a string
 	if len(user.PastUsernames) != 0 {
@@ -193,12 +185,9 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Fetches account creation time
-	creationDate, err = misc.CreationTime(userID)
+	creationDate, err = functionality.CreationTime(userID)
 	if err != nil {
-		_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-		if err != nil {
-			return
-		}
+		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 
@@ -234,7 +223,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Alt check
 	if config.Website != "" {
-		misc.MapMutex.Lock()
+		functionality.MapMutex.Lock()
 		alts := CheckAltAccountWhois(userID, m.GuildID)
 
 		// If there's more than one account with the same reddit username add to whois message
@@ -242,32 +231,29 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 			// Forms the alts string
 			success := "\n\n**Alts:**\n"
 			for _, altID := range alts {
-				success += fmt.Sprintf("%v#%v | %v\n", misc.GuildMap[m.GuildID].MemberInfoMap[altID].Username, misc.GuildMap[m.GuildID].MemberInfoMap[altID].Discrim, altID)
+				success += fmt.Sprintf("%v#%v | %v\n", functionality.GuildMap[m.GuildID].MemberInfoMap[altID].Username, functionality.GuildMap[m.GuildID].MemberInfoMap[altID].Discrim, altID)
 			}
 
 			// Adds the alts to the whois message
 			message += success
 			alts = nil
 		}
-		misc.MapMutex.Unlock()
+		functionality.MapMutex.Unlock()
 	}
 
 	// Checks if the message contains a mention and finds the actual name instead of ID
-	message = misc.MentionParser(s, message, m.GuildID)
+	message = functionality.MentionParser(s, message, m.GuildID)
 
 	// Splits the message if it's over 1900 characters
 	if len(message) > 1900 {
-		splitMessage = misc.SplitLongMessage(message)
+		splitMessage = functionality.SplitLongMessage(message)
 	}
 
 	// Prints split or unsplit whois
 	if splitMessage == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -277,10 +263,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: cannot send whois message.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-				if err != nil {
-					return
-				}
+				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
 		}
@@ -293,18 +276,18 @@ func CheckAltAccountWhois(id string, guildID string) []string {
 	var alts []string
 
 	// Stops func if target reddit username is nil
-	if misc.GuildMap[guildID].MemberInfoMap[id].RedditUsername == "" {
+	if functionality.GuildMap[guildID].MemberInfoMap[id].RedditUsername == "" {
 		return nil
 	}
 
 	// Iterates through all users in memberInfo.json
-	for _, user := range misc.GuildMap[guildID].MemberInfoMap {
+	for _, user := range functionality.GuildMap[guildID].MemberInfoMap {
 		// Skips iteration if iteration reddit username is nil
 		if user.RedditUsername == "" {
 			continue
 		}
 		// Checks if the current user has the same reddit username as the entry parameter and adds to alts string slice if so
-		if user.RedditUsername == misc.GuildMap[guildID].MemberInfoMap[id].RedditUsername {
+		if user.RedditUsername == functionality.GuildMap[guildID].MemberInfoMap[id].RedditUsername {
 			alts = append(alts, user.ID)
 		}
 	}
@@ -320,35 +303,31 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var message string
 
-	misc.MapMutex.Lock()
-	guildPrefix := misc.GuildMap[m.GuildID].GuildConfig.Prefix
-	guildBotLog := misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
 
 	messageLowercase := strings.ToLower(m.Content)
 	commandStrings := strings.Split(messageLowercase, " ")
 
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildPrefix+"timestamps [@user, userID, or username#discrim]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"timestamps [@user, userID, or username#discrim]`")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
-	userID, err := misc.GetUserID(m, commandStrings)
+	userID, err := functionality.GetUserID(m, commandStrings)
 	if err != nil {
-		misc.CommandErrorHandler(s, m, err, guildBotLog)
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
 	// Checks if user is in MemberInfo and assigns to user variable. Else initializes user.
-	misc.MapMutex.Lock()
-	user, ok := misc.GuildMap[m.GuildID].MemberInfoMap[userID]
+	functionality.MapMutex.Lock()
+	user, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
 	if !ok {
 
 		// Fetches user from server if possible
@@ -360,33 +339,26 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 		if mem == nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server and internal database. Cannot timestamp until they rejoin server.")
 			if err != nil {
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-				if err != nil {
-					misc.MapMutex.Unlock()
-					return
-				}
-				misc.MapMutex.Unlock()
+				functionality.MapMutex.Unlock()
+				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
-			misc.MapMutex.Unlock()
+			functionality.MapMutex.Unlock()
 			return
 		}
 
 		// Initializes user if he doesn't exist and is in server
-		misc.InitializeUser(mem, m.GuildID)
-		user = misc.GuildMap[m.GuildID].MemberInfoMap[userID]
-		misc.WriteMemberInfo(misc.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+		functionality.InitializeUser(mem, m.GuildID)
+		user = functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
+		functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 
 	// Check if timestamps exist
 	if len(user.Timestamps) == 0 {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: No saved timestamps for that user.")
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -400,35 +372,32 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Splits messsage if too long
-	msgs := misc.SplitLongMessage(message)
+	msgs := functionality.SplitLongMessage(message)
 
 	// Prints timestamps
 	for index := range msgs {
 		_, err = s.ChannelMessageSend(m.ChannelID, msgs[index])
 		if err != nil {
-			_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-			if err != nil {
-				return
-			}
+			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 	}
 }
 
 func init() {
-	add(&command{
-		execute:  whoisCommand,
-		trigger:  "whois",
-		desc:     "Print mod information about a user",
-		elevated: true,
-		category: "moderation",
+	functionality.Add(&functionality.Command{
+		Execute:    whoisCommand,
+		Trigger:    "whois",
+		Desc:       "Print mod information about a user",
+		Permission: functionality.Mod,
+		Module:     "moderation",
 	})
-	add(&command{
-		execute:  showTimestampsCommand,
-		trigger:  "timestamp",
-		aliases:  []string{"timestamps"},
-		desc:     "Prints all punishments for a user and their timestamps",
-		elevated: true,
-		category: "moderation",
+	functionality.Add(&functionality.Command{
+		Execute:    showTimestampsCommand,
+		Trigger:    "timestamp",
+		Aliases:    []string{"timestamps"},
+		Desc:       "Prints all punishments for a user and their timestamps",
+		Permission: functionality.Mod,
+		Module:     "moderation",
 	})
 }

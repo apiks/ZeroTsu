@@ -1,4 +1,4 @@
-package misc
+package functionality
 
 import (
 	"encoding/json"
@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	GuildMap       = make(map[string]*guildInfo)
+	GuildMap       = make(map[string]*GuildInfo)
 	SharedInfo     *sharedInfo
 	dbPath         = "database/guilds"
 	guildFileNames = [...]string{"bannedUsers.json", "punishedUsers.json", "filters.json", "messReqs.json", "spoilerRoles.json", "rssThreads.json",
@@ -24,77 +24,78 @@ var (
 		"channelStats.json", "userChangeStats.json", "verifiedStats.json", "voteInfo.json", "tempCha.json",
 		"reactJoin.json", "guildSettings.json", "autoposts.json"}
 	sharedFileNames = [...]string{"remindMes.json", "animeSubs.json"}
-	AnimeSchedule = make(map[int][]*ShowAirTime)
+	AnimeSchedule   = make(map[int][]*ShowAirTime)
 )
 
-type guildInfo struct {
-	GuildID     	string
-	GuildConfig 	*GuildSettings
+type GuildInfo struct {
+	GuildID     string
+	GuildConfig *GuildSettings
 
 	PunishedUsers       []*PunishedUsers
-	Filters             []Filter
-	MessageRequirements []MessRequirement
+	Filters             []*Filter
+	MessageRequirements []*MessRequirement
 	SpoilerRoles        []*discordgo.Role
-	RssThreads          []*RssThread
+	Feeds               []*RssThread
 	RssThreadChecks     []*RssThreadCheck
-	Raffles             []Raffle
-	Waifus              []Waifu
-	WaifuTrades         []WaifuTrade
+	Raffles             []*Raffle
+	Waifus              []*Waifu
+	WaifuTrades         []*WaifuTrade
 
-	MemberInfoMap      map[string]*UserInfo
-	SpoilerMap         map[string]*discordgo.Role
-	EmojiStats         map[string]*Emoji
-	ChannelStats       map[string]*Channel
-	UserChangeStats    map[string]int
-	VerifiedStats      map[string]int
-	VoteInfoMap        map[string]*VoteInfo
-	TempChaMap         map[string]*TempChaInfo
-	ReactJoinMap       map[string]*ReactJoin
-	EmojiRoleMap       map[string][]string
-	ExtensionList 	   map[string]string
-	Autoposts		   map[string]*Cha
+	MemberInfoMap   map[string]*UserInfo
+	SpoilerMap      map[string]*discordgo.Role
+	EmojiStats      map[string]*Emoji
+	ChannelStats    map[string]*Channel
+	UserChangeStats map[string]int
+	VerifiedStats   map[string]int
+	VoteInfoMap     map[string]*VoteInfo
+	TempChaMap      map[string]*TempChaInfo
+	ReactJoinMap    map[string]*ReactJoin
+	EmojiRoleMap    map[string][]string
+	ExtensionList   map[string]string
+	Autoposts       map[string]*Cha
 }
 
 type sharedInfo struct {
-	RemindMes       map[string]*RemindMeSlice
-	AnimeSubs		map[string][]*ShowSub
+	RemindMes map[string]*RemindMeSlice
+	AnimeSubs map[string][]*ShowSub
 }
 
 // Guild settings for misc things
 type GuildSettings struct {
-	Prefix              string     `json:"Prefix"`
-	BotLog              Cha        `json:"BotLogID"`
-	CommandRoles        []Role     `json:"CommandRoles"`
-	OptInUnder          OptinRole  `json:"OptInUnder"`
-	OptInAbove          OptinRole  `json:"OptInAbove"`
-	MutedRole			*Role	   `json:"MutedRole"`
-	VoiceChas           []VoiceCha `json:"VoiceChas"`
-	VoteModule          bool       `json:"VoteModule"`
-	VoteChannelCategory Cha        `json:"VoteChannelCategory"`
-	WaifuModule         bool       `json:"WaifuModule"`
-	WhitelistFileFilter	bool	   `json:"WhitelistFileFilter"`
-	ReactsModule        bool       `json:"ReactsModule"`
-	PingMessage         string     `json:"PingMessage"`
-	Premium				bool	   `json:"Premium"`
+	Prefix              string      `json:"Prefix"`
+	BotLog              *Cha        `json:"BotLogID"`
+	CommandRoles        []*Role     `json:"CommandRoles"`
+	OptInUnder          *Role       `json:"OptInUnder"`
+	OptInAbove          *Role       `json:"OptInAbove"`
+	MutedRole           *Role       `json:"MutedRole"`
+	VoiceChas           []*VoiceCha `json:"VoiceChas"`
+	VoteModule          bool        `json:"VoteModule"`
+	VoteChannelCategory *Cha        `json:"VoteChannelCategory"`
+	WaifuModule         bool        `json:"WaifuModule"`
+	WhitelistFileFilter bool        `json:"WhitelistFileFilter"`
+	ReactsModule        bool        `json:"ReactsModule"`
+	PingMessage         string      `json:"PingMessage"`
+	Premium             bool        `json:"Premium"`
 }
 
 type ShowAirTime struct {
 	Name    string
 	AirTime string
-	Episode	string
+	Episode string
 	Delayed string
-	Key		string
+	Key     string
 }
 
 type Role struct {
-	Name string `json:"Name"`
-	ID   string `json:"ID"`
+	Name     string `json:"Name"`
+	ID       string `json:"ID"`
+	Position int    `json:"Position"`
 }
 
 type VoiceCha struct {
-	Name  string `json:"Name"`
-	ID    string `json:"ID"`
-	Roles []Role `json:"Roles"`
+	Name  string  `json:"Name"`
+	ID    string  `json:"ID"`
+	Roles []*Role `json:"Roles"`
 }
 
 type Cha struct {
@@ -102,18 +103,12 @@ type Cha struct {
 	ID   string `json:"ID"`
 }
 
-type OptinRole struct {
-	Name     string `json:"Name"`
-	ID       string `json:"ID"`
-	Position int    `json:"Position"`
-}
-
 // VoteInfo is the in memory storage of each vote channel's info
 type VoteInfo struct {
 	Date         time.Time          `json:"Date"`
 	Channel      string             `json:"Channel"`
 	ChannelType  string             `json:"ChannelType"`
-	Category     string             `json:"Category,omitempty"`
+	Category     string             `json:"Module,omitempty"`
 	Description  string             `json:"Description,omitempty"`
 	VotesReq     int                `json:"VotesReq"`
 	MessageReact *discordgo.Message `json:"MessageReact"`
@@ -123,7 +118,7 @@ type VoteInfo struct {
 type TempChaInfo struct {
 	CreationDate time.Time `json:"CreationDate"`
 	RoleName     string    `json:"RoleName"`
-	Elevated     bool      `json:"Elevated"`
+	Elevated     bool      `json:"Permission"`
 }
 
 type ReactJoin struct {
@@ -151,9 +146,9 @@ type RssThread struct {
 }
 
 type RssThreadCheck struct {
-	Thread    *RssThread `json:"Thread"`
-	Date      time.Time `json:"Date"`
-	GUID	  string	`json:"GUID"`
+	Thread *RssThread `json:"Thread"`
+	Date   time.Time  `json:"Date"`
+	GUID   string     `json:"GUID"`
 }
 
 type Emoji struct {
@@ -174,8 +169,8 @@ type Channel struct {
 }
 
 type RemindMeSlice struct {
-	RemindMeSlice []RemindMe
-	Premium		  bool
+	RemindMeSlice []*RemindMe
+	Premium       bool
 }
 
 type RemindMe struct {
@@ -202,9 +197,9 @@ type WaifuTrade struct {
 }
 
 type ShowSub struct {
-	Show		string		`json:"Show"`
-	Notified	bool		`json:"Notified"`
-	Guild       bool    	`json:"Guild"`
+	Show     string `json:"Show"`
+	Notified bool   `json:"Notified"`
+	Guild    bool   `json:"Guild"`
 }
 
 // Loads all guilds in the database/guilds folder
@@ -234,14 +229,22 @@ func LoadGuilds() {
 			log.Panicln(err)
 		}
 
-		GuildMap[folderName] = &guildInfo{
-			GuildID:             folderName,
-			GuildConfig:         &GuildSettings{Prefix: ".", VoteModule: false, WaifuModule: false, ReactsModule: true, WhitelistFileFilter: false, PingMessage: "Hmm? Do you want some honey, darling? Open wide~~", Premium: false},
+		GuildMap[folderName] = &GuildInfo{
+			GuildID: folderName,
+			GuildConfig: &GuildSettings{
+				Prefix:              ".",
+				VoteModule:          false,
+				WaifuModule:         false,
+				ReactsModule:        true,
+				WhitelistFileFilter: false,
+				PingMessage:         "Hmmm~ So this is what you do all day long?",
+				Premium:             false,
+			},
 			PunishedUsers:       nil,
 			Filters:             nil,
 			MessageRequirements: nil,
 			SpoilerRoles:        nil,
-			RssThreads:          nil,
+			Feeds:               nil,
 			RssThreadChecks:     nil,
 			Raffles:             nil,
 			Waifus:              nil,
@@ -252,26 +255,26 @@ func LoadGuilds() {
 			ChannelStats:        make(map[string]*Channel),
 			UserChangeStats:     make(map[string]int),
 			VerifiedStats:       make(map[string]int),
-			VoteInfoMap:        make(map[string]*VoteInfo),
-			TempChaMap:         make(map[string]*TempChaInfo),
-			ReactJoinMap:       make(map[string]*ReactJoin),
-			EmojiRoleMap:       make(map[string][]string),
-			ExtensionList: 		make(map[string]string),
-			Autoposts:			make(map[string]*Cha),
+			VoteInfoMap:         make(map[string]*VoteInfo),
+			TempChaMap:          make(map[string]*TempChaInfo),
+			ReactJoinMap:        make(map[string]*ReactJoin),
+			EmojiRoleMap:        make(map[string][]string),
+			ExtensionList:       make(map[string]string),
+			Autoposts:           make(map[string]*Cha),
 		}
 		for _, file := range files {
 			LoadGuildFile(folderName, file)
 		}
 
 		// Loads default map settings
-		if GuildMap[folderName].GuildConfig.BotLog.ID != "" {
+		if GuildMap[folderName].GuildConfig.BotLog != nil {
 			if dailystats, ok := GuildMap[folderName].Autoposts["dailystats"]; ok {
 				if dailystats != nil {
-					GuildMap[folderName].Autoposts["dailystats"] = &GuildMap[folderName].GuildConfig.BotLog
+					GuildMap[folderName].Autoposts["dailystats"] = GuildMap[folderName].GuildConfig.BotLog
 					_ = AutopostsWrite(GuildMap[folderName].Autoposts, folderName)
 				}
 			} else {
-				GuildMap[folderName].Autoposts["dailystats"] = &GuildMap[folderName].GuildConfig.BotLog
+				GuildMap[folderName].Autoposts["dailystats"] = GuildMap[folderName].GuildConfig.BotLog
 				_ = AutopostsWrite(GuildMap[folderName].Autoposts, folderName)
 			}
 		}
@@ -340,7 +343,7 @@ func LoadGuildFile(guildID string, file string) {
 			GuildMap[guildID].SpoilerMap[GuildMap[guildID].SpoilerRoles[i].ID] = GuildMap[guildID].SpoilerRoles[i]
 		}
 	case "rssThreads.json":
-		_ = json.Unmarshal(infoByte, &GuildMap[guildID].RssThreads)
+		_ = json.Unmarshal(infoByte, &GuildMap[guildID].Feeds)
 	case "rssThreadCheck.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].RssThreadChecks)
 	case "raffles.json":
@@ -400,39 +403,38 @@ func LoadSharedDBFile(file string) {
 }
 
 // Writes to memberInfo.json
-func WriteMemberInfo(info map[string]*UserInfo, guildID string) {
+func WriteMemberInfo(info map[string]*UserInfo, guildID string) error {
 
 	// Turns info slice into byte ready to be pushed to file
 	MarshaledStruct, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
 
 	// Writes to file
 	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/memberInfo.json", guildID), MarshaledStruct, 0644)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
+	return nil
 }
 
 // Writes emoji stats to emojiStats.json
-func EmojiStatsWrite(emojiStats map[string]*Emoji, guildID string) (bool, error) {
+func EmojiStatsWrite(emojiStats map[string]*Emoji, guildID string) error {
 
 	// Turns that map into bytes to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(emojiStats, "", "    ")
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	// Writes to file
 	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/emojiStats.json", guildID), marshaledStruct, 0644)
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	return false, err
+	return err
 }
 
 // Writes channel stats to channelStats.json
@@ -607,7 +609,7 @@ func ReactJoinWrite(info map[string]*ReactJoin, guildID string) error {
 }
 
 // Writes Raffles to raffles.json
-func RafflesWrite(raffle []Raffle, guildID string) error {
+func RafflesWrite(raffle []*Raffle, guildID string) error {
 
 	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].Raffles) > 199 {
 		return fmt.Errorf("Error: You have reached the raffle limit (200) for this premium server.")
@@ -631,7 +633,7 @@ func RafflesWrite(raffle []Raffle, guildID string) error {
 }
 
 // Writes Waifus to waifus.json
-func WaifusWrite(waifu []Waifu, guildID string) error {
+func WaifusWrite(waifu []*Waifu, guildID string) error {
 
 	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].Waifus) > 399 {
 		return fmt.Errorf("Error: You have reached the waifu limit (400) for this premium server.")
@@ -655,7 +657,7 @@ func WaifusWrite(waifu []Waifu, guildID string) error {
 }
 
 // Writes WaifuTrades to waifutrades.json
-func WaifuTradesWrite(trade []WaifuTrade, guildID string) error {
+func WaifuTradesWrite(trade []*WaifuTrade, guildID string) error {
 
 	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].WaifuTrades) > 499 {
 		return fmt.Errorf("Error: This premium server has reached the waifu trade limit (500).")
@@ -697,19 +699,24 @@ func PunishedUsersWrite(bannedUsers []*PunishedUsers, guildID string) error {
 // Removes raffle with name string "raffle" from raffles.json
 func RaffleRemove(raffle string, guildID string) error {
 
-	var raffleExists = false
+	var raffleExists bool
 
-	raffle = strings.ToLower(raffle)
-
-	// Checks if that raffle already exists in the raffles slice
+	// Checks if that raffle already exists in the raffles slice and deletes it if so
 	MapMutex.Lock()
-	for i, sliceRaffle := range GuildMap[guildID].Raffles {
-		if strings.ToLower(sliceRaffle.Name) == raffle {
-			raffleExists = true
-			GuildMap[guildID].Raffles = append(GuildMap[guildID].Raffles[:i], GuildMap[guildID].Raffles[i+1:]...)
-			break
+	for i := len(GuildMap[guildID].Raffles)-1; i >= 0; i-- {
+		if strings.ToLower(GuildMap[guildID].Raffles[i].Name) != strings.ToLower(raffle) {
+			continue
 		}
+
+		if i < len(GuildMap[guildID].Raffles)-1 {
+			copy(GuildMap[guildID].Raffles[i:], GuildMap[guildID].Raffles[i+1:])
+		}
+		GuildMap[guildID].Raffles[len(GuildMap[guildID].Raffles)-1] = nil
+		GuildMap[guildID].Raffles = GuildMap[guildID].Raffles[:len(GuildMap[guildID].Raffles)-1]
+		raffleExists = true
+		break
 	}
+
 	if !raffleExists {
 		MapMutex.Unlock()
 		return fmt.Errorf("Error: No such raffle exists")
@@ -724,7 +731,7 @@ func RaffleRemove(raffle string, guildID string) error {
 	MapMutex.Unlock()
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/raffles.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf("%s/%s/raffles.json", dbPath, guildID), marshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
@@ -741,19 +748,17 @@ func FiltersWrite(phrase string, guildID string) error {
 		return fmt.Errorf("Error: You have reached the filter limit (50) for this server. Please remove some or increase them to 300 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
 
-	var filterStruct = Filter{phrase}
-
 	// Appends the new filtered phrase to a slice of all of the old ones if it doesn't exist
 	MapMutex.Lock()
 	for _, filter := range GuildMap[guildID].Filters {
 		if filter.Filter == phrase {
 			MapMutex.Unlock()
-			return fmt.Errorf(fmt.Sprintf("Error: `%v` is already on the filter list.", phrase))
+			return fmt.Errorf(fmt.Sprintf("Error: `%s` is already on the filter list.", phrase))
 		}
 	}
 
 	// Adds the phrase to the filter list
-	GuildMap[guildID].Filters = append(GuildMap[guildID].Filters, filterStruct)
+	GuildMap[guildID].Filters = append(GuildMap[guildID].Filters, &Filter{phrase})
 
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(GuildMap[guildID].Filters, "", "    ")
@@ -764,7 +769,7 @@ func FiltersWrite(phrase string, guildID string) error {
 	MapMutex.Unlock()
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/filters.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf("%s/%s/filters.json", dbPath, guildID), marshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
@@ -839,7 +844,6 @@ func ExtensionsWrite(extension string, guildID string) error {
 		GuildMap[guildID].ExtensionList[strings.ToLower(extension)] = "blacklist"
 	}
 
-
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(GuildMap[guildID].ExtensionList, "", "    ")
 	if err != nil {
@@ -908,8 +912,6 @@ func MessRequirementWrite(phrase string, channel string, filterType string, guil
 		return fmt.Errorf("Error: You have reached the message requirement filter limit (50) for this server. Please remove some or increase them to 150 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
 
-	var MessRequirementStruct = MessRequirement{phrase, filterType, channel, ""}
-
 	// Appends the new phrase to a slice of all of the old ones if it doesn't exist
 	MapMutex.Lock()
 	for _, requirement := range GuildMap[guildID].MessageRequirements {
@@ -920,7 +922,7 @@ func MessRequirementWrite(phrase string, channel string, filterType string, guil
 	}
 
 	// Adds the phrase to the message requirement list
-	GuildMap[guildID].MessageRequirements = append(GuildMap[guildID].MessageRequirements, MessRequirementStruct)
+	GuildMap[guildID].MessageRequirements = append(GuildMap[guildID].MessageRequirements, &MessRequirement{phrase, filterType, channel, ""})
 
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(GuildMap[guildID].MessageRequirements, "", "    ")
@@ -1045,14 +1047,14 @@ func SpoilerRolesDelete(roleID string, guildID string) {
 // Writes rss info to rssThreads.json
 func RssThreadsWrite(subreddit, author, title, postType, channelID, guildID string, pin bool) error {
 
-	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].RssThreads) > 399 {
+	if GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].Feeds) > 399 {
 		return fmt.Errorf("Error: You have reached the RSS thread autopost limit (400) for this server.")
-	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].RssThreads) > 99 {
+	} else if !GuildMap[guildID].GuildConfig.Premium && len(GuildMap[guildID].Feeds) > 99 {
 		return fmt.Errorf("Error: You have reached the RSS thread autopost limit (100) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
 
 	// Checks if a thread with these settings exist already
-	for _, thread := range GuildMap[guildID].RssThreads {
+	for _, thread := range GuildMap[guildID].Feeds {
 		if subreddit == thread.Subreddit && title == thread.Title &&
 			postType == thread.PostType && channelID == thread.ChannelID {
 			return fmt.Errorf("Error: This RSS setting already exists.")
@@ -1060,10 +1062,10 @@ func RssThreadsWrite(subreddit, author, title, postType, channelID, guildID stri
 	}
 
 	// Appends the thread to the guild's threads
-	GuildMap[guildID].RssThreads = append(GuildMap[guildID].RssThreads, &RssThread{subreddit, title, author, pin, postType, channelID})
+	GuildMap[guildID].Feeds = append(GuildMap[guildID].Feeds, &RssThread{subreddit, title, author, pin, postType, channelID})
 
 	// Turns that struct slice into bytes ready to written to file
-	marshaledStruct, err := json.MarshalIndent(GuildMap[guildID].RssThreads, "", "    ")
+	marshaledStruct, err := json.MarshalIndent(GuildMap[guildID].Feeds, "", "    ")
 	if err != nil {
 		return err
 	}
@@ -1077,48 +1079,52 @@ func RssThreadsWrite(subreddit, author, title, postType, channelID, guildID stri
 	return nil
 }
 
-// Removes a setting from rssThreads.json
+// Removes a feed from rssThreads.json
 func RssThreadsRemove(subreddit, title, author, postType, channelID, guildID string) error {
 
 	var threadExists bool
 
 	// Deletes the thread if it finds it, else throw error
-	for i := 0; i < len(GuildMap[guildID].RssThreads); i++ {
+	for i := len(GuildMap[guildID].Feeds) - 1; i >= 0; i-- {
 
-		if subreddit == GuildMap[guildID].RssThreads[i].Subreddit {
+		if subreddit == GuildMap[guildID].Feeds[i].Subreddit {
 			if title != "" {
-				if GuildMap[guildID].RssThreads[i].Title != title {
+				if GuildMap[guildID].Feeds[i].Title != title {
 					continue
 				}
 			}
 			if author != "" {
-				if GuildMap[guildID].RssThreads[i].Author != author {
+				if GuildMap[guildID].Feeds[i].Author != author {
 					continue
 				}
 			}
 			if postType != "" {
-				if GuildMap[guildID].RssThreads[i].PostType != postType {
+				if GuildMap[guildID].Feeds[i].PostType != postType {
 					continue
 				}
 			}
 			if channelID != "" {
-				if GuildMap[guildID].RssThreads[i].ChannelID != channelID {
+				if GuildMap[guildID].Feeds[i].ChannelID != channelID {
 					continue
 				}
 			}
 
-			GuildMap[guildID].RssThreads = GuildMap[guildID].RssThreads[:i+copy(GuildMap[guildID].RssThreads[i:], GuildMap[guildID].RssThreads[i+1:])]
-			i--
+			if i < len(GuildMap[guildID].Feeds)-1 {
+				copy(GuildMap[guildID].Feeds[i:], GuildMap[guildID].Feeds[i+1:])
+			}
+			GuildMap[guildID].Feeds[len(GuildMap[guildID].Feeds)-1] = nil
+			GuildMap[guildID].Feeds = GuildMap[guildID].Feeds[:len(GuildMap[guildID].Feeds)-1]
+
 			threadExists = true
 		}
 	}
 
 	if !threadExists {
-		return fmt.Errorf("Error: No such RSS setting exists.")
+		return fmt.Errorf("Error: No such Feed exists.")
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
-	marshaledStruct, err := json.Marshal(GuildMap[guildID].RssThreads)
+	marshaledStruct, err := json.Marshal(GuildMap[guildID].Feeds)
 	if err != nil {
 		return err
 	}
@@ -1159,16 +1165,21 @@ func RssThreadsTimerWrite(thread *RssThread, date time.Time, GUID, guildID strin
 	return nil
 }
 
-// Removes rssThread from rssThreadCheck.json
+// Removes a feedCheck from rssThreadCheck.json
 func RssThreadsTimerRemove(thread *RssThread, guildID string) error {
 
 	var threadExists bool
 
 	// Deletes the check if it finds it, else throw error
-	for i := 0; i < len(GuildMap[guildID].RssThreadChecks); i++ {
+	for i := len(GuildMap[guildID].RssThreadChecks) - 1; i >= 0; i-- {
 		if GuildMap[guildID].RssThreadChecks[i].Thread == thread {
-			GuildMap[guildID].RssThreadChecks = GuildMap[guildID].RssThreadChecks[:i+copy(GuildMap[guildID].RssThreadChecks[i:], GuildMap[guildID].RssThreadChecks[i+1:])]
-			i--
+
+			if i < len(GuildMap[guildID].RssThreadChecks)-1 {
+				copy(GuildMap[guildID].RssThreadChecks[i:], GuildMap[guildID].RssThreadChecks[i+1:])
+			}
+			GuildMap[guildID].RssThreadChecks[len(GuildMap[guildID].RssThreadChecks)-1] = nil
+			GuildMap[guildID].RssThreadChecks = GuildMap[guildID].RssThreadChecks[:len(GuildMap[guildID].RssThreadChecks)-1]
+
 			threadExists = true
 		}
 	}
@@ -1245,14 +1256,14 @@ func IOReadDir(root string) ([]string, error) {
 // Initializes BOT DB files
 func InitDB(s *discordgo.Session, guildID string) {
 
-	path := fmt.Sprintf("%v/%v", dbPath, guildID)
+	path := fmt.Sprintf("%s/%s", dbPath, guildID)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		os.Mkdir(path, 0777)
 		// Send message to support server mod log that a server has been created on the public ZeroTsu
 		if s.State.User.ID == "614495694769618944" {
 			guild, err := s.Guild(guildID)
 			if err == nil {
-				_, _ = s.ChannelMessageSend("619899424428130315", fmt.Sprintf("A DB entry has been created for guild: %v", guild.Name))
+				_, _ = s.ChannelMessageSend("619899424428130315", fmt.Sprintf("A DB entry has been created for guild: %s", guild.Name))
 			}
 		}
 	}
@@ -1260,7 +1271,7 @@ func InitDB(s *discordgo.Session, guildID string) {
 		if name == "bannedUsers.json" {
 			continue
 		}
-		file, err := os.OpenFile(fmt.Sprintf("%v/%v/%v", dbPath, guildID, name), os.O_RDONLY|os.O_CREATE, 0666)
+		file, err := os.OpenFile(fmt.Sprintf("%s/%s/%s", dbPath, guildID, name), os.O_RDONLY|os.O_CREATE, 0666)
 		if err != nil {
 			log.Println(err)
 			continue
@@ -1355,12 +1366,17 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
+// Returns a copy of the guild settings
+func (g *GuildInfo) GetGuildSettings() GuildSettings {
+	return *g.GuildConfig
+}
+
 // Writes/Refreshes all DBs
 func writeAll(guildID string) {
 	LoadSharedDB()
 	LoadGuilds()
-	WriteMemberInfo(GuildMap[guildID].MemberInfoMap, guildID)
-	_, _ = EmojiStatsWrite(GuildMap[guildID].EmojiStats, guildID)
+	_ = WriteMemberInfo(GuildMap[guildID].MemberInfoMap, guildID)
+	_ = EmojiStatsWrite(GuildMap[guildID].EmojiStats, guildID)
 	_, _ = ChannelStatsWrite(GuildMap[guildID].ChannelStats, guildID)
 	_, _ = UserChangeStatsWrite(GuildMap[guildID].UserChangeStats, guildID)
 	_ = VerifiedStatsWrite(GuildMap[guildID].VerifiedStats, guildID)

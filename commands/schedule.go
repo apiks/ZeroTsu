@@ -2,14 +2,16 @@ package commands
 
 import (
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/bwmarrin/discordgo"
-	"github.com/r-anime/ZeroTsu/config"
-	"github.com/r-anime/ZeroTsu/misc"
 	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/bwmarrin/discordgo"
+
+	"github.com/r-anime/ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 // Shows todays airing anime times, fetched from AnimeSchedule.net
@@ -27,11 +29,11 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 1 {
 		// Get the current day's schedule in print format
 		if m.Author.ID == s.State.User.ID {
-			misc.MapMutex.Unlock()
+			functionality.MapMutex.Unlock()
 		}
 		printMessage = getDaySchedule(currentDay)
 		if m.Author.ID == s.State.User.ID {
-			misc.MapMutex.Lock()
+			functionality.MapMutex.Lock()
 		}
 	} else {
 		// Else get the target day's schedule in print format
@@ -55,23 +57,16 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Check if it's a valid int
 		if day < 0 || day > 6 {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot parse that day.")
-			if err != nil && m.GuildID != "" {
-
-				var guildBotLog string
+			if err != nil {
 				if m.GuildID != "" {
 					if m.Author.ID != s.State.User.ID {
-						misc.MapMutex.Lock()
+						functionality.MapMutex.Lock()
 					}
-					guildBotLog = misc.GuildMap[m.GuildID].GuildConfig.BotLog.ID
+					guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 					if m.Author.ID != s.State.User.ID {
-						misc.MapMutex.Unlock()
+						functionality.MapMutex.Unlock()
 					}
-				} else {
-					return
-				}
-				_, err = s.ChannelMessageSend(guildBotLog, err.Error()+"\n"+misc.ErrorLocation(err))
-				if err != nil {
-					return
+					functionality.LogError(s, guildSettings.BotLog, err)
 				}
 				return
 			}
@@ -110,8 +105,8 @@ func getDaySchedule(weekday int) string {
 		PST = time.FixedZone("PST", -8*3600)
 	}
 
-	misc.MapMutex.Lock()
-	for dayInt, showSlice := range misc.AnimeSchedule {
+	functionality.MapMutex.Lock()
+	for dayInt, showSlice := range functionality.AnimeSchedule {
 		if dayInt == weekday {
 			for _, show := range showSlice {
 
@@ -154,7 +149,7 @@ func getDaySchedule(weekday int) string {
 			break
 		}
 	}
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 
 	return printMessage
 }
@@ -163,7 +158,7 @@ func getDaySchedule(weekday int) string {
 func processEachShow(index int, element *goquery.Selection) {
 	var (
 		day  int
-		show misc.ShowAirTime
+		show functionality.ShowAirTime
 	)
 
 	switch strings.ToLower(element.Parent().Parent().Parent().SiblingsFiltered(".column-title").Text()) {
@@ -187,12 +182,12 @@ func processEachShow(index int, element *goquery.Selection) {
 	show.Episode = "Ep " + element.Parent().Parent().Parent().Find(".episode-number").Text()
 	show.Episode = strings.Replace(show.Episode, "\n", "", -1)
 	show.AirTime = element.Find(".air-time").Text()
-	show.Delayed = strings.TrimPrefix(element.Parent().Parent().Parent().Find(".delay").Text()," ")
+	show.Delayed = strings.TrimPrefix(element.Parent().Parent().Parent().Find(".delay").Text(), " ")
 	show.Delayed = strings.Trim(show.Delayed, "\n")
 	show.Key, _ = element.Parent().Parent().Parent().Find(".show-link").Attr("href")
 	show.Key = strings.ToLower(strings.TrimPrefix(show.Key, "/shows/"))
 
-	misc.AnimeSchedule[day] = append(misc.AnimeSchedule[day], &show)
+	functionality.AnimeSchedule[day] = append(functionality.AnimeSchedule[day], &show)
 }
 
 // Scrapes https://AnimeSchedule.net for air times subbed
@@ -209,7 +204,7 @@ func UpdateAnimeSchedule() {
 		log.Println(err)
 		return
 	}
-	request.Header.Set("User-Agent", misc.UserAgent)
+	request.Header.Set("User-Agent", functionality.UserAgent)
 
 	// Make request
 	response, err := client.Do(request)
@@ -227,12 +222,12 @@ func UpdateAnimeSchedule() {
 	}
 
 	// Find all airing shows and process them after resetting map
-	misc.MapMutex.Lock()
-	for dayInt := range misc.AnimeSchedule {
-		delete(misc.AnimeSchedule, dayInt)
+	functionality.MapMutex.Lock()
+	for dayInt := range functionality.AnimeSchedule {
+		delete(functionality.AnimeSchedule, dayInt)
 	}
 	document.Find(".columns h3").Each(processEachShow)
-	misc.MapMutex.Unlock()
+	functionality.MapMutex.Unlock()
 }
 
 // isTimeDST returns true if time t occurs within daylight saving time
@@ -261,12 +256,12 @@ func isTimeDST(t time.Time) bool {
 
 // Posts the schedule in a target channel if a guild has enabled it
 func DailySchedule(s *discordgo.Session, guildID string) {
-	if dailyschedule, ok := misc.GuildMap[guildID].Autoposts["dailyschedule"]; !ok {
+	if dailyschedule, ok := functionality.GuildMap[guildID].Autoposts["dailyschedule"]; !ok {
 		return
 	} else if dailyschedule == nil {
 		return
 	}
-	if misc.GuildMap[guildID].Autoposts["dailyschedule"].ID == "" {
+	if functionality.GuildMap[guildID].Autoposts["dailyschedule"].ID == "" {
 		return
 	}
 
@@ -275,13 +270,13 @@ func DailySchedule(s *discordgo.Session, guildID string) {
 		author  discordgo.User
 	)
 
-	guildPrefix := misc.GuildMap[guildID].GuildConfig.Prefix
+	guildSettings := functionality.GuildMap[guildID].GetGuildSettings()
 
 	author.ID = s.State.User.ID
 	message.GuildID = guildID
 	message.Author = &author
-	message.Content = guildPrefix + "schedule"
-	message.ChannelID = misc.GuildMap[guildID].Autoposts["dailyschedule"].ID
+	message.Content = fmt.Sprintf("%sschedule", guildSettings.Prefix)
+	message.ChannelID = functionality.GuildMap[guildID].Autoposts["dailyschedule"].ID
 
 	scheduleCommand(s, &message)
 }
@@ -294,12 +289,12 @@ func ScheduleTimer(s *discordgo.Session, e *discordgo.Ready) {
 }
 
 func init() {
-	add(&command{
-		execute:  scheduleCommand,
-		trigger:  "schedule",
-		aliases:  []string{"schedul", "schedu", "schedle", "schdule", "animeschedule", "anischedule"},
-		desc:     "Print Anime Air Times (subbed where possible.) Add a day to specify a day",
-		category: "normal",
-		DMAble: true,
+	functionality.Add(&functionality.Command{
+		Execute: scheduleCommand,
+		Trigger: "schedule",
+		Aliases: []string{"schedul", "schedu", "schedle", "schdule", "animeschedule", "anischedule"},
+		Desc:    "Print Anime Air Times (subbed where possible.) Add a day to specify a day",
+		Module:  "normal",
+		DMAble:  true,
 	})
 }
