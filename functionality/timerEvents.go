@@ -142,9 +142,6 @@ func unbanHandler(s *discordgo.Session, guildID string, i int, bans []*discordgo
 	t := time.Now()
 	zeroTimeValue := time.Time{}
 
-	MapMutex.Lock()
-	defer MapMutex.Unlock()
-
 	if GuildMap[guildID].PunishedUsers[i].UnbanDate == zeroTimeValue {
 		return false
 	}
