@@ -308,7 +308,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	// Module Permissions that overwrite if needed
+	// Category Permissions that overwrite if needed
 	if channel.Category != "" {
 		category, err := s.Channel(channel.Category)
 		if err == nil {
@@ -393,7 +393,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		for i := 0; i < len(chaAll); i++ {
 			// Puts channel name to lowercase
 			nameLowercase := strings.ToLower(chaAll[i].Name)
-			// Compares if Module is either a valid category name or ID
+			// Compares if Category is either a valid category name or ID
 			if nameLowercase == channel.Category || chaAll[i].ID == channel.Category {
 				if chaAll[i].Type == discordgo.ChannelTypeGuildCategory {
 					channel.Category = chaAll[i].ID

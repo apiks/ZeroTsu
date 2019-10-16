@@ -60,7 +60,7 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if category exists
 	if categoryID == "" {
-		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Invalid Module")
+		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Invalid Category")
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
@@ -92,7 +92,7 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	_, err = s.ChannelMessageSend(m.ChannelID, "Module `"+commandStrings[1]+"` sorted")
+	_, err = s.ChannelMessageSend(m.ChannelID, "Category `"+commandStrings[1]+"` sorted")
 	if err != nil {
 		functionality.LogError(s, guildSettings.BotLog, err)
 		return
