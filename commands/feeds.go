@@ -26,8 +26,7 @@ func setRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	cmdStrs := strings.Split(messageLowercase, " ")
+	cmdStrs := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	if len(cmdStrs) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"addfeed [u/author]* [type]* [pin]* [r/subreddit] [title]*`\n\n* are optional.\n\nType refers to the post sort filter. Valid values are `hot`, `new` and `rising`. Defaults to `hot`.\nPin refers to whether to pin the post when the bot posts it and unpin the previous bot pin of the same subreddit. Use `true` or `false` as values.\nTitle is what a post title should start with for the BOT to post it. Leave empty for all posts.\n\nFor author and subreddit be sure to add the prefixes `u/` and `r/`. Does not work with hidden or quarantined subs.")
@@ -132,8 +131,7 @@ func removeRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	cmdStrs := strings.Split(messageLowercase, " ")
+	cmdStrs := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	if len(cmdStrs) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"removefeed [type]* [u/author]* [channel]* [r/subreddit] [title]*`\n\n* is optional\n\n"+

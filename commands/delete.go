@@ -27,7 +27,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.SplitN(m.Content, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) != 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"killchannel [channel]`")
@@ -173,7 +173,7 @@ func deleteCategory(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.SplitN(m.Content, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) != 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"killcategory [category]`")
@@ -267,7 +267,7 @@ func deleteChannelReacts(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.SplitN(m.Content, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) != 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"killchannelreacts [channel]`")
@@ -340,7 +340,7 @@ func deleteCategoryReacts(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.SplitN(m.Content, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) != 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"killcategoryreacts [category]`")

@@ -32,7 +32,7 @@ func subscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.MapMutex.Unlock()
 	}
 
-	commandStrings := strings.SplitN(strings.ToLower(m.Content), " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
 
@@ -171,7 +171,7 @@ func unsubscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.MapMutex.Unlock()
 	}
 
-	commandStrings := strings.SplitN(m.Content, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
 		if config.ServerID == "267799767843602452" {
@@ -283,7 +283,7 @@ func viewSubscriptions(s *discordgo.Session, m *discordgo.Message) {
 		functionality.MapMutex.Unlock()
 	}
 
-	commandStrings := strings.Split(m.Content, " ")
+	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	if len(commandStrings) != 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vsubs`", guildSettings.Prefix))

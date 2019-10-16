@@ -21,7 +21,7 @@ func raffleParticipateCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.SplitN(m.Content, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) != 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"jraffle [raffle name]`")
@@ -69,6 +69,72 @@ func raffleParticipateCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	_, err := s.ChannelMessageSend(m.ChannelID, "Success! You have entered raffle `"+commandStrings[1]+"`")
+	if err != nil {
+		functionality.LogError(s, guildSettings.BotLog, err)
+		return
+	}
+}
+
+// Removes a user from a raffle
+func raffleLeaveCommand(s *discordgo.Session, m *discordgo.Message) {
+	var (
+		raffleExists bool
+		userInRaffle bool
+	)
+
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
+
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
+
+	if len(commandStrings) != 2 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"lraffle [raffle name]`")
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	}
+
+	// Checks if such a raffle exists and removes the user ID from it if so
+	functionality.MapMutex.Lock()
+	for _, raffle := range functionality.GuildMap[m.GuildID].Raffles {
+		if raffle.Name == strings.ToLower(commandStrings[1]) {
+			raffleExists = true
+
+			// Checks if the user already joined that raffle and removes him if so
+			for i, ID := range raffle.ParticipantIDs {
+				if ID == m.Author.ID {
+					userInRaffle = true
+					functionality.GuildMap[m.GuildID].Raffles = append(functionality.GuildMap[m.GuildID].Raffles[:i], functionality.GuildMap[m.GuildID].Raffles[i+1:]...)
+					break
+				}
+			}
+			if !userInRaffle {
+				_, err := s.ChannelMessageSend(m.ChannelID, "You're not in that raffle!")
+				if err != nil {
+					functionality.MapMutex.Unlock()
+					functionality.LogError(s, guildSettings.BotLog, err)
+					return
+				}
+				functionality.MapMutex.Unlock()
+				return
+			}
+			break
+		}
+	}
+	functionality.MapMutex.Unlock()
+	if !raffleExists {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such raffle exists.")
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	}
+
+	_, err := s.ChannelMessageSend(m.ChannelID, "Success! You have left raffle `"+commandStrings[1]+"`")
 	if err != nil {
 		functionality.LogError(s, guildSettings.BotLog, err)
 		return
@@ -157,72 +223,6 @@ func RaffleReactLeave(s *discordgo.Session, r *discordgo.MessageReactionRemove) 
 	functionality.MapMutex.Unlock()
 }
 
-// Removes a user from a raffle
-func raffleLeaveCommand(s *discordgo.Session, m *discordgo.Message) {
-	var (
-		raffleExists bool
-		userInRaffle bool
-	)
-
-	functionality.MapMutex.Lock()
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
-
-	commandStrings := strings.SplitN(m.Content, " ", 2)
-
-	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"lraffle [raffle name]`")
-		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
-			return
-		}
-		return
-	}
-
-	// Checks if such a raffle exists and removes the user ID from it if so
-	functionality.MapMutex.Lock()
-	for _, raffle := range functionality.GuildMap[m.GuildID].Raffles {
-		if raffle.Name == strings.ToLower(commandStrings[1]) {
-			raffleExists = true
-
-			// Checks if the user already joined that raffle and removes him if so
-			for i, ID := range raffle.ParticipantIDs {
-				if ID == m.Author.ID {
-					userInRaffle = true
-					functionality.GuildMap[m.GuildID].Raffles = append(functionality.GuildMap[m.GuildID].Raffles[:i], functionality.GuildMap[m.GuildID].Raffles[i+1:]...)
-					break
-				}
-			}
-			if !userInRaffle {
-				_, err := s.ChannelMessageSend(m.ChannelID, "You're not in that raffle!")
-				if err != nil {
-					functionality.MapMutex.Unlock()
-					functionality.LogError(s, guildSettings.BotLog, err)
-					return
-				}
-				functionality.MapMutex.Unlock()
-				return
-			}
-			break
-		}
-	}
-	functionality.MapMutex.Unlock()
-	if !raffleExists {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such raffle exists.")
-		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
-			return
-		}
-		return
-	}
-
-	_, err := s.ChannelMessageSend(m.ChannelID, "Success! You have left raffle `"+commandStrings[1]+"`")
-	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
-		return
-	}
-}
-
 // Creates a raffle if it doesn't exist
 func craffleCommand(s *discordgo.Session, m *discordgo.Message) {
 
@@ -232,7 +232,7 @@ func craffleCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.SplitN(m.Content, " ", 3)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 3)
 
 	if len(commandStrings) != 3 ||
 		(commandStrings[1] != "true" &&
@@ -313,6 +313,42 @@ func craffleCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
+// Removes a raffle
+func removeRaffleCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	functionality.MapMutex.Lock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.MapMutex.Unlock()
+
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
+
+	if len(commandStrings) != 2 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"removeraffle [raffle name]`")
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	}
+
+	err := functionality.RaffleRemove(commandStrings[1], m.GuildID)
+	if err != nil {
+		_, err := s.ChannelMessageSend(m.ChannelID, err.Error())
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	}
+
+	_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed raffle `"+commandStrings[1]+"`.")
+	if err != nil {
+		functionality.LogError(s, guildSettings.BotLog, err)
+		return
+	}
+}
+
+
 // Picks a random winner from those participating in the raffle
 func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 	var (
@@ -325,7 +361,7 @@ func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.SplitN(m.Content, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) != 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"rafflewinner [raffle name]`")
@@ -382,41 +418,6 @@ func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-// Removes a raffle
-func removeRaffleCommand(s *discordgo.Session, m *discordgo.Message) {
-
-	functionality.MapMutex.Lock()
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
-
-	commandStrings := strings.SplitN(strings.ToLower(m.Content), " ", 2)
-
-	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"removeraffle [raffle name]`")
-		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
-			return
-		}
-		return
-	}
-
-	err := functionality.RaffleRemove(commandStrings[1], m.GuildID)
-	if err != nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, err.Error())
-		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
-			return
-		}
-		return
-	}
-
-	_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed raffle `"+commandStrings[1]+"`.")
-	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
-		return
-	}
-}
-
 // Shows existing raffles
 func viewRafflesCommand(s *discordgo.Session, m *discordgo.Message) {
 
@@ -426,7 +427,7 @@ func viewRafflesCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.Split(m.Content, " ")
+	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
 	if len(commandStrings) != 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"vraffle`")

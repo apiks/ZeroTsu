@@ -21,7 +21,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.SplitN(m.Content, " ", 3)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 3)
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"kick [@user, userID, or username#discrim] [reason]*` format.\n\n* is optional"+
@@ -76,7 +76,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Initialize user if they are not in memberInfo but is in server
 	if _, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; !ok {
-		functionality.InitializeUser(userMem, m.GuildID)
+		functionality.InitializeMember(userMem, m.GuildID)
 	}
 
 	// Adds kick reason to user memberInfo info

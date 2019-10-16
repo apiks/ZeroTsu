@@ -35,7 +35,8 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.SplitN(m.Content, " ", 4)
+	formattedContent := strings.Replace(m.Content, "  ", " ", -1)
+	commandStrings := strings.SplitN(formattedContent, " ", 4)
 	commandStringsCopy = commandStrings
 
 	if len(commandStrings) != 4 {
@@ -117,7 +118,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	if _, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; !ok {
 		if userMem != nil {
 			// Initializes user if he doesn't exist in memberInfo but is in server
-			functionality.InitializeUser(userMem, m.GuildID)
+			functionality.InitializeMember(userMem, m.GuildID)
 		}
 	}
 
@@ -134,6 +135,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 			functionality.MapMutex.Unlock()
 			return
 		}
+		functionality.InitializeUser(user, m.GuildID)
 	}
 
 	// Adds ban date to memberInfo and checks if perma
@@ -171,7 +173,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, &banTimestamp)
 
 	// Writes to memberInfo.json
-	functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+	_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 
 	// Saves the details in temp
 	temp.ID = userID

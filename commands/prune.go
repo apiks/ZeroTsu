@@ -19,7 +19,7 @@ func pruneCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.Split(m.Content, " ")
+	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
 	// Throw error not correct amoutn of parameters
 	if len(commandStrings) != 2 {

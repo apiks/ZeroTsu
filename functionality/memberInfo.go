@@ -60,8 +60,8 @@ type Punishment struct {
 	Timestamp  time.Time `json:"timestamp"`
 }
 
-// Initializes user in memberInfo if he doesn't exist there
-func InitializeUser(u *discordgo.Member, guildID string) {
+// Initializes a member in memberInfo if he doesn't exist there
+func InitializeMember(u *discordgo.Member, guildID string) {
 
 	// Stores time of joining
 	t := time.Now()
@@ -72,6 +72,22 @@ func InitializeUser(u *discordgo.Member, guildID string) {
 		ID:       u.User.ID,
 		Discrim:  u.User.Discriminator,
 		Username: u.User.Username,
+		JoinDate: join,
+	}
+}
+
+//Initializes a user in memberInfo if he doesn't exist there
+func InitializeUser(u *discordgo.User, guildID string) {
+
+	// Stores time of joining
+	t := time.Now()
+	z, _ := t.Zone()
+	join := t.Format("2006-01-02 15:04:05") + " " + z
+
+	GuildMap[guildID].MemberInfoMap[u.ID] = &UserInfo{
+		ID:       u.ID,
+		Discrim:  u.Discriminator,
+		Username: u.Username,
 		JoinDate: join,
 	}
 }
@@ -113,7 +129,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	if GuildMap[e.GuildID].MemberInfoMap == nil || len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
 
 		// Initializes the first user of memberInfo
-		InitializeUser(user, e.GuildID)
+		InitializeMember(user, e.GuildID)
 
 		flag = true
 		writeFlag = true
@@ -139,7 +155,7 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	if !flag {
 
 		// Initializes the new user
-		InitializeUser(user, e.GuildID)
+		InitializeMember(user, e.GuildID)
 		writeFlag = true
 
 		// Encrypts id

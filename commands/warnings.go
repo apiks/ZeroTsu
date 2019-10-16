@@ -20,8 +20,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(messageLowercase, " ", 3)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 3)
 
 	if len(commandStrings) != 3 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"addwarning [@user, userID, or username#discrim] [warning]`\n\n"+
@@ -63,7 +62,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 		// Initializes user if he doesn't exist in memberInfo but is in server
-		functionality.InitializeUser(userMem, m.GuildID)
+		functionality.InitializeMember(userMem, m.GuildID)
 	}
 
 	// Appends warning to user in memberInfo
@@ -82,7 +81,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, &warningTimestamp)
 
 	// Writes to memberInfo.json
-	functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+	_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	functionality.MapMutex.Unlock()
 
 	// Sends warning embed message to channel
@@ -107,8 +106,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(messageLowercase, " ", 3)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 3)
 
 	if len(commandStrings) != 3 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"issuewarning [@user, userID, or username#discrim] [warning]`\n"+
@@ -157,7 +155,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 		// Initializes user if he doesn't exist in memberInfo but is in server
-		functionality.InitializeUser(userMem, m.GuildID)
+		functionality.InitializeMember(userMem, m.GuildID)
 	}
 
 	// Appends warning to user in memberInfo
@@ -176,7 +174,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, &warningTimestamp)
 
 	// Writes to memberInfo.json
-	functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+	_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	functionality.MapMutex.Unlock()
 
 	// Sends message in DMs that they have been warned if able

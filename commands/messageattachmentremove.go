@@ -140,7 +140,7 @@ func filterExtensionCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.SplitN(strings.ToLower(m.Content), " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vextension [file extension]`\n\n[file extension] is the file extension (e.g. .exe or .jpeg).", guildSettings.Prefix))
@@ -188,7 +188,7 @@ func unfilterExtensionCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.SplitN(strings.ToLower(m.Content), " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vremoveextension [file extension]`\n\n[file extension] is the file extension you want to remove from the blacklist (e.g. .exe or .jpeg)", guildSettings.Prefix))

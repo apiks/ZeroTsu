@@ -32,8 +32,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(messageLowercase, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) < 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"whois [@user, userID, or username#discrim]`\n\n"+
@@ -76,7 +75,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		// Initializes user if he doesn't exist and is in server
-		functionality.InitializeUser(mem, m.GuildID)
+		functionality.InitializeMember(mem, m.GuildID)
 		user = functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
 		functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	}
@@ -307,8 +306,7 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.Split(messageLowercase, " ")
+	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	if len(commandStrings) != 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"timestamps [@user, userID, or username#discrim]`")
@@ -348,9 +346,9 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		// Initializes user if he doesn't exist and is in server
-		functionality.InitializeUser(mem, m.GuildID)
+		functionality.InitializeMember(mem, m.GuildID)
 		user = functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
-		functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+		_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	}
 	functionality.MapMutex.Unlock()
 

@@ -41,7 +41,7 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	commandStrings := strings.SplitN(m.Content, " ", 3)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 3)
 
 	if len(commandStrings) < 3 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"remindme [time] [message]` \n\n"+
@@ -140,7 +140,7 @@ func viewRemindMe(s *discordgo.Session, m *discordgo.Message) {
 	}
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.Split(m.Content, " ")
+	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
 	if len(commandStrings) != 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"reminds`")
@@ -213,7 +213,7 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 	}
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.Split(m.Content, " ")
+	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
 	if len(commandStrings) != 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"removeremind [ID]`\n\nID is from the `"+guildSettings.Prefix+"reminds` command.")

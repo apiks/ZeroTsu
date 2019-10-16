@@ -19,8 +19,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.Split(messageLowercase, " ")
+	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	if len(commandStrings) < 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"unban [@user, userID, or username#discrim]` format.\n\n"+

@@ -29,7 +29,7 @@ func playingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.MapMutex.Unlock()
 	}
 
-	commandStrings := strings.SplitN(m.Content, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
 	// Displays current playing message if it's only that
 	if len(commandStrings) == 1 {
@@ -89,7 +89,7 @@ func removePlayingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.MapMutex.Unlock()
 	}
 
-	commandStrings := strings.SplitN(m.Content, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vremoveplayingmsg [msg]`", guildSettings.Prefix))

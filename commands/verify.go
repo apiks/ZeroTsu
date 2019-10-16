@@ -23,8 +23,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.Split(messageLowercase, " ")
+	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	// Checks if there's enough parameters (command, user and reddit username.)
 	if len(commandStrings) != 3 {
@@ -75,7 +74,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	} else if userMem != nil {
 
 		// Initializes user in memberInfo.json
-		functionality.InitializeUser(userMem, m.GuildID)
+		functionality.InitializeMember(userMem, m.GuildID)
 
 		// Stores time of verification
 		t := time.Now()
@@ -152,8 +151,7 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.Split(messageLowercase, " ")
+	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	// Checks if there's enough parameters (command, user and reddit username.)
 	if len(commandStrings) < 2 {

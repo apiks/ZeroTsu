@@ -22,7 +22,7 @@ func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.MapMutex.Unlock()
 	}
 
-	commandStrings := strings.Split(m.Content, " ")
+	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
 	if len(commandStrings) > 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage `%vavatar [user]`", guildSettings.Prefix))

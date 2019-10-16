@@ -11,13 +11,6 @@ import (
 	"github.com/r-anime/ZeroTsu/functionality"
 )
 
-type channel struct {
-	Name        string
-	Category    string
-	Type        string
-	Description string
-}
-
 // Creates a named channel and a named role with parameters and checks for mod perms
 func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 
@@ -52,8 +45,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.Split(messageLowercase, " ")
+	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vcreate [name] OPTIONAL[type] [categoryID] [description; must have at least one other non-name parameter]`\n\nFour type of parameters exist: `airing`, `temp`, `general` and `optin`. `Optin` is the default one. `Temp` gets auto-deleted after three hours of inactivity. Only `general` does not create a role", guildSettings.Prefix))
@@ -64,7 +56,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	command := strings.Replace(messageLowercase, guildSettings.Prefix+"create ", "", 1)
+	command := strings.Replace(strings.ToLower(m.Content), guildSettings.Prefix+"create ", "", 1)
 	commandStrings = strings.Split(command, " ")
 
 	// Confirms whether optins exist

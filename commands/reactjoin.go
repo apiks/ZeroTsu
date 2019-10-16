@@ -178,8 +178,7 @@ func setReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(messageLowercase, " ", 4)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 4)
 
 	if len(commandStrings) != 4 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"setreact [messageID] [emoji] [role]`")
@@ -226,7 +225,7 @@ func setReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Parses if it's custom emoji or unicode emoji
 	re := regexp.MustCompile("(?i)<:+([a-zA-Z]|[0-9])+:+[0-9]+>")
-	emojiRegex := re.FindAllString(messageLowercase, 1)
+	emojiRegex := re.FindAllString(strings.ToLower(m.Content), 1)
 	if emojiRegex != nil {
 
 		// Fetches emoji API name
@@ -295,8 +294,7 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(messageLowercase, " ", 3)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 3)
 
 	if len(commandStrings) != 3 && len(commandStrings) != 2 {
 		// Returns if the bot called the func
@@ -637,8 +635,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.Split(messageLowercase, " ")
+	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"join [channel/role]`")
@@ -650,10 +647,10 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Pulls the role name from strings after "joinchannel " or "join "
-	if strings.HasPrefix(messageLowercase, guildSettings.Prefix+"joinchannel ") {
-		name = strings.Replace(messageLowercase, guildSettings.Prefix+"joinchannel ", "", -1)
+	if strings.HasPrefix(strings.ToLower(m.Content), guildSettings.Prefix+"joinchannel ") {
+		name = strings.Replace(strings.ToLower(m.Content), guildSettings.Prefix+"joinchannel ", "", -1)
 	} else {
-		name = strings.Replace(messageLowercase, guildSettings.Prefix+"join ", "", -1)
+		name = strings.Replace(strings.ToLower(m.Content), guildSettings.Prefix+"join ", "", -1)
 	}
 
 	// Pulls info on server roles
@@ -847,8 +844,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.Split(messageLowercase, " ")
+	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"leave [channel/role]`")
@@ -860,10 +856,10 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Pulls the role name from strings after "leavechannel " or "leave "
-	if strings.HasPrefix(messageLowercase, guildSettings.Prefix+"leavechannel ") {
-		name = strings.Replace(messageLowercase, guildSettings.Prefix+"leavechannel ", "", -1)
+	if strings.HasPrefix(strings.ToLower(m.Content), guildSettings.Prefix+"leavechannel ") {
+		name = strings.Replace(strings.ToLower(m.Content), guildSettings.Prefix+"leavechannel ", "", -1)
 	} else {
-		name = strings.Replace(messageLowercase, guildSettings.Prefix+"leave ", "", -1)
+		name = strings.Replace(strings.ToLower(m.Content), guildSettings.Prefix+"leave ", "", -1)
 	}
 
 	// Pulls info on server roles

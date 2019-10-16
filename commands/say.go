@@ -16,8 +16,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	command := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(command, " ", 3)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 3)
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"say OPTIONAL[channelID] [message]`")
@@ -68,7 +67,7 @@ func editCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.SplitN(m.Content, " ", 4)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 4)
 
 	if len(commandStrings) < 4 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"edit [channelID] [messageID] [message]`")

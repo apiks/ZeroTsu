@@ -16,8 +16,7 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.Split(messageLowercase, " ")
+	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	// Checks if there's enough parameters
 	if len(commandStrings) != 3 {
@@ -91,7 +90,7 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings[:index], functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings[index+1:]...)
 
 	// Writes new map to storage
-	functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+	_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	functionality.MapMutex.Unlock()
 
 	err = functionality.RemovePunishmentEmbed(s, m, punishment)
@@ -108,8 +107,7 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.Split(messageLowercase, " ")
+	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	// Checks if there's enough parameters (command, user and index.) Else prints error message
 	if len(commandStrings) != 3 {
@@ -183,7 +181,7 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 	functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks[:index], functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks[index+1:]...)
 
 	// Writes new map to storage
-	functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+	_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	functionality.MapMutex.Unlock()
 
 	err = functionality.RemovePunishmentEmbed(s, m, punishment)
@@ -200,8 +198,7 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.Split(messageLowercase, " ")
+	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	// Checks if there's enough parameters (command, user and index. Else prints error message
 	if len(commandStrings) < 3 {
@@ -275,7 +272,7 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 	functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Bans = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Bans[:index], functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Bans[index+1:]...)
 
 	// Writes new map to storage
-	functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+	_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	functionality.MapMutex.Unlock()
 
 	err = functionality.RemovePunishmentEmbed(s, m, punishment)
@@ -292,8 +289,7 @@ func removeMuteCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.Split(messageLowercase, " ")
+	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	// Checks if there's enough parameters (command, user and index. Else prints error message
 	if len(commandStrings) < 3 {
@@ -367,7 +363,7 @@ func removeMuteCommand(s *discordgo.Session, m *discordgo.Message) {
 	functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Mutes = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Mutes[:index], functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Mutes[index+1:]...)
 
 	// Writes new map to storage
-	functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+	_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	functionality.MapMutex.Unlock()
 
 	err = functionality.RemovePunishmentEmbed(s, m, punishment)

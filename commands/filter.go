@@ -12,10 +12,10 @@ import (
 	"github.com/r-anime/ZeroTsu/functionality"
 )
 
-var (
-	spamFilterMap      = make(map[string]int)
-	spamFilterIsBroken bool
-)
+//var (
+//	spamFilterMap      = make(map[string]int)
+//	spamFilterIsBroken bool
+//)
 
 // Handles filter in an onMessage basis
 func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -38,10 +38,7 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	functionality.MapMutex.Lock()
-	if _, ok := functionality.GuildMap[m.GuildID]; !ok {
-		functionality.InitDB(s, m.GuildID)
-		functionality.LoadGuilds()
-	}
+	functionality.HandleNewGuild(s, m.GuildID)
 	functionality.MapMutex.Unlock()
 
 	// Pulls info on message author
@@ -61,13 +58,10 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	functionality.MapMutex.Unlock()
 
 	var (
-		mLowercase    string
 		badWordsSlice []string
 		badWordExists bool
 		removals      string
 	)
-
-	mLowercase = strings.ToLower(m.Content)
 
 	// Checks if message should be filtered
 	badWordExists, badWordsSlice = isFiltered(s, m.Message)
@@ -113,7 +107,7 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if err != nil {
 		return
 	}
-	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message `%v` was removed for using: _%v_ \n\n", mLowercase, removals))
+	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message `%v` was removed for using: _%v_ \n\n", strings.ToLower(m.Content), removals))
 }
 
 // Handles filter in an onEdit basis
@@ -137,10 +131,7 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	}
 
 	functionality.MapMutex.Lock()
-	if _, ok := functionality.GuildMap[m.GuildID]; !ok {
-		functionality.InitDB(s, m.GuildID)
-		functionality.LoadGuilds()
-	}
+	functionality.HandleNewGuild(s, m.GuildID)
 	functionality.MapMutex.Unlock()
 
 	// Pulls info on message author
@@ -160,13 +151,10 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	functionality.MapMutex.Unlock()
 
 	var (
-		mLowercase    string
 		badWordsSlice []string
 		badWordExists bool
 		removals      string
 	)
-
-	mLowercase = strings.ToLower(m.Content)
 
 	// Checks if the message should be filtered
 	badWordExists, badWordsSlice = isFiltered(s, m.Message)
@@ -212,7 +200,7 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	if err != nil {
 		return
 	}
-	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message `%v` was removed for using: _%v_ \n\n", mLowercase, removals))
+	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message `%v` was removed for using: _%v_ \n\n", strings.ToLower(m.Content), removals))
 }
 
 // Filters reactions that contain a filtered phrase
@@ -236,10 +224,7 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 	}
 
 	functionality.MapMutex.Lock()
-	if _, ok := functionality.GuildMap[r.GuildID]; !ok {
-		functionality.InitDB(s, r.GuildID)
-		functionality.LoadGuilds()
-	}
+	functionality.HandleNewGuild(s, r.GuildID)
 	functionality.MapMutex.Unlock()
 
 	// Pulls info on message author
@@ -452,7 +437,7 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.SplitN(strings.ToLower(m.Content), " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vfilter [phrase]`\n\n[phrase] is either regex expression (preferable) or just a simple string.", guildSettings.Prefix))
@@ -480,11 +465,6 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 // Removes a filter phrase from storage and memory
 func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	var (
-		mLowercase     string
-		commandStrings []string
-	)
-
 	functionality.MapMutex.Lock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 
@@ -500,8 +480,7 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	functionality.MapMutex.Unlock()
 
-	mLowercase = strings.ToLower(m.Content)
-	commandStrings = strings.SplitN(mLowercase, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%sunfilter [phrase]`\n\n[phrase] is the filter phrase that was used when creating a filter.", guildSettings.Prefix))
@@ -568,8 +547,6 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		mLowercase      string
-		commandStrings  []string
 		channelID       string
 		requirementType string
 		phrase          string
@@ -579,8 +556,7 @@ func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	mLowercase = strings.ToLower(m.Content)
-	commandStrings = strings.SplitN(mLowercase, " ", 4)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 4)
 
 	if len(commandStrings) == 1 {
 		message := fmt.Sprintf("Usage: `%vmrequire [channel]* [type]* [phrase]`\n\n[channel] is a ping or ID to the channel where the requirement will only be done.\n"+
@@ -653,8 +629,6 @@ func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 func removeMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		mLowercase     string
-		commandStrings []string
 		channelID      string
 		phrase         string
 	)
@@ -674,8 +648,7 @@ func removeMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	functionality.MapMutex.Unlock()
 
-	mLowercase = strings.ToLower(m.Content)
-	commandStrings = strings.SplitN(mLowercase, " ", 3)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 3)
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vunmrequire [channel]* [phrase]`\n\n[channel] is the channel for which that message requirement was set.\n"+
@@ -756,87 +729,87 @@ func viewMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-// Removes user message if sent too quickly in succession
-func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
+//// Removes user message if sent too quickly in succession
+//func SpamFilter(s *discordgo.Session, m *discordgo.MessageCreate) {
+//
+//	// Checks if the bot had thrown an error before and stops it if so. Helps with massive backlog or delays but disables spam filter
+//	if spamFilterIsBroken {
+//		return
+//	}
+//	// Stops double event bug with empty content
+//	if m.Content == "" {
+//		return
+//	}
+//	// Checks if it's the bot that sent the message
+//	if m.Author.ID == s.State.User.ID {
+//		return
+//	}
+//
+//	functionality.MapMutex.Lock()
+//	functionality.HandleNewGuild(s, m.GuildID)
+//	functionality.MapMutex.Unlock()
+//
+//	// Pulls info on message author
+//	mem, err := s.State.Member(m.GuildID, m.Author.ID)
+//	if err != nil {
+//		mem, err = s.GuildMember(m.GuildID, m.Author.ID)
+//		if err != nil {
+//			return
+//		}
+//	}
+//	// Checks if user is mod or bot before checking the message
+//	functionality.MapMutex.Lock()
+//	if functionality.HasElevatedPermissions(s, mem.User.ID, m.GuildID) {
+//		functionality.MapMutex.Unlock()
+//		return
+//	}
+//
+//	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+//
+//	// Counter for how many rapidly sent user messages a user has
+//	if spamFilterMap[m.Author.ID] < 4 {
+//		spamFilterMap[m.Author.ID]++
+//		functionality.MapMutex.Unlock()
+//		return
+//	}
+//
+//	// Stops filter if there is an unusual high size of messages to be deleted from a user (i.e. discord lags)
+//	if spamFilterMap[m.Author.ID] > 15 {
+//		if guildSettings.BotLog != nil {
+//			if guildSettings.BotLog.ID != "" {
+//				_, err = s.ChannelMessageSend(guildSettings.BotLog.ID, "Error: My spam filter has been disabled due to massive overflow of requests.")
+//				if err != nil {
+//					spamFilterIsBroken = true
+//					functionality.MapMutex.Unlock()
+//					return
+//				}
+//			}
+//		}
+//		spamFilterIsBroken = true
+//		functionality.MapMutex.Unlock()
+//		return
+//	}
+//	functionality.MapMutex.Unlock()
+//
+//	// Deletes the message if over 4 rapidly sent messages
+//	err = s.ChannelMessageDelete(m.ChannelID, m.ID)
+//	if err != nil {
+//		return
+//	}
+//}
 
-	// Checks if the bot had thrown an error before and stops it if so. Helps with massive backlog or delays but disables spam filter
-	if spamFilterIsBroken {
-		return
-	}
-	// Stops double event bug with empty content
-	if m.Content == "" {
-		return
-	}
-	// Checks if it's the bot that sent the message
-	if m.Author.ID == s.State.User.ID {
-		return
-	}
-
-	functionality.MapMutex.Lock()
-	functionality.HandleNewGuild(s, m.GuildID)
-	functionality.MapMutex.Unlock()
-
-	// Pulls info on message author
-	mem, err := s.State.Member(m.GuildID, m.Author.ID)
-	if err != nil {
-		mem, err = s.GuildMember(m.GuildID, m.Author.ID)
-		if err != nil {
-			return
-		}
-	}
-	// Checks if user is mod or bot before checking the message
-	functionality.MapMutex.Lock()
-	if functionality.HasElevatedPermissions(s, mem.User.ID, m.GuildID) {
-		functionality.MapMutex.Unlock()
-		return
-	}
-
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-
-	// Counter for how many rapidly sent user messages a user has
-	if spamFilterMap[m.Author.ID] < 4 {
-		spamFilterMap[m.Author.ID]++
-		functionality.MapMutex.Unlock()
-		return
-	}
-
-	// Stops filter if there is an unusual high size of messages to be deleted from a user (i.e. discord lags)
-	if spamFilterMap[m.Author.ID] > 15 {
-		if guildSettings.BotLog != nil {
-			if guildSettings.BotLog.ID != "" {
-				_, err = s.ChannelMessageSend(guildSettings.BotLog.ID, "Error: My spam filter has been disabled due to massive overflow of requests.")
-				if err != nil {
-					spamFilterIsBroken = true
-					functionality.MapMutex.Unlock()
-					return
-				}
-			}
-		}
-		spamFilterIsBroken = true
-		functionality.MapMutex.Unlock()
-		return
-	}
-	functionality.MapMutex.Unlock()
-
-	// Deletes the message if over 4 rapidly sent messages
-	err = s.ChannelMessageDelete(m.ChannelID, m.ID)
-	if err != nil {
-		return
-	}
-}
-
-// Handles expiring user spam filter map counter
-func SpamFilterTimer(s *discordgo.Session, e *discordgo.Ready) {
-	for range time.NewTicker(4 * time.Second).C {
-		functionality.MapMutex.Lock()
-		for userID := range spamFilterMap {
-			if spamFilterMap[userID] > 0 {
-				spamFilterMap[userID]--
-			}
-		}
-		functionality.MapMutex.Unlock()
-	}
-}
+//// Handles expiring user spam filter map counter
+//func SpamFilterTimer(s *discordgo.Session, e *discordgo.Ready) {
+//	for range time.NewTicker(4 * time.Second).C {
+//		functionality.MapMutex.Lock()
+//		for userID := range spamFilterMap {
+//			if spamFilterMap[userID] > 0 {
+//				spamFilterMap[userID]--
+//			}
+//		}
+//		functionality.MapMutex.Unlock()
+//	}
+//}
 
 // Adds filter commands to the commandHandler
 func init() {

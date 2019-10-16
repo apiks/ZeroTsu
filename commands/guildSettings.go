@@ -18,8 +18,7 @@ func addCommandRole(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(messageLowercase, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"addocommandrole [Role ID]`")
@@ -76,8 +75,7 @@ func removeCommandRole(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(messageLowercase, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"removecommandrole [Role ID]`")
@@ -147,7 +145,7 @@ func viewCommandRoles(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.SplitN(m.Content, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) != 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"commandroles`")
@@ -204,8 +202,7 @@ func prefixCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	mLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(mLowercase, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	// Displays current prefix
 	if len(commandStrings) == 1 {
@@ -242,8 +239,7 @@ func botLogCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	mLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(mLowercase, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	// Displays current botlog channel
 	if len(commandStrings) == 1 {
@@ -297,8 +293,7 @@ func optInUnderCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	mLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(mLowercase, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	// Displays current optinunder role
 	if len(commandStrings) == 1 {
@@ -350,8 +345,7 @@ func optInAboveCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	mLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(mLowercase, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	// Displays current optinabove role
 	if len(commandStrings) == 1 {
@@ -400,8 +394,7 @@ func addVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(messageLowercase, " ", 3)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 3)
 
 	if len(commandStrings) < 3 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"addvoice [channel ID] [role]` \n\n")
@@ -504,8 +497,7 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(messageLowercase, " ", 3)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 3)
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"removevoice [channel ID] [role]*`\n\n***** is optional")
@@ -616,7 +608,7 @@ func viewVoiceChaRoles(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.SplitN(m.Content, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) != 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"voiceroles`")
@@ -679,8 +671,7 @@ func voteCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	mLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(mLowercase, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	// Displays current vote category
 	if len(commandStrings) == 1 {
@@ -736,8 +727,7 @@ func voteModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	mLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(mLowercase, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	// Displays current module setting
 	if len(commandStrings) == 1 {
@@ -807,8 +797,7 @@ func waifuModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	mLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(mLowercase, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	// Displays current module setting
 	if len(commandStrings) == 1 {
@@ -877,8 +866,7 @@ func reactModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	mLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(mLowercase, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	// Displays current module setting
 	if len(commandStrings) == 1 {
@@ -947,8 +935,7 @@ func whitelistFileFilter(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	mLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(mLowercase, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	// Displays current module setting
 	if len(commandStrings) == 1 {
@@ -1012,7 +999,7 @@ func pingMessageCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.SplitN(m.Content, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
 	// Displays current prefix
 	if len(commandStrings) == 1 {
@@ -1048,8 +1035,7 @@ func setMutedRole(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(messageLowercase, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
 		if guildSettings.MutedRole == nil || guildSettings.MutedRole.ID == "" {

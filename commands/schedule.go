@@ -23,8 +23,7 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 		printMessage string
 	)
 
-	command := strings.ToLower(m.Content)
-	commandStrings := strings.SplitN(command, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
 		// Get the current day's schedule in print format

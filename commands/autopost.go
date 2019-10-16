@@ -30,7 +30,7 @@ func setDailyStatsCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	commandStrings := strings.Split(strings.ToLower(m.Content), " ")
+	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	// Displays current dailystats channel
 	if len(commandStrings) == 1 {
@@ -91,7 +91,7 @@ func setDailyScheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.Split(strings.ToLower(m.Content), " ")
+	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	// Displays current dailyschedule channel
 	if len(commandStrings) == 1 {
@@ -163,7 +163,7 @@ func setNewEpisodesCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.Split(strings.ToLower(m.Content), " ")
+	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	// Displays current new episodes channel
 	if len(commandStrings) == 1 {

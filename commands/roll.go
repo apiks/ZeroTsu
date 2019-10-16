@@ -24,7 +24,7 @@ func rollCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.MapMutex.Unlock()
 	}
 
-	commandStrings := strings.Split(m.Content, " ")
+	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
 	// Rolls a number between 1 and 100 if only the command is used
 	if len(commandStrings) == 1 {

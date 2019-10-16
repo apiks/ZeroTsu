@@ -26,7 +26,7 @@ func addWaifu(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.SplitN(m.Content, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) != 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"addwaifu [waifu]`")
@@ -77,7 +77,7 @@ func removeWaifu(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.SplitN(m.Content, " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) != 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"removewaifu [waifu]`")
@@ -122,7 +122,7 @@ func viewWaifus(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.Split(m.Content, " ")
+	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
 	if len(commandStrings) != 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"viewwaifus`")
@@ -174,7 +174,7 @@ func rollWaifu(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.Split(m.Content, " ")
+	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
 	if len(commandStrings) != 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"rollwaifu`")
@@ -197,7 +197,7 @@ func rollWaifu(s *discordgo.Session, m *discordgo.Message) {
 				return
 			}
 		}
-		functionality.InitializeUser(member, m.GuildID)
+		functionality.InitializeMember(member, m.GuildID)
 		memberInfoUser = functionality.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID]
 	}
 
@@ -226,7 +226,7 @@ func rollWaifu(s *discordgo.Session, m *discordgo.Message) {
 
 	randomWaifuIndex = rand.Intn(waifuLen)
 	functionality.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID].Waifu = functionality.GuildMap[m.GuildID].Waifus[randomWaifuIndex]
-	functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+	_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	functionality.MapMutex.Unlock()
 
 	_, err := s.ChannelMessageSend(m.ChannelID, "Your assigned waifu is "+functionality.GuildMap[m.GuildID].Waifus[randomWaifuIndex].Name+"! Congratulations!")
@@ -243,7 +243,7 @@ func myWaifu(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.Split(m.Content, " ")
+	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
 	if len(commandStrings) != 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"mywaifu`")
@@ -271,7 +271,7 @@ func myWaifu(s *discordgo.Session, m *discordgo.Message) {
 				return
 			}
 		}
-		functionality.InitializeUser(member, m.GuildID)
+		functionality.InitializeMember(member, m.GuildID)
 		memberInfoUser = functionality.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID]
 	}
 
@@ -304,7 +304,7 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.Split(m.Content, " ")
+	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
 	if len(commandStrings) != 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"tradewaifu [@user, userID or username#discrim]`")
@@ -339,7 +339,7 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 				return
 			}
 		}
-		functionality.InitializeUser(member, m.GuildID)
+		functionality.InitializeMember(member, m.GuildID)
 		memberInfoUser = functionality.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID]
 	}
 
@@ -370,7 +370,7 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 				return
 			}
 		}
-		functionality.InitializeUser(member, m.GuildID)
+		functionality.InitializeMember(member, m.GuildID)
 		memberInfoUserTarget = functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
 	}
 
@@ -415,7 +415,7 @@ func acceptTrade(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.Split(m.Content, " ")
+	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
 	if len(commandStrings) != 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"accepttrade [TradeID]`")
@@ -467,7 +467,7 @@ func acceptTrade(s *discordgo.Session, m *discordgo.Message) {
 						return
 					}
 				}
-				functionality.InitializeUser(member, m.GuildID)
+				functionality.InitializeMember(member, m.GuildID)
 			}
 			if _, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[trade.InitiatorID]; !ok {
 				// Fetch user and initialize him
@@ -484,14 +484,14 @@ func acceptTrade(s *discordgo.Session, m *discordgo.Message) {
 						return
 					}
 				}
-				functionality.InitializeUser(member, m.GuildID)
+				functionality.InitializeMember(member, m.GuildID)
 			}
 
 			// Trades waifus by switching them around and removes the trade
 			accepteeWaifu := functionality.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID].Waifu
 			functionality.GuildMap[m.GuildID].MemberInfoMap[m.Author.ID].Waifu = functionality.GuildMap[m.GuildID].MemberInfoMap[trade.InitiatorID].Waifu
 			functionality.GuildMap[m.GuildID].MemberInfoMap[trade.InitiatorID].Waifu = accepteeWaifu
-			functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+			_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 
 			functionality.GuildMap[m.GuildID].WaifuTrades = append(functionality.GuildMap[m.GuildID].WaifuTrades[:i], functionality.GuildMap[m.GuildID].WaifuTrades[i+1:]...)
 			_ = functionality.WaifuTradesWrite(functionality.GuildMap[m.GuildID].WaifuTrades, m.GuildID)
@@ -525,7 +525,7 @@ func cancelTrade(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.Split(m.Content, " ")
+	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
 	if len(commandStrings) != 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"canceltrade [TradeID]`")
@@ -600,7 +600,7 @@ func showOwners(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.MapMutex.Unlock()
 
-	commandStrings := strings.Split(m.Content, " ")
+	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
 	if len(commandStrings) != 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"owners`")

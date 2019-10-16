@@ -35,8 +35,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	messageLowercase := strings.ToLower(m.Content)
-	commandStrings := strings.Split(messageLowercase, " ")
+	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	// Checks if the message author is an admin or not and saves it, to save operations down the line
 	if functionality.HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
@@ -56,7 +55,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 
-		command := strings.Replace(messageLowercase, guildSettings.Prefix+"startvote ", "", -1)
+		command := strings.Replace(strings.ToLower(m.Content), guildSettings.Prefix+"startvote ", "", -1)
 		commandStrings = strings.Split(command, " ")
 
 		// Checks if [category] and [type] exist and assigns them if they do and removes them from slice
@@ -127,7 +126,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 
-		voteChannel.Name = strings.Replace(messageLowercase, guildSettings.Prefix+"startvote ", "", -1)
+		voteChannel.Name = strings.Replace(strings.ToLower(m.Content), guildSettings.Prefix+"startvote ", "", -1)
 		if guildSettings.VoteChannelCategory != nil {
 			if guildSettings.VoteChannelCategory.ID != "" {
 				voteChannel.Category = guildSettings.VoteChannelCategory.ID

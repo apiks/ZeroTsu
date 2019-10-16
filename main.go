@@ -64,7 +64,7 @@ func Start() {
 		log.Println(err)
 	}
 
-	// Guild listener and leave
+	// Guild join and leave listener
 	goBot.AddHandler(functionality.GuildCreate)
 	goBot.AddHandler(functionality.GuildDelete)
 
@@ -138,8 +138,8 @@ func Start() {
 	goBot.AddHandler(commands.OnMemberRemoval)
 
 	// Spam filter
-	goBot.AddHandler(commands.SpamFilter)
-	goBot.AddHandler(commands.SpamFilterTimer)
+	//goBot.AddHandler(commands.SpamFilter)
+	//goBot.AddHandler(commands.SpamFilterTimer)
 
 	// Bot fluff
 	goBot.AddHandler(functionality.OnBotPing)
