@@ -465,7 +465,7 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	// Initializes user if he's not in memberInfo
 	if _, ok := GuildMap[u.GuildID].MemberInfoMap[u.User.ID]; !ok {
-		InitializeUser(u.Member, u.GuildID)
+		InitializeMember(u.Member, u.GuildID)
 	}
 
 	// Checks if the user is verified
