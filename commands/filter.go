@@ -5,7 +5,6 @@ import (
 	"log"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 

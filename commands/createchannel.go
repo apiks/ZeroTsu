@@ -11,6 +11,13 @@ import (
 	"github.com/r-anime/ZeroTsu/functionality"
 )
 
+type channel struct {
+	Name        string
+	Category    string
+	Type        string
+	Description string
+}
+
 // Creates a named channel and a named role with parameters and checks for mod perms
 func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 
