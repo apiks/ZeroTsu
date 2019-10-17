@@ -301,6 +301,9 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 	defer MapMutex.Unlock()
 
 	for userID, remindMeSlice := range SharedInfo.RemindMes {
+		if remindMeSlice == nil {
+			continue
+		}
 		for i := len(remindMeSlice.RemindMeSlice) - 1; i >= 0; i-- {
 
 			// Checks if it's time to send message/ping the user
