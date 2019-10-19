@@ -302,11 +302,6 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 		if remindMeSlice == nil || remindMeSlice.RemindMeSlice == nil {
 			continue
 		}
-		if len(remindMeSlice.RemindMeSlice) == 0 {
-			delete(SharedInfo.RemindMes, userID)
-			writeFlag = true
-			continue
-		}
 
 		temp := remindMeSlice.RemindMeSlice[:0]
 		for i, remindMe := range remindMeSlice.RemindMeSlice {
