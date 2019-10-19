@@ -3,7 +3,7 @@ package commands
 import (
 	"github.com/bwmarrin/discordgo"
 
-	"../functionality"
+	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 // Prints information about the BOT
