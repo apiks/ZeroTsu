@@ -2,7 +2,6 @@ package functionality
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -242,15 +241,9 @@ func PingEmbed(s *discordgo.Session, m *discordgo.Message, settings *GuildSettin
 	if err != nil {
 		return err
 	}
+	delay := time.Now()
 
-	delay, err := embedMsg.Timestamp.Parse()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	difference := delay.Sub(now).Truncate(time.Millisecond).String()
-	embed.Title += fmt.Sprintf(" %v", difference)
+	embed.Title += fmt.Sprintf(" %s", delay.Sub(now).Truncate(time.Millisecond).String())
 	_, err = s.ChannelMessageEditEmbed(embedMsg.ChannelID, embedMsg.ID, embed)
 	if err != nil {
 		return err
