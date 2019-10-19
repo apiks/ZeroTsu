@@ -10,16 +10,16 @@ import (
 	"io/ioutil"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/sasha-s/go-deadlock"
 
 	"github.com/r-anime/ZeroTsu/config"
 )
 
 var (
-	MapMutex deadlock.Mutex
+	MapMutex sync.Mutex
 	Key      = []byte("VfBhgLzmD4QH3W94pjgdbH8Tyv2HPRzq")
 )
 
