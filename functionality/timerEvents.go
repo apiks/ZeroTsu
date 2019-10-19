@@ -299,14 +299,21 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 	defer MapMutex.Unlock()
 
 	for userID, remindMeSlice := range SharedInfo.RemindMes {
-		if remindMeSlice == nil {
+		if remindMeSlice == nil || remindMeSlice.RemindMeSlice == nil {
 			continue
 		}
-		for i := len(remindMeSlice.RemindMeSlice) - 1; i >= 0; i-- {
+		if len(remindMeSlice.RemindMeSlice) == 0 {
+			delete(SharedInfo.RemindMes, userID)
+			writeFlag = true
+			continue
+		}
 
+		temp := remindMeSlice.RemindMeSlice[:0]
+		for i, remindMe := range remindMeSlice.RemindMeSlice {
 			// Checks if it's time to send message/ping the user
 			difference := t.Sub(remindMeSlice.RemindMeSlice[i].Date)
 			if difference <= 0 {
+				temp = append(temp, remindMe)
 				continue
 			}
 
@@ -317,29 +324,26 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 				_, err = s.ChannelMessageSend(dm.ID, "RemindMe: "+remindMeSlice.RemindMeSlice[i].Message)
 			}
 			if err != nil && guildID != "" {
-
 				// Checks if the user is in the server and then pings him if true
 				_, err := s.GuildMember(guildID, userID)
 				if err == nil {
 					_, err := s.ChannelMessageSend(remindMeSlice.RemindMeSlice[i].CommandChannel, fmt.Sprintf("<@%s> Remindme: %s", userID, remindMeSlice.RemindMeSlice[i].Message))
 					if err != nil {
+						temp = append(temp, remindMe)
 						continue
 					}
 				}
-
 			}
-
-			// Removes the RemindMe from the RemindMe slice
-			if i < len(remindMeSlice.RemindMeSlice)-1 {
-				copy(remindMeSlice.RemindMeSlice[i:], remindMeSlice.RemindMeSlice[i+1:])
-			}
-			remindMeSlice.RemindMeSlice[len(remindMeSlice.RemindMeSlice)-1] = nil // or the zero value of T
-			remindMeSlice.RemindMeSlice = remindMeSlice.RemindMeSlice[:len(remindMeSlice.RemindMeSlice)-1]
-			SharedInfo.RemindMes[userID].RemindMeSlice = remindMeSlice.RemindMeSlice
 
 			// Sets write Flag
 			writeFlag = true
 		}
+		if len(temp) == 0 {
+			delete(SharedInfo.RemindMes, userID)
+			writeFlag = true
+			continue
+		}
+		remindMeSlice.RemindMeSlice = temp
 	}
 
 	if !writeFlag {
