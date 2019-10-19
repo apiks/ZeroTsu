@@ -302,9 +302,9 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				continue
 			}
 
-			for k := range functionality.GuildMap[guild.ID].VoteInfoMap {
+			t := time.Now()
 
-				t := time.Now()
+			for k := range functionality.GuildMap[guild.ID].VoteInfoMap {
 
 				// Updates message
 				messageReact, err := s.ChannelMessage(functionality.GuildMap[guild.ID].VoteInfoMap[k].MessageReact.ChannelID, functionality.GuildMap[guild.ID].VoteInfoMap[k].MessageReact.ID)
@@ -329,12 +329,8 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					role = strings.Replace(role, "--", "-", -1)
 
 					numStr := strconv.Itoa(functionality.GuildMap[guild.ID].VoteInfoMap[k].VotesReq - 1)
-					_, err = s.ChannelMessageSend(messageReact.ChannelID, "Channel vote has ended. `"+functionality.GuildMap[guild.ID].VoteInfoMap[k].Channel+"` has failed to "+
+					_, _ = s.ChannelMessageSend(messageReact.ChannelID, "Channel vote has ended. `"+functionality.GuildMap[guild.ID].VoteInfoMap[k].Channel+"` has failed to "+
 						"gather the necessary "+numStr+" votes.")
-					if err != nil {
-						functionality.LogError(s, guildSettings.BotLog, err)
-						continue
-					}
 
 					// Deletes the vote from memory
 					delete(functionality.GuildMap[guild.ID].VoteInfoMap, k)
@@ -386,9 +382,9 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				message.GuildID = guild.ID
 				message.Author = &author
 				if temp.Category == "" {
-					message.Content = fmt.Sprintf("%vcreate %v %v %v", guildSettings.Prefix, temp.Channel, temp.ChannelType, temp.Description)
+					message.Content = fmt.Sprintf("%screate %s %s %s", guildSettings.Prefix, temp.Channel, temp.ChannelType, temp.Description)
 				} else {
-					message.Content = fmt.Sprintf("%vcreate %v %v %v %v", guildSettings.Prefix, temp.Channel, temp.ChannelType, temp.Category, temp.Description)
+					message.Content = fmt.Sprintf("%screate %s %s %s %s", guildSettings.Prefix, temp.Channel, temp.ChannelType, temp.Category, temp.Description)
 				}
 
 				createChannelCommand(s, &message)
@@ -472,7 +468,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					if guildSettings.BotLog.ID != "" {
 						continue
 					}
-					_, err = s.ChannelMessageSend(guildSettings.BotLog.ID, fmt.Sprintf("Temp channel `%v` has been created from a vote by user %v#%v.", temp.Channel, temp.User.Username, temp.User.Discriminator))
+					_, err = s.ChannelMessageSend(guildSettings.BotLog.ID, fmt.Sprintf("Temp channel `%s` has been created from a vote by user %s#%s.", temp.Channel, temp.User.Username, temp.User.Discriminator))
 					if err != nil {
 						functionality.LogError(s, guildSettings.BotLog, err)
 						continue
@@ -488,58 +484,59 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 			for k, v := range functionality.GuildMap[guild.ID].TempChaMap {
 				for i := 0; i < len(cha); i++ {
-					if cha[i].Name == v.RoleName {
-						mess, err := s.ChannelMessages(cha[i].ID, 1, "", "", "")
+					if cha[i].Name != v.RoleName {
+						continue
+					}
+					mess, err := s.ChannelMessages(cha[i].ID, 1, "", "", "")
+					if err != nil {
+						functionality.LogError(s, guildSettings.BotLog, err)
+						continue
+					}
+
+					// Fetches the properly parsed timestamp from discord, else uses channel creation
+					if len(mess) != 0 {
+						timestamp, err = mess[0].Timestamp.Parse()
+						if err != nil {
+							functionality.LogError(s, guildSettings.BotLog, err)
+							continue
+						}
+					} else {
+						timestamp = v.CreationDate
+					}
+
+					// Adds how long before last message for channel to be deletes
+					timestamp = timestamp.Add(time.Hour * 3)
+					t := time.Now()
+
+					// Calculates if it's time to remove
+					difference := t.Sub(timestamp)
+					if difference > 0 {
+
+						if guildSettings.BotLog != nil {
+							if guildSettings.BotLog.ID != "" {
+								_, err = s.ChannelMessageSend(guildSettings.BotLog.ID, fmt.Sprintf("Temp channel `%v` has been deleted due to being inactive for 3 hours.", cha[i].Name))
+								if err != nil {
+									functionality.LogError(s, guildSettings.BotLog, err)
+									continue
+								}
+							}
+						}
+
+						// Deletes channel and role
+						_, err := s.ChannelDelete(cha[i].ID)
 						if err != nil {
 							functionality.LogError(s, guildSettings.BotLog, err)
 							continue
 						}
 
-						// Fetches the properly parsed timestamp from discord, else uses channel creation
-						if len(mess) != 0 {
-							timestamp, err = mess[0].Timestamp.Parse()
-							if err != nil {
-								functionality.LogError(s, guildSettings.BotLog, err)
-								continue
-							}
-						} else {
-							timestamp = v.CreationDate
+						err = s.GuildRoleDelete(guild.ID, k)
+						if err != nil {
+							functionality.LogError(s, guildSettings.BotLog, err)
+							continue
 						}
 
-						// Adds how long before last message for channel to be deletes
-						timestamp = timestamp.Add(time.Hour * 3)
-						t := time.Now()
-
-						// Calculates if it's time to remove
-						difference := t.Sub(timestamp)
-						if difference > 0 {
-
-							if guildSettings.BotLog != nil {
-								if guildSettings.BotLog.ID != "" {
-									_, err = s.ChannelMessageSend(guildSettings.BotLog.ID, fmt.Sprintf("Temp channel `%v` has been deleted due to being inactive for 3 hours.", cha[i].Name))
-									if err != nil {
-										functionality.LogError(s, guildSettings.BotLog, err)
-										continue
-									}
-								}
-							}
-
-							// Deletes channel and role
-							_, err := s.ChannelDelete(cha[i].ID)
-							if err != nil {
-								functionality.LogError(s, guildSettings.BotLog, err)
-								continue
-							}
-
-							err = s.GuildRoleDelete(guild.ID, k)
-							if err != nil {
-								functionality.LogError(s, guildSettings.BotLog, err)
-								continue
-							}
-
-							delete(functionality.GuildMap[guild.ID].TempChaMap, k)
-							_ = functionality.TempChaWrite(functionality.GuildMap[guild.ID].TempChaMap, guild.ID)
-						}
+						delete(functionality.GuildMap[guild.ID].TempChaMap, k)
+						_ = functionality.TempChaWrite(functionality.GuildMap[guild.ID].TempChaMap, guild.ID)
 					}
 				}
 			}

@@ -412,7 +412,7 @@ func WriteMemberInfo(info map[string]*UserInfo, guildID string) error {
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/memberInfo.json", guildID), MarshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%s/memberInfo.json", guildID), MarshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
@@ -688,7 +688,7 @@ func PunishedUsersWrite(bannedUsers []*PunishedUsers, guildID string) error {
 		return err
 	}
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/punishedUsers.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%s/punishedUsers.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
@@ -1157,7 +1157,7 @@ func RssThreadsTimerWrite(thread *RssThread, date time.Time, GUID, guildID strin
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/rssThreadCheck.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%s/rssThreadCheck.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
@@ -1195,7 +1195,7 @@ func RssThreadsTimerRemove(thread *RssThread, guildID string) error {
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/rssThreadCheck.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%s/rssThreadCheck.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return err
 	}

@@ -515,11 +515,11 @@ func BanEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, r
 
 // Embed message for subscriptions
 func SubEmbed(s *discordgo.Session, show *ShowAirTime, channelID string) error {
-	imageLink := fmt.Sprintf("https://animeschedule.net/img/shows/%v.webp", show.Key)
+	imageLink := fmt.Sprintf("https://animeschedule.net/img/shows/%s.webp", show.Key)
 	embed := &discordgo.MessageEmbed{
-		URL:         fmt.Sprintf("https://animeschedule.net/shows/%v", show.Key),
+		URL:         fmt.Sprintf("https://animeschedule.net/shows/%s", show.Key),
 		Title:       show.Name,
-		Description: fmt.Sprintf("__**%v**__ is out!", show.Episode),
+		Description: fmt.Sprintf("__**%s**__ is out!", show.Episode),
 		Timestamp:   time.Now().Format(time.RFC3339),
 		Color:       16758465,
 		Image: &discordgo.MessageEmbedImage{
@@ -548,12 +548,12 @@ func AboutEmbed(s *discordgo.Session, m *discordgo.Message) error {
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "\n**Features:**",
-					Value:  "**-** Moderation Toolset & Member System\n**-** Autopost Anime Episodes (_subbed_) & Daily Anime Schedule\n**-** Autopost Reddit Feed\n**-** React-based Auto Role\n**-** Channel & Emoji stats\n**-** Raffles\n**-** and more!\n[Invite Link](https://discordapp.com/api/oauth2/authorize?client_id=614495694769618944&permissions=401960278&scope=bot)",
+					Value:  "**-** Moderation Toolset & Member System\n**-** Autopost Anime Episodes & Daily Anime Schedule (_subbed_)\n**-** Autopost Reddit Feed\n**-** React-based Auto Role\n**-** Channel & Emoji stats\n**-** Raffles\n**-** and more!\n[Invite Link](https://discordapp.com/api/oauth2/authorize?client_id=614495694769618944&permissions=401960278&scope=bot)",
 					Inline: false,
 				},
 				{
 					Name:   "**Anime Times:**",
-					Value:  "The Anime features derive their data from [AnimeSchedule.net](https://animeschedule.net), a site dedicated to showing you what anime are airing this week",
+					Value:  "The Anime features derive their data from [AnimeSchedule.net](https://animeschedule.net), a site dedicated to showing you when and what anime are airing this week",
 					Inline: false,
 				},
 				{
@@ -597,7 +597,7 @@ func AboutEmbed(s *discordgo.Session, m *discordgo.Message) error {
 				},
 				{
 					Name:   "**Anime Times:**",
-					Value:  "The Anime features derive their data from [AnimeSchedule.net](https://animeschedule.net), a site dedicated to showing you what anime are airing this week",
+					Value:  "The Anime features derive their data from [AnimeSchedule.net](https://animeschedule.net), a site dedicated to showing you when and what anime are airing this week",
 					Inline: false,
 				},
 			},
