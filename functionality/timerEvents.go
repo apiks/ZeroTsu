@@ -289,6 +289,7 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 		if rec := recover(); rec != nil {
 			log.Println(rec)
 			log.Println("Recovery in remindMeHandler")
+			log.Println("stacktrace from panic: \n" + string(debug.Stack()))
 		}
 	}()
 
@@ -298,8 +299,12 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 	MapMutex.Lock()
 	defer MapMutex.Unlock()
 
+	if SharedInfo.RemindMes == nil {
+		return
+	}
+
 	for userID, remindMeSlice := range SharedInfo.RemindMes {
-		if remindMeSlice == nil || remindMeSlice.RemindMeSlice == nil {
+		if remindMeSlice == nil || remindMeSlice.RemindMeSlice == nil || len(remindMeSlice.RemindMeSlice) == 0 {
 			continue
 		}
 
@@ -358,7 +363,8 @@ func feedHandler(s *discordgo.Session, guildID string) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Println(rec)
-			log.Println("Recovery in remindMeHandler")
+			log.Println("Recovery in feedHandler")
+			log.Println("stacktrace from panic: \n" + string(debug.Stack()))
 		}
 	}()
 
@@ -433,7 +439,10 @@ func feedHandler(s *discordgo.Session, guildID string) {
 	for _, thread := range rssThreads {
 
 		// Get the necessary feed from the subMap
-		feed := subMap[fmt.Sprintf("%s:%s", thread.Subreddit, thread.PostType)]
+		feed, ok := subMap[fmt.Sprintf("%s:%s", thread.Subreddit, thread.PostType)]
+		if !ok {
+			continue
+		}
 
 		// Iterates through each feed item to see if it finds something from storage that should be posted
 		for _, item := range feed.Items {

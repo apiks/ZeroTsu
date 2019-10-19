@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	"regexp"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -58,6 +59,7 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 		if rec := recover(); rec != nil {
 			log.Println(rec)
 			log.Println("Recovery in VoiceRoleHandler")
+			log.Println("stacktrace from panic: \n" + string(debug.Stack()))
 		}
 	}()
 
@@ -349,6 +351,7 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		if rec := recover(); rec != nil {
 			log.Println(rec)
 			log.Println("Recovery in GuildJoin")
+			log.Println("stacktrace from panic: \n" + string(debug.Stack()))
 		}
 	}()
 
@@ -420,6 +423,7 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		if rec := recover(); rec != nil {
 			log.Println(rec)
 			log.Println("Recovery in SpambotJoin")
+			log.Println("stacktrace from panic: \n" + string(debug.Stack()))
 		}
 	}()
 
