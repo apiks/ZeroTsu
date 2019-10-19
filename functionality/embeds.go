@@ -218,7 +218,7 @@ func RemovePunishmentEmbed(s *discordgo.Session, m *discordgo.Message, punishmen
 
 	// Sets punishment embed color
 	embedMess.Color = 16758465
-	embedMess.Title = fmt.Sprintf("Successfuly removed punishment: _%v_", punishment)
+	embedMess.Title = fmt.Sprintf("Successfuly removed punishment: _%s_", punishment)
 
 	// Sends embed in channel
 	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
@@ -242,8 +242,8 @@ func PingEmbed(s *discordgo.Session, m *discordgo.Message, settings *GuildSettin
 		return err
 	}
 	delay := time.Now()
-
 	embed.Title += fmt.Sprintf(" %s", delay.Sub(now).Truncate(time.Millisecond).String())
+
 	_, err = s.ChannelMessageEditEmbed(embedMsg.ChannelID, embedMsg.ID, embed)
 	if err != nil {
 		return err
@@ -302,7 +302,11 @@ func MuteEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, 
 
 	// Sends embed in channel
 	_, err := s.ChannelMessageSendEmbed(channelID, &embedMess)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func KickEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, reason string, channelID string) error {
@@ -352,7 +356,11 @@ func KickEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, 
 
 	// Sends embed in channel
 	_, err := s.ChannelMessageSendEmbed(channelID, &embedMess)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func InviteEmbed(s *discordgo.Session, m *discordgo.Message) error {
@@ -498,7 +506,11 @@ func BanEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, r
 
 	// Sends embed in channel
 	_, err := s.ChannelMessageSendEmbed(channelID, &embedMess)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Embed message for subscriptions

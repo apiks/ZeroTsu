@@ -99,7 +99,6 @@ func WriteEvents(s *discordgo.Session, e *discordgo.Ready) {
 func CommonEvents(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(30 * time.Second).C {
 		for _, guild := range e.Guilds {
-
 			// Handles Unbans and Unmutes
 			punishmentHandler(s, guild.ID)
 
@@ -108,7 +107,6 @@ func CommonEvents(s *discordgo.Session, e *discordgo.Ready) {
 
 			// Handles Reddit Feeds
 			feedHandler(s, guild.ID)
-
 		}
 	}
 }
