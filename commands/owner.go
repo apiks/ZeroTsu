@@ -166,7 +166,9 @@ func serversCommand(s *discordgo.Session, m *discordgo.Message) {
 			guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 			functionality.MapMutex.Unlock()
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			return
 		}
+		return
 	}
 }
 
@@ -183,7 +185,47 @@ func uptimeCommand(s *discordgo.Session, m *discordgo.Message) {
 			guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 			functionality.MapMutex.Unlock()
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			return
 		}
+		return
+	}
+}
+
+func flushCommand(s *discordgo.Session, m *discordgo.Message) {
+	if m.Author.ID != config.OwnerID {
+		return
+	}
+
+	guilds := s.State.Guilds
+	functionality.MapMutex.Lock()
+	for _, guild := range guilds {
+		_ = functionality.WriteMemberInfo(functionality.GuildMap[guild.ID].MemberInfoMap, guild.ID)
+		_ = functionality.EmojiStatsWrite(functionality.GuildMap[guild.ID].EmojiStats, guild.ID)
+		_, _ = functionality.ChannelStatsWrite(functionality.GuildMap[guild.ID].ChannelStats, guild.ID)
+		_, _ = functionality.UserChangeStatsWrite(functionality.GuildMap[guild.ID].UserChangeStats, guild.ID)
+		_ = functionality.VerifiedStatsWrite(functionality.GuildMap[guild.ID].VerifiedStats, guild.ID)
+		_ = functionality.VoteInfoWrite(functionality.GuildMap[guild.ID].VoteInfoMap, guild.ID)
+		_ = functionality.TempChaWrite(functionality.GuildMap[guild.ID].TempChaMap, guild.ID)
+		_ = functionality.ReactJoinWrite(functionality.GuildMap[guild.ID].ReactJoinMap, guild.ID)
+		_ = functionality.RafflesWrite(functionality.GuildMap[guild.ID].Raffles, guild.ID)
+		_ = functionality.WaifusWrite(functionality.GuildMap[guild.ID].Waifus, guild.ID)
+		_ = functionality.WaifuTradesWrite(functionality.GuildMap[guild.ID].WaifuTrades, guild.ID)
+		_ = functionality.AutopostsWrite(functionality.GuildMap[guild.ID].Autoposts, guild.ID)
+		_ = functionality.PunishedUsersWrite(functionality.GuildMap[guild.ID].PunishedUsers, guild.ID)
+		_ = functionality.GuildSettingsWrite(functionality.GuildMap[guild.ID].GuildConfig, guild.ID)
+	}
+	functionality.MapMutex.Unlock()
+
+	_, err := s.ChannelMessageSend(m.ChannelID, "Flushed to storage successfuly!")
+	if err != nil {
+		if m.GuildID != "" {
+			functionality.MapMutex.Lock()
+			guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+			functionality.MapMutex.Unlock()
+			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			return
+		}
+		return
 	}
 }
 
@@ -214,6 +256,13 @@ func init() {
 		Execute:    uptimeCommand,
 		Trigger:    "uptime",
 		Desc:       "Print how long I've been on for",
+		DMAble:     true,
+		Permission: functionality.Owner,
+	})
+	functionality.Add(&functionality.Command{
+		Execute:    flushCommand,
+		Trigger:    "flush",
+		Desc:       "Write everything in memory to disk",
 		DMAble:     true,
 		Permission: functionality.Owner,
 	})
