@@ -420,8 +420,12 @@ func feedHandler(s *discordgo.Session, guildID string) {
 		// Parse feed
 		feed, err := fp.ParseURL(fmt.Sprintf("https://www.reddit.com/r/%s/%s/.rss", thread.Subreddit, thread.PostType))
 		if err != nil {
-			log.Println("Feed Parsing Error: ", err.Error())
-			return
+			if _, ok := err.(*gofeed.HTTPError); ok {
+				if err.(*gofeed.HTTPError).StatusCode == 429 {
+					return
+				}
+			}
+			continue
 		}
 		subMap[fmt.Sprintf("%s:%s", thread.Subreddit, thread.PostType)] = feed
 	}

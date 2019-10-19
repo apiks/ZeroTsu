@@ -79,12 +79,12 @@ func feedEmbed(s *discordgo.Session, thread *RssThread, item *gofeed.Item) (*dis
 	var (
 		embedImage = &discordgo.MessageEmbedImage{}
 		imageLink  = "https://"
-		footerText = fmt.Sprintf("r/%v - %v", thread.Subreddit, thread.PostType)
+		footerText = fmt.Sprintf("r/%s - %s", thread.Subreddit, thread.PostType)
 	)
 
 	// Append custom user author to footer if he exists in thread
 	if thread.Author != "" {
-		footerText += fmt.Sprintf(" - u/%v", thread.Author)
+		footerText += fmt.Sprintf(" - u/%s", thread.Author)
 	}
 
 	// Parse image if it exists between a preset number of allowed domains
@@ -143,7 +143,7 @@ func VerifyEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.Memb
 
 	// Sets punishment embed color
 	embedMess.Color = 0x00ff00
-	embedMess.Title = fmt.Sprintf("Successfully verified %v#%v with /u/%v", mem.User.Username, mem.User.Discriminator, username)
+	embedMess.Title = fmt.Sprintf("Successfully verified %s#%s with /u/%s", mem.User.Username, mem.User.Discriminator, username)
 
 	// Sends embed in channel
 	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
