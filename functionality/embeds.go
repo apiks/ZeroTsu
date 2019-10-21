@@ -397,9 +397,9 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID
 		content string
 	)
 
-	MapMutex.Lock()
+	Mutex.RLock()
 	guildSettings := GuildMap[m.GuildID].GetGuildSettings()
-	MapMutex.Unlock()
+	Mutex.RUnlock()
 
 	// Checks if the message contains a mention and replaces it with the actual nick instead of ID
 	content = m.Content

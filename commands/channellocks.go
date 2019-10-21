@@ -20,9 +20,10 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		originalEveryonePerms *discordgo.PermissionOverwrite
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	spoilerMap := functionality.GuildMap[m.GuildID].SpoilerMap
+	functionality.Mutex.RUnlock()
 
 	// Pulls info on the channel the message is in
 	cha, err := s.Channel(m.ChannelID)
@@ -39,11 +40,10 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if the channel has an associated role and updates airing role location if it exists
-	functionality.MapMutex.Lock()
 	for _, role := range roles {
 		if strings.ToLower(role.Name) == strings.ToLower(cha.Name) &&
 			role.ID != m.GuildID {
-			for roleID := range functionality.GuildMap[m.GuildID].SpoilerMap {
+			for roleID := range spoilerMap {
 				if role.ID == roleID {
 					roleID = role.ID
 					break
@@ -54,7 +54,6 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 			airingID = role.ID
 		}
 	}
-	functionality.MapMutex.Unlock()
 
 	// Saves the original role and airing perms if they exists
 	for _, perm := range cha.PermissionOverwrites {
@@ -147,9 +146,10 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 		originalEveryonePerms *discordgo.PermissionOverwrite
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	spoilerMap := functionality.GuildMap[m.GuildID].SpoilerMap
+	functionality.Mutex.RUnlock()
 
 	// Pulls info on the channel the message is in
 	cha, err := s.Channel(m.ChannelID)
@@ -166,11 +166,10 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if the channel has an associated role and updates airing role location if it exists
-	functionality.MapMutex.Lock()
 	for _, role := range roles {
 		if strings.ToLower(role.Name) == strings.ToLower(cha.Name) &&
 			role.ID != m.GuildID {
-			for rolID := range functionality.GuildMap[m.GuildID].SpoilerMap {
+			for rolID := range spoilerMap {
 				if role.ID == rolID {
 					roleID = role.ID
 					break
@@ -181,7 +180,6 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 			airingID = role.ID
 		}
 	}
-	functionality.MapMutex.Unlock()
 
 	// Saves the original role and airing perms if they exists
 	for _, perm := range cha.PermissionOverwrites {

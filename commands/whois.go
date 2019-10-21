@@ -28,9 +28,9 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		creationDate  time.Time
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
@@ -60,26 +60,25 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if user is in MemberInfo and assigns to user variable. Else initializes user.
-	functionality.MapMutex.Lock()
-	user, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
+	functionality.Mutex.Lock()
+	_, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
 	if !ok {
 		if mem == nil {
+			functionality.Mutex.Unlock()
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server and internal database. Cannot whois until user joins the server.")
 			if err != nil {
-				functionality.MapMutex.Unlock()
 				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
-			functionality.MapMutex.Unlock()
 			return
 		}
 
 		// Initializes user if he doesn't exist and is in server
 		functionality.InitializeMember(mem, m.GuildID)
-		user = functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
-		functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+		_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	}
-	functionality.MapMutex.Unlock()
+	user := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
+	functionality.Mutex.Unlock()
 
 	// Puts past usernames into a string
 	if len(user.PastUsernames) != 0 {
@@ -222,7 +221,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Alt check
 	if config.Website != "" {
-		functionality.MapMutex.Lock()
+		functionality.Mutex.RLock()
 		alts := CheckAltAccountWhois(userID, m.GuildID)
 
 		// If there's more than one account with the same reddit username add to whois message
@@ -230,14 +229,14 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 			// Forms the alts string
 			success := "\n\n**Alts:**\n"
 			for _, altID := range alts {
-				success += fmt.Sprintf("%v#%v | %v\n", functionality.GuildMap[m.GuildID].MemberInfoMap[altID].Username, functionality.GuildMap[m.GuildID].MemberInfoMap[altID].Discrim, altID)
+				success += fmt.Sprintf("%s#%s | %s\n", functionality.GuildMap[m.GuildID].MemberInfoMap[altID].Username, functionality.GuildMap[m.GuildID].MemberInfoMap[altID].Discrim, altID)
 			}
 
 			// Adds the alts to the whois message
 			message += success
 			alts = nil
 		}
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RUnlock()
 	}
 
 	// Checks if the message contains a mention and finds the actual name instead of ID
@@ -302,9 +301,9 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var message string
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
@@ -324,33 +323,32 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if user is in MemberInfo and assigns to user variable. Else initializes user.
-	functionality.MapMutex.Lock()
-	user, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
+	functionality.Mutex.Lock()
+	_, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
 	if !ok {
+		functionality.Mutex.Unlock()
 
 		// Fetches user from server if possible
 		mem, err := s.State.Member(m.GuildID, userID)
 		if err != nil {
 			mem, _ = s.GuildMember(m.GuildID, userID)
 		}
-
 		if mem == nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server and internal database. Cannot timestamp until they rejoin server.")
 			if err != nil {
-				functionality.MapMutex.Unlock()
 				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
-			functionality.MapMutex.Unlock()
 			return
 		}
 
 		// Initializes user if he doesn't exist and is in server
+		functionality.Mutex.Lock()
 		functionality.InitializeMember(mem, m.GuildID)
-		user = functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
 		_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	}
-	functionality.MapMutex.Unlock()
+	user := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
+	functionality.Mutex.Unlock()
 
 	// Check if timestamps exist
 	if len(user.Timestamps) == 0 {

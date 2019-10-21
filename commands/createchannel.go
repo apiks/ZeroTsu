@@ -40,11 +40,11 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	if m.Author.ID != s.State.User.ID {
-		functionality.MapMutex.Lock()
+		functionality.Mutex.Lock()
 	}
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	if m.Author.ID != s.State.User.ID {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 	}
 	if guildSettings.MutedRole != nil {
 		if guildSettings.MutedRole.ID != "" {
@@ -68,7 +68,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Confirms whether optins exist
 	if m.Author.ID == s.State.User.ID {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 	}
 	err := functionality.OptInsHandler(s, m.ChannelID, m.GuildID)
 	if err != nil {
@@ -76,7 +76,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 	if m.Author.ID == s.State.User.ID {
-		functionality.MapMutex.Lock()
+		functionality.Mutex.Lock()
 	}
 
 	// Checks if [category] and [type] exist and assigns them if they do and removes them from slice and command string
@@ -183,12 +183,12 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		// Locks mutex based on whether the bot called the command or not because it's already being locked in channelvote
 		if m.Author.ID != s.State.User.ID {
-			functionality.MapMutex.Lock()
+			functionality.Mutex.Lock()
 		}
 		functionality.GuildMap[m.GuildID].SpoilerMap[newRole.ID] = &tempRole
 		functionality.SpoilerRolesWrite(functionality.GuildMap[m.GuildID].SpoilerMap, m.GuildID)
 		if m.Author.ID != s.State.User.ID {
-			functionality.MapMutex.Unlock()
+			functionality.Mutex.Unlock()
 		}
 	}
 
@@ -241,12 +241,12 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		// Locks mutex based on whether the bot called the command or not because it's already being locked in channelvote
 		if m.Author.ID != s.State.User.ID {
-			functionality.MapMutex.Lock()
+			functionality.Mutex.Lock()
 		}
 		functionality.GuildMap[m.GuildID].SpoilerMap[airingRole.ID] = &tempRole
 		functionality.SpoilerRolesWrite(functionality.GuildMap[m.GuildID].SpoilerMap, m.GuildID)
 		if m.Author.ID != s.State.User.ID {
-			functionality.MapMutex.Unlock()
+			functionality.Mutex.Unlock()
 		}
 	}
 
@@ -356,9 +356,12 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		// Locks mutex based on whether the bot called the command or not because it's already being locked in channelvote
 		if m.Author.ID != s.State.User.ID {
-			functionality.MapMutex.Lock()
+			functionality.Mutex.Lock()
 		}
-		for _, v := range functionality.GuildMap[m.GuildID].VoteInfoMap {
+		guildVoteInfoMap := functionality.GuildMap[m.GuildID].VoteInfoMap
+		functionality.Mutex.Unlock()
+
+		for _, v := range guildVoteInfoMap {
 			if roleName == v.Channel {
 				if !functionality.HasElevatedPermissions(s, v.User.ID, m.GuildID) {
 					temp.Elevated = false
@@ -366,17 +369,19 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 				}
 			}
 		}
+
+		functionality.Mutex.Lock()
 		functionality.GuildMap[m.GuildID].TempChaMap[newRole.ID] = &temp
 		err = functionality.TempChaWrite(functionality.GuildMap[m.GuildID].TempChaMap, m.GuildID)
 		if err != nil {
 			if m.Author.ID != s.State.User.ID {
-				functionality.MapMutex.Unlock()
+				functionality.Mutex.Unlock()
 			}
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		if m.Author.ID != s.State.User.ID {
-			functionality.MapMutex.Unlock()
+			functionality.Mutex.Unlock()
 		}
 
 		time.Sleep(100 * time.Millisecond)

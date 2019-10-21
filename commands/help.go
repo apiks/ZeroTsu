@@ -30,14 +30,14 @@ func helpEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.Mutex.RUnlock()
 
 	// Checks for mod perms and handles accordingly
 	if functionality.HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
 		elevated = true
 	}
-	functionality.MapMutex.Unlock()
 
 	// Check perms
 	mem, err := s.State.Member(m.GuildID, m.Author.ID)
@@ -82,9 +82,9 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 	)
 
 	if m.GuildID != "" {
-		functionality.MapMutex.Lock()
-		*guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RLock()
+		guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
+		functionality.Mutex.RUnlock()
 	}
 
 	// Set embed color
@@ -121,7 +121,6 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 		userCommands.Inline = true
 
 		// Iterates through non-mod commands and adds them to the embed sorted
-		functionality.MapMutex.Lock()
 		for command := range functionality.CommandMap {
 			commands = append(commands, command)
 		}
@@ -146,7 +145,6 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 				userCommands.Value += fmt.Sprintf("`%v` - %v\n", commands[i], functionality.CommandMap[commands[i]].Desc)
 			}
 		}
-		functionality.MapMutex.Unlock()
 
 		// Sets footer field
 		embedFooter.Text = fmt.Sprintf("Tip: Type %v<command> to see a detailed description", guildSettings.Prefix)
@@ -157,7 +155,6 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 		adminCategories.Inline = true
 
 		// Iterates through categories and their descriptions and adds them to the embed. Special behavior for waifus and reacts and settings based on settings
-		functionality.MapMutex.Lock()
 		for i := 0; i < len(categoriesSorted); i++ {
 			if categoriesSorted[i] == "Waifus" {
 				if !guildSettings.WaifuModule {
@@ -176,7 +173,6 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 			}
 			adminCategories.Value += fmt.Sprintf("**%v** - %v\n", categoriesSorted[i], categoriesMap[categoriesSorted[i]])
 		}
-		functionality.MapMutex.Unlock()
 	}
 
 	// Adds the fields to embed slice (because embedMess.Fields requires slice input)
@@ -208,9 +204,9 @@ func helpChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	err := helpChannelEmbed(s, m)
 	if err != nil {
 
-		functionality.MapMutex.Lock()
+		functionality.Mutex.RLock()
 		guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RUnlock()
 
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
@@ -232,9 +228,9 @@ func helpChannelEmbed(s *discordgo.Session, m *discordgo.Message) error {
 		commands []string
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Set embed color
 	embedMess.Color = 16758465
@@ -248,7 +244,6 @@ func helpChannelEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	commandsField.Inline = true
 
 	// Iterates through commands in the filter category
-	functionality.MapMutex.Lock()
 	for command := range functionality.CommandMap {
 		commands = append(commands, command)
 	}
@@ -258,7 +253,6 @@ func helpChannelEmbed(s *discordgo.Session, m *discordgo.Message) error {
 			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], functionality.CommandMap[commands[i]].Desc)
 		}
 	}
-	functionality.MapMutex.Unlock()
 
 	// Adds the field to embed slice (because embedMess.Fields requires slice input)
 	embed = append(embed, &commandsField)
@@ -283,9 +277,9 @@ func helpFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 	err := helpFiltersEmbed(s, m)
 	if err != nil {
 
-		functionality.MapMutex.Lock()
+		functionality.Mutex.RLock()
 		guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RUnlock()
 
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
@@ -307,15 +301,15 @@ func helpFiltersEmbed(s *discordgo.Session, m *discordgo.Message) error {
 		commands []string
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Set embed color
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildSettings.Prefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %scommand to see a detailed description", guildSettings.Prefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -323,17 +317,15 @@ func helpFiltersEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	commandsField.Inline = true
 
 	// Iterates through commands in the filter category
-	functionality.MapMutex.Lock()
 	for command := range functionality.CommandMap {
 		commands = append(commands, command)
 	}
 	sort.Strings(commands)
 	for i := 0; i < len(commands); i++ {
 		if functionality.CommandMap[commands[i]].Module == "filters" {
-			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], functionality.CommandMap[commands[i]].Desc)
+			commandsField.Value += fmt.Sprintf("`%s` - %s\n", commands[i], functionality.CommandMap[commands[i]].Desc)
 		}
 	}
-	functionality.MapMutex.Unlock()
 
 	// Adds the field to embed slice (because embedMess.Fields requires slice input)
 	embed = append(embed, &commandsField)
@@ -358,9 +350,9 @@ func helpMiscCommand(s *discordgo.Session, m *discordgo.Message) {
 	err := helpMiscEmbed(s, m)
 	if err != nil {
 
-		functionality.MapMutex.Lock()
+		functionality.Mutex.RLock()
 		guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RUnlock()
 
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
@@ -382,15 +374,15 @@ func helpMiscEmbed(s *discordgo.Session, m *discordgo.Message) error {
 		commands []string
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Set embed color
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildSettings.Prefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %scommand to see a detailed description", guildSettings.Prefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -398,17 +390,15 @@ func helpMiscEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	commandsField.Inline = true
 
 	// Iterates through commands in the filter category
-	functionality.MapMutex.Lock()
 	for command := range functionality.CommandMap {
 		commands = append(commands, command)
 	}
 	sort.Strings(commands)
 	for i := 0; i < len(commands); i++ {
 		if functionality.CommandMap[commands[i]].Module == "misc" {
-			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], functionality.CommandMap[commands[i]].Desc)
+			commandsField.Value += fmt.Sprintf("`%s` - %s\n", commands[i], functionality.CommandMap[commands[i]].Desc)
 		}
 	}
-	functionality.MapMutex.Unlock()
 
 	// Adds the field to embed slice (because embedMess.Fields requires slice input)
 	embed = append(embed, &commandsField)
@@ -433,9 +423,9 @@ func helpNormalCommand(s *discordgo.Session, m *discordgo.Message) {
 	err := helpNormalEmbed(s, m)
 	if err != nil {
 
-		functionality.MapMutex.Lock()
+		functionality.Mutex.RLock()
 		guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RUnlock()
 
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
@@ -456,15 +446,15 @@ func helpNormalEmbed(s *discordgo.Session, m *discordgo.Message) error {
 		commands []string
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Set embed color
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildSettings.Prefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %scommand to see a detailed description", guildSettings.Prefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -472,17 +462,15 @@ func helpNormalEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	commandsField.Inline = true
 
 	// Iterates through commands in the filter category
-	functionality.MapMutex.Lock()
 	for command := range functionality.CommandMap {
 		commands = append(commands, command)
 	}
 	sort.Strings(commands)
 	for i := 0; i < len(commands); i++ {
 		if functionality.CommandMap[commands[i]].Module == "normal" {
-			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], functionality.CommandMap[commands[i]].Desc)
+			commandsField.Value += fmt.Sprintf("`%s` - %s\n", commands[i], functionality.CommandMap[commands[i]].Desc)
 		}
 	}
-	functionality.MapMutex.Unlock()
 
 	// Adds the field to embed slice (because embedMess.Fields requires slice input)
 	embed = append(embed, &commandsField)
@@ -508,9 +496,9 @@ func helpModerationCommand(s *discordgo.Session, m *discordgo.Message) {
 	err := helpModerationEmbed(s, m)
 	if err != nil {
 
-		functionality.MapMutex.Lock()
+		functionality.Mutex.RLock()
 		guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RUnlock()
 
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
@@ -532,15 +520,15 @@ func helpModerationEmbed(s *discordgo.Session, m *discordgo.Message) error {
 		commands []string
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Set embed color
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildSettings.Prefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %scommand to see a detailed description", guildSettings.Prefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -548,7 +536,6 @@ func helpModerationEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	commandsField.Inline = true
 
 	// Iterates through commands in the filter category
-	functionality.MapMutex.Lock()
 	for command := range functionality.CommandMap {
 		commands = append(commands, command)
 	}
@@ -561,10 +548,9 @@ func helpModerationEmbed(s *discordgo.Session, m *discordgo.Message) error {
 			}
 		}
 		if functionality.CommandMap[commands[i]].Module == "moderation" {
-			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], functionality.CommandMap[commands[i]].Desc)
+			commandsField.Value += fmt.Sprintf("`%s` - %s\n", commands[i], functionality.CommandMap[commands[i]].Desc)
 		}
 	}
-	functionality.MapMutex.Unlock()
 
 	// Adds the field to embed slice (because embedMess.Fields requires slice input)
 	embed = append(embed, &commandsField)
@@ -587,9 +573,9 @@ func helpModerationEmbed(s *discordgo.Session, m *discordgo.Message) error {
 // Prints pretty help
 func helpReactsCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Checks if reacts are disabled in the guild
 	if !guildSettings.ReactsModule {
@@ -618,15 +604,15 @@ func helpReactsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 		commands []string
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Set embed color
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildSettings.Prefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %scommand to see a detailed description", guildSettings.Prefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -634,17 +620,15 @@ func helpReactsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	commandsField.Inline = true
 
 	// Iterates through commands in the filter category
-	functionality.MapMutex.Lock()
 	for command := range functionality.CommandMap {
 		commands = append(commands, command)
 	}
 	sort.Strings(commands)
 	for i := 0; i < len(commands); i++ {
 		if functionality.CommandMap[commands[i]].Module == "reacts" {
-			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], functionality.CommandMap[commands[i]].Desc)
+			commandsField.Value += fmt.Sprintf("`%s` - %s\n", commands[i], functionality.CommandMap[commands[i]].Desc)
 		}
 	}
-	functionality.MapMutex.Unlock()
 
 	// Adds the field to embed slice (because embedMess.Fields requires slice input)
 	embed = append(embed, &commandsField)
@@ -669,9 +653,9 @@ func helpRedditCommand(s *discordgo.Session, m *discordgo.Message) {
 	err := helpRedditEmbed(s, m)
 	if err != nil {
 
-		functionality.MapMutex.Lock()
+		functionality.Mutex.RLock()
 		guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RUnlock()
 
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
@@ -693,15 +677,15 @@ func helpRedditEmbed(s *discordgo.Session, m *discordgo.Message) error {
 		commands []string
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Set embed color
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildSettings.Prefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %scommand to see a detailed description", guildSettings.Prefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -709,17 +693,15 @@ func helpRedditEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	commandsField.Inline = true
 
 	// Iterates through commands in the filter category
-	functionality.MapMutex.Lock()
 	for command := range functionality.CommandMap {
 		commands = append(commands, command)
 	}
 	sort.Strings(commands)
 	for i := 0; i < len(commands); i++ {
 		if functionality.CommandMap[commands[i]].Module == "reddit" {
-			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], functionality.CommandMap[commands[i]].Desc)
+			commandsField.Value += fmt.Sprintf("`%s` - %s\n", commands[i], functionality.CommandMap[commands[i]].Desc)
 		}
 	}
-	functionality.MapMutex.Unlock()
 
 	// Adds the field to embed slice (because embedMess.Fields requires slice input)
 	embed = append(embed, &commandsField)
@@ -744,9 +726,9 @@ func helpStatsCommand(s *discordgo.Session, m *discordgo.Message) {
 	err := helpStatsEmbed(s, m)
 	if err != nil {
 
-		functionality.MapMutex.Lock()
+		functionality.Mutex.RLock()
 		guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RUnlock()
 
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
@@ -768,15 +750,15 @@ func helpStatsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 		commands []string
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Set embed color
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildSettings.Prefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %scommand to see a detailed description", guildSettings.Prefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -784,17 +766,15 @@ func helpStatsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	commandsField.Inline = true
 
 	// Iterates through commands in the filter category
-	functionality.MapMutex.Lock()
 	for command := range functionality.CommandMap {
 		commands = append(commands, command)
 	}
 	sort.Strings(commands)
 	for i := 0; i < len(commands); i++ {
 		if functionality.CommandMap[commands[i]].Module == "stats" {
-			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], functionality.CommandMap[commands[i]].Desc)
+			commandsField.Value += fmt.Sprintf("`%s` - %s\n", commands[i], functionality.CommandMap[commands[i]].Desc)
 		}
 	}
-	functionality.MapMutex.Unlock()
 
 	// Adds the field to embed slice (because embedMess.Fields requires slice input)
 	embed = append(embed, &commandsField)
@@ -819,9 +799,9 @@ func helpRaffleCommand(s *discordgo.Session, m *discordgo.Message) {
 	err := helpRaffleEmbed(s, m)
 	if err != nil {
 
-		functionality.MapMutex.Lock()
+		functionality.Mutex.RLock()
 		guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RUnlock()
 
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
@@ -843,15 +823,15 @@ func helpRaffleEmbed(s *discordgo.Session, m *discordgo.Message) error {
 		commands []string
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Set embed color
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildSettings.Prefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %scommand to see a detailed description", guildSettings.Prefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -859,17 +839,15 @@ func helpRaffleEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	commandsField.Inline = true
 
 	// Iterates through commands in the filter category
-	functionality.MapMutex.Lock()
 	for command := range functionality.CommandMap {
 		commands = append(commands, command)
 	}
 	sort.Strings(commands)
 	for i := 0; i < len(commands); i++ {
 		if functionality.CommandMap[commands[i]].Module == "raffles" {
-			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], functionality.CommandMap[commands[i]].Desc)
+			commandsField.Value += fmt.Sprintf("`%s` - %s\n", commands[i], functionality.CommandMap[commands[i]].Desc)
 		}
 	}
-	functionality.MapMutex.Unlock()
 
 	// Adds the field to embed slice (because embedMess.Fields requires slice input)
 	embed = append(embed, &commandsField)
@@ -892,9 +870,9 @@ func helpRaffleEmbed(s *discordgo.Session, m *discordgo.Message) error {
 // Mod command help page
 func helpWaifuCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Checks if waifus are disabled in the guild
 	if !guildSettings.WaifuModule {
@@ -923,15 +901,15 @@ func helpWaifuEmbed(s *discordgo.Session, m *discordgo.Message) error {
 		commands []string
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Set embed color
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildSettings.Prefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %scommand to see a detailed description", guildSettings.Prefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -939,17 +917,15 @@ func helpWaifuEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	commandsField.Inline = true
 
 	// Iterates through commands in the waifus category
-	functionality.MapMutex.Lock()
 	for command := range functionality.CommandMap {
 		commands = append(commands, command)
 	}
 	sort.Strings(commands)
 	for i := 0; i < len(commands); i++ {
 		if functionality.CommandMap[commands[i]].Module == "waifus" {
-			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], functionality.CommandMap[commands[i]].Desc)
+			commandsField.Value += fmt.Sprintf("`%s` - %s\n", commands[i], functionality.CommandMap[commands[i]].Desc)
 		}
 	}
-	functionality.MapMutex.Unlock()
 
 	// Adds the field to embed slice (because embedMess.Fields requires slice input)
 	embed = append(embed, &commandsField)
@@ -974,9 +950,9 @@ func helpAutopostCommand(s *discordgo.Session, m *discordgo.Message) {
 	err := helpAutopostEmbed(s, m)
 	if err != nil {
 
-		functionality.MapMutex.Lock()
+		functionality.Mutex.RLock()
 		guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RUnlock()
 
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
@@ -998,15 +974,15 @@ func helpAutopostEmbed(s *discordgo.Session, m *discordgo.Message) error {
 		commands []string
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Set embed color
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildSettings.Prefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %scommand to see a detailed description", guildSettings.Prefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -1014,17 +990,15 @@ func helpAutopostEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	commandsField.Inline = true
 
 	// Iterates through commands in the waifus category
-	functionality.MapMutex.Lock()
 	for command := range functionality.CommandMap {
 		commands = append(commands, command)
 	}
 	sort.Strings(commands)
 	for i := 0; i < len(commands); i++ {
 		if functionality.CommandMap[commands[i]].Module == "autopost" {
-			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], functionality.CommandMap[commands[i]].Desc)
+			commandsField.Value += fmt.Sprintf("`%s` - %s\n", commands[i], functionality.CommandMap[commands[i]].Desc)
 		}
 	}
-	functionality.MapMutex.Unlock()
 
 	// Adds the field to embed slice (because embedMess.Fields requires slice input)
 	embed = append(embed, &commandsField)
@@ -1049,9 +1023,9 @@ func helpGuildSettingsCommand(s *discordgo.Session, m *discordgo.Message) {
 	err := helpGuildSettingsEmbed(s, m)
 	if err != nil {
 
-		functionality.MapMutex.Lock()
+		functionality.Mutex.RLock()
 		guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RUnlock()
 
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
@@ -1073,15 +1047,15 @@ func helpGuildSettingsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 		commands []string
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Set embed color
 	embedMess.Color = 16758465
 
 	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildSettings.Prefix)
+	embedFooter.Text = fmt.Sprintf("Tip: Type %scommand to see a detailed description", guildSettings.Prefix)
 	embedMess.Footer = &embedFooter
 
 	// Sets command field
@@ -1089,17 +1063,15 @@ func helpGuildSettingsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	commandsField.Inline = true
 
 	// Iterates through commands in the waifus category
-	functionality.MapMutex.Lock()
 	for command := range functionality.CommandMap {
 		commands = append(commands, command)
 	}
 	sort.Strings(commands)
 	for i := 0; i < len(commands); i++ {
 		if functionality.CommandMap[commands[i]].Module == "settings" {
-			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], functionality.CommandMap[commands[i]].Desc)
+			commandsField.Value += fmt.Sprintf("`%s` - %s\n", commands[i], functionality.CommandMap[commands[i]].Desc)
 		}
 	}
-	functionality.MapMutex.Unlock()
 
 	// Adds the field to embed slice (because embedMess.Fields requires slice input)
 	embed = append(embed, &commandsField)
@@ -1312,7 +1284,7 @@ func init() {
 		Permission: functionality.Admin,
 	})
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	categoriesMap["Channel"] = "Mod channel-related commands"
 	categoriesMap["Filters"] = "Phrase, extension and emoji filters"
 	categoriesMap["Misc"] = "Miscellaneous Mod commands"
@@ -1325,5 +1297,5 @@ func init() {
 	categoriesMap["Waifus"] = "Waifu commands"
 	categoriesMap["Autopost"] = "Autopost commands"
 	categoriesMap["Settings"] = "Server setting commands"
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 }

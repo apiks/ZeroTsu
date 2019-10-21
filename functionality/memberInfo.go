@@ -19,8 +19,8 @@ import (
 )
 
 var (
-	MapMutex sync.Mutex
-	Key      = []byte("VfBhgLzmD4QH3W94pjgdbH8Tyv2HPRzq")
+	Mutex sync.RWMutex
+	Key   = []byte("VfBhgLzmD4QH3W94pjgdbH8Tyv2HPRzq")
 )
 
 // UserInfo is the in memory storage of each user's information
@@ -115,15 +115,16 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		return
 	}
 
+	HandleNewGuild(s, e.GuildID)
+
 	// Pulls info on user if possible
 	user, err := s.GuildMember(e.GuildID, e.User.ID)
 	if err != nil {
 		return
 	}
 
-	MapMutex.Lock()
-	defer MapMutex.Unlock()
-	HandleNewGuild(s, e.GuildID)
+	Mutex.Lock()
+	defer Mutex.Unlock()
 
 	// If memberInfo is empty, it initializes
 	if GuildMap[e.GuildID].MemberInfoMap == nil || len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
@@ -254,11 +255,12 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 		return
 	}
 
+	HandleNewGuild(s, e.GuildID)
+
 	var writeFlag bool
 
-	MapMutex.Lock()
-	defer MapMutex.Unlock()
-	HandleNewGuild(s, e.GuildID)
+	Mutex.Lock()
+	defer Mutex.Unlock()
 
 	if GuildMap[e.GuildID].MemberInfoMap == nil || len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
 		return
@@ -338,11 +340,12 @@ func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 		return
 	}
 
+	HandleNewGuild(s, e.GuildID)
+
 	var writeFlag bool
 
-	MapMutex.Lock()
-	defer MapMutex.Unlock()
-	HandleNewGuild(s, e.GuildID)
+	Mutex.Lock()
+	defer Mutex.Unlock()
 
 	if GuildMap[e.GuildID].MemberInfoMap == nil || len(GuildMap[e.GuildID].MemberInfoMap) == 0 {
 		return
@@ -473,10 +476,10 @@ func DuplicateUsernamesAndNicknamesCleanup() {
 		if !f.IsDir() {
 			continue
 		}
-		MapMutex.Lock()
+		Mutex.Lock()
 		DuplicateRecursion(f.Name())
 		_ = WriteMemberInfo(GuildMap[f.Name()].MemberInfoMap, f.Name())
-		MapMutex.Unlock()
+		Mutex.Unlock()
 	}
 
 	log.Println("FINISHED WITH DUPLICATES")
@@ -511,8 +514,8 @@ func DuplicateRecursion(guildID string) {
 // Updates user usernames to the current ones they're using in memberInfo.json
 func UsernameCleanup(s *discordgo.Session, e *discordgo.Ready) {
 	var progress int
-	MapMutex.Lock()
-	defer MapMutex.Unlock()
+	Mutex.Lock()
+	defer Mutex.Unlock()
 	for _, guild := range e.Guilds {
 		for _, mapUser := range GuildMap[guild.ID].MemberInfoMap {
 			user, err := s.User(mapUser.ID)
@@ -527,7 +530,7 @@ func UsernameCleanup(s *discordgo.Session, e *discordgo.Ready) {
 				mapUser.Discrim = user.Discriminator
 			}
 			progress++
-			log.Printf("%v out of %v \n", progress, len(GuildMap[guild.ID].MemberInfoMap))
+			log.Printf("%d out of %d \n", progress, len(GuildMap[guild.ID].MemberInfoMap))
 		}
 
 		path := "database/guilds"

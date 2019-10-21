@@ -14,14 +14,14 @@ import (
 func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		muteFlag bool
+		muteFlag         bool
 		guildMutedRoleID string
-		tookRole bool
+		tookRole         bool
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 	if guildSettings.MutedRole != nil {
 		if guildSettings.MutedRole.ID != "" {
 			guildMutedRoleID = guildSettings.MutedRole.ID
@@ -60,25 +60,23 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Goes through every muted user from punishedUsers and if the user is in it, confirms that user is a mute
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	if functionality.GuildMap[m.GuildID].PunishedUsers == nil || len(functionality.GuildMap[m.GuildID].PunishedUsers) == 0 {
+		functionality.Mutex.Unlock()
 		_, err = s.ChannelMessageSend(m.ChannelID, "No mutes found.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
 
 	for i := 0; i < len(functionality.GuildMap[m.GuildID].PunishedUsers); i++ {
 		if functionality.GuildMap[m.GuildID].PunishedUsers[i].ID == userID {
 			muteFlag = true
-			zeroTimeValue := time.Time{}
 
 			// Removes the mute from punishedUsers
-			if functionality.GuildMap[m.GuildID].PunishedUsers[i].UnbanDate != zeroTimeValue {
+			if functionality.GuildMap[m.GuildID].PunishedUsers[i].UnbanDate != functionality.ZeroTimeValue {
 				temp := functionality.PunishedUsers{
 					ID:        functionality.GuildMap[m.GuildID].PunishedUsers[i].ID,
 					User:      functionality.GuildMap[m.GuildID].PunishedUsers[i].User,
@@ -86,12 +84,16 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 				}
 				functionality.GuildMap[m.GuildID].PunishedUsers[i] = &temp
 			} else {
-				functionality.GuildMap[m.GuildID].PunishedUsers = append(functionality.GuildMap[m.GuildID].PunishedUsers[:i], functionality.GuildMap[m.GuildID].PunishedUsers[i+1:]...)
+				if i < len(functionality.GuildMap[m.GuildID].PunishedUsers)-1 {
+					copy(functionality.GuildMap[m.GuildID].PunishedUsers[i:], functionality.GuildMap[m.GuildID].PunishedUsers[i+1:])
+				}
+				functionality.GuildMap[m.GuildID].PunishedUsers[len(functionality.GuildMap[m.GuildID].PunishedUsers)-1] = nil
+				functionality.GuildMap[m.GuildID].PunishedUsers = functionality.GuildMap[m.GuildID].PunishedUsers[:len(functionality.GuildMap[m.GuildID].PunishedUsers)-1]
 			}
 			break
 		}
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// Check if the user is muted using other means
 	if !muteFlag {
@@ -169,22 +171,22 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 	t := time.Now()
 
 	// Updates unmute date in memberInfo.json entry if possible and writes to storage
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	if _, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
 		functionality.GuildMap[m.GuildID].MemberInfoMap[userID].UnmuteDate = t.Format("2006-01-02 15:04:05")
 		_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	}
 	_ = functionality.PunishedUsersWrite(functionality.GuildMap[m.GuildID].PunishedUsers, m.GuildID)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%v#%v__ has been unmuted.", user.User.Username, user.User.Discriminator))
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%s#%s__ has been unmuted.", user.User.Username, user.User.Discriminator))
 	if err != nil {
 		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 
 	// Sends an embed message to bot-log if possible
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	if _, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
 		if guildSettings.BotLog != nil {
 			if guildSettings.BotLog.ID != "" {
@@ -192,13 +194,14 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 		}
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 }
 
 func init() {
 	functionality.Add(&functionality.Command{
 		Execute:    unmuteCommand,
 		Trigger:    "unmute",
+		Aliases:    []string{"unshut"},
 		Desc:       "Unmutes a user",
 		Permission: functionality.Mod,
 		Module:     "moderation",

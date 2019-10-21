@@ -28,20 +28,20 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 		admin            bool
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	if !guildSettings.VoteModule {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RUnlock()
 		return
 	}
-
-	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
+	functionality.Mutex.RUnlock()
 
 	// Checks if the message author is an admin or not and saves it, to save operations down the line
 	if functionality.HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
 		admin = true
 	}
-	functionality.MapMutex.Unlock()
+
+	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	if admin {
 		if len(commandStrings) == 1 {
@@ -158,7 +158,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks ongoing non-mod temp channels
 	if !admin {
-		functionality.MapMutex.Lock()
+		functionality.Mutex.Lock()
 		for k, v := range functionality.GuildMap[m.GuildID].TempChaMap {
 			exists := false
 			for i := 0; i < len(cha); i++ {
@@ -175,7 +175,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 				controlNumUser++
 			}
 		}
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 
 		// Prints error if the user temp channel cap (3) has been reached
 		if controlNumUser > 2 {
@@ -189,13 +189,15 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		// Checks if there are any current temp channel votes made by users and already created channels that have reached the cap and prints error if there are
-		functionality.MapMutex.Lock()
-		for _, v := range functionality.GuildMap[m.GuildID].VoteInfoMap {
+		functionality.Mutex.RLock()
+		guildVoteInfoMap := functionality.GuildMap[m.GuildID].VoteInfoMap
+		functionality.Mutex.RUnlock()
+		for _, v := range guildVoteInfoMap {
 			if !functionality.HasElevatedPermissions(s, v.User.ID, m.GuildID) {
 				controlNumVote++
 			}
 		}
-		functionality.MapMutex.Unlock()
+
 		controlNum = controlNumVote + controlNumUser
 		if controlNum > 2 {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are already ongoing user temp votes that breach the cap(3) together with already created temp channels. "+
@@ -249,17 +251,17 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	temp.MessageReact = messageReact
 	temp.User = m.Author
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	functionality.GuildMap[m.GuildID].VoteInfoMap[m.ID] = &temp
 
 	// Writes to storage
 	err = functionality.VoteInfoWrite(functionality.GuildMap[m.GuildID].VoteInfoMap, m.GuildID)
 	if err != nil {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	if !admin {
 		if guildSettings.BotLog == nil {
@@ -293,18 +295,18 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 	}()
 
 	for range time.NewTicker(30 * time.Second).C {
-		functionality.MapMutex.Lock()
 		for _, guild := range e.Guilds {
-
 			functionality.HandleNewGuild(s, guild.ID)
+
+			functionality.Mutex.Lock()
 			guildSettings := functionality.GuildMap[guild.ID].GetGuildSettings()
 			if !guildSettings.VoteModule {
 				continue
 			}
 
-			t := time.Now()
-
 			for k := range functionality.GuildMap[guild.ID].VoteInfoMap {
+
+				t := time.Now()
 
 				// Updates message
 				messageReact, err := s.ChannelMessage(functionality.GuildMap[guild.ID].VoteInfoMap[k].MessageReact.ChannelID, functionality.GuildMap[guild.ID].VoteInfoMap[k].MessageReact.ID)
@@ -329,8 +331,12 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					role = strings.Replace(role, "--", "-", -1)
 
 					numStr := strconv.Itoa(functionality.GuildMap[guild.ID].VoteInfoMap[k].VotesReq - 1)
-					_, _ = s.ChannelMessageSend(messageReact.ChannelID, "Channel vote has ended. `"+functionality.GuildMap[guild.ID].VoteInfoMap[k].Channel+"` has failed to "+
+					_, err = s.ChannelMessageSend(messageReact.ChannelID, "Channel vote has ended. `"+functionality.GuildMap[guild.ID].VoteInfoMap[k].Channel+"` has failed to "+
 						"gather the necessary "+numStr+" votes.")
+					if err != nil {
+						functionality.LogError(s, guildSettings.BotLog, err)
+						continue
+					}
 
 					// Deletes the vote from memory
 					delete(functionality.GuildMap[guild.ID].VoteInfoMap, k)
@@ -382,9 +388,9 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				message.GuildID = guild.ID
 				message.Author = &author
 				if temp.Category == "" {
-					message.Content = fmt.Sprintf("%screate %s %s %s", guildSettings.Prefix, temp.Channel, temp.ChannelType, temp.Description)
+					message.Content = fmt.Sprintf("%vcreate %v %v %v", guildSettings.Prefix, temp.Channel, temp.ChannelType, temp.Description)
 				} else {
-					message.Content = fmt.Sprintf("%screate %s %s %s %s", guildSettings.Prefix, temp.Channel, temp.ChannelType, temp.Category, temp.Description)
+					message.Content = fmt.Sprintf("%vcreate %v %v %v %v", guildSettings.Prefix, temp.Channel, temp.ChannelType, temp.Category, temp.Description)
 				}
 
 				createChannelCommand(s, &message)
@@ -468,7 +474,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					if guildSettings.BotLog.ID != "" {
 						continue
 					}
-					_, err = s.ChannelMessageSend(guildSettings.BotLog.ID, fmt.Sprintf("Temp channel `%s` has been created from a vote by user %s#%s.", temp.Channel, temp.User.Username, temp.User.Discriminator))
+					_, err = s.ChannelMessageSend(guildSettings.BotLog.ID, fmt.Sprintf("Temp channel `%v` has been created from a vote by user %v#%v.", temp.Channel, temp.User.Username, temp.User.Discriminator))
 					if err != nil {
 						functionality.LogError(s, guildSettings.BotLog, err)
 						continue
@@ -484,64 +490,63 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 			for k, v := range functionality.GuildMap[guild.ID].TempChaMap {
 				for i := 0; i < len(cha); i++ {
-					if cha[i].Name != v.RoleName {
-						continue
-					}
-					mess, err := s.ChannelMessages(cha[i].ID, 1, "", "", "")
-					if err != nil {
-						functionality.LogError(s, guildSettings.BotLog, err)
-						continue
-					}
-
-					// Fetches the properly parsed timestamp from discord, else uses channel creation
-					if len(mess) != 0 {
-						timestamp, err = mess[0].Timestamp.Parse()
+					if cha[i].Name == v.RoleName {
+						mess, err := s.ChannelMessages(cha[i].ID, 1, "", "", "")
 						if err != nil {
 							functionality.LogError(s, guildSettings.BotLog, err)
 							continue
 						}
-					} else {
-						timestamp = v.CreationDate
-					}
 
-					// Adds how long before last message for channel to be deletes
-					timestamp = timestamp.Add(time.Hour * 3)
-					t := time.Now()
+						// Fetches the properly parsed timestamp from discord, else uses channel creation
+						if len(mess) != 0 {
+							timestamp, err = mess[0].Timestamp.Parse()
+							if err != nil {
+								functionality.LogError(s, guildSettings.BotLog, err)
+								continue
+							}
+						} else {
+							timestamp = v.CreationDate
+						}
 
-					// Calculates if it's time to remove
-					difference := t.Sub(timestamp)
-					if difference > 0 {
+						// Adds how long before last message for channel to be deletes
+						timestamp = timestamp.Add(time.Hour * 3)
+						t := time.Now()
 
-						if guildSettings.BotLog != nil {
-							if guildSettings.BotLog.ID != "" {
-								_, err = s.ChannelMessageSend(guildSettings.BotLog.ID, fmt.Sprintf("Temp channel `%v` has been deleted due to being inactive for 3 hours.", cha[i].Name))
-								if err != nil {
-									functionality.LogError(s, guildSettings.BotLog, err)
-									continue
+						// Calculates if it's time to remove
+						difference := t.Sub(timestamp)
+						if difference > 0 {
+
+							if guildSettings.BotLog != nil {
+								if guildSettings.BotLog.ID != "" {
+									_, err = s.ChannelMessageSend(guildSettings.BotLog.ID, fmt.Sprintf("Temp channel `%v` has been deleted due to being inactive for 3 hours.", cha[i].Name))
+									if err != nil {
+										functionality.LogError(s, guildSettings.BotLog, err)
+										continue
+									}
 								}
 							}
-						}
 
-						// Deletes channel and role
-						_, err := s.ChannelDelete(cha[i].ID)
-						if err != nil {
-							functionality.LogError(s, guildSettings.BotLog, err)
-							continue
-						}
+							// Deletes channel and role
+							_, err := s.ChannelDelete(cha[i].ID)
+							if err != nil {
+								functionality.LogError(s, guildSettings.BotLog, err)
+								continue
+							}
 
-						err = s.GuildRoleDelete(guild.ID, k)
-						if err != nil {
-							functionality.LogError(s, guildSettings.BotLog, err)
-							continue
-						}
+							err = s.GuildRoleDelete(guild.ID, k)
+							if err != nil {
+								functionality.LogError(s, guildSettings.BotLog, err)
+								continue
+							}
 
-						delete(functionality.GuildMap[guild.ID].TempChaMap, k)
-						_ = functionality.TempChaWrite(functionality.GuildMap[guild.ID].TempChaMap, guild.ID)
+							delete(functionality.GuildMap[guild.ID].TempChaMap, k)
+							_ = functionality.TempChaWrite(functionality.GuildMap[guild.ID].TempChaMap, guild.ID)
+						}
 					}
 				}
 			}
+			functionality.Mutex.Unlock()
 		}
-		functionality.MapMutex.Unlock()
 	}
 }
 

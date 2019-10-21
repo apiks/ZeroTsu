@@ -12,9 +12,9 @@ import (
 // Sends a message from the bot to a channel
 func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 3)
 
@@ -63,9 +63,9 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 // Edits a message sent by the bot with another message
 func editCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 4)
 

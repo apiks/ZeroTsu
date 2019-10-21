@@ -31,12 +31,11 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		user *discordgo.User
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
-	formattedContent := strings.Replace(m.Content, "  ", " ", -1)
-	commandStrings := strings.SplitN(formattedContent, " ", 4)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 4)
 	commandStringsCopy = commandStrings
 
 	if len(commandStrings) != 4 {
@@ -99,22 +98,18 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	// Checks if user has a privileged role
 	if userMem != nil {
-		functionality.MapMutex.Lock()
 		if functionality.HasElevatedPermissions(s, userMem.User.ID, m.GuildID) {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: Target user has a privileged role. Cannot ban.")
 			if err != nil {
-				functionality.MapMutex.Unlock()
 				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
-			functionality.MapMutex.Unlock()
 			return
 		}
-		functionality.MapMutex.Unlock()
 	}
 
 	// Checks if user is in memberInfo and handles them
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	if _, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; !ok {
 		if userMem != nil {
 			// Initializes user if he doesn't exist in memberInfo but is in server
@@ -124,17 +119,17 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Handles user if he's not in the server
 	if userMem == nil {
+		functionality.Mutex.Unlock()
 		user, err = s.User(userID)
 		if err != nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot get this user. Cannot ban.")
 			if err != nil {
-				functionality.MapMutex.Unlock()
 				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
-			functionality.MapMutex.Unlock()
 			return
 		}
+		functionality.Mutex.Lock()
 		functionality.InitializeUser(user, m.GuildID)
 	}
 
@@ -142,13 +137,12 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Bans = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Bans, reason)
 	UnbanDate, perma, err := functionality.ResolveTimeFromString(length)
 	if err != nil {
+		functionality.Mutex.Unlock()
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid time given.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
 	if commandStrings[2] == "∞" || commandStrings[1] == "∞" {
@@ -163,7 +157,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Adds timestamp for that ban
 	t, err := m.Timestamp.Parse()
 	if err != nil {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
@@ -201,7 +195,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.GuildMap[m.GuildID].PunishedUsers = append(functionality.GuildMap[m.GuildID].PunishedUsers, &temp)
 	}
 	_ = functionality.PunishedUsersWrite(functionality.GuildMap[m.GuildID].PunishedUsers, m.GuildID)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// Parses how long is left of the ban
 	now := time.Now()

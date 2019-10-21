@@ -23,9 +23,9 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 		author  discordgo.User
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
@@ -49,8 +49,8 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Removes the set RSS feeds for that channel
-	functionality.MapMutex.Lock()
+	// Removes the reddit feeds for that channel
+	functionality.Mutex.Lock()
 	for rssLoopFlag {
 		if rssTimerFlag {
 			for _, rssTimer := range functionality.GuildMap[m.GuildID].RssThreadChecks {
@@ -58,7 +58,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 					rssTimerFlag = true
 					err := functionality.RssThreadsTimerRemove(rssTimer.Thread, m.GuildID)
 					if err != nil {
-						functionality.MapMutex.Unlock()
+						functionality.Mutex.Unlock()
 						functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 						return
 					}
@@ -77,7 +77,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 				rssLoopFlag = true
 				err := functionality.RssThreadsRemove(thread.Subreddit, thread.Title, thread.Author, thread.PostType, thread.ChannelID, m.GuildID)
 				if err != nil {
-					functionality.MapMutex.Unlock()
+					functionality.Mutex.Unlock()
 					functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 					return
 				}
@@ -90,7 +90,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 			rssLoopFlag = false
 		}
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// Fixes role name bug by hyphenating the channel name
 	roleName = strings.Replace(strings.TrimSpace(channelName), " ", "-", -1)
@@ -110,7 +110,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Deletes all set reacts that link to the role ID if not using Kaguya
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	for messageID, roleMapMap := range functionality.GuildMap[m.GuildID].ReactJoinMap {
 		for _, roleEmojiMap := range roleMapMap.RoleEmojiMap {
 			for role, emojiSlice := range roleEmojiMap {
@@ -121,16 +121,16 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 						message.ID = messageID
 						message.GuildID = m.GuildID
 						message.Author = &author
-						message.Content = fmt.Sprintf("%vremovereact %v %v", guildSettings.Prefix, messageID, emoji)
-						functionality.MapMutex.Unlock()
+						message.Content = fmt.Sprintf("%sremovereact %s %s", guildSettings.Prefix, messageID, emoji)
+						functionality.Mutex.RUnlock()
 						removeReactJoinCommand(s, &message)
-						functionality.MapMutex.Lock()
+						functionality.Mutex.RLock()
 					}
 				}
 			}
 		}
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Removes the role
 	if roleID != "" {
@@ -169,9 +169,9 @@ func deleteCategory(s *discordgo.Session, m *discordgo.Message) {
 		author  discordgo.User
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
@@ -263,9 +263,9 @@ func deleteChannelReacts(s *discordgo.Session, m *discordgo.Message) {
 		author  discordgo.User
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
@@ -294,7 +294,7 @@ func deleteChannelReacts(s *discordgo.Session, m *discordgo.Message) {
 	roleName = strings.Replace(roleName, "--", "-", -1)
 
 	// Deletes all set reacts that link to the role ID if not using Kaguya
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	for messageID, roleMapMap := range functionality.GuildMap[m.GuildID].ReactJoinMap {
 		for _, roleEmojiMap := range roleMapMap.RoleEmojiMap {
 			for role, emojiSlice := range roleEmojiMap {
@@ -305,16 +305,16 @@ func deleteChannelReacts(s *discordgo.Session, m *discordgo.Message) {
 						message.ID = messageID
 						message.GuildID = m.GuildID
 						message.Author = &author
-						message.Content = fmt.Sprintf("%vremovereact %v %v", guildSettings.Prefix, messageID, emoji)
-						functionality.MapMutex.Unlock()
+						message.Content = fmt.Sprintf("%sremovereact %s %s", guildSettings.Prefix, messageID, emoji)
+						functionality.Mutex.RUnlock()
 						removeReactJoinCommand(s, &message)
-						functionality.MapMutex.Lock()
+						functionality.Mutex.RLock()
 					}
 				}
 			}
 		}
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	if m.Author.ID == s.State.User.ID {
 		return
@@ -336,9 +336,9 @@ func deleteCategoryReacts(s *discordgo.Session, m *discordgo.Message) {
 		author  discordgo.User
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 

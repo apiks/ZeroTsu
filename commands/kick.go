@@ -17,9 +17,9 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 		kickTimestamp functionality.Punishment
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 3)
 
@@ -62,41 +62,40 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if user has a privileged role
-	functionality.MapMutex.Lock()
 	if functionality.HasElevatedPermissions(s, userID, m.GuildID) {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Target user has a privileged role. Cannot kick.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
 
 	// Initialize user if they are not in memberInfo but is in server
-	if _, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; !ok {
+	functionality.Mutex.Lock()
+	memberInfoUser, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
+	if !ok {
 		functionality.InitializeMember(userMem, m.GuildID)
 	}
 
 	// Adds kick reason to user memberInfo info
-	functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks, reason)
+	memberInfoUser.Kicks = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks, reason)
 
 	// Adds timestamp for that kick
 	t, err := m.Timestamp.Parse()
 	if err != nil {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 	kickTimestamp.Timestamp = t
 	kickTimestamp.Punishment = reason
 	kickTimestamp.Type = "Kick"
-	functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, &kickTimestamp)
+	memberInfoUser.Timestamps = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, &kickTimestamp)
 
 	// Writes memberInfo.json
-	functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
-	functionality.MapMutex.Unlock()
+	_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+	functionality.Mutex.Unlock()
 
 	// Fetches the guild for the Name
 	guild, err := s.Guild(m.GuildID)

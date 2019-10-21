@@ -18,7 +18,6 @@ var darlingTrigger int
 // Periodic events such as Unbanning and RSS timer every 30 sec
 func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
-	MapMutex.Lock()
 	for _, guild := range e.Guilds {
 
 		// Initialize guild if missing
@@ -27,25 +26,33 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		// Clean up SpoilerRoles.json in each guild
 		err := cleanSpoilerRoles(s, guild.ID)
 		if err != nil {
-			guildSettings := GuildMap[guild.ID].GetGuildSettings()
-			LogError(s, guildSettings.BotLog, err)
+			log.Println(err)
 		}
 
+		// Handles Unbans and Unmutes
+		punishmentHandler(s, guild.ID)
+
+		// Handles RemindMes
+		remindMeHandler(s, guild.ID)
+
+		// Handles Reddit Feeds
+		feedHandler(s, guild.ID)
+
+		// Changes nickname dynamically based on prefix
 		DynamicNicknameChange(s, guild.ID)
 	}
-	LoadGuilds()
 
 	// Updates playing status
+	var randomPlayingMsg string
+	rand.Seed(time.Now().UnixNano())
+	Mutex.RLock()
 	if len(config.PlayingMsg) > 1 {
-		rand.Seed(time.Now().UnixNano())
-		randInt := rand.Intn(len(config.PlayingMsg))
-		_ = s.UpdateStatus(0, config.PlayingMsg[randInt])
-	} else if len(config.PlayingMsg) == 1 {
-		_ = s.UpdateStatus(0, config.PlayingMsg[0])
-	} else {
-		_ = s.UpdateStatus(0, "")
+		randomPlayingMsg = config.PlayingMsg[rand.Intn(len(config.PlayingMsg))]
 	}
-	MapMutex.Unlock()
+	Mutex.RUnlock()
+	if randomPlayingMsg != "" {
+		_ = s.UpdateStatus(0, randomPlayingMsg)
+	}
 
 	// Sends server count to bot list sites if it's the public ZeroTsu
 	sendServers(s)
@@ -67,10 +74,11 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 		return
 	}
 
-	MapMutex.Lock()
 	HandleNewGuild(s, v.GuildID)
+
+	Mutex.RLock()
 	guildSettings := GuildMap[v.GuildID].GetGuildSettings()
-	MapMutex.Unlock()
+	Mutex.RUnlock()
 
 	if guildSettings.VoiceChas == nil || len(guildSettings.VoiceChas) == 0 {
 		return
@@ -132,10 +140,10 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if m.GuildID != "" {
-		MapMutex.Lock()
 		HandleNewGuild(s, m.GuildID)
-		*guildSettings = GuildMap[m.GuildID].GetGuildSettings()
-		MapMutex.Unlock()
+		Mutex.RLock()
+		guildSettings = GuildMap[m.GuildID].GetGuildSettings()
+		Mutex.RUnlock()
 	}
 
 	if strings.ToLower(m.Content) == fmt.Sprintf("<@%v> good bot", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v> good bot", s.State.User.ID) {
@@ -321,18 +329,19 @@ func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
 		return
 	}
 
-	MapMutex.Lock()
 	HandleNewGuild(s, e.GuildID)
 
+	Mutex.RLock()
 	for _, user := range GuildMap[e.GuildID].PunishedUsers {
 		if user.ID == e.User.ID {
-			MapMutex.Unlock()
+			Mutex.RUnlock()
 			return
 		}
 	}
 
 	guildSettings := GuildMap[e.GuildID].GetGuildSettings()
-	MapMutex.Unlock()
+	Mutex.RUnlock()
+
 	if guildSettings.BotLog == nil {
 		return
 	}
@@ -359,15 +368,18 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
-	// Gives the user the muted role if he is muted and has rejoined the server
-	MapMutex.Lock()
 	HandleNewGuild(s, u.GuildID)
 
-	for _, punishedUser := range GuildMap[u.GuildID].PunishedUsers {
+	t := time.Now()
+
+	// Gives the user the muted role if he is muted and has rejoined the server
+	Mutex.RLock()
+	guildPunishedUsers := GuildMap[u.GuildID].PunishedUsers
+	Mutex.RUnlock()
+
+	for _, punishedUser := range guildPunishedUsers {
 		if punishedUser.ID == u.User.ID {
-			t := time.Now()
-			zeroTimeValue := time.Time{}
-			if punishedUser.UnmuteDate == zeroTimeValue {
+			if punishedUser.UnmuteDate == ZeroTimeValue {
 				continue
 			}
 			muteDifference := t.Sub(punishedUser.UnmuteDate)
@@ -393,7 +405,6 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 			}
 		}
 	}
-	MapMutex.Unlock()
 
 	if u.GuildID != "267799767843602452" {
 		return
@@ -402,9 +413,9 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	creationDate, err := CreationTime(u.User.ID)
 	if err != nil {
 
-		MapMutex.Lock()
+		Mutex.RLock()
 		guildSettings := GuildMap[u.GuildID].GetGuildSettings()
-		MapMutex.Unlock()
+		Mutex.RUnlock()
 
 		LogError(s, guildSettings.BotLog, err)
 		return
@@ -412,7 +423,7 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	// Sends user join message for r/anime discord server
 	if u.GuildID == "267799767843602452" {
-		_, _ = s.ChannelMessageSend("566233292026937345", fmt.Sprintf("User joined the server: %v\nAccount age: %v", u.User.Mention(), creationDate.String()))
+		_, _ = s.ChannelMessageSend("566233292026937345", fmt.Sprintf("User joined the server: %v\nAccount age: %s", u.User.Mention(), creationDate.String()))
 	}
 }
 
@@ -441,10 +452,11 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		dmMessage string
 	)
 
-	MapMutex.Lock()
 	HandleNewGuild(s, u.GuildID)
+
+	Mutex.RLock()
 	guildSettings := GuildMap[u.GuildID].GetGuildSettings()
-	MapMutex.Unlock()
+	Mutex.RUnlock()
 
 	// Fetches date of account creation and checks if it's younger than 14 days
 	creationDate, err := CreationTime(u.User.ID)
@@ -465,9 +477,13 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
-	MapMutex.Lock()
+	// Checks if they're using a default avatar
+	if u.User.Avatar != "" {
+		return
+	}
 
 	// Initializes user if he's not in memberInfo
+	Mutex.Lock()
 	if _, ok := GuildMap[u.GuildID].MemberInfoMap[u.User.ID]; !ok {
 		InitializeMember(u.Member, u.GuildID)
 	}
@@ -475,15 +491,9 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	// Checks if the user is verified
 	if _, ok := GuildMap[u.GuildID].MemberInfoMap[u.User.ID]; ok {
 		if GuildMap[u.GuildID].MemberInfoMap[u.User.ID].RedditUsername != "" {
-			MapMutex.Unlock()
+			Mutex.Unlock()
 			return
 		}
-	}
-
-	// Checks if they're using a default avatar
-	if u.User.Avatar != "" {
-		MapMutex.Unlock()
-		return
 	}
 
 	// Adds the spambot ban to PunishedUsers so it doesn't Trigger the OnGuildBan func
@@ -503,19 +513,19 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	tempMem.SuspectedSpambot = true
 	GuildMap[u.GuildID].MemberInfoMap[u.User.ID] = &tempMem
 	_ = WriteMemberInfo(GuildMap[u.GuildID].MemberInfoMap, u.GuildID)
-	MapMutex.Unlock()
 
 	// Sends a message to the user warning them in case it's a false positive
 	dmMessage = "You have been suspected of being a spambot and banned."
 	if u.GuildID == "267799767843602452" {
-		dmMessage += "\nTo get unbanned please do our mandatory verification process at https://%v/verification and then rejoin the server."
+		dmMessage += fmt.Sprintf("\nTo get unbanned please do our mandatory verification process at https://%s/verification and then rejoin the server.", config.Website)
 	}
+	Mutex.Unlock()
 
 	dm, _ := s.UserChannelCreate(u.User.ID)
-	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf(dmMessage, config.Website))
+	_, _ = s.ChannelMessageSend(dm.ID, dmMessage)
 
 	// Bans the suspected account
-	err = s.GuildBanCreateWithReason(u.GuildID, u.User.ID, "Autoban Spambot Account", 0)
+	err = s.GuildBanCreateWithReason(u.GuildID, u.User.ID, "Autoban Suspected Spambot", 0)
 	if err != nil {
 		LogError(s, guildSettings.BotLog, err)
 		return
@@ -528,7 +538,7 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	if guildSettings.BotLog.ID == "" {
 		return
 	}
-	_, _ = s.ChannelMessageSend(guildSettings.BotLog.ID, fmt.Sprintf("Suspected spambot was banned. User: <@!%v>", u.User.ID))
+	_, _ = s.ChannelMessageSend(guildSettings.BotLog.ID, fmt.Sprintf("Suspected spambot was banned. User: <@!%s>", u.User.ID))
 }
 
 // Cleans spoilerroles.json
@@ -539,12 +549,15 @@ func cleanSpoilerRoles(s *discordgo.Session, guildID string) error {
 	// Pulls all of the server roles
 	roles, err := s.GuildRoles(guildID)
 	if err != nil {
+		Mutex.RLock()
 		guildSettings := GuildMap[guildID].GetGuildSettings()
+		Mutex.RUnlock()
 		LogError(s, guildSettings.BotLog, err)
 		return err
 	}
 
 	// Removes roles not found in spoilerRoles.json
+	Mutex.Lock()
 	for _, spoilerRole := range GuildMap[guildID].SpoilerMap {
 		shouldDelete = true
 		for _, role := range roles {
@@ -565,15 +578,14 @@ func cleanSpoilerRoles(s *discordgo.Session, guildID string) error {
 
 	SpoilerRolesWrite(GuildMap[guildID].SpoilerMap, guildID)
 	LoadGuildFile(guildID, "spoilerRoles.json")
+	Mutex.Unlock()
 
 	return nil
 }
 
 // Handles BOT joining a server
 func GuildCreate(s *discordgo.Session, g *discordgo.GuildCreate) {
-	MapMutex.Lock()
 	HandleNewGuild(s, g.ID)
-	MapMutex.Unlock()
 
 	log.Println(fmt.Sprintf("Joined guild %s", g.Guild.Name))
 }
@@ -589,7 +601,9 @@ func GuildDelete(_ *discordgo.Session, g *discordgo.GuildDelete) {
 // Changes the BOT's nickname dynamically to a `prefix username` format if there is no existing custom nickname
 func DynamicNicknameChange(s *discordgo.Session, guildID string, oldPrefix ...string) {
 
+	Mutex.RLock()
 	guildPrefix := GuildMap[guildID].GuildConfig.Prefix
+	Mutex.RUnlock()
 
 	// Set custom nickname based on guild prefix if there is no existing nickname
 	me, err := s.State.Member(guildID, s.State.User.ID)

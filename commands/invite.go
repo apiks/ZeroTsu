@@ -11,9 +11,9 @@ func inviteCommand(s *discordgo.Session, m *discordgo.Message) {
 	err := functionality.InviteEmbed(s, m)
 	if err != nil {
 		if m.GuildID != "" {
-			functionality.MapMutex.Lock()
+			functionality.Mutex.RLock()
 			guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-			functionality.MapMutex.Unlock()
+			functionality.Mutex.RUnlock()
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		}
 	}

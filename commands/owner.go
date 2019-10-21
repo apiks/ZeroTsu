@@ -24,9 +24,9 @@ func playingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if m.GuildID != "" {
-		functionality.MapMutex.Lock()
-		*guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RLock()
+		guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
+		functionality.Mutex.RUnlock()
 	}
 
 	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
@@ -34,12 +34,12 @@ func playingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Displays current playing message if it's only that
 	if len(commandStrings) == 1 {
 		var playingMsgs string
-		functionality.MapMutex.Lock()
+		functionality.Mutex.RLock()
 		for _, msg := range config.PlayingMsg {
 			playingMsgs += fmt.Sprintf("\n`%v`,", msg)
 		}
-		functionality.MapMutex.Unlock()
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current playing messages are: %v \n\nTo add more messages please use `%vplayingmsg [new message]`", playingMsgs, guildSettings.Prefix))
+		functionality.Mutex.RUnlock()
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current playing messages are: %s \n\nTo add more messages please use `%splayingmsg [new message]`", playingMsgs, guildSettings.Prefix))
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
@@ -48,15 +48,15 @@ func playingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Changes and writes new playing message to storage
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	config.PlayingMsg = append(config.PlayingMsg, commandStrings[1])
 	err := config.WriteConfig()
 	if err != nil {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// Refreshes playing message
 	err = s.UpdateStatus(0, commandStrings[1])
@@ -65,7 +65,7 @@ func playingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New playing message added is: `%v`", commandStrings[1]))
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New playing message added is: `%s`", commandStrings[1]))
 	if err != nil {
 		functionality.LogError(s, guildSettings.BotLog, err)
 		return
@@ -84,15 +84,15 @@ func removePlayingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if m.GuildID != "" {
-		functionality.MapMutex.Lock()
-		*guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RLock()
+		guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
+		functionality.Mutex.RUnlock()
 	}
 
 	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vremoveplayingmsg [msg]`", guildSettings.Prefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%sremoveplayingmsg [msg]`", guildSettings.Prefix))
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
@@ -101,7 +101,7 @@ func removePlayingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Changes and removes playing msg from storage
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	var index int
 	var foundIndex bool
 	for i, msg := range config.PlayingMsg {
@@ -112,24 +112,23 @@ func removePlayingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	if !foundIndex {
+		functionality.Mutex.Unlock()
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such playing message.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
 	config.PlayingMsg = append(config.PlayingMsg[:index], config.PlayingMsg[index+1:]...)
 	err := config.WriteConfig()
 	if err != nil {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Removed playing message: `%v`", commandStrings[1]))
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Removed playing message: `%s`", commandStrings[1]))
 	if err != nil {
 		functionality.LogError(s, guildSettings.BotLog, err)
 	}
@@ -145,11 +144,11 @@ func removePlayingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 		err = s.UpdateStatus(0, "")
 	}
 	if err != nil {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 }
 
 // Prints in how many servers the BOT is
@@ -159,12 +158,12 @@ func serversCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I am in %v servers.", len(s.State.Guilds)))
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I am in %d servers.", len(s.State.Guilds)))
 	if err != nil {
 		if m.GuildID != "" {
-			functionality.MapMutex.Lock()
+			functionality.Mutex.RLock()
 			guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-			functionality.MapMutex.Unlock()
+			functionality.Mutex.RUnlock()
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
@@ -181,9 +180,9 @@ func uptimeCommand(s *discordgo.Session, m *discordgo.Message) {
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I've been online for %s.", functionality.Uptime().Truncate(time.Second).String()))
 	if err != nil {
 		if m.GuildID != "" {
-			functionality.MapMutex.Lock()
+			functionality.Mutex.RLock()
 			guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-			functionality.MapMutex.Unlock()
+			functionality.Mutex.RUnlock()
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
@@ -197,7 +196,7 @@ func flushCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	guilds := s.State.Guilds
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	for _, guild := range guilds {
 		_ = functionality.WriteMemberInfo(functionality.GuildMap[guild.ID].MemberInfoMap, guild.ID)
 		_ = functionality.EmojiStatsWrite(functionality.GuildMap[guild.ID].EmojiStats, guild.ID)
@@ -214,14 +213,14 @@ func flushCommand(s *discordgo.Session, m *discordgo.Message) {
 		_ = functionality.PunishedUsersWrite(functionality.GuildMap[guild.ID].PunishedUsers, guild.ID)
 		_ = functionality.GuildSettingsWrite(functionality.GuildMap[guild.ID].GuildConfig, guild.ID)
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	_, err := s.ChannelMessageSend(m.ChannelID, "Flushed to storage successfuly!")
 	if err != nil {
 		if m.GuildID != "" {
-			functionality.MapMutex.Lock()
+			functionality.Mutex.RLock()
 			guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-			functionality.MapMutex.Unlock()
+			functionality.Mutex.RUnlock()
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}

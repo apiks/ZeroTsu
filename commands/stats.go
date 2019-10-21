@@ -30,21 +30,22 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	functionality.HandleNewGuild(s, m.GuildID)
+
 	var channelStatsVar functionality.Channel
 	t := time.Now()
 
-	functionality.MapMutex.Lock()
-	functionality.HandleNewGuild(s, m.GuildID)
+	functionality.Mutex.Lock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 
 	// Sets channel params if it didn't exist before in database
 	if _, ok := functionality.GuildMap[m.GuildID].ChannelStats[m.ChannelID]; !ok {
+
 		// Fetches all guild info
 		guild, err := s.State.Guild(m.GuildID)
 		if err != nil {
 			guild, err = s.Guild(m.GuildID)
 			if err != nil {
-				functionality.MapMutex.Unlock()
 				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
@@ -54,7 +55,6 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if err != nil {
 			channel, err = s.Channel(m.ChannelID)
 			if err != nil {
-				functionality.MapMutex.Unlock()
 				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
@@ -81,7 +81,7 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	functionality.GuildMap[m.GuildID].ChannelStats[m.ChannelID].Messages[t.Format(functionality.DateFormat)]++
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 }
 
 // Prints all channel stats
@@ -97,7 +97,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	// Print either Today or yesterday based on whether it's the bot that called the func
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	if m.Author.ID == s.State.User.ID {
 		t = Today
 	} else {
@@ -118,7 +118,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	if flag {
 		_, err := functionality.ChannelStatsWrite(functionality.GuildMap[m.GuildID].ChannelStats, m.GuildID)
 		if err != nil {
-			functionality.MapMutex.Unlock()
+			functionality.Mutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
@@ -142,7 +142,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 			}
 		}
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// Fetches info on server roles from the server and puts it in deb
 	deb, err := s.GuildRoles(m.GuildID)
@@ -158,18 +158,6 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Updates opt-in-under and opt-in-above position for use later in isChannelUsable func
-	functionality.MapMutex.Lock()
-	guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
-	for i := 0; i < len(deb); i++ {
-		if deb[i].ID == functionality.GuildMap[m.GuildID].GuildConfig.OptInUnder.ID {
-			functionality.GuildMap[m.GuildID].GuildConfig.OptInUnder.Position = deb[i].Position
-		} else if deb[i].ID == functionality.GuildMap[m.GuildID].GuildConfig.OptInAbove.ID {
-			functionality.GuildMap[m.GuildID].GuildConfig.OptInAbove.Position = deb[i].Position
-		}
-	}
-	functionality.MapMutex.Unlock()
-
 	// Fetches all guild info
 	guild, err := s.State.Guild(m.GuildID)
 	if err != nil {
@@ -180,9 +168,19 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
+	// Updates opt-in-under and opt-in-above position for use later in isChannelUsable func
+	functionality.Mutex.Lock()
+	guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
+	for i := 0; i < len(deb); i++ {
+		if deb[i].ID == functionality.GuildMap[m.GuildID].GuildConfig.OptInUnder.ID {
+			functionality.GuildMap[m.GuildID].GuildConfig.OptInUnder.Position = deb[i].Position
+		} else if deb[i].ID == functionality.GuildMap[m.GuildID].GuildConfig.OptInAbove.ID {
+			functionality.GuildMap[m.GuildID].GuildConfig.OptInAbove.Position = deb[i].Position
+		}
+	}
+
 	// Adds the channels and their stats to message and formats it
 	message := "```CSS\nName:                            ([Daily Messages] | [Total Messages]) \n\n"
-	functionality.MapMutex.Lock()
 	for _, channel := range channels {
 
 		// Checks if channel exists and sets optin status
@@ -223,7 +221,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	if len(functionality.GuildMap[m.GuildID].VerifiedStats) != 0 && config.Website != "" {
 		message += fmt.Sprintf("\nDaily Verified Change: %d\n\n", functionality.GuildMap[m.GuildID].VerifiedStats[t.Format(functionality.DateFormat)])
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// Final message split for last block + formatting
 	msgs, message = splitStatMessages(msgs, message)
@@ -271,7 +269,7 @@ func lineSpaceFormatChannel(id string, optin bool, guildID string, t time.Time) 
 	for date := range functionality.GuildMap[guildID].ChannelStats[id].Messages {
 		totalMessages += functionality.GuildMap[guildID].ChannelStats[id].Messages[date]
 	}
-	line := fmt.Sprintf("%v", functionality.GuildMap[guildID].ChannelStats[id].Name)
+	line := fmt.Sprintf("%s", functionality.GuildMap[guildID].ChannelStats[id].Name)
 	spacesRequired := 33 - len(functionality.GuildMap[guildID].ChannelStats[id].Name)
 	for i := 0; i < spacesRequired; i++ {
 		line += " "
@@ -309,14 +307,14 @@ func OnMemberJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	t := time.Now()
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	if _, ok := functionality.GuildMap[u.GuildID]; !ok {
 		functionality.InitDB(s, u.GuildID)
 		functionality.LoadGuilds()
 	}
 
 	functionality.GuildMap[u.GuildID].UserChangeStats[t.Format(functionality.DateFormat)]++
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 }
 
 // Removes 1 from User Change on member removal
@@ -335,14 +333,14 @@ func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 
 	t := time.Now()
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	if _, ok := functionality.GuildMap[u.GuildID]; !ok {
 		functionality.InitDB(s, u.GuildID)
 		functionality.LoadGuilds()
 	}
 
 	functionality.GuildMap[u.GuildID].UserChangeStats[t.Format(functionality.DateFormat)]--
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 }
 
 // Checks if specific channel stat should be printed
@@ -404,12 +402,12 @@ func dailyStats(s *discordgo.Session) {
 
 	t := time.Now()
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	if Today.Day() == t.Day() {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RUnlock()
 		return
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Update daily anime schedule
 	UpdateAnimeSchedule()
@@ -424,7 +422,7 @@ func dailyStats(s *discordgo.Session) {
 	// Sleeps until anime schedule is definitely updated
 	time.Sleep(10 * time.Second)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	for _, f := range folders {
 		if !f.IsDir() {
 			continue
@@ -471,13 +469,13 @@ func dailyStats(s *discordgo.Session) {
 			log.Println("message.ChannelID: " + message.ChannelID)
 		}
 
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		showStats(s, &message)
-		functionality.MapMutex.Lock()
+		functionality.Mutex.Lock()
 	}
 
 	Today = t
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 }
 
 // Daily stat update timer

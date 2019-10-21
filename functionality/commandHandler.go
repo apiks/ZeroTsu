@@ -90,15 +90,11 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 // Handles a command from a guild
 func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
-	MapMutex.Lock()
 	HandleNewGuild(s, m.GuildID)
 
-	if _, ok := GuildMap[m.GuildID]; !ok {
-		MapMutex.Unlock()
-		return
-	}
+	Mutex.RLock()
 	guildSettings := GuildMap[m.GuildID].GetGuildSettings()
-	MapMutex.Unlock()
+	Mutex.RUnlock()
 
 	if m.Message.Content[0:len(guildSettings.Prefix)] != guildSettings.Prefix {
 		return
@@ -129,24 +125,7 @@ func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 	if cmd.Permission != User {
-		MapMutex.Lock()
 		if !HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
-			MapMutex.Unlock()
-			return
-		}
-		MapMutex.Unlock()
-	}
-	if cmd.Permission == Admin && m.Author.ID != config.OwnerID {
-		mem, err := s.State.Member(m.GuildID, m.Author.ID)
-		if err != nil {
-			mem, err = s.GuildMember(m.GuildID, m.Author.ID)
-			if err != nil {
-				return
-			}
-		}
-
-		admin, _ := MemberIsAdmin(s, m.GuildID, mem, discordgo.PermissionAdministrator)
-		if !admin {
 			return
 		}
 	}
@@ -166,8 +145,14 @@ func handleDM(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 // Inits guild if it's not in memory
 func HandleNewGuild(s *discordgo.Session, guildID string) {
+	Mutex.RLock()
 	if _, ok := GuildMap[guildID]; !ok {
+		Mutex.RUnlock()
 		InitDB(s, guildID)
-		LoadGuilds()
+		Mutex.Lock()
+		LoadGuild(guildID)
+		Mutex.Unlock()
+		return
 	}
+	Mutex.RUnlock()
 }

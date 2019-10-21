@@ -19,9 +19,9 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
@@ -60,8 +60,8 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Add reddit username in map
-	functionality.MapMutex.Lock()
-	if _, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
+	functionality.Mutex.Lock()
+	if memberInfoUser, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
 
 		// Stores time of verification
 		t := time.Now()
@@ -69,8 +69,8 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		ver := t.Format("2006-01-02 15:04:05") + " " + z
 
 		// Sets verification variables
-		functionality.GuildMap[m.GuildID].MemberInfoMap[userID].RedditUsername = redditUsername
-		functionality.GuildMap[m.GuildID].MemberInfoMap[userID].VerifiedDate = ver
+		memberInfoUser.RedditUsername = redditUsername
+		memberInfoUser.VerifiedDate = ver
 	} else if userMem != nil {
 
 		// Initializes user in memberInfo.json
@@ -82,22 +82,21 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		ver := t.Format("2006-01-02 15:04:05") + " " + z
 
 		// Sets verification variables
-		functionality.GuildMap[m.GuildID].MemberInfoMap[userID].RedditUsername = redditUsername
-		functionality.GuildMap[m.GuildID].MemberInfoMap[userID].VerifiedDate = ver
+		memberInfoUser.RedditUsername = redditUsername
+		memberInfoUser.VerifiedDate = ver
 	} else {
+		functionality.Mutex.Unlock()
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in the server _and_ internal database. Cannot verify user until they rejoin the server.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
 
 	// Writes modified memberInfo map to storage
 	_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// Puts all server roles in roles
 	roles, err := s.GuildRoles(m.GuildID)
@@ -123,9 +122,9 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Stores time of verification
 	t := time.Now()
 	// Adds to verified stats
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	functionality.GuildMap[m.GuildID].VerifiedStats[t.Format(functionality.DateFormat)]++
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	if userMem == nil {
 		return
@@ -147,9 +146,9 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var roleID string
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
@@ -172,25 +171,24 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Remove reddit username from map
-	functionality.MapMutex.Lock()
-	if _, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
+	functionality.Mutex.Lock()
+	if memberInfoUser, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
 		// Sets verification variables
-		functionality.GuildMap[m.GuildID].MemberInfoMap[userID].RedditUsername = ""
-		functionality.GuildMap[m.GuildID].MemberInfoMap[userID].VerifiedDate = ""
+		memberInfoUser.RedditUsername = ""
+		memberInfoUser.VerifiedDate = ""
 	} else {
+		functionality.Mutex.Unlock()
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User is not in internal database. Cannot unverify user until they join the server.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
 
 	// Writes modified memberInfo map to storage
 	_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// Puts all server roles in roles
 	roles, err := s.GuildRoles(m.GuildID)
@@ -215,9 +213,9 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Stores time of verification
 	t := time.Now()
 	// Removes from verified stats
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	functionality.GuildMap[m.GuildID].VerifiedStats[t.Format(functionality.DateFormat)]--
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	err = functionality.UnverifyEmbed(s, m, commandStrings[1])
 	if err != nil {

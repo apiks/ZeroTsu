@@ -14,12 +14,12 @@ func setDailyStatsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var guildDailyStats *functionality.Cha
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	if dailyStats, ok := functionality.GuildMap[m.GuildID].Autoposts["dailystats"]; ok {
 		guildDailyStats = dailyStats
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	if guildDailyStats == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: Autopost Daily Stats channel is currently not set. Please use `%sdailystats [channel]`\nTo disable it please use `%sdailystats disable`", guildSettings.Prefix, guildSettings.Prefix))
@@ -58,10 +58,11 @@ func setDailyStatsCommand(s *discordgo.Session, m *discordgo.Message) {
 		guildDailyStats.ID = channelID
 		guildDailyStats.Name = channelName
 	}
-	functionality.MapMutex.Lock()
+
+	functionality.Mutex.Lock()
 	functionality.GuildMap[m.GuildID].Autoposts["dailystats"] = guildDailyStats
 	_ = functionality.AutopostsWrite(functionality.GuildMap[m.GuildID].Autoposts, m.GuildID)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	if guildDailyStats == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Success! Autopost Daily Stats has been disabled!")
@@ -84,12 +85,12 @@ func setDailyScheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var guildDailySchedule *functionality.Cha
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	if dailySchedule, ok := functionality.GuildMap[m.GuildID].Autoposts["dailyschedule"]; ok {
 		guildDailySchedule = dailySchedule
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
@@ -131,10 +132,11 @@ func setDailyScheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 		guildDailySchedule.ID = channelID
 		guildDailySchedule.Name = channelName
 	}
-	functionality.MapMutex.Lock()
+
+	functionality.Mutex.Lock()
 	functionality.GuildMap[m.GuildID].Autoposts["dailyschedule"] = guildDailySchedule
 	_ = functionality.AutopostsWrite(functionality.GuildMap[m.GuildID].Autoposts, m.GuildID)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	if guildDailySchedule == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Success! Autopost Daily Anime Schedule has been disabled!")
@@ -156,12 +158,12 @@ func setNewEpisodesCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var guildNewEpisodes *functionality.Cha
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	if newEpisodes, ok := functionality.GuildMap[m.GuildID].Autoposts["newepisodes"]; ok {
 		guildNewEpisodes = newEpisodes
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
@@ -203,23 +205,23 @@ func setNewEpisodesCommand(s *discordgo.Session, m *discordgo.Message) {
 		guildNewEpisodes.ID = channelID
 		guildNewEpisodes.Name = channelName
 	}
-	functionality.MapMutex.Lock()
+
+	functionality.Mutex.Lock()
 	functionality.GuildMap[m.GuildID].Autoposts["newepisodes"] = guildNewEpisodes
 	_ = functionality.AutopostsWrite(functionality.GuildMap[m.GuildID].Autoposts, m.GuildID)
 
 	if guildNewEpisodes == nil {
+		functionality.Mutex.Unlock()
 		_, err := s.ChannelMessageSend(m.ChannelID, "Success! Autopost for new airing anime episodes has been disabled!")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
 
 	functionality.SetupGuildSub(m.GuildID)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New Autopost channel for new airing anime episodes is: `%s - %s`", guildNewEpisodes.Name, guildNewEpisodes.ID))
 	if err != nil {

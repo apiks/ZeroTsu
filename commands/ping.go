@@ -8,11 +8,11 @@ import (
 
 // Prints a message to see if the BOT is alive
 func pingCommand(s *discordgo.Session, m *discordgo.Message) {
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
-	err := functionality.PingEmbed(s, m, &guildSettings)
+	err := functionality.PingEmbed(s, m, guildSettings)
 	if err != nil {
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 	}

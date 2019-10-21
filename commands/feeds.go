@@ -22,9 +22,9 @@ func setRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 		subIndex int
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	cmdStrs := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
@@ -86,14 +86,14 @@ func setRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 		title += cmdStrs[i] + " "
 	}
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	err := functionality.RssThreadsWrite(subreddit, author, title, postType, m.ChannelID, m.GuildID, pin)
 	if err != nil {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! This reddit feed has been saved."))
 	if err != nil {
@@ -115,21 +115,20 @@ func removeRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 		subIndex int
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	guildFeeds := functionality.GuildMap[m.GuildID].Feeds
+	functionality.Mutex.RUnlock()
 
 	// Check if there are set reddit feeds for this guild
-	if functionality.GuildMap[m.GuildID].Feeds == nil || len(functionality.GuildMap[m.GuildID].Feeds) == 0 {
+	if guildFeeds == nil || len(guildFeeds) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error. There are no set reddit feeds.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
-	functionality.MapMutex.Unlock()
 
 	cmdStrs := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
@@ -192,14 +191,14 @@ func removeRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	err := functionality.RssThreadsRemove(subreddit, title, author, postType, channelID, m.GuildID)
 	if err != nil {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! This reddit feed has been removed."))
 	if err != nil {
@@ -216,38 +215,37 @@ func viewRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 		splitMessage []string
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	guildFeeds := functionality.GuildMap[m.GuildID].Feeds
+	functionality.Mutex.RUnlock()
 
-	if len(functionality.GuildMap[m.GuildID].Feeds) == 0 {
+	if guildFeeds == nil || len(guildFeeds) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no set reddit feeds.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
 
 	// Iterates through all the reddit feeds if they exist and adds them to the message string and print them
-	for i := 0; i < len(functionality.GuildMap[m.GuildID].Feeds); i++ {
+	for i := 0; i < len(guildFeeds); i++ {
 		// Format print string
-		message += fmt.Sprintf("**r/%v**", functionality.GuildMap[m.GuildID].Feeds[i].Subreddit)
-		if functionality.GuildMap[m.GuildID].Feeds[i].Author != "" {
-			message += fmt.Sprintf(" - **u/%v**", functionality.GuildMap[m.GuildID].Feeds[i].Author)
+		message += fmt.Sprintf("**r/%s**", guildFeeds[i].Subreddit)
+		if guildFeeds[i].Author != "" {
+			message += fmt.Sprintf(" - **u/%s**", guildFeeds[i].Author)
 		}
-		message += fmt.Sprintf(" - **%v**", functionality.GuildMap[m.GuildID].Feeds[i].PostType)
-		if functionality.GuildMap[m.GuildID].Feeds[i].Pin {
+		message += fmt.Sprintf(" - **%s**", guildFeeds[i].PostType)
+		if guildFeeds[i].Pin {
 			message += " - **pinned**"
 		}
-		message += fmt.Sprintf(" - **%v**", functionality.GuildMap[m.GuildID].Feeds[i].ChannelID)
-		if functionality.GuildMap[m.GuildID].Feeds[i].Title != "" {
-			message += fmt.Sprintf(" - **%v**", functionality.GuildMap[m.GuildID].Feeds[i].Title)
+		message += fmt.Sprintf(" - **%s**", guildFeeds[i].ChannelID)
+		if guildFeeds[i].Title != "" {
+			message += fmt.Sprintf(" - **%s**", guildFeeds[i].Title)
 		}
 		message += "\n"
 	}
-	functionality.MapMutex.Unlock()
 
 	// Splits the message if it's over 1900 characters
 	if len(message) > 1900 {
