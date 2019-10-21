@@ -286,8 +286,58 @@ func LoadGuilds() {
 
 // Loads a specific guild's DB
 func LoadGuild(guildID string) {
+	GuildMap[guildID] = &GuildInfo{
+		GuildID: guildID,
+		GuildConfig: &GuildSettings{
+			Prefix:              ".",
+			VoteModule:          false,
+			WaifuModule:         false,
+			ReactsModule:        true,
+			WhitelistFileFilter: false,
+			PingMessage:         "Hmmm~ So this is what you do all day long?",
+			Premium:             false,
+		},
+		PunishedUsers:       nil,
+		Filters:             nil,
+		MessageRequirements: nil,
+		SpoilerRoles:        nil,
+		Feeds:               nil,
+		RssThreadChecks:     nil,
+		Raffles:             nil,
+		Waifus:              nil,
+		WaifuTrades:         nil,
+		MemberInfoMap:       make(map[string]*UserInfo),
+		SpoilerMap:          make(map[string]*discordgo.Role),
+		EmojiStats:          make(map[string]*Emoji),
+		ChannelStats:        make(map[string]*Channel),
+		UserChangeStats:     make(map[string]int),
+		VerifiedStats:       make(map[string]int),
+		VoteInfoMap:         make(map[string]*VoteInfo),
+		TempChaMap:          make(map[string]*TempChaInfo),
+		ReactJoinMap:        make(map[string]*ReactJoin),
+		EmojiRoleMap:        make(map[string][]string),
+		ExtensionList:       make(map[string]string),
+		Autoposts:           make(map[string]*Cha),
+	}
+
 	for _, file := range guildFileNames {
 		LoadGuildFile(guildID, file)
+	}
+
+	// Loads default map settings
+	if GuildMap[guildID].GuildConfig.BotLog != nil {
+		if dailystats, ok := GuildMap[guildID].Autoposts["dailystats"]; ok {
+			if dailystats != nil {
+				GuildMap[guildID].Autoposts["dailystats"] = GuildMap[guildID].GuildConfig.BotLog
+				_ = AutopostsWrite(GuildMap[guildID].Autoposts, guildID)
+			}
+		} else {
+			GuildMap[guildID].Autoposts["dailystats"] = GuildMap[guildID].GuildConfig.BotLog
+			_ = AutopostsWrite(GuildMap[guildID].Autoposts, guildID)
+		}
+	}
+	if _, ok := GuildMap[guildID].Autoposts["newepisodes"]; ok {
+		SetupGuildSub(guildID)
 	}
 }
 
