@@ -160,7 +160,7 @@ func ChannelStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Checks for nil entry assignment error and saves from that (could be abused to stop bot)
 	if id != "" {
-		functionality.MapMutex.Lock()
+		functionality.Mutex.Lock()
 		if functionality.GuildMap[config.ServerID].ChannelStats[id] == nil {
 			pick.Error = false
 			// Loads the html & css stats files
@@ -171,15 +171,15 @@ func ChannelStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 					fmt.Println(err.Error())
 				}
 			}
-			functionality.MapMutex.Unlock()
+			functionality.Mutex.Unlock()
 			return
 		}
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 	}
 
 	if id == "" {
 		pick.ChannelStats = make(map[string]*functionality.Channel)
-		functionality.MapMutex.Lock()
+		functionality.Mutex.Lock()
 		pick.ChannelStats = functionality.GuildMap[config.ServerID].ChannelStats
 		// Loads the html & css stats files
 		t, err := template.ParseFiles("./web/assets/channelstats.html")
@@ -189,16 +189,16 @@ func ChannelStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 				fmt.Println(err.Error())
 			}
 		}
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		return
 	} else {
-		functionality.MapMutex.Lock()
+		functionality.Mutex.Lock()
 		pick.Flag = true
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 	}
 
 	// Save dates, sort them and then assign messages in order of the dates
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	for date := range functionality.GuildMap[config.ServerID].ChannelStats[id].Messages {
 		dateLabels = append(dateLabels, date)
 	}
@@ -225,7 +225,7 @@ func ChannelStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(err.Error())
 		}
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 }
 
 func UserChangeStatsPageHandler(w http.ResponseWriter, r *http.Request) {
@@ -246,7 +246,7 @@ func UserChangeStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Save dates, sort them and then assign user change int in order of the dates
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	for date := range functionality.GuildMap[config.ServerID].UserChangeStats {
 		dateLabels = append(dateLabels, date)
 		totalChange += functionality.GuildMap[config.ServerID].UserChangeStats[date]
@@ -270,7 +270,7 @@ func UserChangeStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(err.Error())
 		}
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 }
 
 // Handles the verification
@@ -303,7 +303,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Create entry in UserCookieMap if it doesn't exist. Otherwise just update tempUser with map value
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	if _, ok := SafeCookieMap.userCookieMap[cookie.Value]; !ok {
 		tempUser.Cookie = cookie.Value
 		tempUser.Expiry = expire
@@ -312,7 +312,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		tempUser = *SafeCookieMap.userCookieMap[cookie.Value]
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// Fetches queries from link if they exist
 	queryValues := r.URL.Query()
@@ -325,7 +325,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	if errorVar != "" {
 		// Set error
 		tempUser.Error = "Error: Permission not given in verification. If this was a mistake please try to verify again."
-		functionality.MapMutex.Lock()
+		functionality.Mutex.Lock()
 		SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
 
 		// Loads the html & css verification files
@@ -341,7 +341,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 			tempUser.Error = ""
 			SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
 		}
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		return
 	}
 
@@ -363,22 +363,22 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 			// Set new decrypted user ID to verify
 			tempUser.ID = trueid
-			functionality.MapMutex.Lock()
+			functionality.Mutex.Lock()
 			SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
-			functionality.MapMutex.Unlock()
+			functionality.Mutex.Unlock()
 		}
 	}
 
 	// Saves the code in the user cookie map if it exists
 	if code != "" {
 		tempUser.Code = code
-		functionality.MapMutex.Lock()
+		functionality.Mutex.Lock()
 		SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 	}
 
 	// Sets the username + discrim combo if it exists in memberinfo via ID, also sorts out the reddit verified status
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	if _, ok := functionality.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID]; ok {
 		usernameDiscrim := functionality.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].Username + "#" + functionality.GuildMap[config.ServerID].MemberInfoMap[SafeCookieMap.userCookieMap[cookie.Value].ID].Discrim
 		tempUser.UsernameDiscrim = usernameDiscrim
@@ -415,7 +415,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 						tempUser.Error = ""
 						SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
 					}
-					functionality.MapMutex.Unlock()
+					functionality.Mutex.Unlock()
 					return
 				}
 				verified = true
@@ -477,7 +477,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 					tempUser.Error = ""
 					SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
 				}
-				functionality.MapMutex.Unlock()
+				functionality.Mutex.Unlock()
 				return
 			}
 		}
@@ -546,7 +546,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		tempUser.Error = ""
 		SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 }
 
 // Verifies user on reddit and returns their reddit username
@@ -802,7 +802,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 	// Checks every 10 seconds if a user in the verifyMap needs to be given the role, also clears UserCookieMap if expiry date has passed
 	for range time.NewTicker(10 * time.Second).C {
 
-		functionality.MapMutex.Lock()
+		functionality.Mutex.Lock()
 		if len(verifyMap) != 0 {
 			for userID := range verifyMap {
 
@@ -883,7 +883,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 
 		// Clears userCookieMap based on expiry date
 		if len(SafeCookieMap.userCookieMap) != 0 {
-			functionality.MapMutex.Unlock()
+			functionality.Mutex.Unlock()
 			continue
 		}
 		now := time.Now()
@@ -893,7 +893,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 				break
 			}
 		}
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 	}
 }
 
@@ -920,7 +920,7 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 	userID = user.User.ID
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	if _, ok := functionality.GuildMap[u.GuildID]; !ok {
 		functionality.InitDB(s, u.GuildID)
 		functionality.LoadGuilds()
@@ -928,18 +928,18 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	// Checks if the user is an already verified one
 	if len(functionality.GuildMap[config.ServerID].MemberInfoMap) == 0 {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		return
 	}
 	if functionality.GuildMap[config.ServerID].MemberInfoMap[userID] == nil {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		return
 	}
 	if functionality.GuildMap[config.ServerID].MemberInfoMap[userID].RedditUsername == "" {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		return
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// Puts all server roles in roles
 	roles, err := s.GuildRoles(config.ServerID)
@@ -968,9 +968,9 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	_ = CheckAltAccount(s, userID)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 }
 
 // Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Verification version
