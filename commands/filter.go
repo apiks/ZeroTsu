@@ -5,6 +5,7 @@ import (
 	"log"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/bwmarrin/discordgo"
 
@@ -257,7 +258,7 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 		mentionRegex := regexp.MustCompile(`(?m)<@!?\d+>`)
 		mentionCheck = mentionRegex.FindAllString(mLowercase, -1)
 		if mentionCheck != nil {
-			var wg deadlock.WaitGroup
+			var wg sync.WaitGroup
 
 			for _, mention := range mentionCheck {
 

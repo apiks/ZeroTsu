@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -123,7 +124,7 @@ func punishmentHandler(s *discordgo.Session, guildID string) {
 		return
 	}
 
-	var wg deadlock.WaitGroup
+	var wg sync.WaitGroup
 	t := time.Now()
 
 	Mutex.Lock()

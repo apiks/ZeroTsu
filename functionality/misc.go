@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -366,7 +367,7 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 		mentionRegex := regexp.MustCompile(`(?m)<@!?\d+>`)
 		userMentionCheck = mentionRegex.FindAllString(m, -1)
 		if userMentionCheck != nil {
-			var wg deadlock.WaitGroup
+			var wg sync.WaitGroup
 
 			for _, mention := range userMentionCheck {
 				go func(mention string) {
