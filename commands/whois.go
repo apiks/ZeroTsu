@@ -60,11 +60,12 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if user is in MemberInfo and assigns to user variable. Else initializes user.
-	functionality.Mutex.Lock()
+	functionality.Mutex.RLock()
 	_, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
 	if !ok {
+		functionality.Mutex.RUnlock()
+
 		if mem == nil {
-			functionality.Mutex.Unlock()
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server and internal database. Cannot whois until user joins the server.")
 			if err != nil {
 				functionality.LogError(s, guildSettings.BotLog, err)
@@ -74,11 +75,14 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		// Initializes user if he doesn't exist and is in server
+		functionality.Mutex.Lock()
 		functionality.InitializeMember(mem, m.GuildID)
 		_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+		functionality.Mutex.Unlock()
+		functionality.Mutex.RLock()
 	}
 	user := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
-	functionality.Mutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Puts past usernames into a string
 	if len(user.PastUsernames) != 0 {
@@ -323,32 +327,34 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if user is in MemberInfo and assigns to user variable. Else initializes user.
-	functionality.Mutex.Lock()
+	functionality.Mutex.RLock()
 	_, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
 	if !ok {
-		functionality.Mutex.Unlock()
+		functionality.Mutex.RUnlock()
 
 		// Fetches user from server if possible
 		mem, err := s.State.Member(m.GuildID, userID)
 		if err != nil {
-			mem, _ = s.GuildMember(m.GuildID, userID)
-		}
-		if mem == nil {
-			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server and internal database. Cannot timestamp until they rejoin server.")
+			mem, err = s.GuildMember(m.GuildID, userID)
 			if err != nil {
-				functionality.LogError(s, guildSettings.BotLog, err)
+				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server and internal database. Cannot timestamp until they rejoin server.")
+				if err != nil {
+					functionality.LogError(s, guildSettings.BotLog, err)
+					return
+				}
 				return
 			}
-			return
 		}
 
 		// Initializes user if he doesn't exist and is in server
 		functionality.Mutex.Lock()
 		functionality.InitializeMember(mem, m.GuildID)
 		_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+		functionality.Mutex.Unlock()
+		functionality.Mutex.RLock()
 	}
 	user := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
-	functionality.Mutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Check if timestamps exist
 	if len(user.Timestamps) == 0 {
