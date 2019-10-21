@@ -309,7 +309,7 @@ func viewSubscriptions(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		for i := 0; i < len(shows); i++ {
-			message += fmt.Sprintf("**%s.** %v\n", i+1, shows[i].Show)
+			message += fmt.Sprintf("**%d.** %v\n", i+1, shows[i].Show)
 		}
 	}
 
