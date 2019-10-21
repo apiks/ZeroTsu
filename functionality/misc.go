@@ -409,7 +409,7 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 		channelMentionRegex := regexp.MustCompile(`(?m)(<#\d+>)`)
 		channelMentionCheck = channelMentionRegex.FindAllString(m, -1)
 		if channelMentionCheck != nil {
-			var wg deadlock.WaitGroup
+			var wg sync.WaitGroup
 
 			for _, mention := range channelMentionCheck {
 				go func(mention string) {
