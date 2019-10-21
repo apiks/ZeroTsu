@@ -301,6 +301,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 			functionality.Mutex.Lock()
 			guildSettings := functionality.GuildMap[guild.ID].GetGuildSettings()
 			if !guildSettings.VoteModule {
+				functionality.Mutex.Unlock()
 				continue
 			}
 
@@ -474,7 +475,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					if guildSettings.BotLog.ID != "" {
 						continue
 					}
-					_, err = s.ChannelMessageSend(guildSettings.BotLog.ID, fmt.Sprintf("Temp channel `%v` has been created from a vote by user %v#%v.", temp.Channel, temp.User.Username, temp.User.Discriminator))
+					_, err = s.ChannelMessageSend(guildSettings.BotLog.ID, fmt.Sprintf("Temp channel `%s` has been created from a vote by user %s#%s.", temp.Channel, temp.User.Username, temp.User.Discriminator))
 					if err != nil {
 						functionality.LogError(s, guildSettings.BotLog, err)
 						continue
@@ -485,6 +486,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 			cha, err := s.GuildChannels(guild.ID)
 			if err != nil {
+				functionality.Mutex.Unlock()
 				continue
 			}
 

@@ -136,9 +136,10 @@ func punishmentHandler(s *discordgo.Session, guildID string) {
 	}
 
 	// Unbans/Unmutes users
+	wg.Add(len(GuildMap[guildID].PunishedUsers))
 	for i := len(GuildMap[guildID].PunishedUsers) - 1; i >= 0; i-- {
 		go func(i int) {
-			wg.Add(1)
+			defer wg.Done()
 			fieldRemoved := unbanHandler(s, guildID, i, bans, &t)
 			if fieldRemoved {
 				return
@@ -312,7 +313,6 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 	t := time.Now()
 
 	Mutex.Lock()
-
 	if SharedInfo.RemindMes == nil {
 		Mutex.Unlock()
 		return
@@ -323,12 +323,10 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 			continue
 		}
 
-		temp := remindMeSlice.RemindMeSlice[:0]
-		for i, remindMe := range remindMeSlice.RemindMeSlice {
+		for i := len(remindMeSlice.RemindMeSlice)-1; i >= 0; i-- {
 			// Checks if it's time to send message/ping the user
 			difference := t.Sub(remindMeSlice.RemindMeSlice[i].Date)
 			if difference <= 0 {
-				temp = append(temp, remindMe)
 				continue
 			}
 
@@ -349,8 +347,7 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 				if err == nil {
 					_, err := s.ChannelMessageSend(cmdChannel, msgChannel)
 					if err != nil {
-						Mutex.Lock()
-						temp = append(temp, remindMe)
+						Mutex.RLock()
 						continue
 					}
 				}
@@ -360,14 +357,12 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 			writeFlag = true
 
 			Mutex.Lock()
+			if i < len(SharedInfo.RemindMes[userID].RemindMeSlice)-1 {
+				copy(SharedInfo.RemindMes[userID].RemindMeSlice[i:], SharedInfo.RemindMes[userID].RemindMeSlice[i+1:])
+			}
+			SharedInfo.RemindMes[userID].RemindMeSlice[len(SharedInfo.RemindMes[userID].RemindMeSlice)-1] = nil
+			SharedInfo.RemindMes[userID].RemindMeSlice =SharedInfo.RemindMes[userID].RemindMeSlice[:len(SharedInfo.RemindMes[userID].RemindMeSlice)-1]
 		}
-
-		if len(temp) == 0 {
-			delete(SharedInfo.RemindMes, userID)
-			writeFlag = true
-			continue
-		}
-		remindMeSlice.RemindMeSlice = temp
 	}
 
 	if !writeFlag {
