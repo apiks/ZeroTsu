@@ -319,11 +319,15 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 	}
 
 	for userID, remindMeSlice := range SharedInfo.RemindMes {
-		if remindMeSlice == nil || remindMeSlice.RemindMeSlice == nil || len(remindMeSlice.RemindMeSlice) == 0 {
+		if remindMeSlice == nil {
 			continue
 		}
 
 		for i := len(remindMeSlice.RemindMeSlice)-1; i >= 0; i-- {
+			if remindMeSlice.RemindMeSlice == nil || remindMeSlice.RemindMeSlice[i] == nil {
+				continue
+			}
+
 			// Checks if it's time to send message/ping the user
 			difference := t.Sub(remindMeSlice.RemindMeSlice[i].Date)
 			if difference <= 0 {
@@ -347,7 +351,7 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 				if err == nil {
 					_, err := s.ChannelMessageSend(cmdChannel, msgChannel)
 					if err != nil {
-						Mutex.RLock()
+						Mutex.Lock()
 						continue
 					}
 				}
@@ -362,6 +366,11 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 			}
 			SharedInfo.RemindMes[userID].RemindMeSlice[len(SharedInfo.RemindMes[userID].RemindMeSlice)-1] = nil
 			SharedInfo.RemindMes[userID].RemindMeSlice =SharedInfo.RemindMes[userID].RemindMeSlice[:len(SharedInfo.RemindMes[userID].RemindMeSlice)-1]
+		}
+
+		if remindMeSlice.RemindMeSlice == nil || len(remindMeSlice.RemindMeSlice) == 0 {
+			delete(SharedInfo.RemindMes, userID)
+			writeFlag = true
 		}
 	}
 
