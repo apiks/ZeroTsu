@@ -31,14 +31,16 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	functionality.HandleNewGuild(s, r.GuildID)
 
 	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[r.GuildID].GetGuildSettings()
-	guildRoleEmojiMap := functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID].RoleEmojiMap
-
 	// Checks if a react channel join is set for that specific message and emoji and continues if true
-	if functionality.GuildMap[r.GuildID].ReactJoinMap == nil || functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID] == nil {
+	if functionality.GuildMap[r.GuildID].ReactJoinMap == nil ||
+		functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID] == nil ||
+		functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID].RoleEmojiMap == nil {
 		functionality.Mutex.RUnlock()
 		return
 	}
+
+	guildSettings := functionality.GuildMap[r.GuildID].GetGuildSettings()
+	guildRoleEmojiMap := functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID].RoleEmojiMap
 	functionality.Mutex.RUnlock()
 
 	// Return if the one reacting is this BOT
@@ -110,14 +112,16 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 	functionality.HandleNewGuild(s, r.GuildID)
 
 	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[r.GuildID].GetGuildSettings()
-	guildRoleEmojiMap := functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID].RoleEmojiMap
-
 	// Checks if a react channel join is set for that specific message and emoji and continues if true
-	if functionality.GuildMap[r.GuildID].ReactJoinMap == nil || functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID] == nil {
+	if functionality.GuildMap[r.GuildID].ReactJoinMap == nil ||
+		functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID] == nil ||
+		functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID].RoleEmojiMap == nil {
 		functionality.Mutex.RUnlock()
 		return
 	}
+
+	guildSettings := functionality.GuildMap[r.GuildID].GetGuildSettings()
+	guildRoleEmojiMap := functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID].RoleEmojiMap
 	functionality.Mutex.RUnlock()
 
 	// Return if the one unreacting is this BOT
