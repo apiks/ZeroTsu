@@ -19,6 +19,7 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 		if rec := recover(); rec != nil {
 			log.Println(rec)
 			log.Println("Recovery in ReactJoinHandler")
+			log.Println("stacktrace from panic: \n" + string(debug.Stack()))
 		}
 	}()
 
@@ -33,8 +34,7 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	guildRoleEmojiMap := functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID].RoleEmojiMap
 
 	// Checks if a react channel join is set for that specific message and emoji and continues if true
-
-	if functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID] == nil {
+	if functionality.GuildMap[r.GuildID].ReactJoinMap == nil || functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID] == nil {
 		functionality.Mutex.RUnlock()
 		return
 	}
@@ -107,12 +107,12 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 
 	functionality.HandleNewGuild(s, r.GuildID)
 
-	functionality.Mutex.RUnlock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[r.GuildID].GetGuildSettings()
 	guildRoleEmojiMap := functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID].RoleEmojiMap
 
 	// Checks if a react channel join is set for that specific message and emoji and continues if true
-	if functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID] == nil {
+	if functionality.GuildMap[r.GuildID].ReactJoinMap == nil || functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID] == nil {
 		functionality.Mutex.RUnlock()
 		return
 	}
