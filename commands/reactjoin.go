@@ -3,6 +3,7 @@ package commands
 import (
 	"log"
 	"regexp"
+	"runtime/debug"
 	"strconv"
 	"strings"
 
@@ -98,6 +99,7 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 		if rec := recover(); rec != nil {
 			log.Println(rec)
 			log.Println("Recovery in ReactRemoveHandler")
+			log.Println("stacktrace from panic: \n" + string(debug.Stack()))
 		}
 	}()
 
