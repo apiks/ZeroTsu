@@ -423,6 +423,10 @@ func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
+	// Removes arrows from emojis, mentions and channels
+	commandStrings[1] = strings.TrimPrefix(commandStrings[1], "<")
+	commandStrings[1] = strings.TrimSuffix(commandStrings[1], ">")
+
 	// Writes the phrase to filters.json and checks if the requirement was already in storage
 	err := functionality.FiltersWrite(commandStrings[1], m.GuildID)
 	if err != nil {
@@ -465,10 +469,14 @@ func removeFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
+	// Removes arrows from emojis, mentions and channels
+	commandStrings[1] = strings.TrimPrefix(commandStrings[1], "<")
+	commandStrings[1] = strings.TrimSuffix(commandStrings[1], ">")
+
 	// Removes phrase from storage and memory
 	err := functionality.FiltersRemove(commandStrings[1], m.GuildID)
 	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
@@ -500,7 +508,7 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Iterates through all the filters in memory and adds them to the filters string
 	for _, filter := range guildFilters {
-		filters += fmt.Sprintf("**%v**\n", filter.Filter)
+		filters += fmt.Sprintf("**%s**\n", filter.Filter)
 	}
 	filters = strings.TrimSuffix(filters, "\n")
 
@@ -584,6 +592,10 @@ func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 		requirementType = "soft"
 	}
 
+	// Removes arrows from emojis, mentions and channels
+	phrase = strings.TrimPrefix(phrase, "<")
+	phrase = strings.TrimSuffix(phrase, ">")
+
 	// Writes the phrase to messrequirement.json and checks if the requirement was already in storage
 	err := functionality.MessRequirementWrite(phrase, channelID, requirementType, m.GuildID)
 	if err != nil {
@@ -644,6 +656,10 @@ func removeMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 		phrase = commandStrings[1]
 	}
 
+	// Removes arrows from emojis, mentions and channels
+	phrase = strings.TrimPrefix(phrase, "<")
+	phrase = strings.TrimSuffix(phrase, ">")
+
 	// Removes the phrase from storage and memory
 	err := functionality.MessRequirementRemove(phrase, channelID, m.GuildID)
 	if err != nil {
@@ -682,7 +698,7 @@ func viewMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 		if requirement.Channel == "" {
 			requirement.Channel = "All channels"
 		}
-		mRequirements += fmt.Sprintf("**%v** - **%v** - **%v**\n", requirement.Phrase, requirement.Channel, requirement.Type)
+		mRequirements += fmt.Sprintf("**%s** - **%s** - **%s**\n", requirement.Phrase, requirement.Channel, requirement.Type)
 	}
 	mRequirements = strings.TrimSuffix(mRequirements, "\n")
 

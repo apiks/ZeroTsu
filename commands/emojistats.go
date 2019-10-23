@@ -79,7 +79,7 @@ func OnMessageEmoji(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if saveFlag {
 		functionality.Mutex.Lock()
 		functionality.GuildMap[m.GuildID].EmojiStats = guildEmojiStats
-		functionality.Mutex.RUnlock()
+		functionality.Mutex.Unlock()
 	}
 }
 
