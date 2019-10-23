@@ -305,14 +305,11 @@ func OnMemberJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
+	functionality.HandleNewGuild(s, u.GuildID)
+
 	t := time.Now()
 
 	functionality.Mutex.Lock()
-	if _, ok := functionality.GuildMap[u.GuildID]; !ok {
-		functionality.InitDB(s, u.GuildID)
-		functionality.LoadGuilds()
-	}
-
 	functionality.GuildMap[u.GuildID].UserChangeStats[t.Format(functionality.DateFormat)]++
 	functionality.Mutex.Unlock()
 }
@@ -331,14 +328,11 @@ func OnMemberRemoval(s *discordgo.Session, u *discordgo.GuildMemberRemove) {
 		return
 	}
 
+	functionality.HandleNewGuild(s, u.GuildID)
+
 	t := time.Now()
 
 	functionality.Mutex.Lock()
-	if _, ok := functionality.GuildMap[u.GuildID]; !ok {
-		functionality.InitDB(s, u.GuildID)
-		functionality.LoadGuilds()
-	}
-
 	functionality.GuildMap[u.GuildID].UserChangeStats[t.Format(functionality.DateFormat)]--
 	functionality.Mutex.Unlock()
 }

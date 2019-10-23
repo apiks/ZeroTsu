@@ -824,7 +824,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 						continue
 					}
 					functionality.GuildMap[config.ServerID].MemberInfoMap[userID].SuspectedSpambot = false
-					functionality.WriteMemberInfo(functionality.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
+					_ = functionality.WriteMemberInfo(functionality.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
 				}
 
 				// Checks if the user is in the server before continuing. Very important to avoid bugs
@@ -875,7 +875,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 						continue
 					}
 					functionality.InitializeMember(user, config.ServerID)
-					functionality.WriteMemberInfo(functionality.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
+					_ = functionality.WriteMemberInfo(functionality.GuildMap[config.ServerID].MemberInfoMap, config.ServerID)
 				}
 				delete(verifyMap, userID)
 			}
@@ -913,6 +913,8 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		}
 	}()
 
+	functionality.HandleNewGuild(s, u.GuildID)
+
 	// Pulls info on user if possible
 	user, err := s.GuildMember(config.ServerID, u.User.ID)
 	if err != nil {
@@ -920,26 +922,21 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 	userID = user.User.ID
 
-	functionality.Mutex.Lock()
-	if _, ok := functionality.GuildMap[u.GuildID]; !ok {
-		functionality.InitDB(s, u.GuildID)
-		functionality.LoadGuilds()
-	}
-
+	functionality.Mutex.RLock()
 	// Checks if the user is an already verified one
 	if len(functionality.GuildMap[config.ServerID].MemberInfoMap) == 0 {
-		functionality.Mutex.Unlock()
+		functionality.Mutex.RUnlock()
 		return
 	}
 	if functionality.GuildMap[config.ServerID].MemberInfoMap[userID] == nil {
-		functionality.Mutex.Unlock()
+		functionality.Mutex.RUnlock()
 		return
 	}
 	if functionality.GuildMap[config.ServerID].MemberInfoMap[userID].RedditUsername == "" {
-		functionality.Mutex.Unlock()
+		functionality.Mutex.RUnlock()
 		return
 	}
-	functionality.Mutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Puts all server roles in roles
 	roles, err := s.GuildRoles(config.ServerID)
@@ -968,9 +965,9 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 		return
 	}
 
-	functionality.Mutex.Lock()
+	functionality.Mutex.RLock()
 	_ = CheckAltAccount(s, userID)
-	functionality.Mutex.Unlock()
+	functionality.Mutex.RUnlock()
 }
 
 // Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Verification version
