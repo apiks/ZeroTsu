@@ -171,11 +171,7 @@ func unbanHandler(s *discordgo.Session, guildID string, i int, bans []*discordgo
 
 	// Unbans User if possible and needed
 	if banFlag {
-		err := s.GuildBanDelete(guildID, GuildMap[guildID].PunishedUsers[i].ID)
-		if err != nil {
-			guildSettings := GuildMap[guildID].GetGuildSettings()
-			LogError(s, guildSettings.BotLog, err)
-		}
+		_ = s.GuildBanDelete(guildID, GuildMap[guildID].PunishedUsers[i].ID)
 	}
 
 	// Removes unban date entirely

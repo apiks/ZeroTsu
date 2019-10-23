@@ -1,8 +1,6 @@
 package functionality
 
 import (
-	"log"
-
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/config"
@@ -23,7 +21,6 @@ func HasElevatedPermissions(s *discordgo.Session, userID string, guildID string)
 	if err != nil {
 		mem, err = s.GuildMember(guildID, userID)
 		if err != nil {
-			log.Println(err)
 			return false
 		}
 	}
