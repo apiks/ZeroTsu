@@ -125,8 +125,8 @@ func ListenForDeletedRoleHandler(s *discordgo.Session, g *discordgo.GuildRoleDel
 
 	HandleNewGuild(s, g.GuildID)
 
-	Mutex.RLock()
-	defer Mutex.RUnlock()
+	Mutex.Lock()
+	defer Mutex.Unlock()
 	if GuildMap[g.GuildID].SpoilerMap[g.RoleID] == nil {
 		return
 	}
@@ -368,10 +368,15 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 		userMentionCheck = mentionRegex.FindAllString(m, -1)
 		if userMentionCheck != nil {
 			var wg sync.WaitGroup
+			wg.Add(len(userMentionCheck))
 
 			for _, mention := range userMentionCheck {
 				go func(mention string) {
-					wg.Add(1)
+					defer wg.Done()
+
+					if len(GuildMap[guildID].MemberInfoMap) != 0 {
+						return
+					}
 
 					userID = strings.TrimPrefix(mention, "<@")
 					userID = strings.TrimPrefix(userID, "!")
@@ -379,12 +384,10 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 
 					// Checks first in memberInfo. Only checks serverside if it doesn't exist. Saves performance
 					Mutex.RLock()
-					if len(GuildMap[guildID].MemberInfoMap) != 0 {
-						if _, ok := GuildMap[guildID].MemberInfoMap[userID]; ok {
-							mentions += " " + strings.ToLower(GuildMap[guildID].MemberInfoMap[userID].Nickname)
-							Mutex.RUnlock()
-							return
-						}
+					if _, ok := GuildMap[guildID].MemberInfoMap[userID]; ok {
+						mentions += " " + strings.ToLower(GuildMap[guildID].MemberInfoMap[userID].Nickname)
+						Mutex.RUnlock()
+						return
 					}
 					Mutex.RUnlock()
 
@@ -396,6 +399,7 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 							return
 						}
 					}
+
 					m = strings.Replace(m, mention, fmt.Sprintf("@%s", user.Nick), -1)
 				}(mention)
 			}
@@ -410,10 +414,11 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 		channelMentionCheck = channelMentionRegex.FindAllString(m, -1)
 		if channelMentionCheck != nil {
 			var wg sync.WaitGroup
+			wg.Add(len(channelMentionCheck))
 
 			for _, mention := range channelMentionCheck {
 				go func(mention string) {
-					wg.Add(1)
+					defer wg.Done()
 
 					channelID := strings.TrimPrefix(mention, "<#")
 					channelID = strings.TrimSuffix(channelID, ">")

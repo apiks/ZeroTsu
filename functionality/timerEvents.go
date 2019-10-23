@@ -23,9 +23,9 @@ func WriteEvents(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(30 * time.Minute).C {
 		var randomPlayingMsg string
 		t := time.Now()
+		rand.Seed(t.UnixNano())
 
 		// Updates playing status
-		rand.Seed(t.UnixNano())
 		Mutex.RLock()
 		if len(config.PlayingMsg) > 1 {
 			randomPlayingMsg = config.PlayingMsg[rand.Intn(len(config.PlayingMsg))]
@@ -400,9 +400,12 @@ func feedHandler(s *discordgo.Session, guildID string) {
 	}()
 
 	// Blocks handling of new feed threads if there are some currently being sent
+	Mutex.RLock()
 	if redditFeedBlock {
+		Mutex.RUnlock()
 		return
 	}
+	Mutex.RUnlock()
 
 	var (
 		pinnedItems   = make(map[*gofeed.Item]bool)
@@ -537,7 +540,9 @@ func feedHandler(s *discordgo.Session, guildID string) {
 
 	// Sends the threads concurrently in slow mode
 	go func() {
+		Mutex.Lock()
 		redditFeedBlock = true
+		Mutex.Unlock()
 		for thread, items := range threadsToPost {
 			for _, item := range items {
 				// Sends the feed item
@@ -584,6 +589,8 @@ func feedHandler(s *discordgo.Session, guildID string) {
 			}
 			delete(threadsToPost, thread)
 		}
+		Mutex.Lock()
 		redditFeedBlock = false
+		Mutex.Unlock()
 	}()
 }
