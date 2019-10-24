@@ -315,7 +315,9 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 	}
 
 	for userID, remindMeSlice := range SharedInfo.RemindMes {
-		if remindMeSlice == nil {
+		if remindMeSlice == nil ||
+			remindMeSlice.RemindMeSlice == nil ||
+			len(remindMeSlice.RemindMeSlice) == 0 {
 			continue
 		}
 
@@ -337,21 +339,19 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 			cmdChannel := remindMeSlice.RemindMeSlice[i].CommandChannel
 			Mutex.Unlock()
 
-			dm, err := s.UserChannelCreate(userID)
-			if err == nil {
-				_, err = s.ChannelMessageSend(dm.ID, msgDM)
-			}
-			if err != nil && guildID != "" {
-				// Checks if the user is in the server and then pings him if true
-				_, err := s.GuildMember(guildID, userID)
+			go func() {
+				dm, err := s.UserChannelCreate(userID)
 				if err == nil {
-					_, err := s.ChannelMessageSend(cmdChannel, msgChannel)
-					if err != nil {
-						Mutex.Lock()
-						continue
+					_, err = s.ChannelMessageSend(dm.ID, msgDM)
+				}
+				if err != nil && guildID != "" {
+					// Checks if the user is in the server and then pings him if true
+					_, err := s.GuildMember(guildID, userID)
+					if err == nil {
+						_, _ = s.ChannelMessageSend(cmdChannel, msgChannel)
 					}
 				}
-			}
+			}()
 
 			// Sets write Flag
 			writeFlag = true
@@ -361,7 +361,7 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 				copy(SharedInfo.RemindMes[userID].RemindMeSlice[i:], SharedInfo.RemindMes[userID].RemindMeSlice[i+1:])
 			}
 			SharedInfo.RemindMes[userID].RemindMeSlice[len(SharedInfo.RemindMes[userID].RemindMeSlice)-1] = nil
-			SharedInfo.RemindMes[userID].RemindMeSlice =SharedInfo.RemindMes[userID].RemindMeSlice[:len(SharedInfo.RemindMes[userID].RemindMeSlice)-1]
+			SharedInfo.RemindMes[userID].RemindMeSlice = SharedInfo.RemindMes[userID].RemindMeSlice[:len(SharedInfo.RemindMes[userID].RemindMeSlice)-1]
 		}
 
 		if remindMeSlice.RemindMeSlice == nil || len(remindMeSlice.RemindMeSlice) == 0 {
