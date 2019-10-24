@@ -635,3 +635,21 @@ func DynamicNicknameChange(s *discordgo.Session, guildID string, oldPrefix ...st
 		}
 	}
 }
+
+// Fixes broken anime guild subs that are null
+func fixGuildSubsCommand(guildID string) {
+
+	Mutex.Lock()
+	animeSubs := SharedInfo.AnimeSubs
+
+	for ID, subs := range animeSubs {
+		if subs != nil || ID != guildID {
+			continue
+		}
+
+		SetupGuildSub(guildID)
+		break
+	}
+
+	Mutex.Unlock()
+}

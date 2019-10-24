@@ -389,7 +389,13 @@ func animeSubsHandler(s *discordgo.Session) {
 
 	// Iterates over all users and their shows and sends notifications if need be
 	for userID, subscriptions := range animeSubs {
+		if subscriptions == nil {
+			continue
+		}
 		for subKey, userShow := range subscriptions {
+			if userShow == nil {
+				continue
+			}
 
 			// Checks if the user has already been notified for this show
 			if userShow.Notified {
@@ -432,10 +438,7 @@ func animeSubsHandler(s *discordgo.Session) {
 
 					functionality.Mutex.RLock()
 					newepisodes, ok := functionality.GuildMap[userID].Autoposts["newepisodes"]
-					if !ok {
-						functionality.Mutex.RUnlock()
-						continue
-					} else if newepisodes == nil {
+					if !ok || newepisodes == nil {
 						functionality.Mutex.RUnlock()
 						continue
 					}

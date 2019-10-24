@@ -282,12 +282,17 @@ func CommandErrorHandler(s *discordgo.Session, m *discordgo.Message, botLog *Cha
 
 // Logs the error in the guild BotLog
 func LogError(s *discordgo.Session, botLog *Cha, err error) {
-	if botLog == nil {
+	if botLog == nil || botLog.ID == "" {
 		return
 	}
-	if botLog.ID == "" {
-		return
+
+	// Don't log Discord Internal Server Errors
+	if restErr, ok := err.(*discordgo.RESTError); ok {
+		if restErr.Message.Message == "500: Internal Server Error" {
+			return
+		}
 	}
+
 	go func() {
 		_, _ = s.ChannelMessageSend(botLog.ID, err.Error())
 	}()
