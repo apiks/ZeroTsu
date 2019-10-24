@@ -38,6 +38,9 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		// Handles Reddit Feeds
 		feedHandler(s, guild.ID)
 
+		// Reload null guild anime subs
+		fixGuildSubsCommand(guild.ID)
+
 		// Changes nickname dynamically based on prefix
 		DynamicNicknameChange(s, guild.ID)
 	}
