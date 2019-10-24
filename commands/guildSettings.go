@@ -234,12 +234,16 @@ func prefixCommand(s *discordgo.Session, m *discordgo.Message) {
 func botLogCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var message string
+	var guildBotLog *functionality.Cha
 
 	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	if guildSettings.BotLog != nil {
+		guildBotLog = guildSettings.BotLog
+	}
 	functionality.Mutex.RUnlock()
 
-	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
+	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	// Displays current botlog channel
 	if len(commandStrings) == 1 {
@@ -248,7 +252,7 @@ func botLogCommand(s *discordgo.Session, m *discordgo.Message) {
 		} else if guildSettings.BotLog.ID == "" {
 			message = fmt.Sprintf("Error: Bot Log is currently not set. Please use `%sbotlog [channel]`", guildSettings.Prefix)
 		} else {
-			message = fmt.Sprintf("Current Bot Log is: `%s - %s` \n\n To change Bot Log please use `%sbotlog [channel]`", guildSettings.BotLog.Name, guildSettings.BotLog.ID, guildSettings.Prefix)
+			message = fmt.Sprintf("Current Bot Log is: `%s - %s` \n\nTo change Bot Log please use `%sbotlog [channel]`\nTo disable it please use `%sbotlog disable`", guildSettings.BotLog.Name, guildSettings.BotLog.ID, guildSettings.Prefix, guildSettings.Prefix)
 		}
 
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
@@ -259,10 +263,32 @@ func botLogCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Parses channel
-	chaID, chaName := functionality.ChannelParser(s, commandStrings[1], m.GuildID)
-	if chaID == "" {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such channel exists.")
+	// Parse and save the target channel
+	if commandStrings[1] == "disable" {
+		guildBotLog = nil
+	} else {
+		guildBotLog = &functionality.Cha{}
+		channelID, channelName := functionality.ChannelParser(s, commandStrings[1], m.GuildID)
+		if channelID == "" && channelName == "" {
+			_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such channel")
+			if err != nil {
+				functionality.LogError(s, guildSettings.BotLog, err)
+				return
+			}
+			return
+		}
+		guildBotLog.ID = channelID
+		guildBotLog.Name = channelName
+	}
+
+	// Changes and writes new bot log to storage
+	functionality.Mutex.Lock()
+	functionality.GuildMap[m.GuildID].GuildConfig.BotLog = guildBotLog
+	_ = functionality.GuildSettingsWrite(functionality.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	functionality.Mutex.Unlock()
+
+	if guildBotLog == nil {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Success! BotLog has been disabled!")
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
@@ -270,15 +296,9 @@ func botLogCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Changes and writes new bot log to storage
-	functionality.Mutex.Lock()
-	functionality.GuildMap[m.GuildID].GuildConfig.BotLog = &functionality.Cha{Name: chaName, ID: chaID}
-	_ = functionality.GuildSettingsWrite(functionality.GuildMap[m.GuildID].GuildConfig, m.GuildID)
-	functionality.Mutex.Unlock()
-
-	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Bot Log is: `%v - %v`", chaName, chaID))
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Bot Log is: `%s - %s`", guildBotLog.Name, guildBotLog.ID))
 	if err != nil {
-		guildSettings.BotLog = &functionality.Cha{Name: chaName, ID: chaID}
+		guildSettings.BotLog = guildBotLog
 		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
