@@ -293,10 +293,7 @@ func LogError(s *discordgo.Session, botLog *Cha, err error) {
 		}
 	}
 
-	go func() {
-		_, _ = s.ChannelMessageSend(botLog.ID, err.Error())
-	}()
-	return
+	_, _ = s.ChannelMessageSend(botLog.ID, err.Error())
 }
 
 // SplitLongMessage takes a message and splits it if it's longer than 1900

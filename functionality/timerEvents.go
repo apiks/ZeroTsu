@@ -306,6 +306,7 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 	}()
 
 	var writeFlag bool
+	var wg sync.WaitGroup
 	t := time.Now()
 
 	Mutex.Lock()
@@ -339,7 +340,10 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 			cmdChannel := remindMeSlice.RemindMeSlice[i].CommandChannel
 			Mutex.Unlock()
 
+			wg.Add(1)
 			go func() {
+				defer wg.Done()
+
 				dm, err := s.UserChannelCreate(userID)
 				if err == nil {
 					_, err = s.ChannelMessageSend(dm.ID, msgDM)
@@ -357,16 +361,9 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 			writeFlag = true
 
 			Mutex.Lock()
-			if i < len(SharedInfo.RemindMes[userID].RemindMeSlice)-1 {
-				copy(SharedInfo.RemindMes[userID].RemindMeSlice[i:], SharedInfo.RemindMes[userID].RemindMeSlice[i+1:])
-			}
+			SharedInfo.RemindMes[userID].RemindMeSlice[i] = SharedInfo.RemindMes[userID].RemindMeSlice[len(SharedInfo.RemindMes[userID].RemindMeSlice)-1]
 			SharedInfo.RemindMes[userID].RemindMeSlice[len(SharedInfo.RemindMes[userID].RemindMeSlice)-1] = nil
 			SharedInfo.RemindMes[userID].RemindMeSlice = SharedInfo.RemindMes[userID].RemindMeSlice[:len(SharedInfo.RemindMes[userID].RemindMeSlice)-1]
-		}
-
-		if remindMeSlice.RemindMeSlice == nil || len(remindMeSlice.RemindMeSlice) == 0 {
-			delete(SharedInfo.RemindMes, userID)
-			writeFlag = true
 		}
 	}
 
@@ -383,6 +380,8 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 		return
 	}
 	Mutex.Unlock()
+
+	wg.Wait()
 }
 
 // Pulls reddit feeds and prints them
