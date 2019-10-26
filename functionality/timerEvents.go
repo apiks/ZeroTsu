@@ -341,7 +341,7 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 			Mutex.Unlock()
 
 			wg.Add(1)
-			go func() {
+			go func(userID, msgDM, msgChannel, cmdChannel, guildID string) {
 				defer wg.Done()
 
 				dm, err := s.UserChannelCreate(userID)
@@ -355,7 +355,7 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 						_, _ = s.ChannelMessageSend(cmdChannel, msgChannel)
 					}
 				}
-			}()
+			}(userID, msgDM, msgChannel, cmdChannel, guildID)
 
 			// Sets write Flag
 			writeFlag = true
