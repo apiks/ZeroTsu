@@ -338,7 +338,6 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 			msgDM := fmt.Sprintf("RemindMe: %s", remindMeSlice.RemindMeSlice[i].Message)
 			msgChannel := fmt.Sprintf("<@%s> Remindme: %s", userID, remindMeSlice.RemindMeSlice[i].Message)
 			cmdChannel := remindMeSlice.RemindMeSlice[i].CommandChannel
-			Mutex.Unlock()
 
 			wg.Add(1)
 			go func(userID, msgDM, msgChannel, cmdChannel, guildID string) {
@@ -360,7 +359,6 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 			// Sets write Flag
 			writeFlag = true
 
-			Mutex.Lock()
 			SharedInfo.RemindMes[userID].RemindMeSlice[i] = SharedInfo.RemindMes[userID].RemindMeSlice[len(SharedInfo.RemindMes[userID].RemindMeSlice)-1]
 			SharedInfo.RemindMes[userID].RemindMeSlice[len(SharedInfo.RemindMes[userID].RemindMeSlice)-1] = nil
 			SharedInfo.RemindMes[userID].RemindMeSlice = SharedInfo.RemindMes[userID].RemindMeSlice[:len(SharedInfo.RemindMes[userID].RemindMeSlice)-1]
