@@ -33,7 +33,7 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if message contains filtered words, which would not be allowed as a remind
 	badWordExists, _ := isFiltered(s, m)
 	if badWordExists {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Usage of server filtered words in the remindMe command is not allowed. Please use remindMe in another server I am in.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Usage of server filtered words in the remindMe command is not allowed. Please use remindMe in another server I am in or DMs.")
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
@@ -44,7 +44,7 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 3)
 
 	if len(commandStrings) < 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"remindme [time] [message]` \n\n"+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"remindme [time] [message]`\n\n"+
 			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes.")
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
@@ -78,12 +78,11 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Saves the remindMe data to an object of type remindMe
 	remindMeObject.CommandChannel = m.ChannelID
 	functionality.Mutex.Lock()
-	_, ok := functionality.SharedInfo.RemindMes[userID]
-	if ok {
+	if _, ok := functionality.SharedInfo.RemindMes[userID]; ok {
 		remindMeObject.RemindID = len(functionality.SharedInfo.RemindMes[userID].RemindMeSlice) + 1
 		flag = true
 	} else {
-		remindMeObject.RemindID = 1
+		remindMeObject.RemindID++
 	}
 	remindMeObject.Date = Date
 	remindMeObject.Message = commandStrings[2]
