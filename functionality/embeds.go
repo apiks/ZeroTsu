@@ -571,7 +571,7 @@ func AboutEmbed(s *discordgo.Session, m *discordgo.Message) error {
 		embed = &discordgo.MessageEmbed{
 			URL:         "https://github.com/r-anime/ZeroTsu",
 			Title:       s.State.User.Username,
-			Description: "Written in **Go** by _Apiks#8969_ with a focus on Moderation",
+			Description: "Written in **Go** by _Apiks#8969_ with a focus on Moderation for r/anime",
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "\n**Features:**",
