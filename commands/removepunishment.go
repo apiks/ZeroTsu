@@ -12,9 +12,9 @@ import (
 // Removes a warning log entry via index from memberInfo entry
 func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
@@ -36,20 +36,6 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Checks if user is in memberInfo
-	functionality.MapMutex.Lock()
-	if functionality.GuildMap[m.GuildID].MemberInfoMap[userID] == nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in internal database. Cannot remove nonexisting warning.")
-		if err != nil {
-			functionality.MapMutex.Unlock()
-			functionality.LogError(s, guildSettings.BotLog, err)
-			return
-		}
-		functionality.MapMutex.Unlock()
-		return
-	}
-	functionality.MapMutex.Unlock()
-
 	// Index checks
 	index, err := strconv.Atoi(commandStrings[2])
 	if err != nil {
@@ -60,18 +46,29 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
-	functionality.MapMutex.Lock()
-	if index > len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings) || index < 0 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid warning index.")
+
+	// Checks if user is in memberInfo
+	functionality.Mutex.RLock()
+	if functionality.GuildMap[m.GuildID].MemberInfoMap[userID] == nil {
+		functionality.Mutex.RUnlock()
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in internal database. Cannot remove nonexisting warning.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
-	functionality.MapMutex.Unlock()
+
+	if index > len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings) || index < 0 {
+		functionality.Mutex.RUnlock()
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid warning index.")
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	}
+	functionality.Mutex.RUnlock()
 
 	// Fixes index for future use if it's 0
 	if index != 0 {
@@ -79,7 +76,7 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Removes warning from map and sets punishment
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	punishment := functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings[index]
 	for timestampIndex, timestamp := range functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps {
 		if strings.ToLower(timestamp.Punishment) == strings.ToLower(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings[index]) {
@@ -91,7 +88,7 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Writes new map to storage
 	_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	err = functionality.RemovePunishmentEmbed(s, m, punishment)
 	if err != nil {
@@ -103,9 +100,9 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 // Removes a kick log entry via index from memberInfo entry
 func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
@@ -127,20 +124,6 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Checks if user is in memberInfo
-	functionality.MapMutex.Lock()
-	if functionality.GuildMap[m.GuildID].MemberInfoMap[userID] == nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in internal database. Cannot remove nonexisting kick.")
-		if err != nil {
-			functionality.MapMutex.Unlock()
-			functionality.LogError(s, guildSettings.BotLog, err)
-			return
-		}
-		functionality.MapMutex.Unlock()
-		return
-	}
-	functionality.MapMutex.Unlock()
-
 	// Index checks
 	index, err := strconv.Atoi(commandStrings[2])
 	if err != nil {
@@ -151,18 +134,29 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
-	functionality.MapMutex.Lock()
-	if index > len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks) || index < 0 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid kick index.")
+
+	// Checks if user is in memberInfo
+	functionality.Mutex.RLock()
+	if functionality.GuildMap[m.GuildID].MemberInfoMap[userID] == nil {
+		functionality.Mutex.RUnlock()
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in internal database. Cannot remove nonexisting kick.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
-	functionality.MapMutex.Unlock()
+
+	if index > len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks) || index < 0 {
+		functionality.Mutex.Unlock()
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid kick index.")
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	}
+	functionality.Mutex.Unlock()
 
 	// Fixes index for future use if it's 0
 	if index != 0 {
@@ -170,7 +164,7 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Removes kick from map and sets punishment
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	punishment := functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks[index]
 	for timestampIndex, timestamp := range functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps {
 		if strings.ToLower(timestamp.Punishment) == strings.ToLower(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks[index]) {
@@ -182,7 +176,7 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Writes new map to storage
 	_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	err = functionality.RemovePunishmentEmbed(s, m, punishment)
 	if err != nil {
@@ -194,9 +188,9 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 // Removes a ban log entry via index from memberInfo entry
 func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
@@ -218,20 +212,6 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Checks if user is in memberInfo
-	functionality.MapMutex.Lock()
-	if functionality.GuildMap[m.GuildID].MemberInfoMap[userID] == nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in internal database. Cannot remove nonexisting ban.")
-		if err != nil {
-			functionality.MapMutex.Unlock()
-			functionality.LogError(s, guildSettings.BotLog, err)
-			return
-		}
-		functionality.MapMutex.Unlock()
-		return
-	}
-	functionality.MapMutex.Unlock()
-
 	// Index checks
 	index, err := strconv.Atoi(commandStrings[2])
 	if err != nil {
@@ -242,18 +222,29 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
-	functionality.MapMutex.Lock()
-	if index > len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Bans) || index < 0 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid ban index.")
+
+	// Checks if user is in memberInfo
+	functionality.Mutex.RLock()
+	if functionality.GuildMap[m.GuildID].MemberInfoMap[userID] == nil {
+		functionality.Mutex.RUnlock()
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in internal database. Cannot remove nonexisting ban.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
-	functionality.MapMutex.Unlock()
+
+	if index > len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Bans) || index < 0 {
+		functionality.Mutex.RUnlock()
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid ban index.")
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	}
+	functionality.Mutex.RUnlock()
 
 	// Fixes index for future use if it's 0
 	if index != 0 {
@@ -261,7 +252,7 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Removes ban from map and sets punishment
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	punishment := functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Bans[index]
 	for timestampIndex, timestamp := range functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps {
 		if strings.ToLower(timestamp.Punishment) == strings.ToLower(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Bans[index]) {
@@ -273,7 +264,7 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Writes new map to storage
 	_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	err = functionality.RemovePunishmentEmbed(s, m, punishment)
 	if err != nil {
@@ -285,9 +276,9 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 // Removes a mute log entry via index from memberInfo entry
 func removeMuteCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
@@ -309,20 +300,6 @@ func removeMuteCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Checks if user is in memberInfo
-	functionality.MapMutex.Lock()
-	if functionality.GuildMap[m.GuildID].MemberInfoMap[userID] == nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in internal database. Cannot remove nonexisting mute.")
-		if err != nil {
-			functionality.MapMutex.Unlock()
-			functionality.LogError(s, guildSettings.BotLog, err)
-			return
-		}
-		functionality.MapMutex.Unlock()
-		return
-	}
-	functionality.MapMutex.Unlock()
-
 	// Index checks
 	index, err := strconv.Atoi(commandStrings[2])
 	if err != nil {
@@ -333,18 +310,29 @@ func removeMuteCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
-	functionality.MapMutex.Lock()
-	if index > len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Mutes) || index < 0 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid mute index.")
+
+	// Checks if user is in memberInfo
+	functionality.Mutex.RLock()
+	if functionality.GuildMap[m.GuildID].MemberInfoMap[userID] == nil {
+		functionality.Mutex.RUnlock()
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: User does not exist in internal database. Cannot remove nonexisting mute.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
-	functionality.MapMutex.Unlock()
+
+	if index > len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Mutes) || index < 0 {
+		functionality.Mutex.RUnlock()
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid mute index.")
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	}
+	functionality.Mutex.RUnlock()
 
 	// Fixes index for future use if it's 0
 	if index != 0 {
@@ -352,7 +340,7 @@ func removeMuteCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Removes mute from map and sets punishment
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	punishment := functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Mutes[index]
 	for timestampIndex, timestamp := range functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps {
 		if strings.ToLower(timestamp.Punishment) == strings.ToLower(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Mutes[index]) {
@@ -364,7 +352,7 @@ func removeMuteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Writes new map to storage
 	_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	err = functionality.RemovePunishmentEmbed(s, m, punishment)
 	if err != nil {

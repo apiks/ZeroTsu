@@ -15,15 +15,15 @@ import (
 // Removes the previous x amount of messages in the channel it was used
 func pruneCommand(s *discordgo.Session, m *discordgo.Message) {
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
 	// Throw error not correct amoutn of parameters
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vprune [amount]`\n\n[amount] is the number of messages to remove. Max is 5000.", guildSettings.Prefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%sprune [amount]`\n\n[amount] is the number of messages to remove. Max is 5000.", guildSettings.Prefix))
 		if err != nil {
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
@@ -189,7 +189,7 @@ OuterLoop:
 		messagesLen -= 100
 	}
 
-	successMess3, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Removed the past %v messages in this channel. Removing command messages in 2 seconds.", len(deleteMessageIDs)))
+	successMess3, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Removed the past %d messages in this channel. Removing command messages in 2 seconds.", len(deleteMessageIDs)))
 	if err != nil {
 		functionality.CommandErrorHandler(s, m, guildBotLog, err)
 		return

@@ -18,15 +18,15 @@ func pickCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if m.GuildID != "" {
-		functionality.MapMutex.Lock()
-		*guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RLock()
+		guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
+		functionality.Mutex.RUnlock()
 	}
 
 	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vpick [item], [item]...`\n\nItem is anything that does not contain `,`\nUse `|` insead of `,` if you need a comma in the item", guildSettings.Prefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%spick [item], [item]...`\n\nItem is anything that does not contain `,`\nUse `|` insead of `,` if you need a comma in the item", guildSettings.Prefix))
 		if err != nil {
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
@@ -60,7 +60,7 @@ func pickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Picks a random item
 	randomItemNum := rand.Intn(len(items))
-	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("**Picked:** %v", items[randomItemNum]))
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("**Picked:** %s", items[randomItemNum]))
 	if err != nil {
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return

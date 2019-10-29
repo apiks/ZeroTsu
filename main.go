@@ -27,10 +27,10 @@ func main() {
 		panic(err)
 	}
 	// Load all guild and shared info
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	functionality.LoadSharedDB()
 	functionality.LoadGuilds()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	Start()
 

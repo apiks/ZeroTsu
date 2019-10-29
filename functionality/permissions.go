@@ -1,8 +1,6 @@
 package functionality
 
 import (
-	"log"
-
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/config"
@@ -19,15 +17,10 @@ type permission int
 
 // Checks if a user has admin permissions or is a privileged role
 func HasElevatedPermissions(s *discordgo.Session, userID string, guildID string) bool {
-	if userID == config.OwnerID {
-		return true
-	}
-
 	mem, err := s.State.Member(guildID, userID)
 	if err != nil {
 		mem, err = s.GuildMember(guildID, userID)
 		if err != nil {
-			log.Println(err)
 			return false
 		}
 	}
@@ -71,6 +64,12 @@ func MemberIsAdmin(s *discordgo.Session, guildID string, mem *discordgo.Member, 
 
 // Checks if a user has a privileged role in a given server
 func HasPrivilegedPermissions(m *discordgo.Member, guildID string) bool {
+	Mutex.RLock()
+	defer Mutex.RUnlock()
+	if m.User.ID == config.OwnerID {
+		return true
+	}
+
 	for _, role := range m.Roles {
 		for _, privilegedRole := range GuildMap[guildID].GuildConfig.CommandRoles {
 			if role == privilegedRole.ID {

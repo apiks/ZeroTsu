@@ -15,9 +15,9 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var banFlag = false
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
@@ -44,15 +44,14 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Goes through every banned user from BannedUsersSlice and if the user is in it, confirms that user is a temp ban
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	if len(functionality.GuildMap[m.GuildID].PunishedUsers) == 0 {
+		functionality.Mutex.Unlock()
 		_, err = s.ChannelMessageSend(m.ChannelID, "No bans found.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
 
@@ -61,11 +60,15 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 			banFlag = true
 
 			// Removes the ban from punishedUsers
-			functionality.GuildMap[m.GuildID].PunishedUsers = append(functionality.GuildMap[m.GuildID].PunishedUsers[:i], functionality.GuildMap[m.GuildID].PunishedUsers[i+1:]...)
+			if i < len(functionality.GuildMap[m.GuildID].PunishedUsers)-1 {
+				copy(functionality.GuildMap[m.GuildID].PunishedUsers[i:], functionality.GuildMap[m.GuildID].PunishedUsers[i+1:])
+			}
+			functionality.GuildMap[m.GuildID].PunishedUsers[len(functionality.GuildMap[m.GuildID].PunishedUsers)-1] = nil
+			functionality.GuildMap[m.GuildID].PunishedUsers = functionality.GuildMap[m.GuildID].PunishedUsers[:len(functionality.GuildMap[m.GuildID].PunishedUsers)-1]
 			break
 		}
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// Check if the user is banned using other means
 	if !banFlag {
@@ -83,7 +86,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if !banFlag {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%v#%v__ is not banned.", user.Username, user.Discriminator))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%s#%s__ is not banned.", user.Username, user.Discriminator))
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
@@ -102,22 +105,22 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 	t := time.Now()
 
 	// Updates unban date in memberInfo.json entry if possible and writes to storage
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	if _, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
 		functionality.GuildMap[m.GuildID].MemberInfoMap[userID].UnbanDate = t.Format("2006-01-02 15:04:05")
-		functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+		_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 	}
 	_ = functionality.PunishedUsersWrite(functionality.GuildMap[m.GuildID].PunishedUsers, m.GuildID)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%v#%v__ has been unbanned.", user.Username, user.Discriminator))
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%s#%s__ has been unbanned.", user.Username, user.Discriminator))
 	if err != nil {
 		functionality.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 
 	// Sends an embed message to bot-log if possible
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	if _, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
 		if guildSettings.BotLog != nil {
 			if guildSettings.BotLog.ID != "" {
@@ -125,7 +128,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 		}
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 }
 
 func init() {

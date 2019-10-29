@@ -10,9 +10,9 @@ import (
 func aboutCommand(s *discordgo.Session, m *discordgo.Message) {
 	err := functionality.AboutEmbed(s, m)
 	if err != nil && m.GuildID != "" {
-		functionality.MapMutex.Lock()
+		functionality.Mutex.RLock()
 		guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RUnlock()
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 	}
 }

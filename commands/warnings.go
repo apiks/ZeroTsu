@@ -16,9 +16,9 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		warningTimestamp functionality.Punishment
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 3)
 
@@ -49,16 +49,15 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if user is in memberInfo and handles them
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	if _, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; !ok || len(functionality.GuildMap[m.GuildID].MemberInfoMap) == 0 {
 		if userMem == nil {
+			functionality.Mutex.Unlock()
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot warn user until they join the server.")
 			if err != nil {
-				functionality.MapMutex.Unlock()
 				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
-			functionality.MapMutex.Unlock()
 			return
 		}
 		// Initializes user if he doesn't exist in memberInfo but is in server
@@ -71,7 +70,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Adds timestamp for that warning
 	t, err := m.Timestamp.Parse()
 	if err != nil {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
@@ -82,7 +81,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Writes to memberInfo.json
 	_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// Sends warning embed message to channel
 	if userMem == nil {
@@ -102,9 +101,9 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		warningTimestamp functionality.Punishment
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 3)
 
@@ -142,16 +141,15 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if user is in memberInfo and handles them
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	if _, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; !ok || len(functionality.GuildMap[m.GuildID].MemberInfoMap) == 0 {
 		if userMem == nil {
+			functionality.Mutex.Unlock()
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server _and_ memberInfo. Cannot warn user until they join the server.")
 			if err != nil {
-				functionality.MapMutex.Unlock()
 				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
-			functionality.MapMutex.Unlock()
 			return
 		}
 		// Initializes user if he doesn't exist in memberInfo but is in server
@@ -164,7 +162,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Adds timestamp for that warning
 	t, err := m.Timestamp.Parse()
 	if err != nil {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
@@ -175,7 +173,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Writes to memberInfo.json
 	_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// Sends message in DMs that they have been warned if able
 	dm, err := s.UserChannelCreate(userID)

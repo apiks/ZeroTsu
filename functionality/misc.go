@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -26,6 +27,8 @@ var (
 	ReadSpoilerPerms = discordgo.PermissionReadMessages + discordgo.PermissionReadMessageHistory
 
 	StartTime time.Time
+
+	ZeroTimeValue = time.Time{}
 )
 
 // Sorts roles alphabetically
@@ -120,21 +123,16 @@ func (c *UserAgentTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 // Every time a role is deleted it deletes it from SpoilerMap
 func ListenForDeletedRoleHandler(s *discordgo.Session, g *discordgo.GuildRoleDelete) {
 
-	MapMutex.Lock()
-	if _, ok := GuildMap[g.GuildID]; !ok {
-		InitDB(s, g.GuildID)
-		LoadGuilds()
-	}
+	HandleNewGuild(s, g.GuildID)
 
+	Mutex.Lock()
+	defer Mutex.Unlock()
 	if GuildMap[g.GuildID].SpoilerMap[g.RoleID] == nil {
-		MapMutex.Unlock()
 		return
 	}
 
 	delete(GuildMap[g.GuildID].SpoilerMap, g.RoleID)
-
 	SpoilerRolesDelete(g.RoleID, g.GuildID)
-	MapMutex.Unlock()
 }
 
 // ResolveTimeFromString resolves a time (usually for unbanning) from a given string formatted #w#d#h#m.
@@ -191,7 +189,7 @@ func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
 	if strings.Contains(userID, "/u/") {
 		exists := false
 		userID = strings.TrimPrefix(userID, "/u/")
-		MapMutex.Lock()
+		Mutex.RLock()
 		for _, user := range GuildMap[m.GuildID].MemberInfoMap {
 			if strings.ToLower(user.RedditUsername) == userID {
 				userID = user.ID
@@ -199,7 +197,7 @@ func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
 				break
 			}
 		}
-		MapMutex.Unlock()
+		Mutex.RUnlock()
 
 		if !exists {
 			return userID, fmt.Errorf("Error: This reddit user is not in the internal database. Cannot whois")
@@ -208,7 +206,7 @@ func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
 	if strings.Contains(userID, "u/") {
 		exists := false
 		userID = strings.TrimPrefix(userID, "u/")
-		MapMutex.Lock()
+		Mutex.RLock()
 		for _, user := range GuildMap[m.GuildID].MemberInfoMap {
 			if strings.ToLower(user.RedditUsername) == userID {
 				userID = user.ID
@@ -216,7 +214,7 @@ func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
 				break
 			}
 		}
-		MapMutex.Unlock()
+		Mutex.RUnlock()
 
 		if !exists {
 			return userID, fmt.Errorf("Error: This reddit user is not in the internal database. Cannot whois")
@@ -229,14 +227,14 @@ func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
 			return userID, fmt.Errorf("Error: Invalid user. You're trying to username#discrim with spaces in the username." +
 				" This command does not support that. Please use an ID")
 		}
-		MapMutex.Lock()
+		Mutex.RLock()
 		for _, user := range GuildMap[m.GuildID].MemberInfoMap {
 			if strings.ToLower(user.Username) == splitUser[0] && user.Discrim == splitUser[1] {
 				userID = user.ID
 				break
 			}
 		}
-		MapMutex.Unlock()
+		Mutex.RUnlock()
 	}
 
 	// Trims fluff if it was a mention. Otherwise check if it's a correct user ID
@@ -284,14 +282,18 @@ func CommandErrorHandler(s *discordgo.Session, m *discordgo.Message, botLog *Cha
 
 // Logs the error in the guild BotLog
 func LogError(s *discordgo.Session, botLog *Cha, err error) {
-	if botLog == nil {
+	if botLog == nil || botLog.ID == "" {
 		return
 	}
-	if botLog.ID == "" {
-		return
+
+	// Don't log Discord Internal Server Errors
+	if restErr, ok := err.(*discordgo.RESTError); ok {
+		if restErr.Message.Message == "500: Internal Server Error" {
+			return
+		}
 	}
+
 	_, _ = s.ChannelMessageSend(botLog.ID, err.Error())
-	return
 }
 
 // SplitLongMessage takes a message and splits it if it's longer than 1900
@@ -367,30 +369,44 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 		mentionRegex := regexp.MustCompile(`(?m)<@!?\d+>`)
 		userMentionCheck = mentionRegex.FindAllString(m, -1)
 		if userMentionCheck != nil {
-			MapMutex.Lock()
-			for i := range userMentionCheck {
-				userID = strings.TrimPrefix(userMentionCheck[i], "<@")
-				userID = strings.TrimPrefix(userID, "!")
-				userID = strings.TrimSuffix(userID, ">")
+			var wg sync.WaitGroup
+			wg.Add(len(userMentionCheck))
 
-				// Checks first in memberInfo. Only checks serverside if it doesn't exist. Saves performance
-				if len(GuildMap[guildID].MemberInfoMap) != 0 {
+			for _, mention := range userMentionCheck {
+				go func(mention string) {
+					defer wg.Done()
+
+					if len(GuildMap[guildID].MemberInfoMap) != 0 {
+						return
+					}
+
+					userID = strings.TrimPrefix(mention, "<@")
+					userID = strings.TrimPrefix(userID, "!")
+					userID = strings.TrimSuffix(userID, ">")
+
+					// Checks first in memberInfo. Only checks serverside if it doesn't exist. Saves performance
+					Mutex.RLock()
 					if _, ok := GuildMap[guildID].MemberInfoMap[userID]; ok {
 						mentions += " " + strings.ToLower(GuildMap[guildID].MemberInfoMap[userID].Nickname)
-						continue
+						Mutex.RUnlock()
+						return
 					}
-				}
+					Mutex.RUnlock()
 
-				// If user wasn't found in memberInfo with that username+discrim combo then fetch manually from Discord and then replace mentions with nick
-				user, err := s.State.Member(guildID, userID)
-				if err != nil {
-					user, _ = s.GuildMember(guildID, userID)
-				}
-				if user != nil {
-					m = strings.Replace(m, userMentionCheck[i], fmt.Sprintf("@%v", user.Nick), -1)
-				}
+					// If user wasn't found in memberInfo with that username+discrim combo then fetch manually from Discord
+					user, err := s.State.Member(guildID, userID)
+					if err != nil {
+						user, err = s.GuildMember(guildID, userID)
+						if err != nil {
+							return
+						}
+					}
+
+					m = strings.Replace(m, mention, fmt.Sprintf("@%s", user.Nick), -1)
+				}(mention)
 			}
-			MapMutex.Unlock()
+
+			wg.Wait()
 		}
 	}
 
@@ -399,19 +415,29 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 		channelMentionRegex := regexp.MustCompile(`(?m)(<#\d+>)`)
 		channelMentionCheck = channelMentionRegex.FindAllString(m, -1)
 		if channelMentionCheck != nil {
-			for i := range channelMentionCheck {
-				channelID := strings.TrimPrefix(channelMentionCheck[i], "<#")
-				channelID = strings.TrimSuffix(channelID, ">")
+			var wg sync.WaitGroup
+			wg.Add(len(channelMentionCheck))
 
-				// Fetches channel so we can parse its string name
-				cha, err := s.Channel(channelID)
-				if err != nil {
-					continue
-				}
-				if cha != nil {
-					m = strings.Replace(m, channelMentionCheck[i], fmt.Sprintf("#%v", cha.Name), -1)
-				}
+			for _, mention := range channelMentionCheck {
+				go func(mention string) {
+					defer wg.Done()
+
+					channelID := strings.TrimPrefix(mention, "<#")
+					channelID = strings.TrimSuffix(channelID, ">")
+
+					// Fetches channel so we can parse its string name
+					cha, err := s.State.Channel(channelID)
+					if err != nil {
+						cha, err = s.Channel(channelID)
+						if err != nil {
+							return
+						}
+					}
+					m = strings.Replace(m, mention, fmt.Sprintf("#%s", cha.Name), -1)
+				}(mention)
 			}
+
+			wg.Wait()
 		}
 	}
 
@@ -442,9 +468,9 @@ func ChannelParser(s *discordgo.Session, channel string, guildID string) (string
 	channels, err := s.GuildChannels(guildID)
 	if err != nil {
 
-		MapMutex.Lock()
+		Mutex.RLock()
 		guildSettings := GuildMap[guildID].GetGuildSettings()
-		MapMutex.Unlock()
+		Mutex.RUnlock()
 
 		LogError(s, guildSettings.BotLog, err)
 		return channelID, channelName
@@ -490,9 +516,9 @@ func CategoryParser(s *discordgo.Session, category string, guildID string) (stri
 	channels, err := s.GuildChannels(guildID)
 	if err != nil {
 
-		MapMutex.Lock()
+		Mutex.RLock()
 		guildSettings := GuildMap[guildID].GetGuildSettings()
-		MapMutex.Unlock()
+		Mutex.RUnlock()
 
 		LogError(s, guildSettings.BotLog, err)
 		return categoryID, categoryName
@@ -541,9 +567,9 @@ func RoleParser(s *discordgo.Session, role string, guildID string) (string, stri
 	roles, err := s.GuildRoles(guildID)
 	if err != nil {
 
-		MapMutex.Lock()
+		Mutex.RLock()
 		guildSettings := GuildMap[guildID].GetGuildSettings()
-		MapMutex.Unlock()
+		Mutex.RUnlock()
 
 		LogError(s, guildSettings.BotLog, err)
 		return roleID, roleName
@@ -600,9 +626,9 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 		return err
 	}
 
-	MapMutex.Lock()
+	Mutex.RLock()
 	guildSettings := GuildMap[guildID].GetGuildSettings()
-	MapMutex.Unlock()
+	Mutex.RUnlock()
 
 	// Checks if optins exist
 	if guildSettings.OptInUnder != nil {
@@ -701,6 +727,7 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 	if err != nil {
 		return err
 	}
+
 	for i, role := range deb {
 		if role.ID == guildSettings.OptInUnder.ID {
 			deb[i].Position = guildSettings.OptInUnder.Position
@@ -709,14 +736,16 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 			deb[i].Position = guildSettings.OptInAbove.Position
 		}
 	}
+
 	_, err = s.GuildRoleReorder(guildID, deb)
 	if err != nil {
 		return err
 	}
-	MapMutex.Lock()
-	GuildMap[guildID].GuildConfig = &guildSettings
+
+	Mutex.Lock()
+	GuildMap[guildID].GuildConfig = guildSettings
 	_ = GuildSettingsWrite(GuildMap[guildID].GuildConfig, guildID)
-	MapMutex.Unlock()
+	Mutex.Unlock()
 
 	return err
 }

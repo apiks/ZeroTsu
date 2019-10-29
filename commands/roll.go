@@ -19,9 +19,9 @@ func rollCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if m.GuildID != "" {
-		functionality.MapMutex.Lock()
-		*guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RLock()
+		guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
+		functionality.Mutex.RUnlock()
 	}
 
 	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
@@ -29,7 +29,7 @@ func rollCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Rolls a number between 1 and 100 if only the command is used
 	if len(commandStrings) == 1 {
 		randomNum := rand.Intn(99) + 1
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("**Rolled:** %v", randomNum))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("**Rolled:** %d", randomNum))
 		if err != nil {
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
@@ -39,7 +39,7 @@ func rollCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Prints error if too many parameters
 	if len(commandStrings) > 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vroll [number]`", guildSettings.Prefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%sroll [number]`", guildSettings.Prefix))
 		if err != nil {
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return

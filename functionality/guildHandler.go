@@ -284,6 +284,63 @@ func LoadGuilds() {
 	}
 }
 
+// Loads a specific guild's DB
+func LoadGuild(guildID string) {
+	GuildMap[guildID] = &GuildInfo{
+		GuildID: guildID,
+		GuildConfig: &GuildSettings{
+			Prefix:              ".",
+			VoteModule:          false,
+			WaifuModule:         false,
+			ReactsModule:        true,
+			WhitelistFileFilter: false,
+			PingMessage:         "Hmmm~ So this is what you do all day long?",
+			Premium:             false,
+		},
+		PunishedUsers:       nil,
+		Filters:             nil,
+		MessageRequirements: nil,
+		SpoilerRoles:        nil,
+		Feeds:               nil,
+		RssThreadChecks:     nil,
+		Raffles:             nil,
+		Waifus:              nil,
+		WaifuTrades:         nil,
+		MemberInfoMap:       make(map[string]*UserInfo),
+		SpoilerMap:          make(map[string]*discordgo.Role),
+		EmojiStats:          make(map[string]*Emoji),
+		ChannelStats:        make(map[string]*Channel),
+		UserChangeStats:     make(map[string]int),
+		VerifiedStats:       make(map[string]int),
+		VoteInfoMap:         make(map[string]*VoteInfo),
+		TempChaMap:          make(map[string]*TempChaInfo),
+		ReactJoinMap:        make(map[string]*ReactJoin),
+		EmojiRoleMap:        make(map[string][]string),
+		ExtensionList:       make(map[string]string),
+		Autoposts:           make(map[string]*Cha),
+	}
+
+	for _, file := range guildFileNames {
+		LoadGuildFile(guildID, file)
+	}
+
+	// Loads default map settings
+	if GuildMap[guildID].GuildConfig.BotLog != nil {
+		if dailystats, ok := GuildMap[guildID].Autoposts["dailystats"]; ok {
+			if dailystats != nil {
+				GuildMap[guildID].Autoposts["dailystats"] = GuildMap[guildID].GuildConfig.BotLog
+				_ = AutopostsWrite(GuildMap[guildID].Autoposts, guildID)
+			}
+		} else {
+			GuildMap[guildID].Autoposts["dailystats"] = GuildMap[guildID].GuildConfig.BotLog
+			_ = AutopostsWrite(GuildMap[guildID].Autoposts, guildID)
+		}
+	}
+	if _, ok := GuildMap[guildID].Autoposts["newepisodes"]; ok {
+		SetupGuildSub(guildID)
+	}
+}
+
 // Loads global shared DBs
 func LoadSharedDB() {
 	// Creates missing "database" and "shared" folder if they don't exist
@@ -412,7 +469,7 @@ func WriteMemberInfo(info map[string]*UserInfo, guildID string) error {
 	}
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/memberInfo.json", guildID), MarshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%s/memberInfo.json", guildID), MarshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
@@ -702,8 +759,8 @@ func RaffleRemove(raffle string, guildID string) error {
 	var raffleExists bool
 
 	// Checks if that raffle already exists in the raffles slice and deletes it if so
-	MapMutex.Lock()
-	for i := len(GuildMap[guildID].Raffles)-1; i >= 0; i-- {
+	Mutex.Lock()
+	for i := len(GuildMap[guildID].Raffles) - 1; i >= 0; i-- {
 		if strings.ToLower(GuildMap[guildID].Raffles[i].Name) != strings.ToLower(raffle) {
 			continue
 		}
@@ -718,17 +775,17 @@ func RaffleRemove(raffle string, guildID string) error {
 	}
 
 	if !raffleExists {
-		MapMutex.Unlock()
+		Mutex.Unlock()
 		return fmt.Errorf("Error: No such raffle exists")
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.Marshal(GuildMap[guildID].Raffles)
 	if err != nil {
-		MapMutex.Unlock()
+		Mutex.Unlock()
 		return err
 	}
-	MapMutex.Unlock()
+	Mutex.Unlock()
 
 	// Writes to file
 	err = ioutil.WriteFile(fmt.Sprintf("%s/%s/raffles.json", dbPath, guildID), marshaledStruct, 0644)
@@ -749,10 +806,10 @@ func FiltersWrite(phrase string, guildID string) error {
 	}
 
 	// Appends the new filtered phrase to a slice of all of the old ones if it doesn't exist
-	MapMutex.Lock()
+	Mutex.Lock()
 	for _, filter := range GuildMap[guildID].Filters {
 		if filter.Filter == phrase {
-			MapMutex.Unlock()
+			Mutex.Unlock()
 			return fmt.Errorf(fmt.Sprintf("Error: `%s` is already on the filter list.", phrase))
 		}
 	}
@@ -763,10 +820,10 @@ func FiltersWrite(phrase string, guildID string) error {
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(GuildMap[guildID].Filters, "", "    ")
 	if err != nil {
-		MapMutex.Unlock()
+		Mutex.Unlock()
 		return err
 	}
-	MapMutex.Unlock()
+	Mutex.Unlock()
 
 	// Writes to file
 	err = ioutil.WriteFile(fmt.Sprintf("%s/%s/filters.json", dbPath, guildID), marshaledStruct, 0644)
@@ -783,7 +840,7 @@ func FiltersRemove(phrase string, guildID string) error {
 	var filterExists bool
 
 	// Deletes the filtered phrase if it finds it exists
-	MapMutex.Lock()
+	Mutex.Lock()
 	for i, filter := range GuildMap[guildID].Filters {
 		if filter.Filter == phrase {
 			GuildMap[guildID].Filters = append(GuildMap[guildID].Filters[:i], GuildMap[guildID].Filters[i+1:]...)
@@ -794,17 +851,17 @@ func FiltersRemove(phrase string, guildID string) error {
 
 	// Exits func if the filter is not on the list
 	if !filterExists {
-		MapMutex.Unlock()
+		Mutex.Unlock()
 		return fmt.Errorf(fmt.Sprintf("Error: `%v` is not in the filter list.", phrase))
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.Marshal(GuildMap[guildID].Filters)
 	if err != nil {
-		MapMutex.Unlock()
+		Mutex.Unlock()
 		return err
 	}
-	MapMutex.Unlock()
+	Mutex.Unlock()
 
 	// Writes to file
 	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/filters.json", guildID), marshaledStruct, 0644)
@@ -829,10 +886,10 @@ func ExtensionsWrite(extension string, guildID string) error {
 	}
 
 	// Appends the new file extension to a slice of all of the old ones if it doesn't already exist
-	MapMutex.Lock()
+	Mutex.Lock()
 	for ext := range GuildMap[guildID].ExtensionList {
 		if strings.ToLower(ext) == strings.ToLower(extension) {
-			MapMutex.Unlock()
+			Mutex.Unlock()
 			return fmt.Errorf(fmt.Sprintf("Error: `%v` is already on the file extension list.", ext))
 		}
 	}
@@ -847,10 +904,10 @@ func ExtensionsWrite(extension string, guildID string) error {
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(GuildMap[guildID].ExtensionList, "", "    ")
 	if err != nil {
-		MapMutex.Unlock()
+		Mutex.Unlock()
 		return err
 	}
-	MapMutex.Unlock()
+	Mutex.Unlock()
 
 	// Writes to file
 	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/extensionList.json", guildID), marshaledStruct, 0644)
@@ -871,7 +928,7 @@ func ExtensionsRemove(extension string, guildID string) error {
 	}
 
 	// Deletes the filtered phrase if it finds it exists
-	MapMutex.Lock()
+	Mutex.Lock()
 	for ext := range GuildMap[guildID].ExtensionList {
 		if strings.ToLower(ext) == strings.ToLower(extension) {
 			delete(GuildMap[guildID].ExtensionList, extension)
@@ -882,17 +939,17 @@ func ExtensionsRemove(extension string, guildID string) error {
 
 	// Exits func if the extension is not on the blacklist
 	if !extensionExists {
-		MapMutex.Unlock()
+		Mutex.Unlock()
 		return fmt.Errorf(fmt.Sprintf("Error: `%v` is not in the file extension list.", extension))
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.Marshal(GuildMap[guildID].ExtensionList)
 	if err != nil {
-		MapMutex.Unlock()
+		Mutex.Unlock()
 		return err
 	}
-	MapMutex.Unlock()
+	Mutex.Unlock()
 
 	// Writes to file
 	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/extensionList.json", guildID), marshaledStruct, 0644)
@@ -913,10 +970,10 @@ func MessRequirementWrite(phrase string, channel string, filterType string, guil
 	}
 
 	// Appends the new phrase to a slice of all of the old ones if it doesn't exist
-	MapMutex.Lock()
+	Mutex.Lock()
 	for _, requirement := range GuildMap[guildID].MessageRequirements {
 		if requirement.Phrase == phrase {
-			MapMutex.Unlock()
+			Mutex.Unlock()
 			return fmt.Errorf(fmt.Sprintf("Error: `%v` is already on the message requirement list.", phrase))
 		}
 	}
@@ -927,10 +984,10 @@ func MessRequirementWrite(phrase string, channel string, filterType string, guil
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(GuildMap[guildID].MessageRequirements, "", "    ")
 	if err != nil {
-		MapMutex.Unlock()
+		Mutex.Unlock()
 		return err
 	}
-	MapMutex.Unlock()
+	Mutex.Unlock()
 
 	// Writes to file
 	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/messReqs.json", guildID), marshaledStruct, 0644)
@@ -947,7 +1004,7 @@ func MessRequirementRemove(phrase string, channelID string, guildID string) erro
 	var phraseExists bool
 
 	// Deletes the filtered phrase if it finds it exists
-	MapMutex.Lock()
+	Mutex.Lock()
 	for i, requirement := range GuildMap[guildID].MessageRequirements {
 		if requirement.Phrase == phrase {
 			if channelID != "" {
@@ -963,20 +1020,20 @@ func MessRequirementRemove(phrase string, channelID string, guildID string) erro
 
 	// Exits func if the filter is not on the list
 	if !phraseExists {
-		MapMutex.Unlock()
-		return fmt.Errorf(fmt.Sprintf("Error: `%v` is not in the message requirement list.", phrase))
+		Mutex.Unlock()
+		return fmt.Errorf(fmt.Sprintf("Error: `%s` is not in the message requirement list.", phrase))
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.Marshal(GuildMap[guildID].MessageRequirements)
 	if err != nil {
-		MapMutex.Unlock()
+		Mutex.Unlock()
 		return err
 	}
-	MapMutex.Unlock()
+	Mutex.Unlock()
 
 	// Writes to file
-	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/messReqs.json", guildID), marshaledStruct, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%s/messReqs.json", guildID), marshaledStruct, 0644)
 	if err != nil {
 		return err
 	}
@@ -1041,7 +1098,7 @@ func SpoilerRolesDelete(roleID string, guildID string) {
 	}
 
 	// Writes to file
-	_ = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%v/spoilerRoles.json", guildID), marshaledStruct, 0644)
+	_ = ioutil.WriteFile(fmt.Sprintf(dbPath+"/%s/spoilerRoles.json", guildID), marshaledStruct, 0644)
 }
 
 // Writes rss info to rssThreads.json
@@ -1261,12 +1318,15 @@ func InitDB(s *discordgo.Session, guildID string) {
 		os.Mkdir(path, 0777)
 		// Send message to support server mod log that a server has been created on the public ZeroTsu
 		if s.State.User.ID == "614495694769618944" {
-			guild, err := s.Guild(guildID)
-			if err == nil {
-				_, _ = s.ChannelMessageSend("619899424428130315", fmt.Sprintf("A DB entry has been created for guild: %s", guild.Name))
-			}
+			go func() {
+				guild, err := s.Guild(guildID)
+				if err == nil {
+					_, _ = s.ChannelMessageSend("619899424428130315", fmt.Sprintf("A DB entry has been created for guild: %s", guild.Name))
+				}
+			}()
 		}
 	}
+
 	for _, name := range guildFileNames {
 		if name == "bannedUsers.json" {
 			continue
@@ -1287,7 +1347,7 @@ func InitDB(s *discordgo.Session, guildID string) {
 		os.Mkdir(path, 0777)
 	}
 	for _, name := range sharedFileNames {
-		file, err := os.OpenFile(fmt.Sprintf("database/shared/%v", name), os.O_RDONLY|os.O_CREATE, 0666)
+		file, err := os.OpenFile(fmt.Sprintf("database/shared/%s", name), os.O_RDONLY|os.O_CREATE, 0666)
 		if err != nil {
 			log.Println(err)
 			continue
@@ -1367,12 +1427,17 @@ func fileExists(filename string) bool {
 }
 
 // Returns a copy of the guild settings
-func (g *GuildInfo) GetGuildSettings() GuildSettings {
-	return *g.GuildConfig
+func (g GuildInfo) GetGuildSettings() *GuildSettings {
+	return g.GuildConfig
 }
 
-// Writes/Refreshes all DBs
-func writeAll(guildID string) {
+// Returns a copy of the guild's punished users
+func (g GuildInfo) GetGuildPunishedUsers() []*PunishedUsers {
+	return g.PunishedUsers
+}
+
+// Writes/Refreshes all DBs in a specific guild
+func WriteGuild(guildID string) {
 	LoadSharedDB()
 	LoadGuilds()
 	_ = WriteMemberInfo(GuildMap[guildID].MemberInfoMap, guildID)

@@ -28,11 +28,11 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 1 {
 		// Get the current day's schedule in print format
 		if m.Author.ID == s.State.User.ID {
-			functionality.MapMutex.Unlock()
+			functionality.Mutex.Unlock()
 		}
 		printMessage = getDaySchedule(currentDay)
 		if m.Author.ID == s.State.User.ID {
-			functionality.MapMutex.Lock()
+			functionality.Mutex.Lock()
 		}
 	} else {
 		// Else get the target day's schedule in print format
@@ -59,11 +59,11 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 			if err != nil {
 				if m.GuildID != "" {
 					if m.Author.ID != s.State.User.ID {
-						functionality.MapMutex.Lock()
+						functionality.Mutex.Lock()
 					}
 					guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 					if m.Author.ID != s.State.User.ID {
-						functionality.MapMutex.Unlock()
+						functionality.Mutex.Unlock()
 					}
 					functionality.LogError(s, guildSettings.BotLog, err)
 				}
@@ -104,7 +104,7 @@ func getDaySchedule(weekday int) string {
 		PST = time.FixedZone("PST", -8*3600)
 	}
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	for dayInt, showSlice := range functionality.AnimeSchedule {
 		if dayInt == weekday {
 			for _, show := range showSlice {
@@ -148,7 +148,7 @@ func getDaySchedule(weekday int) string {
 			break
 		}
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	return printMessage
 }
@@ -221,12 +221,12 @@ func UpdateAnimeSchedule() {
 	}
 
 	// Find all airing shows and process them after resetting map
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	for dayInt := range functionality.AnimeSchedule {
 		delete(functionality.AnimeSchedule, dayInt)
 	}
 	document.Find(".columns h3").Each(processEachShow)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 }
 
 // isTimeDST returns true if time t occurs within daylight saving time

@@ -53,7 +53,7 @@ How to install:
 
        Website is the address/ip+:port of the website. Optional
 	   
-	   PlayingMsg is whatever "Playing" message you want the BOT to display. Owner can change it with the playingmsg command. Optional
+	   PlayingMsg are whatever "Playing" messages you want the BOT to display. Separate each quoted message with a comma. Owner can change it with the playingmsg command. Optional
 	   
 	   OwnerID is the user ID of the person with Owner level BOT permissions. Optional
 

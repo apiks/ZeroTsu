@@ -5,7 +5,9 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -19,26 +21,54 @@ var redditFeedBlock bool
 // Write Events
 func WriteEvents(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(30 * time.Minute).C {
-
+		var randomPlayingMsg string
 		t := time.Now()
+		rand.Seed(t.UnixNano())
 
 		// Updates playing status
-		MapMutex.Lock()
+		Mutex.RLock()
 		if len(config.PlayingMsg) > 1 {
-			rand.Seed(time.Now().UnixNano())
-			randInt := rand.Intn(len(config.PlayingMsg))
-			_ = s.UpdateStatus(0, config.PlayingMsg[randInt])
-		} else if len(config.PlayingMsg) == 1 {
-			_ = s.UpdateStatus(0, config.PlayingMsg[0])
-		} else {
-			_ = s.UpdateStatus(0, "")
+			randomPlayingMsg = config.PlayingMsg[rand.Intn(len(config.PlayingMsg))]
+		}
+		Mutex.RUnlock()
+		if randomPlayingMsg != "" {
+			_ = s.UpdateStatus(0, randomPlayingMsg)
 		}
 
 		for _, guild := range e.Guilds {
+
 			HandleNewGuild(s, guild.ID)
 
+			// Updates BOT nickname
+			DynamicNicknameChange(s, guild.ID)
+
+			// Clears up spoilerRoles.json
+			err := cleanSpoilerRoles(s, guild.ID)
+			if err != nil {
+				log.Println(err)
+			}
+
+			// Fetches all server roles
+			roles, err := s.GuildRoles(guild.ID)
+			if err != nil {
+				log.Println(err)
+			}
+
+			Mutex.Lock()
+			// Updates optin role stat
+			if roles != nil {
+				for channel := range GuildMap[guild.ID].ChannelStats {
+					if GuildMap[guild.ID].ChannelStats[channel].RoleCount == nil {
+						GuildMap[guild.ID].ChannelStats[channel].RoleCount = make(map[string]int)
+					}
+					if GuildMap[guild.ID].ChannelStats[channel].Optin {
+						GuildMap[guild.ID].ChannelStats[channel].RoleCount[t.Format(DateFormat)] = GetRoleUserAmount(guild, roles, GuildMap[guild.ID].ChannelStats[channel].Name)
+					}
+				}
+			}
+
 			// Writes emoji stats to disk
-			err := EmojiStatsWrite(GuildMap[guild.ID].EmojiStats, guild.ID)
+			err = EmojiStatsWrite(GuildMap[guild.ID].EmojiStats, guild.ID)
 			if err != nil {
 				log.Println(err)
 			}
@@ -62,33 +92,8 @@ func WriteEvents(s *discordgo.Session, e *discordgo.Ready) {
 			if err != nil {
 				log.Println(err)
 			}
-
-			// Clears up spoilerRoles.json
-			err = cleanSpoilerRoles(s, guild.ID)
-			if err != nil {
-				log.Println(err)
-			}
-
-			// Updates BOT nickname
-			DynamicNicknameChange(s, guild.ID)
-
-			// Fetches all server roles
-			roles, err := s.GuildRoles(guild.ID)
-			if err != nil {
-				log.Println(err)
-			}
-
-			// Updates optin role stat
-			for channel := range GuildMap[guild.ID].ChannelStats {
-				if GuildMap[guild.ID].ChannelStats[channel].RoleCount == nil {
-					GuildMap[guild.ID].ChannelStats[channel].RoleCount = make(map[string]int)
-				}
-				if GuildMap[guild.ID].ChannelStats[channel].Optin {
-					GuildMap[guild.ID].ChannelStats[channel].RoleCount[t.Format(DateFormat)] = GetRoleUserAmount(guild, roles, GuildMap[guild.ID].ChannelStats[channel].Name)
-				}
-			}
+			Mutex.Unlock()
 		}
-		MapMutex.Unlock()
 
 		// Sends server count to bot list sites if it's the public ZeroTsu
 		sendServers(s)
@@ -99,7 +104,6 @@ func WriteEvents(s *discordgo.Session, e *discordgo.Ready) {
 func CommonEvents(s *discordgo.Session, e *discordgo.Ready) {
 	for range time.NewTicker(30 * time.Second).C {
 		for _, guild := range e.Guilds {
-
 			// Handles Unbans and Unmutes
 			punishmentHandler(s, guild.ID)
 
@@ -108,19 +112,11 @@ func CommonEvents(s *discordgo.Session, e *discordgo.Ready) {
 
 			// Handles Reddit Feeds
 			feedHandler(s, guild.ID)
-
 		}
 	}
 }
 
 func punishmentHandler(s *discordgo.Session, guildID string) {
-	MapMutex.Lock()
-	defer MapMutex.Unlock()
-
-	// Checks if there are punishedUsers in this guild
-	if GuildMap[guildID].PunishedUsers == nil || len(GuildMap[guildID].PunishedUsers) == 0 {
-		return
-	}
 
 	// Fetches all server bans so it can check if the memberInfo User is banned there (whether he's been manually unbanned for example)
 	bans, err := s.GuildBans(guildID)
@@ -128,21 +124,35 @@ func punishmentHandler(s *discordgo.Session, guildID string) {
 		return
 	}
 
-	// Unbans/Unmutes users
-	for i := len(GuildMap[guildID].PunishedUsers) - 1; i >= 0; i-- {
-		fieldRemoved := unbanHandler(s, guildID, i, bans)
-		if fieldRemoved {
-			continue
-		}
-		unmuteHandler(s, guildID, i)
+	var wg sync.WaitGroup
+	t := time.Now()
+
+	Mutex.Lock()
+	defer Mutex.Unlock()
+
+	// Checks if there are punishedUsers in this guild
+	if GuildMap[guildID].PunishedUsers == nil || len(GuildMap[guildID].PunishedUsers) == 0 {
+		return
 	}
+
+	// Unbans/Unmutes users
+	wg.Add(len(GuildMap[guildID].PunishedUsers))
+	for i := len(GuildMap[guildID].PunishedUsers) - 1; i >= 0; i-- {
+		go func(i int) {
+			defer wg.Done()
+			fieldRemoved := unbanHandler(s, guildID, i, bans, &t)
+			if fieldRemoved {
+				return
+			}
+			unmuteHandler(s, guildID, i, &t)
+		}(i)
+	}
+
+	wg.Wait()
 }
 
-func unbanHandler(s *discordgo.Session, guildID string, i int, bans []*discordgo.GuildBan) bool {
-	t := time.Now()
-	zeroTimeValue := time.Time{}
-
-	if GuildMap[guildID].PunishedUsers[i].UnbanDate == zeroTimeValue {
+func unbanHandler(s *discordgo.Session, guildID string, i int, bans []*discordgo.GuildBan, t *time.Time) bool {
+	if GuildMap[guildID].PunishedUsers[i].UnbanDate == ZeroTimeValue {
 		return false
 	}
 	banDifference := t.Sub(GuildMap[guildID].PunishedUsers[i].UnbanDate)
@@ -161,12 +171,7 @@ func unbanHandler(s *discordgo.Session, guildID string, i int, bans []*discordgo
 
 	// Unbans User if possible and needed
 	if banFlag {
-		err := s.GuildBanDelete(guildID, GuildMap[guildID].PunishedUsers[i].ID)
-		if err != nil {
-			guildSettings := GuildMap[guildID].GetGuildSettings()
-			LogError(s, guildSettings.BotLog, err)
-			return false
-		}
+		_ = s.GuildBanDelete(guildID, GuildMap[guildID].PunishedUsers[i].ID)
 	}
 
 	// Removes unban date entirely
@@ -176,15 +181,19 @@ func unbanHandler(s *discordgo.Session, guildID string, i int, bans []*discordgo
 	}
 
 	// Removes the unbanDate from punishedUsers.json
-	if GuildMap[guildID].PunishedUsers[i].UnmuteDate != zeroTimeValue {
-		temp := PunishedUsers{
+	if GuildMap[guildID].PunishedUsers[i].UnmuteDate != ZeroTimeValue {
+		temp := &PunishedUsers{
 			ID:         GuildMap[guildID].PunishedUsers[i].ID,
 			User:       GuildMap[guildID].PunishedUsers[i].User,
 			UnmuteDate: GuildMap[guildID].PunishedUsers[i].UnmuteDate,
 		}
-		GuildMap[guildID].PunishedUsers[i] = &temp
+		GuildMap[guildID].PunishedUsers[i] = temp
 	} else {
-		GuildMap[guildID].PunishedUsers = append(GuildMap[guildID].PunishedUsers[:i], GuildMap[guildID].PunishedUsers[i+1:]...)
+		if i < len(GuildMap[guildID].PunishedUsers)-1 {
+			copy(GuildMap[guildID].PunishedUsers[i:], GuildMap[guildID].PunishedUsers[i+1:])
+		}
+		GuildMap[guildID].PunishedUsers[len(GuildMap[guildID].PunishedUsers)-1] = nil
+		GuildMap[guildID].PunishedUsers = GuildMap[guildID].PunishedUsers[:len(GuildMap[guildID].PunishedUsers)-1]
 	}
 
 	// Sends an embed message to bot-log
@@ -205,11 +214,8 @@ func unbanHandler(s *discordgo.Session, guildID string, i int, bans []*discordgo
 	return true
 }
 
-func unmuteHandler(s *discordgo.Session, guildID string, i int) {
-	t := time.Now()
-	zeroTimeValue := time.Time{}
-
-	if GuildMap[guildID].PunishedUsers[i].UnmuteDate == zeroTimeValue {
+func unmuteHandler(s *discordgo.Session, guildID string, i int, t *time.Time) {
+	if GuildMap[guildID].PunishedUsers[i].UnmuteDate == ZeroTimeValue {
 		return
 	}
 	muteDifference := t.Sub(GuildMap[guildID].PunishedUsers[i].UnmuteDate)
@@ -258,15 +264,19 @@ func unmuteHandler(s *discordgo.Session, guildID string, i int) {
 	}
 
 	// Removes the unmuteDate from punishedUsers.json
-	if GuildMap[guildID].PunishedUsers[i].UnbanDate != zeroTimeValue {
-		temp := PunishedUsers{
+	if GuildMap[guildID].PunishedUsers[i].UnbanDate != ZeroTimeValue {
+		temp := &PunishedUsers{
 			ID:        GuildMap[guildID].PunishedUsers[i].ID,
 			User:      GuildMap[guildID].PunishedUsers[i].User,
 			UnbanDate: GuildMap[guildID].PunishedUsers[i].UnbanDate,
 		}
-		GuildMap[guildID].PunishedUsers[i] = &temp
+		GuildMap[guildID].PunishedUsers[i] = temp
 	} else {
-		GuildMap[guildID].PunishedUsers = append(GuildMap[guildID].PunishedUsers[:i], GuildMap[guildID].PunishedUsers[i+1:]...)
+		if i < len(GuildMap[guildID].PunishedUsers)-1 {
+			copy(GuildMap[guildID].PunishedUsers[i:], GuildMap[guildID].PunishedUsers[i+1:])
+		}
+		GuildMap[guildID].PunishedUsers[len(GuildMap[guildID].PunishedUsers)-1] = nil
+		GuildMap[guildID].PunishedUsers = GuildMap[guildID].PunishedUsers[:len(GuildMap[guildID].PunishedUsers)-1]
 	}
 
 	// Sends an embed message to bot-log
@@ -285,75 +295,85 @@ func unmuteHandler(s *discordgo.Session, guildID string, i int) {
 	_ = PunishedUsersWrite(GuildMap[guildID].PunishedUsers, guildID)
 }
 
-// Sends remindMe message if it is time, either as a DM or ping
+// remindMeHandler handles sending remindMe messages when called if it's time.
+// Sends either a DM, or, failing that, a ping in the channel the remindMe was set.
 func remindMeHandler(s *discordgo.Session, guildID string) {
 	defer func() {
 		if rec := recover(); rec != nil {
-			log.Println(rec)
-			log.Println("Recovery in remindMeHandler")
+			log.Printf("%v\n%s", rec, string(debug.Stack()))
 		}
 	}()
 
 	var writeFlag bool
+	var wg sync.WaitGroup
 	t := time.Now()
 
-	MapMutex.Lock()
-	defer MapMutex.Unlock()
+	Mutex.Lock()
+	if SharedInfo == nil || SharedInfo.RemindMes == nil || len(SharedInfo.RemindMes) == 0 {
+		Mutex.Unlock()
+		return
+	}
 
 	for userID, remindMeSlice := range SharedInfo.RemindMes {
-		if remindMeSlice == nil {
+		if remindMeSlice == nil || remindMeSlice.RemindMeSlice == nil || len(remindMeSlice.RemindMeSlice) == 0 {
 			continue
 		}
-		for i := len(remindMeSlice.RemindMeSlice) - 1; i >= 0; i-- {
 
-			// Checks if it's time to send message/ping the user
-			difference := t.Sub(remindMeSlice.RemindMeSlice[i].Date)
-			if difference <= 0 {
+		// Filter in place if needed
+		i := 0
+		for _, remindMe := range remindMeSlice.RemindMeSlice {
+			if remindMe == nil {
 				continue
 			}
 
-			// Sends message to user DMs if possible
-			// Else sends the message in the channel the command was made in with a ping
-			dm, err := s.UserChannelCreate(userID)
-			if err == nil {
-				_, err = s.ChannelMessageSend(dm.ID, "RemindMe: "+remindMeSlice.RemindMeSlice[i].Message)
+			// Checks if it's time to send message/ping the user
+			if t.Sub(remindMe.Date) <= 0 {
+				remindMeSlice.RemindMeSlice[i] = remindMe
+				i++
+				continue
 			}
-			if err != nil && guildID != "" {
 
-				// Checks if the user is in the server and then pings him if true
-				_, err := s.GuildMember(guildID, userID)
+			msgDM := fmt.Sprintf("RemindMe: %s", remindMe.Message)
+			msgChannel := fmt.Sprintf("<@%s> Remindme: %s", userID, remindMe.Message)
+			cmdChannel := remindMe.CommandChannel
+
+			wg.Add(1)
+			go func(userID, msgDM, msgChannel, cmdChannel, guildID string) {
+				defer wg.Done()
+
+				dm, err := s.UserChannelCreate(userID)
 				if err == nil {
-					_, err := s.ChannelMessageSend(remindMeSlice.RemindMeSlice[i].CommandChannel, fmt.Sprintf("<@%s> Remindme: %s", userID, remindMeSlice.RemindMeSlice[i].Message))
-					if err != nil {
-						continue
+					_, err = s.ChannelMessageSend(dm.ID, msgDM)
+				}
+				if err != nil && guildID != "" {
+					// Checks if the user is in the server and then pings him if true
+					_, err := s.GuildMember(guildID, userID)
+					if err == nil {
+						_, _ = s.ChannelMessageSend(cmdChannel, msgChannel)
 					}
 				}
+			}(userID, msgDM, msgChannel, cmdChannel, guildID)
 
-			}
-
-			// Removes the RemindMe from the RemindMe slice
-			if i < len(remindMeSlice.RemindMeSlice)-1 {
-				copy(remindMeSlice.RemindMeSlice[i:], remindMeSlice.RemindMeSlice[i+1:])
-			}
-			remindMeSlice.RemindMeSlice[len(remindMeSlice.RemindMeSlice)-1] = nil // or the zero value of T
-			remindMeSlice.RemindMeSlice = remindMeSlice.RemindMeSlice[:len(remindMeSlice.RemindMeSlice)-1]
-			SharedInfo.RemindMes[userID].RemindMeSlice = remindMeSlice.RemindMeSlice
-
-			// Sets write Flag
 			writeFlag = true
 		}
+		remindMeSlice.RemindMeSlice = remindMeSlice.RemindMeSlice[:i]
 	}
 
 	if !writeFlag {
+		Mutex.Unlock()
 		return
 	}
 
 	err := RemindMeWrite(SharedInfo.RemindMes)
 	if err != nil && guildID != "" {
 		guildSettings := GuildMap[guildID].GetGuildSettings()
+		Mutex.Unlock()
 		LogError(s, guildSettings.BotLog, err)
 		return
 	}
+	Mutex.Unlock()
+
+	wg.Wait()
 }
 
 // Pulls reddit feeds and prints them
@@ -361,19 +381,25 @@ func feedHandler(s *discordgo.Session, guildID string) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Println(rec)
-			log.Println("Recovery in remindMeHandler")
+			log.Println("Recovery in feedHandler")
+			log.Println("stacktrace from panic: \n" + string(debug.Stack()))
 		}
 	}()
 
 	// Blocks handling of new feed threads if there are some currently being sent
+	Mutex.RLock()
 	if redditFeedBlock {
+		Mutex.RUnlock()
 		return
 	}
+	Mutex.RUnlock()
 
 	var (
 		pinnedItems   = make(map[*gofeed.Item]bool)
 		subMap        = make(map[string]*gofeed.Feed)
 		threadsToPost = make(map[*RssThread][]*gofeed.Item)
+
+		rssThreadChecksFlag bool
 	)
 
 	t := time.Now()
@@ -384,15 +410,16 @@ func feedHandler(s *discordgo.Session, guildID string) {
 	fp.Client = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport}, Timeout: time.Second * 10}
 
 	// Checks if there are any feeds for this guild
-	MapMutex.Lock()
+	Mutex.RLock()
 	if GuildMap[guildID].Feeds == nil || len(GuildMap[guildID].Feeds) == 0 {
-		MapMutex.Unlock()
+		Mutex.RUnlock()
 		return
 	}
 
 	// Save current threads as a copy so mapMutex isn't taken all the time when checking the feeds
 	rssThreads := GuildMap[guildID].Feeds
 	rssThreadChecks := GuildMap[guildID].RssThreadChecks
+	Mutex.RUnlock()
 
 	// Removes a thread if more than 60 days have passed from the rss thread checks. This is to keep DB manageable
 	for p := 0; p < len(rssThreadChecks); p++ {
@@ -404,15 +431,25 @@ func feedHandler(s *discordgo.Session, guildID string) {
 		if difference <= 0 {
 			continue
 		}
+
+		Mutex.Lock()
 		err := RssThreadsTimerRemove(rssThreadChecks[p].Thread, guildID)
 		if err != nil {
+			Mutex.Unlock()
 			log.Println(err)
 			continue
 		}
+		Mutex.Unlock()
+
+		rssThreadChecksFlag = true
 	}
+
 	// Updates rssThreadChecks var after the removal
-	rssThreadChecks = GuildMap[guildID].RssThreadChecks
-	MapMutex.Unlock()
+	if rssThreadChecksFlag {
+		Mutex.RLock()
+		rssThreadChecks = GuildMap[guildID].RssThreadChecks
+		Mutex.RUnlock()
+	}
 
 	// Save all feeds early to save performance
 	for _, thread := range rssThreads {
@@ -420,10 +457,14 @@ func feedHandler(s *discordgo.Session, guildID string) {
 			continue
 		}
 		// Parse feed
-		feed, err := fp.ParseURL(fmt.Sprintf("http://www.reddit.com/r/%s/%s/.rss", thread.Subreddit, thread.PostType))
+		feed, err := fp.ParseURL(fmt.Sprintf("https://www.reddit.com/r/%s/%s/.rss", thread.Subreddit, thread.PostType))
 		if err != nil {
-			log.Println(err)
-			return
+			if _, ok := err.(*gofeed.HTTPError); ok {
+				if err.(*gofeed.HTTPError).StatusCode == 429 {
+					return
+				}
+			}
+			continue
 		}
 		subMap[fmt.Sprintf("%s:%s", thread.Subreddit, thread.PostType)] = feed
 	}
@@ -432,7 +473,10 @@ func feedHandler(s *discordgo.Session, guildID string) {
 	for _, thread := range rssThreads {
 
 		// Get the necessary feed from the subMap
-		feed := subMap[fmt.Sprintf("%s:%s", thread.Subreddit, thread.PostType)]
+		feed, ok := subMap[fmt.Sprintf("%s:%s", thread.Subreddit, thread.PostType)]
+		if !ok {
+			continue
+		}
 
 		// Iterates through each feed item to see if it finds something from storage that should be posted
 		for _, item := range feed.Items {
@@ -465,16 +509,16 @@ func feedHandler(s *discordgo.Session, guildID string) {
 			}
 
 			// Writes that thread has been posted
-			MapMutex.Lock()
+			Mutex.Lock()
 			err := RssThreadsTimerWrite(thread, t, item.GUID, guildID)
 			if err != nil {
-				MapMutex.Unlock()
+				Mutex.Unlock()
 				log.Println(err)
 				continue
 			}
 			// Updates rssThreadChecks var after the write
 			rssThreadChecks = GuildMap[guildID].RssThreadChecks
-			MapMutex.Unlock()
+			Mutex.Unlock()
 
 			// Adds the item to the threads to send map
 			threadsToPost[thread] = append(threadsToPost[thread], item)
@@ -483,7 +527,9 @@ func feedHandler(s *discordgo.Session, guildID string) {
 
 	// Sends the threads concurrently in slow mode
 	go func() {
+		Mutex.Lock()
 		redditFeedBlock = true
+		Mutex.Unlock()
 		for thread, items := range threadsToPost {
 			for _, item := range items {
 				// Sends the feed item
@@ -530,6 +576,8 @@ func feedHandler(s *discordgo.Session, guildID string) {
 			}
 			delete(threadsToPost, thread)
 		}
+		Mutex.Lock()
 		redditFeedBlock = false
+		Mutex.Unlock()
 	}()
 }

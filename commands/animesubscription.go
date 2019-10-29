@@ -27,9 +27,9 @@ func subscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	if m.GuildID != "" {
-		functionality.MapMutex.Lock()
-		*guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RLock()
+		guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
+		functionality.Mutex.RUnlock()
 	}
 
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
@@ -57,14 +57,17 @@ func subscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 	now = now.UTC()
 
 	// Iterates over all of the anime shows saved from AnimeSchedule and checks if it finds one
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
+	animeSchedule := functionality.AnimeSchedule
+	animeSubs := functionality.SharedInfo.AnimeSubs
+	functionality.Mutex.RUnlock()
 Loop:
-	for dayInt, dailyShows := range functionality.AnimeSchedule {
+	for dayInt, dailyShows := range animeSchedule {
 		for _, show := range dailyShows {
 			if strings.ToLower(show.Name) == commandStrings[1] {
 
 				// Iterate over existing anime subscription users to see if he's already subbed to this show
-				for userID, subscriptions := range functionality.SharedInfo.AnimeSubs {
+				for userID, subscriptions := range animeSubs {
 
 					// Skip users that are not this user for performance
 					if userID != m.Author.ID {
@@ -74,13 +77,11 @@ Loop:
 					// Check if user is already subscribed to that show and throw an error if so
 					for _, userShows := range subscriptions {
 						if strings.ToLower(userShows.Show) == strings.ToLower(show.Name) {
-							_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: You are already subscribed to `%v`", show.Name))
+							_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: You are already subscribed to `%s`", show.Name))
 							if err != nil {
-								functionality.MapMutex.Unlock()
 								functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 								return
 							}
-							functionality.MapMutex.Unlock()
 							return
 						}
 					}
@@ -114,11 +115,13 @@ Loop:
 				}
 
 				// Add that show to the user anime subs list and break out of loops
+				functionality.Mutex.Lock()
 				if hasAiredToday {
 					functionality.SharedInfo.AnimeSubs[m.Author.ID] = append(functionality.SharedInfo.AnimeSubs[m.Author.ID], &functionality.ShowSub{Show: show.Name, Notified: true})
 				} else {
 					functionality.SharedInfo.AnimeSubs[m.Author.ID] = append(functionality.SharedInfo.AnimeSubs[m.Author.ID], &functionality.ShowSub{Show: show.Name, Notified: false})
 				}
+				functionality.Mutex.Unlock()
 				showName = show.Name
 				break Loop
 			}
@@ -128,24 +131,23 @@ Loop:
 	if showName == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid airing show name. It has to have started airing. Make sure you're using the anime name from `"+guildSettings.Prefix+"schedule`")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
 
 	// Write to shared AnimeSubs DB
+	functionality.Mutex.Lock()
 	err := functionality.AnimeSubsWrite(functionality.SharedInfo.AnimeSubs)
 	if err != nil {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! You have subscribed to notifications for `%v`", showName))
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! You have subscribed to notifications for `%s`", showName))
 	if err != nil {
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
@@ -166,9 +168,9 @@ func unsubscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	if m.GuildID != "" {
-		functionality.MapMutex.Lock()
-		*guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RLock()
+		guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
+		functionality.Mutex.RUnlock()
 	}
 
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
@@ -192,9 +194,13 @@ func unsubscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Iterate over all of the seasonal anime and see if it's a valid one
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
+	animeSchedule := functionality.AnimeSchedule
+	animeSubs := functionality.SharedInfo.AnimeSubs
+	functionality.Mutex.RUnlock()
+
 LoopShowCheck:
-	for _, scheduleShows := range functionality.AnimeSchedule {
+	for _, scheduleShows := range animeSchedule {
 		for _, scheduleShow := range scheduleShows {
 			if strings.ToLower(scheduleShow.Name) == strings.ToLower(commandStrings[1]) {
 				isValidShow = true
@@ -205,17 +211,15 @@ LoopShowCheck:
 	if !isValidShow {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid currently airing show.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
 
 	// Iterate over all of the user's subscriptions and remove the target one if it finds it
 LoopShowRemoval:
-	for userID, userSubs := range functionality.SharedInfo.AnimeSubs {
+	for userID, userSubs := range animeSubs {
 
 		// Skip users that are not the message author so they don't delete everyone's subscriptions
 		if userID != m.Author.ID {
@@ -226,11 +230,13 @@ LoopShowRemoval:
 			if strings.ToLower(show.Show) == strings.ToLower(commandStrings[1]) {
 
 				// Delete either the entire object or remove just one item from it
+				functionality.Mutex.Lock()
 				if len(userSubs) == 1 {
 					delete(functionality.SharedInfo.AnimeSubs, userID)
 				} else {
 					functionality.SharedInfo.AnimeSubs[userID] = append(functionality.SharedInfo.AnimeSubs[userID][:subKey], functionality.SharedInfo.AnimeSubs[userID][subKey+1:]...)
 				}
+				functionality.Mutex.Unlock()
 
 				isDeleted = true
 				break LoopShowRemoval
@@ -240,23 +246,22 @@ LoopShowRemoval:
 
 	// Send an error if the target show is not one the user is subscribed to
 	if !isDeleted {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: You are not subscribed to `%v`", commandStrings[1]))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: You are not subscribed to `%s`", commandStrings[1]))
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
 
+	functionality.Mutex.Lock()
 	err := functionality.AnimeSubsWrite(functionality.SharedInfo.AnimeSubs)
 	if err != nil {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! You have unsubscribed from `%v`", commandStrings[1]))
 	if err != nil {
@@ -278,12 +283,12 @@ func viewSubscriptions(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	if m.GuildID != "" {
-		functionality.MapMutex.Lock()
-		*guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RLock()
+		guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
+		functionality.Mutex.RUnlock()
 	}
 
-	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
+	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
 	if len(commandStrings) != 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vsubs`", guildSettings.Prefix))
@@ -295,17 +300,18 @@ func viewSubscriptions(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Iterates over all of a user's subscribed shows and adds them to the message string
-	functionality.MapMutex.Lock()
-	for userID, shows := range functionality.SharedInfo.AnimeSubs {
+	functionality.Mutex.RLock()
+	animeSubs := functionality.SharedInfo.AnimeSubs
+	functionality.Mutex.RUnlock()
+	for userID, shows := range animeSubs {
 		if userID != m.Author.ID {
 			continue
 		}
 
 		for i := 0; i < len(shows); i++ {
-			message += fmt.Sprintf("**%v.** %v\n", i+1, shows[i].Show)
+			message += fmt.Sprintf("**%d.** %v\n", i+1, shows[i].Show)
 		}
 	}
-	functionality.MapMutex.Unlock()
 
 	if len(message) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You have no active show subscriptions.")
@@ -357,16 +363,20 @@ func animeSubsHandler(s *discordgo.Session) {
 
 	now := time.Now()
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	if int(Today.Weekday()) != int(now.Weekday()) {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RUnlock()
 		return
 	}
+
+	animeSchedule := functionality.AnimeSchedule
+	animeSubs := functionality.SharedInfo.AnimeSubs
+	functionality.Mutex.RUnlock()
 
 	now = now.UTC()
 
 	// Fetches Today's shows
-	for dayInt, scheduleShows := range functionality.AnimeSchedule {
+	for dayInt, scheduleShows := range animeSchedule {
 		// Checks if the target schedule day is Today or not
 		if int(now.Weekday()) != dayInt {
 			continue
@@ -378,8 +388,14 @@ func animeSubsHandler(s *discordgo.Session) {
 	}
 
 	// Iterates over all users and their shows and sends notifications if need be
-	for userID, subscriptions := range functionality.SharedInfo.AnimeSubs {
+	for userID, subscriptions := range animeSubs {
+		if subscriptions == nil {
+			continue
+		}
 		for subKey, userShow := range subscriptions {
+			if userShow == nil {
+				continue
+			}
 
 			// Checks if the user has already been notified for this show
 			if userShow.Notified {
@@ -419,36 +435,47 @@ func animeSubsHandler(s *discordgo.Session) {
 
 				// Sends notification to user DMs if possible, or to guild autopost channel
 				if userShow.Guild {
-					if newepisodes, ok := functionality.GuildMap[userID].Autoposts["newepisodes"]; !ok {
-						continue
-					} else if newepisodes == nil {
+
+					functionality.Mutex.RLock()
+					newepisodes, ok := functionality.GuildMap[userID].Autoposts["newepisodes"]
+					if !ok || newepisodes == nil {
+						functionality.Mutex.RUnlock()
 						continue
 					}
-					err := functionality.SubEmbed(s, scheduleShow, functionality.GuildMap[userID].Autoposts["newepisodes"].ID)
+					functionality.Mutex.RUnlock()
+
+					// Sends embed
+					err := functionality.SubEmbed(s, scheduleShow, newepisodes.ID)
 					if err != nil {
 						continue
 					}
+
 					// Sets the show as notified for that guild
+					functionality.Mutex.Lock()
 					functionality.SharedInfo.AnimeSubs[userID][subKey].Notified = true
+					functionality.Mutex.Unlock()
 					continue
 				}
 
 				dm, _ := s.UserChannelCreate(userID)
 				if config.ServerID != "267799767843602452" {
-					_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("**%v __%v__** is out!\nSource: <https://animeschedule.net/shows/%v>", scheduleShow.Name, scheduleShow.Episode, scheduleShow.Key))
+					_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("**%s __%s__** is out!\nSource: <https://animeschedule.net/shows/%s>", scheduleShow.Name, scheduleShow.Episode, scheduleShow.Key))
 				} else {
-					_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("**%v __%v__** is out!", scheduleShow.Name, scheduleShow.Episode))
+					_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("**%s __%s__** is out!", scheduleShow.Name, scheduleShow.Episode))
 				}
 
 				// Sets the show as notified for that user
+				functionality.Mutex.Lock()
 				functionality.SharedInfo.AnimeSubs[userID][subKey].Notified = true
+				functionality.Mutex.Unlock()
 			}
 		}
 	}
 
 	// Write to shared AnimeSubs DB
+	functionality.Mutex.Lock()
 	_ = functionality.AnimeSubsWrite(functionality.SharedInfo.AnimeSubs)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 }
 
 func AnimeSubsTimer(s *discordgo.Session, e *discordgo.Ready) {
@@ -471,13 +498,18 @@ func resetSubNotified() {
 	var todayShows []*functionality.ShowAirTime
 
 	now := time.Now()
-	functionality.MapMutex.Lock()
+
+	functionality.Mutex.RLock()
 	if int(now.Weekday()) == int(Today.Weekday()) {
 		return
 	}
 
+	animeSchedule := functionality.AnimeSchedule
+	animeSubs := functionality.SharedInfo.AnimeSubs
+	functionality.Mutex.RUnlock()
+
 	// Fetches Today's shows
-	for dayInt, scheduleShows := range functionality.AnimeSchedule {
+	for dayInt, scheduleShows := range animeSchedule {
 		// Checks if the target schedule day is Today or not
 		if int(now.UTC().Weekday()) != dayInt {
 			continue
@@ -489,19 +521,22 @@ func resetSubNotified() {
 	}
 
 	// Iterates over all users and their shows and resets notified status
-	for userID, subscriptions := range functionality.SharedInfo.AnimeSubs {
+	for userID, subscriptions := range animeSubs {
 		for subKey, userShow := range subscriptions {
 			for _, scheduleShow := range todayShows {
 				if strings.ToLower(scheduleShow.Name) == strings.ToLower(userShow.Show) {
+					functionality.Mutex.Lock()
 					functionality.SharedInfo.AnimeSubs[userID][subKey].Notified = false
+					functionality.Mutex.Unlock()
 				}
 			}
 		}
 	}
 
 	// Write to shared AnimeSubs DB
+	functionality.Mutex.Lock()
 	_ = functionality.AnimeSubsWrite(functionality.SharedInfo.AnimeSubs)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 }
 
 // Resets anime sub notifications status on bot start
@@ -518,9 +553,13 @@ func ResetSubscriptions() {
 
 	now := time.Now()
 
+	functionality.Mutex.RLock()
+	animeSchedule := functionality.AnimeSchedule
+	animeSubs := functionality.SharedInfo.AnimeSubs
+	functionality.Mutex.RUnlock()
+
 	// Fetches Today's shows
-	functionality.MapMutex.Lock()
-	for dayInt, scheduleShows := range functionality.AnimeSchedule {
+	for dayInt, scheduleShows := range animeSchedule {
 		// Checks if the target schedule day is Today or not
 		if int(now.Weekday()) != dayInt {
 			continue
@@ -533,7 +572,7 @@ func ResetSubscriptions() {
 
 	nowUTC := now.UTC()
 
-	for userID, subscriptions := range functionality.SharedInfo.AnimeSubs {
+	for userID, subscriptions := range animeSubs {
 		for subKey, userShow := range subscriptions {
 			for _, scheduleShow := range todayShows {
 
@@ -558,17 +597,21 @@ func ResetSubscriptions() {
 
 				// Calculates whether the show has already aired today
 				difference := now.Sub(scheduleDate)
+				functionality.Mutex.Lock()
 				if difference >= 0 {
 					functionality.SharedInfo.AnimeSubs[userID][subKey].Notified = true
 				} else {
 					functionality.SharedInfo.AnimeSubs[userID][subKey].Notified = false
 				}
+				functionality.Mutex.Unlock()
 			}
 		}
 	}
+
 	// Write to shared AnimeSubs DB
+	functionality.Mutex.Lock()
 	_ = functionality.AnimeSubsWrite(functionality.SharedInfo.AnimeSubs)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 }
 
 func init() {

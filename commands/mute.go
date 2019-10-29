@@ -34,9 +34,9 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 		user *discordgo.User
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	if guildSettings.MutedRole != nil {
 		if guildSettings.MutedRole.ID != "" {
@@ -107,22 +107,18 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	// Checks if user has a privileged role
 	if userMem != nil {
-		functionality.MapMutex.Lock()
 		if functionality.HasElevatedPermissions(s, userMem.User.ID, m.GuildID) {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: Target user has a privileged role. Cannot mute.")
 			if err != nil {
-				functionality.MapMutex.Unlock()
 				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
-			functionality.MapMutex.Unlock()
 			return
 		}
-		functionality.MapMutex.Unlock()
 	}
 
 	// Checks if user is in memberInfo and handles them
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	if _, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; !ok {
 		if userMem != nil {
 			// Initializes user if he doesn't exist in memberInfo but is in server
@@ -132,30 +128,29 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Handles user if he's not in the server
 	if userMem == nil {
+		functionality.Mutex.Unlock()
 		user, err = s.User(userID)
 		if err != nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot get this user. Cannot mute.")
 			if err != nil {
-				functionality.MapMutex.Unlock()
 				functionality.LogError(s, guildSettings.BotLog, err)
 				return
 			}
-			functionality.MapMutex.Unlock()
 			return
 		}
+		functionality.Mutex.Lock()
 	}
 
 	// Adds mute date to memberInfo and checks if perma
 	functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Mutes = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Mutes, reason)
 	UnmuteDate, perma, err := functionality.ResolveTimeFromString(length)
 	if err != nil {
+		functionality.Mutex.Unlock()
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid time given.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
 	if commandStrings[2] == "∞" || commandStrings[1] == "∞" {
@@ -170,7 +165,7 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Adds timestamp for that mute
 	t, err := m.Timestamp.Parse()
 	if err != nil {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
@@ -208,7 +203,7 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.GuildMap[m.GuildID].PunishedUsers = append(functionality.GuildMap[m.GuildID].PunishedUsers, &temp)
 	}
 	_ = functionality.PunishedUsersWrite(functionality.GuildMap[m.GuildID].PunishedUsers, m.GuildID)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// Parses how long is left of the mute
 	now := time.Now()
@@ -262,7 +257,7 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if !gaveRole {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: This server does not have a set muted role. Please use `%vsetmuted [Role ID]` before trying this command again.", guildSettings.Prefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: This server does not have a set muted role. Please use `%ssetmuted [Role ID]` before trying this command again.", guildSettings.Prefix))
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return

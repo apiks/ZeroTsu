@@ -79,12 +79,12 @@ func feedEmbed(s *discordgo.Session, thread *RssThread, item *gofeed.Item) (*dis
 	var (
 		embedImage = &discordgo.MessageEmbedImage{}
 		imageLink  = "https://"
-		footerText = fmt.Sprintf("r/%v - %v", thread.Subreddit, thread.PostType)
+		footerText = fmt.Sprintf("r/%s - %s", thread.Subreddit, thread.PostType)
 	)
 
 	// Append custom user author to footer if he exists in thread
 	if thread.Author != "" {
-		footerText += fmt.Sprintf(" - u/%v", thread.Author)
+		footerText += fmt.Sprintf(" - u/%s", thread.Author)
 	}
 
 	// Parse image if it exists between a preset number of allowed domains
@@ -143,7 +143,7 @@ func VerifyEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.Memb
 
 	// Sets punishment embed color
 	embedMess.Color = 0x00ff00
-	embedMess.Title = fmt.Sprintf("Successfully verified %v#%v with /u/%v", mem.User.Username, mem.User.Discriminator, username)
+	embedMess.Title = fmt.Sprintf("Successfully verified %s#%s with /u/%s", mem.User.Username, mem.User.Discriminator, username)
 
 	// Sends embed in channel
 	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
@@ -218,7 +218,7 @@ func RemovePunishmentEmbed(s *discordgo.Session, m *discordgo.Message, punishmen
 
 	// Sets punishment embed color
 	embedMess.Color = 16758465
-	embedMess.Title = fmt.Sprintf("Successfuly removed punishment: _%v_", punishment)
+	embedMess.Title = fmt.Sprintf("Successfuly removed punishment: _%s_", punishment)
 
 	// Sends embed in channel
 	_, err := s.ChannelMessageSendEmbed(m.ChannelID, &embedMess)
@@ -242,8 +242,8 @@ func PingEmbed(s *discordgo.Session, m *discordgo.Message, settings *GuildSettin
 		return err
 	}
 	delay := time.Now()
-
 	embed.Title += fmt.Sprintf(" %s", delay.Sub(now).Truncate(time.Millisecond).String())
+
 	_, err = s.ChannelMessageEditEmbed(embedMsg.ChannelID, embedMsg.ID, embed)
 	if err != nil {
 		return err
@@ -302,7 +302,11 @@ func MuteEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, 
 
 	// Sends embed in channel
 	_, err := s.ChannelMessageSendEmbed(channelID, &embedMess)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func KickEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, reason string, channelID string) error {
@@ -352,7 +356,11 @@ func KickEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, 
 
 	// Sends embed in channel
 	_, err := s.ChannelMessageSendEmbed(channelID, &embedMess)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func InviteEmbed(s *discordgo.Session, m *discordgo.Message) error {
@@ -389,9 +397,9 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID
 		content string
 	)
 
-	MapMutex.Lock()
+	Mutex.RLock()
 	guildSettings := GuildMap[m.GuildID].GetGuildSettings()
-	MapMutex.Unlock()
+	Mutex.RUnlock()
 
 	// Checks if the message contains a mention and replaces it with the actual nick instead of ID
 	content = m.Content
@@ -498,16 +506,20 @@ func BanEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, r
 
 	// Sends embed in channel
 	_, err := s.ChannelMessageSendEmbed(channelID, &embedMess)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Embed message for subscriptions
 func SubEmbed(s *discordgo.Session, show *ShowAirTime, channelID string) error {
-	imageLink := fmt.Sprintf("https://animeschedule.net/img/shows/%v.webp", show.Key)
+	imageLink := fmt.Sprintf("https://animeschedule.net/img/shows/%s.webp", show.Key)
 	embed := &discordgo.MessageEmbed{
-		URL:         fmt.Sprintf("https://animeschedule.net/shows/%v", show.Key),
+		URL:         fmt.Sprintf("https://animeschedule.net/shows/%s", show.Key),
 		Title:       show.Name,
-		Description: fmt.Sprintf("__**%v**__ is out!", show.Episode),
+		Description: fmt.Sprintf("__**%s**__ is out!", show.Episode),
 		Timestamp:   time.Now().Format(time.RFC3339),
 		Color:       16758465,
 		Image: &discordgo.MessageEmbedImage{
@@ -536,12 +548,12 @@ func AboutEmbed(s *discordgo.Session, m *discordgo.Message) error {
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "\n**Features:**",
-					Value:  "**-** Moderation Toolset & Member System\n**-** Autopost Anime Episodes (_subbed_) & Daily Anime Schedule\n**-** Autopost Reddit Feed\n**-** React-based Auto Role\n**-** Channel & Emoji stats\n**-** Raffles\n**-** and more!\n[Invite Link](https://discordapp.com/api/oauth2/authorize?client_id=614495694769618944&permissions=401960278&scope=bot)",
+					Value:  "**-** Moderation Toolset & Member System\n**-** Autopost Anime Episodes & Daily Anime Schedule (_subbed_)\n**-** Autopost Reddit Feed\n**-** React-based Auto Role\n**-** Channel & Emoji stats\n**-** Raffles\n**-** and more!\n[Invite Link](https://discordapp.com/api/oauth2/authorize?client_id=614495694769618944&permissions=401960278&scope=bot)",
 					Inline: false,
 				},
 				{
 					Name:   "**Anime Times:**",
-					Value:  "The Anime features derive their data from [AnimeSchedule.net](https://animeschedule.net), a site dedicated to showing you what anime are airing this week",
+					Value:  "The Anime features derive their data from [AnimeSchedule.net](https://animeschedule.net), a site dedicated to showing you when and what anime are airing this week",
 					Inline: false,
 				},
 				{
@@ -559,7 +571,7 @@ func AboutEmbed(s *discordgo.Session, m *discordgo.Message) error {
 		embed = &discordgo.MessageEmbed{
 			URL:         "https://github.com/r-anime/ZeroTsu",
 			Title:       s.State.User.Username,
-			Description: "Written in **Go** by _Apiks#8969_ with a focus on Moderation",
+			Description: "Written in **Go** by _Apiks#8969_ with a focus on Moderation for r/anime",
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "\n**Features:**",
@@ -585,7 +597,7 @@ func AboutEmbed(s *discordgo.Session, m *discordgo.Message) error {
 				},
 				{
 					Name:   "**Anime Times:**",
-					Value:  "The Anime features derive their data from [AnimeSchedule.net](https://animeschedule.net), a site dedicated to showing you what anime are airing this week",
+					Value:  "The Anime features derive their data from [AnimeSchedule.net](https://animeschedule.net), a site dedicated to showing you when and what anime are airing this week",
 					Inline: false,
 				},
 			},

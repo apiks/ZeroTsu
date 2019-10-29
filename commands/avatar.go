@@ -17,9 +17,9 @@ func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if m.GuildID != "" {
-		functionality.MapMutex.Lock()
-		*guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RLock()
+		guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
+		functionality.Mutex.RUnlock()
 	}
 
 	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")

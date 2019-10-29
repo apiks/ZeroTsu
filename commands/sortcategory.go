@@ -20,11 +20,11 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	if m.Author.ID != s.State.User.ID {
-		functionality.MapMutex.Lock()
+		functionality.Mutex.Lock()
 	}
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	if m.Author.ID != s.State.User.ID {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 	}
 
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")

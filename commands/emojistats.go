@@ -29,13 +29,14 @@ func OnMessageEmoji(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	functionality.HandleNewGuild(s, m.GuildID)
+
 	var saveFlag bool
 
-	functionality.MapMutex.Lock()
-	functionality.HandleNewGuild(s, m.GuildID)
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	guildEmojiStats := functionality.GuildMap[m.GuildID].EmojiStats
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Pulls the entire guild structure so we can check guild emojis from it later
 	guild, err := s.Guild(m.GuildID)
@@ -76,9 +77,9 @@ func OnMessageEmoji(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if saveFlag {
-		functionality.MapMutex.Lock()
+		functionality.Mutex.Lock()
 		functionality.GuildMap[m.GuildID].EmojiStats = guildEmojiStats
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 	}
 }
 
@@ -100,13 +101,14 @@ func OnMessageEmojiReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 		return
 	}
 
+	functionality.HandleNewGuild(s, r.GuildID)
+
 	var saveFlag bool
 
-	functionality.MapMutex.Lock()
-	functionality.HandleNewGuild(s, r.GuildID)
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[r.GuildID].GetGuildSettings()
 	guildEmojiStats := functionality.GuildMap[r.GuildID].EmojiStats
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Pulls the entire guild structure so we can check guild emojis from it later
 	guild, err := s.Guild(r.GuildID)
@@ -143,9 +145,9 @@ func OnMessageEmojiReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 	}
 
 	if saveFlag {
-		functionality.MapMutex.Lock()
+		functionality.Mutex.Lock()
 		functionality.GuildMap[r.GuildID].EmojiStats = guildEmojiStats
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 	}
 }
 
@@ -167,13 +169,14 @@ func OnMessageEmojiUnreact(s *discordgo.Session, r *discordgo.MessageReactionRem
 		return
 	}
 
+	functionality.HandleNewGuild(s, r.GuildID)
+
 	var saveFlag bool
 
-	functionality.MapMutex.Lock()
-	functionality.HandleNewGuild(s, r.GuildID)
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[r.GuildID].GetGuildSettings()
 	guildEmojiStats := functionality.GuildMap[r.GuildID].EmojiStats
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Pulls the entire guild structure so we can check guild emojis from it later
 	guild, err := s.Guild(r.GuildID)
@@ -210,22 +213,23 @@ func OnMessageEmojiUnreact(s *discordgo.Session, r *discordgo.MessageReactionRem
 	}
 
 	if saveFlag {
-		functionality.MapMutex.Lock()
+		functionality.Mutex.Lock()
 		functionality.GuildMap[r.GuildID].EmojiStats = guildEmojiStats
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 	}
 }
 
 // Display emoji stats
 func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 
+	functionality.HandleNewGuild(s, m.GuildID)
+
 	var msgs []string
 
-	functionality.MapMutex.Lock()
-	functionality.HandleNewGuild(s, m.GuildID)
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	printEmojiMap := mergeDuplicates(m.GuildID)
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Sorts emojis by their message use from the above map
 	emojis := make([]*functionality.Emoji, len(printEmojiMap))

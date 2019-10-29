@@ -3,6 +3,7 @@ package commands
 import (
 	"log"
 	"regexp"
+	"runtime/debug"
 	"strconv"
 	"strings"
 
@@ -19,6 +20,7 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 		if rec := recover(); rec != nil {
 			log.Println(rec)
 			log.Println("Recovery in ReactJoinHandler")
+			log.Println("stacktrace from panic: \n" + string(debug.Stack()))
 		}
 	}()
 
@@ -26,17 +28,20 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 		return
 	}
 
-	functionality.MapMutex.Lock()
 	functionality.HandleNewGuild(s, r.GuildID)
-	guildSettings := functionality.GuildMap[r.GuildID].GetGuildSettings()
 
+	functionality.Mutex.RLock()
 	// Checks if a react channel join is set for that specific message and emoji and continues if true
-
-	if functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID] == nil {
-		functionality.MapMutex.Unlock()
+	if functionality.GuildMap[r.GuildID].ReactJoinMap == nil ||
+		functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID] == nil ||
+		functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID].RoleEmojiMap == nil {
+		functionality.Mutex.RUnlock()
 		return
 	}
-	functionality.MapMutex.Unlock()
+
+	guildSettings := functionality.GuildMap[r.GuildID].GetGuildSettings()
+	guildRoleEmojiMap := functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID].RoleEmojiMap
+	functionality.Mutex.RUnlock()
 
 	// Return if the one reacting is this BOT
 	if r.UserID == s.State.SessionID {
@@ -53,8 +58,7 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	// Puts the react API emoji name to lowercase so it is valid with the storage emoji name
 	reactLowercase := strings.ToLower(r.Emoji.APIName())
 
-	functionality.MapMutex.Lock()
-	for _, roleEmojiMap := range functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID].RoleEmojiMap {
+	for _, roleEmojiMap := range guildRoleEmojiMap {
 		for role, emojiSlice := range roleEmojiMap {
 			for _, emoji := range emojiSlice {
 				if reactLowercase != emoji {
@@ -68,11 +72,9 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 						// Gives the role
 						err := s.GuildMemberRoleAdd(r.GuildID, r.UserID, role)
 						if err != nil {
-							functionality.MapMutex.Unlock()
 							functionality.LogError(s, guildSettings.BotLog, err)
 							return
 						}
-						functionality.MapMutex.Unlock()
 						return
 					}
 				}
@@ -81,7 +83,6 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 						// Gives the role
 						err := s.GuildMemberRoleAdd(r.GuildID, r.UserID, serverRole.ID)
 						if err != nil {
-							functionality.MapMutex.Unlock()
 							functionality.LogError(s, guildSettings.BotLog, err)
 							return
 						}
@@ -90,7 +91,6 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 			}
 		}
 	}
-	functionality.MapMutex.Unlock()
 }
 
 // Removes a role from user if they unreact
@@ -101,6 +101,7 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 		if rec := recover(); rec != nil {
 			log.Println(rec)
 			log.Println("Recovery in ReactRemoveHandler")
+			log.Println("stacktrace from panic: \n" + string(debug.Stack()))
 		}
 	}()
 
@@ -108,16 +109,20 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 		return
 	}
 
-	functionality.MapMutex.Lock()
 	functionality.HandleNewGuild(s, r.GuildID)
-	guildSettings := functionality.GuildMap[r.GuildID].GetGuildSettings()
 
+	functionality.Mutex.RLock()
 	// Checks if a react channel join is set for that specific message and emoji and continues if true
-	if functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID] == nil {
-		functionality.MapMutex.Unlock()
+	if functionality.GuildMap[r.GuildID].ReactJoinMap == nil ||
+		functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID] == nil ||
+		functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID].RoleEmojiMap == nil {
+		functionality.Mutex.RUnlock()
 		return
 	}
-	functionality.MapMutex.Unlock()
+
+	guildSettings := functionality.GuildMap[r.GuildID].GetGuildSettings()
+	guildRoleEmojiMap := functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID].RoleEmojiMap
+	functionality.Mutex.RUnlock()
 
 	// Return if the one unreacting is this BOT
 	if r.UserID == s.State.SessionID {
@@ -134,8 +139,7 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 	// Puts the react API emoji name to lowercase so it is valid with the storage emoji name
 	reactLowercase := strings.ToLower(r.Emoji.APIName())
 
-	functionality.MapMutex.Lock()
-	for _, roleEmojiMap := range functionality.GuildMap[r.GuildID].ReactJoinMap[r.MessageID].RoleEmojiMap {
+	for _, roleEmojiMap := range guildRoleEmojiMap {
 		for role, emojiSlice := range roleEmojiMap {
 			for _, emoji := range emojiSlice {
 				if reactLowercase != emoji {
@@ -148,7 +152,6 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 					if _, err := strconv.ParseInt(role, 10, 64); err == nil {
 						// Removes the role
 						_ = s.GuildMemberRoleRemove(r.GuildID, r.UserID, role)
-						functionality.MapMutex.Unlock()
 						return
 					}
 				}
@@ -157,7 +160,6 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 						// Removes the role
 						err := s.GuildMemberRoleRemove(r.GuildID, r.UserID, serverRole.ID)
 						if err != nil {
-							functionality.MapMutex.Unlock()
 							functionality.LogError(s, guildSettings.BotLog, err)
 							return
 						}
@@ -166,7 +168,6 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 			}
 		}
 	}
-	functionality.MapMutex.Unlock()
 }
 
 // Sets react joins per specific message and emote
@@ -174,9 +175,9 @@ func setReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var roleExists bool
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 4)
 
@@ -236,14 +237,14 @@ func setReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 		SaveReactJoin(commandStrings[1], commandStrings[3], emojiName[0], m.GuildID)
 
 		// Writes the data to storage
-		functionality.MapMutex.Lock()
+		functionality.Mutex.Lock()
 		err = functionality.ReactJoinWrite(functionality.GuildMap[m.GuildID].ReactJoinMap, m.GuildID)
 		if err != nil {
-			functionality.MapMutex.Unlock()
+			functionality.Mutex.Unlock()
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 
 		// Reacts with the set emote if possible and gives success
 		_ = s.MessageReactionAdd(m.ChannelID, commandStrings[1], emojiName[0])
@@ -261,14 +262,14 @@ func setReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 	SaveReactJoin(commandStrings[1], commandStrings[3], commandStrings[2], m.GuildID)
 
 	// Writes the data to storage
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	err = functionality.ReactJoinWrite(functionality.GuildMap[m.GuildID].ReactJoinMap, m.GuildID)
 	if err != nil {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// Reacts with the set emote if possible
 	_ = s.MessageReactionAdd(m.ChannelID, commandStrings[1], commandStrings[2])
@@ -290,9 +291,9 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 		emojiAPI      []string
 	)
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 3)
 
@@ -326,21 +327,17 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	if len(functionality.GuildMap[m.GuildID].ReactJoinMap) == 0 {
-		// Returns if the bot called the func
+		functionality.Mutex.RUnlock()
 		if m.Author.ID == s.State.User.ID {
-			functionality.MapMutex.Unlock()
 			return
 		}
-
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no set react joins.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
 	// Checks if the messageID already exists in the map
@@ -351,7 +348,7 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 			break
 		}
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 	if messageExists == false {
 		// Returns if the bot called the func
 		if m.Author.ID == s.State.User.ID {
@@ -367,31 +364,29 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Removes the entire message from the map and writes to storage
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	if len(commandStrings) == 2 {
 		delete(functionality.GuildMap[m.GuildID].ReactJoinMap, commandStrings[1])
 		_ = functionality.ReactJoinWrite(functionality.GuildMap[m.GuildID].ReactJoinMap, m.GuildID)
+		functionality.Mutex.Unlock()
 
 		// Returns if the bot called the func
 		if m.Author.ID == s.State.User.ID {
-			functionality.MapMutex.Unlock()
 			return
 		}
 		_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed entire message emoji react join.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
 
 	if functionality.GuildMap[m.GuildID].ReactJoinMap[messageID].RoleEmojiMap == nil {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		return
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// Parses if it's custom emoji or unicode
 	re := regexp.MustCompile("(?i)<:+([a-zA-Z]|[0-9])+:+[0-9]+>")
@@ -402,7 +397,7 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 		emojiRegexAPI = reAPI.FindAllString(commandStrings[2], 1)
 	}
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	for storageMessageID := range functionality.GuildMap[m.GuildID].ReactJoinMap[messageID].RoleEmojiMap {
 		for role, emojiSlice := range functionality.GuildMap[m.GuildID].ReactJoinMap[messageID].RoleEmojiMap[storageMessageID] {
 			for index, emoji := range emojiSlice {
@@ -440,12 +435,12 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 						// Returns if the bot called the func
 						if m.Author.ID == s.State.User.ID {
-							functionality.MapMutex.Unlock()
+							functionality.Mutex.Unlock()
 							return
 						}
 						_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed emoji react join from message.")
 						if err != nil {
-							functionality.MapMutex.Unlock()
+							functionality.Mutex.Unlock()
 							functionality.LogError(s, guildSettings.BotLog, err)
 							return
 						}
@@ -456,12 +451,12 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 						// Returns if the bot called the func
 						if m.Author.ID == s.State.User.ID {
-							functionality.MapMutex.Unlock()
+							functionality.Mutex.Unlock()
 							return
 						}
 						_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed emoji react join from message.")
 						if err != nil {
-							functionality.MapMutex.Unlock()
+							functionality.Mutex.Unlock()
 							functionality.LogError(s, guildSettings.BotLog, err)
 							return
 						}
@@ -473,24 +468,24 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 						// Returns if the bot called the func
 						if m.Author.ID == s.State.User.ID {
-							functionality.MapMutex.Unlock()
+							functionality.Mutex.Unlock()
 							return
 						}
 						_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed emoji react join from message.")
 						if err != nil {
-							functionality.MapMutex.Unlock()
+							functionality.Mutex.Unlock()
 							functionality.LogError(s, guildSettings.BotLog, err)
 							return
 						}
 					}
-					functionality.MapMutex.Unlock()
+					functionality.Mutex.Unlock()
 					return
 				}
 
 			}
 		}
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// If it comes this far it means it's an invalid emoji
 	if emojiRegex == nil && emojiRegexAPI == nil {
@@ -513,22 +508,22 @@ func viewReactJoinsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var line string
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	guildReactJoinMap := functionality.GuildMap[m.GuildID].ReactJoinMap
+	functionality.Mutex.RUnlock()
 
-	if len(functionality.GuildMap[m.GuildID].ReactJoinMap) == 0 {
+	if len(guildReactJoinMap) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no set react joins.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
 
 	// Iterates through all of the set channel joins and assigns them to a string
-	for messageID, value := range functionality.GuildMap[m.GuildID].ReactJoinMap {
+	for messageID, value := range guildReactJoinMap {
 
 		// Formats message
 		line = "——————\n`MessageID: " + (messageID + "`\n")
@@ -547,12 +542,10 @@ func viewReactJoinsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		_, err := s.ChannelMessageSend(m.ChannelID, line)
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 	}
-	functionality.MapMutex.Unlock()
 }
 
 // Saves the react channel join and parses if it already exists
@@ -564,7 +557,7 @@ func SaveReactJoin(messageID string, role string, emoji string, guildID string) 
 	)
 
 	// Uses this if the message already has a set emoji react
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	if functionality.GuildMap[guildID].ReactJoinMap[messageID] != nil {
 		temp = *functionality.GuildMap[guildID].ReactJoinMap[messageID]
 
@@ -589,7 +582,7 @@ func SaveReactJoin(messageID string, role string, emoji string, guildID string) 
 		}
 
 		functionality.GuildMap[guildID].ReactJoinMap[messageID] = &temp
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		return
 	}
 
@@ -606,7 +599,7 @@ func SaveReactJoin(messageID string, role string, emoji string, guildID string) 
 	}
 
 	functionality.GuildMap[guildID].ReactJoinMap[messageID] = &temp
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 }
 
 // Adds role to the user that uses this command if the role is between opt-in dummy roles
@@ -631,9 +624,9 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
@@ -763,7 +756,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Updates the position of opt-in-under and opt-in-above position
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	for i := 0; i < len(deb); i++ {
 		if deb[i].ID == functionality.GuildMap[m.GuildID].GuildConfig.OptInUnder.ID {
 			functionality.GuildMap[m.GuildID].GuildConfig.OptInUnder.Position = deb[i].Position
@@ -771,7 +764,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 			functionality.GuildMap[m.GuildID].GuildConfig.OptInAbove.Position = deb[i].Position
 		}
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// Sets role
 	role, err := s.State.Role(m.GuildID, roleID)
@@ -840,9 +833,9 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
@@ -971,7 +964,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Updates the position of opt-in-under and opt-in-above position
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	for i := 0; i < len(deb); i++ {
 		if deb[i].ID == functionality.GuildMap[m.GuildID].GuildConfig.OptInUnder.ID {
 			functionality.GuildMap[m.GuildID].GuildConfig.OptInUnder.Position = deb[i].Position
@@ -979,7 +972,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 			functionality.GuildMap[m.GuildID].GuildConfig.OptInAbove.Position = deb[i].Position
 		}
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// Sets role
 	role, err := s.State.Role(m.GuildID, roleID)

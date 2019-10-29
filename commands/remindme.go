@@ -25,15 +25,15 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	if m.GuildID != "" {
-		functionality.MapMutex.Lock()
-		*guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.RLock()
+		guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
+		functionality.Mutex.RUnlock()
 	}
 
 	// Checks if message contains filtered words, which would not be allowed as a remind
 	badWordExists, _ := isFiltered(s, m)
 	if badWordExists {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Usage of server filtered words in the remindMe command is not allowed. Please use remindMe in another server I am in.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Usage of server filtered words in the remindMe command is not allowed. Please use remindMe in another server I am in or DMs.")
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
@@ -44,7 +44,7 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 3)
 
 	if len(commandStrings) < 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"remindme [time] [message]` \n\n"+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"remindme [time] [message]`\n\n"+
 			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes.")
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
@@ -77,13 +77,12 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Saves the remindMe data to an object of type remindMe
 	remindMeObject.CommandChannel = m.ChannelID
-	functionality.MapMutex.Lock()
-	_, ok := functionality.SharedInfo.RemindMes[userID]
-	if ok {
+	functionality.Mutex.Lock()
+	if _, ok := functionality.SharedInfo.RemindMes[userID]; ok {
 		remindMeObject.RemindID = len(functionality.SharedInfo.RemindMes[userID].RemindMeSlice) + 1
 		flag = true
 	} else {
-		remindMeObject.RemindID = 1
+		remindMeObject.RemindID++
 	}
 	remindMeObject.Date = Date
 	remindMeObject.Message = commandStrings[2]
@@ -95,11 +94,11 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	functionality.SharedInfo.RemindMes[userID].RemindMeSlice = append(functionality.SharedInfo.RemindMes[userID].RemindMeSlice, &remindMeObject)
 	err = functionality.RemindMeWrite(functionality.SharedInfo.RemindMes)
 	if err != nil {
-		functionality.MapMutex.Unlock()
+		functionality.Mutex.Unlock()
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	_, err = s.ChannelMessageSend(m.ChannelID, "Success! You will be reminded of the message on _"+Date.Format("2006-01-02 15:04 MST")+"_.")
 	if err != nil {
@@ -122,23 +121,21 @@ func viewRemindMe(s *discordgo.Session, m *discordgo.Message) {
 	userID = m.Author.ID
 
 	// Checks if the user has any reminds
-	functionality.MapMutex.Lock()
-
+	functionality.Mutex.RLock()
 	if m.GuildID != "" {
-		*guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
+		guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
 	}
 
 	if functionality.SharedInfo.RemindMes[userID] == nil || len(functionality.SharedInfo.RemindMes[userID].RemindMeSlice) == 0 {
+		functionality.Mutex.RUnlock()
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No saved reminds for you found.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
@@ -151,12 +148,12 @@ func viewRemindMe(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	for _, remind := range functionality.SharedInfo.RemindMes[userID].RemindMeSlice {
-		formattedMessage := fmt.Sprintf("`%v` - _%v_ - ID: %v", remind.Message, remind.Date.Format("2006-01-02 15:04"), remind.RemindID)
+		formattedMessage := fmt.Sprintf("`%s` - _%s_ - ID: %d", remind.Message, remind.Date.Format("2006-01-02 15:04"), remind.RemindID)
 		remindMes = append(remindMes, formattedMessage)
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Splits the message objects into multiple messages if it's too big
 	remindMes, message = splitRemindsMessages(remindMes, message)
@@ -194,24 +191,23 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 
 	userID = m.Author.ID
 
-	functionality.MapMutex.Lock()
+	functionality.Mutex.RLock()
 	if m.GuildID != "" {
-		*guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
+		guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
 	}
 
 	// Checks if the user has any reminds
 	_, ok := functionality.SharedInfo.RemindMes[userID]
 	if !ok {
+		functionality.Mutex.RUnlock()
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No saved reminds found for you to delete.")
 		if err != nil {
-			functionality.MapMutex.Unlock()
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		functionality.MapMutex.Unlock()
 		return
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
@@ -235,7 +231,7 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Deletes the remind from the map and writes to disk
-	functionality.MapMutex.Lock()
+	functionality.Mutex.Lock()
 	for index, remind := range functionality.SharedInfo.RemindMes[userID].RemindMeSlice {
 		if remind.RemindID == remindID {
 
@@ -250,18 +246,18 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 
 			err := functionality.RemindMeWrite(functionality.SharedInfo.RemindMes)
 			if err != nil {
-				functionality.MapMutex.Unlock()
+				functionality.Mutex.Unlock()
 				functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 				return
 			}
 			break
 		}
 	}
-	functionality.MapMutex.Unlock()
+	functionality.Mutex.Unlock()
 
 	// Prints success or error based on whether it deleted anything above
 	if flag {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sucesss: Deleted remind with ID %v.", remindID))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sucesss: Deleted remind with ID %d.", remindID))
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
