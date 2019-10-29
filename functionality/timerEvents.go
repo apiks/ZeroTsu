@@ -295,13 +295,12 @@ func unmuteHandler(s *discordgo.Session, guildID string, i int, t *time.Time) {
 	_ = PunishedUsersWrite(GuildMap[guildID].PunishedUsers, guildID)
 }
 
-// Sends remindMe message if it is time, either as a DM or ping
+// remindMeHandler handles sending remindMe messages when called if it's time.
+// Sends either a DM, or, failing that, a ping in the channel the remindMe was set.
 func remindMeHandler(s *discordgo.Session, guildID string) {
 	defer func() {
 		if rec := recover(); rec != nil {
-			log.Println(rec)
-			log.Println("Recovery in remindMeHandler")
-			log.Println("stacktrace from panic: \n" + string(debug.Stack()))
+			log.Printf("%v\n%s", rec, string(debug.Stack()))
 		}
 	}()
 
@@ -310,34 +309,33 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 	t := time.Now()
 
 	Mutex.Lock()
-	if SharedInfo.RemindMes == nil {
+	if SharedInfo == nil || SharedInfo.RemindMes == nil || len(SharedInfo.RemindMes) == 0 {
 		Mutex.Unlock()
 		return
 	}
 
 	for userID, remindMeSlice := range SharedInfo.RemindMes {
-		if remindMeSlice == nil ||
-			remindMeSlice.RemindMeSlice == nil ||
-			len(remindMeSlice.RemindMeSlice) == 0 {
+		if remindMeSlice == nil || remindMeSlice.RemindMeSlice == nil || len(remindMeSlice.RemindMeSlice) == 0 {
 			continue
 		}
 
-		for i := len(remindMeSlice.RemindMeSlice)-1; i >= 0; i-- {
-			if remindMeSlice.RemindMeSlice == nil || remindMeSlice.RemindMeSlice[i] == nil {
+		// Filter in place if needed
+		i := 0
+		for _, remindMe := range remindMeSlice.RemindMeSlice {
+			if remindMe == nil {
 				continue
 			}
 
 			// Checks if it's time to send message/ping the user
-			difference := t.Sub(remindMeSlice.RemindMeSlice[i].Date)
-			if difference <= 0 {
+			if t.Sub(remindMe.Date) <= 0 {
+				remindMeSlice.RemindMeSlice[i] = remindMe
+				i++
 				continue
 			}
 
-			// Sends message to user DMs if possible
-			// Else sends the message in the channel the command was made in with a ping
-			msgDM := fmt.Sprintf("RemindMe: %s", remindMeSlice.RemindMeSlice[i].Message)
-			msgChannel := fmt.Sprintf("<@%s> Remindme: %s", userID, remindMeSlice.RemindMeSlice[i].Message)
-			cmdChannel := remindMeSlice.RemindMeSlice[i].CommandChannel
+			msgDM := fmt.Sprintf("RemindMe: %s", remindMe.Message)
+			msgChannel := fmt.Sprintf("<@%s> Remindme: %s", userID, remindMe.Message)
+			cmdChannel := remindMe.CommandChannel
 
 			wg.Add(1)
 			go func(userID, msgDM, msgChannel, cmdChannel, guildID string) {
@@ -356,13 +354,9 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 				}
 			}(userID, msgDM, msgChannel, cmdChannel, guildID)
 
-			// Sets write Flag
 			writeFlag = true
-
-			SharedInfo.RemindMes[userID].RemindMeSlice[i] = SharedInfo.RemindMes[userID].RemindMeSlice[len(SharedInfo.RemindMes[userID].RemindMeSlice)-1]
-			SharedInfo.RemindMes[userID].RemindMeSlice[len(SharedInfo.RemindMes[userID].RemindMeSlice)-1] = nil
-			SharedInfo.RemindMes[userID].RemindMeSlice = SharedInfo.RemindMes[userID].RemindMeSlice[:len(SharedInfo.RemindMes[userID].RemindMeSlice)-1]
 		}
+		remindMeSlice.RemindMeSlice = remindMeSlice.RemindMeSlice[:i]
 	}
 
 	if !writeFlag {
