@@ -176,10 +176,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	functionality.Mutex.Unlock()
 
 	// Sends message in DMs that they have been warned if able
-	dm, err := s.UserChannelCreate(userID)
-	if err != nil {
-		return
-	}
+	dm, _ := s.UserChannelCreate(userID)
 	_, _ = s.ChannelMessageSend(dm.ID, "You have been warned on "+guild.Name+":\n`"+warning+"`")
 
 	// Sends warning embed message to channel
@@ -188,6 +185,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	err = functionality.WarningEmbed(s, m, userMem.User, warning, m.ChannelID, false)
 	if err != nil {
+		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 }
