@@ -148,7 +148,7 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if index > len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks) || index < 0 {
-		functionality.Mutex.Unlock()
+		functionality.Mutex.RUnlock()
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid kick index.")
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
@@ -156,7 +156,7 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
-	functionality.Mutex.Unlock()
+	functionality.Mutex.RUnlock()
 
 	// Fixes index for future use if it's 0
 	if index != 0 {
