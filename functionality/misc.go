@@ -370,7 +370,9 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 		userMentionCheck = mentionRegex.FindAllString(m, -1)
 		if userMentionCheck != nil {
 			var wg sync.WaitGroup
-			wg.Add(len(userMentionCheck))
+			if len(userMentionCheck) != 0 {
+				wg.Add(len(userMentionCheck))
+			}
 
 			for _, mention := range userMentionCheck {
 				go func(mention string) {
@@ -416,7 +418,9 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 		channelMentionCheck = channelMentionRegex.FindAllString(m, -1)
 		if channelMentionCheck != nil {
 			var wg sync.WaitGroup
-			wg.Add(len(channelMentionCheck))
+			if len(channelMentionCheck) != 0 {
+				wg.Add(len(channelMentionCheck))
+			}
 
 			for _, mention := range channelMentionCheck {
 				go func(mention string) {

@@ -259,7 +259,9 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 		mentionCheck = mentionRegex.FindAllString(mLowercase, -1)
 		if mentionCheck != nil {
 			var wg sync.WaitGroup
-			wg.Add(len(mentionCheck))
+			if len(mentionCheck) != 0 {
+				wg.Add(len(mentionCheck))
+			}
 
 			for _, mention := range mentionCheck {
 				go func(mention string) {
