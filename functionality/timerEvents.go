@@ -424,12 +424,14 @@ func feedHandler(s *discordgo.Session, guildID string) {
 	// Removes a thread if more than 60 days have passed from the rss thread checks. This is to keep DB manageable
 	for p := 0; p < len(rssThreadChecks); p++ {
 		// Calculates if it's time to remove
-		dateRemoval := rssThreadChecks[p].Date.Add(hours)
-		difference := t.Sub(dateRemoval)
+		if rssThreadChecks[p] != nil {
+			dateRemoval := rssThreadChecks[p].Date.Add(hours)
+			difference := t.Sub(dateRemoval)
 
-		// Removes the fact that the thread had been posted already if it's time
-		if difference <= 0 {
-			continue
+			// Removes the fact that the thread had been posted already if it's time
+			if difference <= 0 {
+				continue
+			}
 		}
 
 		Mutex.Lock()
