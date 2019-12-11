@@ -93,7 +93,6 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 	// Sets user field
 	user.Name = "User:"
 	user.Value = m.Author.Mention()
-	user.Inline = true
 
 	// Sets permission field
 	permission.Name = "Permission Level:"
@@ -106,7 +105,6 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 	} else {
 		permission.Value = "_User_"
 	}
-	permission.Inline = true
 
 	// Sets usage field if elevated
 	if elevated {
