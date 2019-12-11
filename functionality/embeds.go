@@ -615,3 +615,18 @@ func AboutEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 	return nil
 }
+
+// Embed message for say command
+func SayEmbed(s *discordgo.Session, message, channelID string) error {
+	embed := &discordgo.MessageEmbed{
+		Description: message,
+		Color:       16758465,
+	}
+
+	_, err := s.ChannelMessageSendEmbed(channelID, embed)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

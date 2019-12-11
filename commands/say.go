@@ -60,6 +60,57 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
+// Sends a message embed from the bot to a channel
+func sayEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	functionality.Mutex.RLock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.Mutex.RUnlock()
+
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 3)
+
+	if len(commandStrings) == 1 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"embed OPTIONAL[channelID] [message]`")
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	}
+
+	// Checks if the optional channel is present
+	channelID, _ := functionality.ChannelParser(s, commandStrings[1], m.GuildID)
+
+	// Sends the message embed to the channel the original message was in. Else continues to custom channel ID
+	if channelID == "" {
+		message := strings.TrimPrefix(m.Content, guildSettings.Prefix+"embed ")
+		err := functionality.SayEmbed(s, message, m.ChannelID)
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		err = s.ChannelMessageDelete(m.ChannelID, m.ID)
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	}
+
+	message := strings.TrimPrefix(m.Content, guildSettings.Prefix+"embed "+channelID)
+	err := functionality.SayEmbed(s, message, m.ChannelID)
+	if err != nil {
+		functionality.LogError(s, guildSettings.BotLog, err)
+		return
+	}
+
+	_, err = s.ChannelMessageSend(m.ChannelID, "Success! Message embed sent.")
+	if err != nil {
+		functionality.LogError(s, guildSettings.BotLog, err)
+		return
+	}
+}
+
 // Edits a message sent by the bot with another message
 func editCommand(s *discordgo.Session, m *discordgo.Message) {
 
@@ -122,14 +173,21 @@ func init() {
 	functionality.Add(&functionality.Command{
 		Execute:    sayCommand,
 		Trigger:    "say",
-		Desc:       "Sends message from bot in command channel",
+		Desc:       "Sends a message from bot in the command channel",
+		Permission: functionality.Mod,
+		Module:     "misc",
+	})
+	functionality.Add(&functionality.Command{
+		Execute:    sayEmbedCommand,
+		Trigger:    "embed",
+		Desc:       "Sends an embed message from bot in the command channel",
 		Permission: functionality.Mod,
 		Module:     "misc",
 	})
 	functionality.Add(&functionality.Command{
 		Execute:    editCommand,
 		Trigger:    "edit",
-		Desc:       "Edits a message sent by the bot with another message",
+		Desc:       "Edits a message sent by the bot",
 		Permission: functionality.Mod,
 		Module:     "misc",
 	})
