@@ -50,7 +50,7 @@ func UnmuteEmbed(s *discordgo.Session, user *UserInfo, mod string, botLog string
 		embed     []*discordgo.MessageEmbedField
 	)
 
-	// Sets timestamp of unban
+	// Sets timestamp of unmute
 	t := time.Now()
 	now := t.Format(time.RFC3339)
 	embedMess.Timestamp = now
@@ -339,10 +339,6 @@ func KickEmbed(s *discordgo.Session, m *discordgo.Message, mem *discordgo.User, 
 	embedFieldUserID.Value = mem.ID
 	embedFieldReason.Value = reason
 
-	// Sets field inline
-	embedFieldUserID.Inline = true
-	embedFieldReason.Inline = true
-
 	// Adds the two fields to embedField slice (because embedMess.Fields requires slice input)
 	embedField = append(embedField, &embedFieldUserID)
 	embedField = append(embedField, &embedFieldReason)
@@ -410,7 +406,7 @@ func FilterEmbed(s *discordgo.Session, m *discordgo.Message, removals, channelID
 	now := t.Format(time.RFC3339)
 	embedMess.Timestamp = now
 
-	// Sets ban embed color
+	// Sets embed color
 	embedMess.Color = 0xff0000
 
 	// Saves user avatar as thumbnail
@@ -571,7 +567,7 @@ func AboutEmbed(s *discordgo.Session, m *discordgo.Message) error {
 		embed = &discordgo.MessageEmbed{
 			URL:         "https://github.com/r-anime/ZeroTsu",
 			Title:       s.State.User.Username,
-			Description: "Written in **Go** by _Apiks#8969_ with a focus on Moderation for r/anime",
+			Description: "Written in **Go** by _Apiks#8969_ with a focus on Moderation",
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "\n**Features:**",
