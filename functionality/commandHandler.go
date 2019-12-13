@@ -49,10 +49,16 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.Bot {
 		return
 	}
+	if m.Author.ID == "" {
+		return
+	}
 	if m.Message == nil {
 		return
 	}
 	if m.Message.Content == "" {
+		return
+	}
+	if m.GuildID == "" {
 		return
 	}
 
@@ -123,7 +129,7 @@ func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 	if cmd.Permission != User {
-		if !HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
+		if !HasElevatedPermissions(*s, m.Author.ID, m.GuildID) {
 			return
 		}
 	}

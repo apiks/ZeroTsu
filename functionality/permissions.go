@@ -16,7 +16,7 @@ const (
 type permission int
 
 // Checks if a user has admin permissions or is a privileged role
-func HasElevatedPermissions(s *discordgo.Session, userID string, guildID string) bool {
+func HasElevatedPermissions(s discordgo.Session, userID string, guildID string) bool {
 	mem, err := s.State.Member(guildID, userID)
 	if err != nil {
 		mem, err = s.GuildMember(guildID, userID)
@@ -25,7 +25,7 @@ func HasElevatedPermissions(s *discordgo.Session, userID string, guildID string)
 		}
 	}
 
-	if isAdmin, _ := MemberIsAdmin(s, guildID, mem, discordgo.PermissionAdministrator); isAdmin {
+	if isAdmin, _ := MemberIsAdmin(&s, guildID, mem, discordgo.PermissionAdministrator); isAdmin {
 		return true
 	}
 

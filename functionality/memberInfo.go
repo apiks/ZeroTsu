@@ -111,6 +111,9 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		writeFlag bool
 	)
 
+	s.RWMutex.RLock()
+	defer s.RWMutex.RUnlock()
+
 	if e.GuildID == "" {
 		return
 	}
@@ -251,6 +254,9 @@ func OnMemberUpdate(s *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 		}
 	}()
 
+	s.RWMutex.RLock()
+	defer s.RWMutex.RUnlock()
+
 	if e.GuildID == "" {
 		return
 	}
@@ -335,6 +341,9 @@ func OnPresenceUpdate(s *discordgo.Session, e *discordgo.PresenceUpdate) {
 			log.Println("Recovery in OnPresenceUpdate")
 		}
 	}()
+
+	s.RWMutex.RLock()
+	defer s.RWMutex.RUnlock()
 
 	if e.GuildID == "" {
 		return

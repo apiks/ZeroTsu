@@ -62,7 +62,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if user has a privileged role
-	if functionality.HasElevatedPermissions(s, userID, m.GuildID) {
+	if functionality.HasElevatedPermissions(*s, userID, m.GuildID) {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Target user has a privileged role. Cannot kick.")
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)

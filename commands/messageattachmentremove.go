@@ -26,10 +26,7 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		return
 	}
 
-	if m.Author.ID == s.State.User.ID {
-		return
-	}
-	if len(m.Attachments) == 0 {
+	if m.Author.ID == s.State.User.ID || len(m.Attachments) == 0 {
 		return
 	}
 
@@ -40,7 +37,7 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 	functionality.Mutex.RUnlock()
 
 	// Checks if user is mod before checking the message
-	if functionality.HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
+	if functionality.HasElevatedPermissions(*s, m.Author.ID, m.GuildID) {
 		return
 	}
 
