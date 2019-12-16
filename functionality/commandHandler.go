@@ -58,9 +58,6 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Message.Content == "" {
 		return
 	}
-	if m.GuildID == "" {
-		return
-	}
 
 	// Handle guild command if it's coming from a server
 	if m.GuildID != "" {
