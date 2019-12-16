@@ -35,7 +35,7 @@ func helpEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 	functionality.Mutex.RUnlock()
 
 	// Checks for mod perms and handles accordingly
-	if functionality.HasElevatedPermissions(*s, m.Author.ID, m.GuildID) {
+	if functionality.HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
 		elevated = true
 	}
 

@@ -363,7 +363,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		for _, v := range guildVoteInfoMap {
 			if roleName == v.Channel {
-				if !functionality.HasElevatedPermissions(*s, v.User.ID, m.GuildID) {
+				if !functionality.HasElevatedPermissions(s, v.User.ID, m.GuildID) {
 					temp.Elevated = false
 					break
 				}

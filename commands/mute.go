@@ -107,7 +107,7 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	// Checks if user has a privileged role
 	if userMem != nil {
-		if functionality.HasElevatedPermissions(*s, userMem.User.ID, m.GuildID) {
+		if functionality.HasElevatedPermissions(s, userMem.User.ID, m.GuildID) {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: Target user has a privileged role. Cannot mute.")
 			if err != nil {
 				functionality.LogError(s, guildSettings.BotLog, err)

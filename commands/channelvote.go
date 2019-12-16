@@ -37,7 +37,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	functionality.Mutex.RUnlock()
 
 	// Checks if the message author is an admin or not and saves it, to save operations down the line
-	if functionality.HasElevatedPermissions(*s, m.Author.ID, m.GuildID) {
+	if functionality.HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
 		admin = true
 	}
 
@@ -193,7 +193,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 		guildVoteInfoMap := functionality.GuildMap[m.GuildID].VoteInfoMap
 		functionality.Mutex.RUnlock()
 		for _, v := range guildVoteInfoMap {
-			if !functionality.HasElevatedPermissions(*s, v.User.ID, m.GuildID) {
+			if !functionality.HasElevatedPermissions(s, v.User.ID, m.GuildID) {
 				controlNumVote++
 			}
 		}

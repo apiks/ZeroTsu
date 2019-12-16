@@ -40,7 +40,7 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	functionality.HandleNewGuild(s, m.GuildID)
 
 	// Checks if user is mod or bot before checking the message
-	if functionality.HasElevatedPermissions(*s, m.Author.ID, m.GuildID) {
+	if functionality.HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
 		return
 	}
 
@@ -120,7 +120,7 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	functionality.HandleNewGuild(s, m.GuildID)
 
 	// Checks if user is mod or bot before checking the message
-	if functionality.HasElevatedPermissions(*s, m.Author.ID, m.GuildID) {
+	if functionality.HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
 		return
 	}
 
@@ -200,7 +200,7 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 	functionality.HandleNewGuild(s, r.GuildID)
 
 	// Checks if user is mod or bot before checking the message
-	if functionality.HasElevatedPermissions(*s, r.UserID, r.GuildID) {
+	if functionality.HasElevatedPermissions(s, r.UserID, r.GuildID) {
 		return
 	}
 
