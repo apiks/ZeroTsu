@@ -273,8 +273,17 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 
 					// Checks first in memberInfo. Only checks serverside if it doesn't exist. Saves performance
 					functionality.Mutex.RLock()
+					if _, ok := functionality.GuildMap[m.GuildID]; !ok {
+						functionality.Mutex.RUnlock()
+						return
+					}
+
 					if functionality.GuildMap[m.GuildID].MemberInfoMap != nil && len(functionality.GuildMap[m.GuildID].MemberInfoMap) != 0 {
 						if _, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
+							if functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Nickname == "" {
+								functionality.Mutex.RUnlock()
+								return
+							}
 							mentions += " " + strings.ToLower(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Nickname)
 							functionality.Mutex.RUnlock()
 							return
