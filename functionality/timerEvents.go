@@ -497,6 +497,11 @@ func feedHandler(s *discordgo.Session, guildID string) {
 			// Check if this item exists in rssThreadChecks and skips the item if it does
 			var skip = false
 			for _, check := range rssThreadChecks {
+				if check == nil {
+					skip = true
+					continue
+				}
+
 				if check.GUID == item.GUID &&
 					check.Thread.ChannelID == thread.ChannelID {
 					skip = true
