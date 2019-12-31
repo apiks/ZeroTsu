@@ -224,17 +224,17 @@ func setReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Parses if it's custom emoji or unicode emoji
-	re := regexp.MustCompile("(?i)<:+([a-zA-Z]|[0-9])+:+[0-9]+>")
+	// Parses if it's custom emoji or unicode emoji or animated emoji
+	re := regexp.MustCompile("<a?:+([a-zA-Z]|[0-9])+:+[0-9]+>")
 	emojiRegex := re.FindAllString(strings.ToLower(m.Content), 1)
 	if emojiRegex != nil {
 
 		// Fetches emoji API name
-		re = regexp.MustCompile("(?i)([a-zA-Z]|[0-9])+:[0-9]+")
-		emojiName := re.FindAllString(emojiRegex[0], 1)
+		re = regexp.MustCompile("([a-zA-Z]|[0-9])+:[0-9]+")
+		emojiName := re.FindAllString(emojiRegex[0], 1)[0]
 
 		// Sets the data in memory to be ready for writing
-		SaveReactJoin(commandStrings[1], commandStrings[3], emojiName[0], m.GuildID)
+		SaveReactJoin(commandStrings[1], commandStrings[3], emojiName, m.GuildID)
 
 		// Writes the data to storage
 		functionality.Mutex.Lock()
@@ -247,7 +247,7 @@ func setReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.Mutex.Unlock()
 
 		// Reacts with the set emote if possible and gives success
-		_ = s.MessageReactionAdd(m.ChannelID, commandStrings[1], emojiName[0])
+		_ = s.MessageReactionAdd(m.ChannelID, commandStrings[1], emojiName)
 		_, err = s.ChannelMessageSend(m.ChannelID, "Success! React channel join set.")
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
@@ -606,13 +606,13 @@ func SaveReactJoin(messageID string, role string, emoji string, guildID string) 
 func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		roleID      string
+		role		*discordgo.Role
+
 		name        string
 		chanMention string
 		topic       string
 
 		hasRoleAlready bool
-		roleExists     bool
 	)
 
 	// Pulls info on message author
@@ -639,12 +639,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Pulls the role name from strings after "joinchannel " or "join "
-	if strings.HasPrefix(strings.ToLower(m.Content), guildSettings.Prefix+"joinchannel ") {
-		name = strings.Replace(strings.ToLower(m.Content), guildSettings.Prefix+"joinchannel ", "", -1)
-	} else {
-		name = strings.Replace(strings.ToLower(m.Content), guildSettings.Prefix+"join ", "", -1)
-	}
+	name = strings.Join(commandStrings[1:], "-")
 
 	// Pulls info on server roles
 	deb, err := s.GuildRoles(m.GuildID)
@@ -685,28 +680,21 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if the role exists on the server, sends error message if not
 	for i := 0; i < len(deb); i++ {
 		if deb[i].Name == name {
-			roleID = deb[i].ID
-			if strings.Contains(deb[i].ID, roleID) {
-				roleExists = true
-				break
-			}
+			role = deb[i]
+			break
 		}
 	}
-	if !roleExists {
+	if role == nil {
 		name = strings.Replace(name, " ", "-", -1)
 		for i := 0; i < len(deb); i++ {
 			if deb[i].Name == name {
-				roleID = deb[i].ID
-				if strings.Contains(deb[i].ID, roleID) {
-					roleExists = true
-					break
-				}
+				role = deb[i]
 			}
 		}
 	}
-	if !roleExists {
 
-		// Sends error message to user in DMs if possible
+	// Sends error message to user in DMs if possible
+	if role == nil {
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 			return
@@ -715,17 +703,9 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Sets role ID
-	for i := 0; i < len(deb); i++ {
-		if deb[i].Name == name && roleID != "" {
-			roleID = deb[i].ID
-			break
-		}
-	}
-
 	// Checks if the user already has the role. Sends error message if he does
 	for i := 0; i < len(mem.Roles); i++ {
-		if strings.Contains(mem.Roles[i], roleID) {
+		if strings.Contains(mem.Roles[i], role.ID) {
 			hasRoleAlready = true
 			break
 		}
@@ -766,17 +746,11 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	functionality.Mutex.Unlock()
 
-	// Sets role
-	role, err := s.State.Role(m.GuildID, roleID)
-	if err != nil {
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
-	}
-
 	// Gives role to user if the role is between dummy opt-ins
 	if role.Position < guildSettings.OptInUnder.Position &&
 		role.Position > guildSettings.OptInAbove.Position {
-		err = s.GuildMemberRoleAdd(m.GuildID, m.Author.ID, roleID)
+
+		err = s.GuildMemberRoleAdd(m.GuildID, m.Author.ID, role.ID)
 		if err != nil {
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
@@ -809,6 +783,12 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		_, _ = s.ChannelMessageSend(dm.ID, success)
 		return
+	} else {
+		_, err = s.ChannelMessageSend(m.ChannelID, "Error: the target role/channel is not set as opt-in (between the dummy opt-in roles).")
+		if err != nil {
+			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			return
+		}
 	}
 }
 
@@ -816,12 +796,11 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		roleID      string
+		role		*discordgo.Role
 		name        string
 		chanMention string
 
 		hasRoleAlready bool
-		roleExists     bool
 	)
 
 	// Pulls info on message author
@@ -848,12 +827,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Pulls the role name from strings after "leavechannel " or "leave "
-	if strings.HasPrefix(strings.ToLower(m.Content), guildSettings.Prefix+"leavechannel ") {
-		name = strings.Replace(strings.ToLower(m.Content), guildSettings.Prefix+"leavechannel ", "", -1)
-	} else {
-		name = strings.Replace(strings.ToLower(m.Content), guildSettings.Prefix+"leave ", "", -1)
-	}
+	name = strings.Join(commandStrings[1:], "-")
 
 	// Pulls info on server roles
 	deb, err := s.GuildRoles(m.GuildID)
@@ -893,26 +867,20 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Checks if the role exists on the server, sends error message if not
 	for i := 0; i < len(deb); i++ {
 		if deb[i].Name == name {
-			roleID = deb[i].ID
-			if strings.Contains(deb[i].ID, roleID) {
-				roleExists = true
+			role = deb[i]
+			break
+		}
+	}
+	if role == nil {
+		name = strings.Replace(name, " ", "-", -1)
+		for i := 0; i < len(deb); i++ {
+			if deb[i].Name == name {
+				role = deb[i]
 				break
 			}
 		}
 	}
-	if !roleExists {
-		name = strings.Replace(name, " ", "-", -1)
-		for i := 0; i < len(deb); i++ {
-			if deb[i].Name == name {
-				roleID = deb[i].ID
-				if strings.Contains(deb[i].ID, roleID) {
-					roleExists = true
-					break
-				}
-			}
-		}
-	}
-	if !roleExists {
+	if role == nil {
 		// Sends error message to user in DMs if possible
 		dm, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
@@ -922,17 +890,9 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Sets role ID
-	for i := 0; i < len(deb); i++ {
-		if deb[i].Name == name && roleID != "" {
-			roleID = deb[i].ID
-			break
-		}
-	}
-
 	// Checks if the user already has the role. Sends error message if he does
 	for i := 0; i < len(mem.Roles); i++ {
-		if strings.Contains(mem.Roles[i], roleID) {
+		if strings.Contains(mem.Roles[i], role.ID) {
 			hasRoleAlready = true
 			break
 		}
@@ -974,13 +934,6 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	functionality.Mutex.Unlock()
 
-	// Sets role
-	role, err := s.State.Role(m.GuildID, roleID)
-	if err != nil {
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
-	}
-
 	// Removes role from user if the role is between dummy opt-ins
 	if role.Position < guildSettings.OptInUnder.Position &&
 		role.Position > guildSettings.OptInAbove.Position {
@@ -989,7 +942,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 			chanMention string
 		)
 
-		err = s.GuildMemberRoleRemove(m.GuildID, m.Author.ID, roleID)
+		err = s.GuildMemberRoleRemove(m.GuildID, m.Author.ID, role.ID)
 		if err != nil {
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
@@ -1018,6 +971,12 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		_, _ = s.ChannelMessageSend(dm.ID, success)
 		return
+	} else {
+		_, err = s.ChannelMessageSend(m.ChannelID, "Error: the target role/channel is not set as opt-in (between the dummy opt-in roles).")
+		if err != nil {
+			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			return
+		}
 	}
 }
 

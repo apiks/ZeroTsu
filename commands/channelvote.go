@@ -389,9 +389,9 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				message.GuildID = guild.ID
 				message.Author = &author
 				if temp.Category == "" {
-					message.Content = fmt.Sprintf("%vcreate %v %v %v", guildSettings.Prefix, temp.Channel, temp.ChannelType, temp.Description)
+					message.Content = fmt.Sprintf("%screate %s %s %s", guildSettings.Prefix, temp.Channel, temp.ChannelType, temp.Description)
 				} else {
-					message.Content = fmt.Sprintf("%vcreate %v %v %v %v", guildSettings.Prefix, temp.Channel, temp.ChannelType, temp.Category, temp.Description)
+					message.Content = fmt.Sprintf("%screate %s %s %s %s", guildSettings.Prefix, temp.Channel, temp.ChannelType, temp.Category, temp.Description)
 				}
 
 				createChannelCommand(s, &message)

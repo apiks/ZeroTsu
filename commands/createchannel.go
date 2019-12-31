@@ -37,6 +37,8 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		descriptionEdit discordgo.ChannelEdit
 		channelEdit     discordgo.ChannelEdit
+
+		channelCreationData discordgo.GuildChannelCreateData
 	)
 
 	if m.Author.ID != s.State.User.ID {
@@ -148,13 +150,19 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Creates the new channel of type text
-	newCha, err := s.GuildChannelCreate(m.GuildID, command, 0)
+	channelCreationData.Name = command
+	if channel.Category != "" {
+		channelCreationData.ParentID = channel.Category
+	}
+	if channel.Description != "" {
+		channelCreationData.Topic = channel.Description
+	}
+
+	newCha, err := s.GuildChannelCreateComplex(m.GuildID, channelCreationData)
 	if err != nil {
 		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-
-	time.Sleep(500 * time.Millisecond)
 
 	// Handles role creation if not general type
 	if channel.Type != "general" {
@@ -262,8 +270,6 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	time.Sleep(100 * time.Millisecond)
-
 	if channel.Type != "general" {
 		// Everyone perms
 		err = s.ChannelPermissionSet(newCha.ID, m.GuildID, "role", discordgo.PermissionSendMessages, functionality.ReadSpoilerPerms)
@@ -277,7 +283,6 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
-		time.Sleep(100 * time.Millisecond)
 	}
 
 	// Muted perms
@@ -296,8 +301,6 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
-	time.Sleep(100 * time.Millisecond)
-
 	// Airing perms
 	if channel.Type == "airing" && airing != "" {
 		err = s.ChannelPermissionSet(newCha.ID, airing, "role", functionality.ReadSpoilerPerms, 0)
@@ -305,7 +308,6 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
-		time.Sleep(100 * time.Millisecond)
 	}
 
 	// Category Permissions that overwrite if needed
@@ -344,7 +346,6 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
-		time.Sleep(100 * time.Millisecond)
 	}
 
 	if channel.Type == "temp" || channel.Type == "temporary" {
@@ -383,8 +384,6 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		if m.Author.ID != s.State.User.ID {
 			functionality.Mutex.Unlock()
 		}
-
-		time.Sleep(100 * time.Millisecond)
 	}
 
 	// Parses category from name or ID
