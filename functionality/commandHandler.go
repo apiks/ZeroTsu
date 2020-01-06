@@ -125,7 +125,7 @@ func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 	}
-	if cmd.Permission != User {
+	if cmd.Permission != User || guildSettings.ModOnly {
 		if !HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
 			return
 		}

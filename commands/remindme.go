@@ -232,15 +232,14 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 
 	// Deletes the remind from the map and writes to disk
 	functionality.Mutex.Lock()
-	for index, remind := range functionality.SharedInfo.RemindMes[userID].RemindMeSlice {
+	for i, remind := range functionality.SharedInfo.RemindMes[userID].RemindMeSlice {
 		if remind.RemindID == remindID {
 
-			// Deletes either the entire value or just the remind from the slice
-			if len(functionality.SharedInfo.RemindMes[userID].RemindMeSlice) == 1 {
-				delete(functionality.SharedInfo.RemindMes, userID)
-			} else {
-				functionality.SharedInfo.RemindMes[userID].RemindMeSlice = append(functionality.SharedInfo.RemindMes[userID].RemindMeSlice[:index], functionality.SharedInfo.RemindMes[userID].RemindMeSlice[index+1:]...)
+			if i < len(functionality.SharedInfo.RemindMes[userID].RemindMeSlice)-1 {
+				copy(functionality.SharedInfo.RemindMes[userID].RemindMeSlice[i:], functionality.SharedInfo.RemindMes[userID].RemindMeSlice[i+1:])
 			}
+			functionality.SharedInfo.RemindMes[userID].RemindMeSlice[len(functionality.SharedInfo.RemindMes[userID].RemindMeSlice)-1] = nil
+			functionality.SharedInfo.RemindMes[userID].RemindMeSlice = functionality.SharedInfo.RemindMes[userID].RemindMeSlice[:len(functionality.SharedInfo.RemindMes[userID].RemindMeSlice)-1]
 
 			flag = true
 

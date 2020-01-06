@@ -15,7 +15,7 @@ import (
 
 var darlingTrigger int
 
-// Periodic events such as Unbanning and RSS timer every 30 sec
+// Status Ready Events
 func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
 	for _, guild := range e.Guilds {
@@ -503,9 +503,13 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	temp.ID = u.User.ID
 	temp.User = u.User.Username
 	temp.UnbanDate = time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
-	for index, val := range GuildMap[u.GuildID].PunishedUsers {
+	for i, val := range GuildMap[u.GuildID].PunishedUsers {
 		if val.ID == u.User.ID {
-			GuildMap[u.GuildID].PunishedUsers = append(GuildMap[u.GuildID].PunishedUsers[:index], GuildMap[u.GuildID].PunishedUsers[index+1:]...)
+			if i < len(GuildMap[u.GuildID].PunishedUsers)-1 {
+				copy(GuildMap[u.GuildID].PunishedUsers[i:], GuildMap[u.GuildID].PunishedUsers[i+1:])
+			}
+			GuildMap[u.GuildID].PunishedUsers[len(GuildMap[u.GuildID].PunishedUsers)-1] = nil
+			GuildMap[u.GuildID].PunishedUsers = GuildMap[u.GuildID].PunishedUsers[:len(GuildMap[u.GuildID].PunishedUsers)-1]
 		}
 	}
 	GuildMap[u.GuildID].PunishedUsers = append(GuildMap[u.GuildID].PunishedUsers, &temp)
@@ -643,9 +647,7 @@ func DynamicNicknameChange(s *discordgo.Session, guildID string, oldPrefix ...st
 func fixGuildSubsCommand(guildID string) {
 
 	Mutex.Lock()
-	animeSubs := SharedInfo.AnimeSubs
-
-	for ID, subs := range animeSubs {
+	for ID, subs := range SharedInfo.AnimeSubs {
 		if subs != nil || ID != guildID {
 			continue
 		}

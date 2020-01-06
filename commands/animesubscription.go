@@ -37,7 +37,7 @@ func subscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(commandStrings) == 1 {
 
 		if config.ServerID == "267799767843602452" {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vsub [anime]`\n\nAnime is the anime name from the schedule command", guildSettings.Prefix))
+			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%ssub [anime]`\n\nAnime is the anime name from the schedule command", guildSettings.Prefix))
 			if err != nil {
 				functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 				return
@@ -45,7 +45,7 @@ func subscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vsub [anime]`\n\nAnime is the anime name from <https://AnimeSchedule.net> or the schedule command", guildSettings.Prefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%ssub [anime]`\n\nAnime is the anime name from <https://AnimeSchedule.net> or the schedule command", guildSettings.Prefix))
 		if err != nil {
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
@@ -129,7 +129,7 @@ Loop:
 	}
 
 	if showName == "" {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid airing show name. It has to have started airing. Make sure you're using the anime name from `"+guildSettings.Prefix+"schedule`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid airing show name. It has to be airing. Make sure you're using the exact show name from `"+guildSettings.Prefix+"schedule`")
 		if err != nil {
 			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
@@ -158,7 +158,6 @@ Loop:
 func unsubscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		isValidShow bool
 		isDeleted   bool
 
 		guildSettings = &functionality.GuildSettings{
@@ -195,27 +194,8 @@ func unsubscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Iterate over all of the seasonal anime and see if it's a valid one
 	functionality.Mutex.RLock()
-	animeSchedule := functionality.AnimeSchedule
 	animeSubs := functionality.SharedInfo.AnimeSubs
 	functionality.Mutex.RUnlock()
-
-LoopShowCheck:
-	for _, scheduleShows := range animeSchedule {
-		for _, scheduleShow := range scheduleShows {
-			if strings.ToLower(scheduleShow.Name) == strings.ToLower(commandStrings[1]) {
-				isValidShow = true
-				break LoopShowCheck
-			}
-		}
-	}
-	if !isValidShow {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid currently airing show.")
-		if err != nil {
-			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-			return
-		}
-		return
-	}
 
 	// Iterate over all of the user's subscriptions and remove the target one if it finds it
 LoopShowRemoval:
@@ -226,7 +206,7 @@ LoopShowRemoval:
 			continue
 		}
 
-		for subKey, show := range userSubs {
+		for i, show := range userSubs {
 			if strings.ToLower(show.Show) == strings.ToLower(commandStrings[1]) {
 
 				// Delete either the entire object or remove just one item from it
@@ -234,7 +214,13 @@ LoopShowRemoval:
 				if len(userSubs) == 1 {
 					delete(functionality.SharedInfo.AnimeSubs, userID)
 				} else {
-					functionality.SharedInfo.AnimeSubs[userID] = append(functionality.SharedInfo.AnimeSubs[userID][:subKey], functionality.SharedInfo.AnimeSubs[userID][subKey+1:]...)
+
+					if i < len(functionality.SharedInfo.AnimeSubs[userID])-1 {
+						copy(functionality.SharedInfo.AnimeSubs[userID][i:], functionality.SharedInfo.AnimeSubs[userID][i+1:])
+					}
+					functionality.SharedInfo.AnimeSubs[userID][len(functionality.SharedInfo.AnimeSubs[userID])-1] = nil
+					functionality.SharedInfo.AnimeSubs[userID] = functionality.SharedInfo.AnimeSubs[userID][:len(functionality.SharedInfo.AnimeSubs[userID])-1]
+
 				}
 				functionality.Mutex.Unlock()
 

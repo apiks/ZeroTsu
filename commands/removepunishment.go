@@ -78,9 +78,15 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Removes warning from map and sets punishment
 	functionality.Mutex.Lock()
 	punishment := functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings[index]
-	for timestampIndex, timestamp := range functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps {
+	for i, timestamp := range functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps {
 		if strings.ToLower(timestamp.Punishment) == strings.ToLower(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Warnings[index]) {
-			functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[:timestampIndex], functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[timestampIndex+1:]...)
+
+			if i < len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps)-1 {
+				copy(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[i:], functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[i+1:])
+			}
+			functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps)-1] = nil
+			functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[:len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps)-1]
+
 			break
 		}
 	}
@@ -166,9 +172,15 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Removes kick from map and sets punishment
 	functionality.Mutex.Lock()
 	punishment := functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks[index]
-	for timestampIndex, timestamp := range functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps {
+	for i, timestamp := range functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps {
 		if strings.ToLower(timestamp.Punishment) == strings.ToLower(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks[index]) {
-			functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[:timestampIndex], functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[timestampIndex+1:]...)
+
+			if i < len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps)-1 {
+				copy(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[i:], functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[i+1:])
+			}
+			functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps)-1] = nil
+			functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[:len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps)-1]
+
 			break
 		}
 	}
@@ -254,9 +266,15 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Removes ban from map and sets punishment
 	functionality.Mutex.Lock()
 	punishment := functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Bans[index]
-	for timestampIndex, timestamp := range functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps {
+	for i, timestamp := range functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps {
 		if strings.ToLower(timestamp.Punishment) == strings.ToLower(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Bans[index]) {
-			functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[:timestampIndex], functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[timestampIndex+1:]...)
+
+			if i < len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps)-1 {
+				copy(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[i:], functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[i+1:])
+			}
+			functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps)-1] = nil
+			functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[:len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps)-1]
+
 			break
 		}
 	}
@@ -342,9 +360,15 @@ func removeMuteCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Removes mute from map and sets punishment
 	functionality.Mutex.Lock()
 	punishment := functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Mutes[index]
-	for timestampIndex, timestamp := range functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps {
+	for i, timestamp := range functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps {
 		if strings.ToLower(timestamp.Punishment) == strings.ToLower(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Mutes[index]) {
-			functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[:timestampIndex], functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[timestampIndex+1:]...)
+
+			if i < len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps)-1 {
+				copy(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[i:], functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[i+1:])
+			}
+			functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps)-1] = nil
+			functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps[:len(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps)-1]
+
 			break
 		}
 	}

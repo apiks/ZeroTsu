@@ -19,7 +19,7 @@ var (
 	GuildMap       = make(map[string]*GuildInfo)
 	SharedInfo     *sharedInfo
 	dbPath         = "database/guilds"
-	guildFileNames = [...]string{"bannedUsers.json", "punishedUsers.json", "filters.json", "messReqs.json", "spoilerRoles.json", "rssThreads.json",
+	guildFileNames = [...]string{"punishedUsers.json", "filters.json", "messReqs.json", "spoilerRoles.json", "rssThreads.json",
 		"rssThreadCheck.json", "raffles.json", "waifus.json", "waifuTrades.json", "memberInfo.json", "emojiStats.json",
 		"channelStats.json", "userChangeStats.json", "verifiedStats.json", "voteInfo.json", "tempCha.json",
 		"reactJoin.json", "guildSettings.json", "autoposts.json"}
@@ -70,6 +70,7 @@ type GuildSettings struct {
 	MutedRole           *Role       `json:"MutedRole"`
 	VoiceChas           []*VoiceCha `json:"VoiceChas"`
 	VoteModule          bool        `json:"VoteModule"`
+	ModOnly             bool        `json:"ModOnly"`
 	VoteChannelCategory *Cha        `json:"VoteChannelCategory"`
 	WaifuModule         bool        `json:"WaifuModule"`
 	WhitelistFileFilter bool        `json:"WhitelistFileFilter"`
@@ -147,8 +148,8 @@ type RssThread struct {
 
 type RssThreadCheck struct {
 	Thread *RssThread `json:"Thread"`
-	Date   time.Time  `json:"Date"`
-	GUID   string     `json:"GUID"`
+	Date   time.Time `json:"Date"`
+	GUID   string    `json:"GUID"`
 }
 
 type Emoji struct {
@@ -207,10 +208,18 @@ func LoadGuilds() {
 
 	// Creates missing "database" and "guilds" folder if they don't exist
 	if _, err := os.Stat("database"); os.IsNotExist(err) {
-		os.Mkdir("database", 0777)
+		err := os.Mkdir("database", 0777)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 	}
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
-		os.Mkdir(dbPath, 0777)
+		err := os.Mkdir(dbPath, 0777)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 		return
 	}
 
@@ -237,6 +246,7 @@ func LoadGuilds() {
 				WaifuModule:         false,
 				ReactsModule:        true,
 				WhitelistFileFilter: false,
+				ModOnly:             false,
 				PingMessage:         "Hmmm~ So this is what you do all day long?",
 				Premium:             false,
 			},
@@ -345,10 +355,18 @@ func LoadGuild(guildID string) {
 func LoadSharedDB() {
 	// Creates missing "database" and "shared" folder if they don't exist
 	if _, err := os.Stat("database"); os.IsNotExist(err) {
-		os.Mkdir("database", 0777)
+		err := os.Mkdir("database", 0777)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 	}
 	if _, err := os.Stat("database/shared"); os.IsNotExist(err) {
-		os.Mkdir("database/shared", 0777)
+		err := os.Mkdir("database/shared", 0777)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 	}
 
 	files, err := IOReadDir("database/shared")
@@ -376,14 +394,6 @@ func LoadGuildFile(guildID string, file string) {
 
 	// Takes the data and puts it into the appropriate field
 	switch file {
-	case "bannedUsers.json":
-		// BannedUsers is a depreciated name, so rename it to the new one
-		err = os.Rename(fmt.Sprintf("%s/%s/bannedUsers.json", dbPath, guildID), fmt.Sprintf("%s/%s/punishedUsers.json", dbPath, guildID))
-		if err != nil {
-			log.Println(err)
-		}
-		// Then load the renamed file
-		LoadGuildFile(guildID, "punishedUsers.json")
 	case "punishedUsers.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].PunishedUsers)
 	case "filters.json":
@@ -738,9 +748,9 @@ func WaifuTradesWrite(trade []*WaifuTrade, guildID string) error {
 }
 
 // Writes to punishedUsers.json from []PunishedUsers
-func PunishedUsersWrite(bannedUsers []*PunishedUsers, guildID string) error {
+func PunishedUsersWrite(punishedUsers []*PunishedUsers, guildID string) error {
 	// Turns that slice into bytes to be ready to written to file
-	marshaledStruct, err := json.MarshalIndent(bannedUsers, "", "    ")
+	marshaledStruct, err := json.MarshalIndent(punishedUsers, "", "    ")
 	if err != nil {
 		return err
 	}
@@ -843,7 +853,13 @@ func FiltersRemove(phrase string, guildID string) error {
 	Mutex.Lock()
 	for i, filter := range GuildMap[guildID].Filters {
 		if filter.Filter == phrase {
-			GuildMap[guildID].Filters = append(GuildMap[guildID].Filters[:i], GuildMap[guildID].Filters[i+1:]...)
+
+			if i < len(GuildMap[guildID].Filters)-1 {
+				copy(GuildMap[guildID].Filters[i:], GuildMap[guildID].Filters[i+1:])
+			}
+			GuildMap[guildID].Filters[len(GuildMap[guildID].Filters)-1] = nil
+			GuildMap[guildID].Filters = GuildMap[guildID].Filters[:len(GuildMap[guildID].Filters)-1]
+
 			filterExists = true
 			break
 		}
@@ -1012,7 +1028,13 @@ func MessRequirementRemove(phrase string, channelID string, guildID string) erro
 					continue
 				}
 			}
-			GuildMap[guildID].MessageRequirements = append(GuildMap[guildID].MessageRequirements[:i], GuildMap[guildID].MessageRequirements[i+1:]...)
+
+			if i < len(GuildMap[guildID].MessageRequirements)-1 {
+				copy(GuildMap[guildID].MessageRequirements[i:], GuildMap[guildID].MessageRequirements[i+1:])
+			}
+			GuildMap[guildID].MessageRequirements[len(GuildMap[guildID].MessageRequirements)-1] = nil
+			GuildMap[guildID].MessageRequirements = GuildMap[guildID].MessageRequirements[:len(GuildMap[guildID].MessageRequirements)-1]
+
 			phraseExists = true
 			break
 		}
@@ -1087,7 +1109,12 @@ func SpoilerRolesDelete(roleID string, guildID string) {
 	}
 	for i := 0; i < len(GuildMap[guildID].SpoilerRoles); i++ {
 		if GuildMap[guildID].SpoilerRoles[i].ID == roleID {
-			GuildMap[guildID].SpoilerRoles = append(GuildMap[guildID].SpoilerRoles[:i], GuildMap[guildID].SpoilerRoles[i+1:]...)
+
+			if i < len(GuildMap[guildID].SpoilerRoles)-1 {
+				copy(GuildMap[guildID].SpoilerRoles[i:], GuildMap[guildID].SpoilerRoles[i+1:])
+			}
+			GuildMap[guildID].SpoilerRoles[len(GuildMap[guildID].SpoilerRoles)-1] = nil
+			GuildMap[guildID].SpoilerRoles = GuildMap[guildID].SpoilerRoles[:len(GuildMap[guildID].SpoilerRoles)-1]
 		}
 	}
 
@@ -1238,6 +1265,7 @@ func RssThreadsTimerRemove(thread *RssThread, guildID string) error {
 			GuildMap[guildID].RssThreadChecks = GuildMap[guildID].RssThreadChecks[:len(GuildMap[guildID].RssThreadChecks)-1]
 
 			threadExists = true
+			break
 		}
 	}
 
@@ -1315,7 +1343,11 @@ func InitDB(s *discordgo.Session, guildID string) {
 
 	path := fmt.Sprintf("%s/%s", dbPath, guildID)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		os.Mkdir(path, 0777)
+		err := os.Mkdir(path, 0777)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 		// Send message to support server mod log that a server has been created on the public ZeroTsu
 		if s.State.User.ID == "614495694769618944" {
 			go func() {
@@ -1328,9 +1360,6 @@ func InitDB(s *discordgo.Session, guildID string) {
 	}
 
 	for _, name := range guildFileNames {
-		if name == "bannedUsers.json" {
-			continue
-		}
 		file, err := os.OpenFile(fmt.Sprintf("%s/%s/%s", dbPath, guildID, name), os.O_RDONLY|os.O_CREATE, 0666)
 		if err != nil {
 			log.Println(err)

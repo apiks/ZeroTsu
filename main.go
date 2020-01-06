@@ -97,9 +97,6 @@ func Start() {
 	// Deletes non-whitelisted attachments
 	goBot.AddHandler(commands.MessageAttachmentsHandler)
 
-	//Converter
-	//goBot.AddHandler(commands.ConverterHandler)
-
 	// React Channel Join Handler
 	goBot.AddHandler(commands.ReactJoinHandler)
 
@@ -115,8 +112,10 @@ func Start() {
 	goBot.AddHandler(functionality.OnPresenceUpdate)
 
 	// Verified Role and Cookie Map Expiry Deletion Handler
-	goBot.AddHandler(web.VerifiedRoleAdd)
-	goBot.AddHandler(web.VerifiedAlready)
+	if config.Website != "" {
+		goBot.AddHandler(web.VerifiedRoleAdd)
+		goBot.AddHandler(web.VerifiedAlready)
+	}
 
 	// Emoji ChannelStats
 	goBot.AddHandler(commands.OnMessageEmoji)
@@ -154,11 +153,10 @@ func Start() {
 	goBot.AddHandler(commands.RaffleReactJoin)
 	goBot.AddHandler(commands.RaffleReactLeave)
 
-	// Logs each user that joins the server
-	goBot.AddHandler(functionality.GuildJoin)
-
 	// Auto spambot ban for r/anime
+	// Logs each user that joins the server
 	if config.ServerID == "267799767843602452" {
+		goBot.AddHandler(functionality.GuildJoin)
 		goBot.AddHandler(functionality.SpambotJoin)
 	}
 

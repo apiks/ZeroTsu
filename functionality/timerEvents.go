@@ -100,9 +100,9 @@ func WriteEvents(s *discordgo.Session, e *discordgo.Ready) {
 	}
 }
 
-// Common Timer Events (every 30 seconds)
+// Common Timer Events
 func CommonEvents(s *discordgo.Session, e *discordgo.Ready) {
-	for range time.NewTicker(30 * time.Second).C {
+	for range time.NewTicker(1 * time.Minute).C {
 		for _, guild := range e.Guilds {
 			// Handles Unbans and Unmutes
 			punishmentHandler(s, guild.ID)
@@ -398,8 +398,6 @@ func feedHandler(s *discordgo.Session, guildID string) {
 		pinnedItems   = make(map[*gofeed.Item]bool)
 		subMap        = make(map[string]*gofeed.Feed)
 		threadsToPost = make(map[*RssThread][]*gofeed.Item)
-
-		rssThreadChecksFlag bool
 	)
 
 	t := time.Now()
@@ -410,29 +408,27 @@ func feedHandler(s *discordgo.Session, guildID string) {
 	fp.Client = &http.Client{Transport: &UserAgentTransport{http.DefaultTransport}, Timeout: time.Second * 10}
 
 	// Checks if there are any feeds for this guild
-	Mutex.RLock()
+	Mutex.Lock()
 	if GuildMap[guildID].Feeds == nil || len(GuildMap[guildID].Feeds) == 0 {
-		Mutex.RUnlock()
+		Mutex.Unlock()
 		return
 	}
 
 	// Save current threads as a copy so mapMutex isn't taken all the time when checking the feeds
 	rssThreads := GuildMap[guildID].Feeds
-	rssThreadChecks := GuildMap[guildID].RssThreadChecks
-	Mutex.RUnlock()
 
 	// Removes a thread if more than 60 days have passed from the rss thread checks. This is to keep DB manageable
 	n := 0
-	for p := 0; p < len(rssThreadChecks); p++ {
-		if rssThreadChecks[p] != nil {
-			rssThreadChecks[n] = rssThreadChecks[p]
+	for p := 0; p < len(GuildMap[guildID].RssThreadChecks); p++ {
+		if GuildMap[guildID].RssThreadChecks[p] != nil && GuildMap[guildID].RssThreadChecks[p].Thread != nil {
+			GuildMap[guildID].RssThreadChecks[n] = GuildMap[guildID].RssThreadChecks[p]
 			n++
 		} else {
 			continue
 		}
 
 		// Calculates if it's time to remove
-		dateRemoval := rssThreadChecks[p].Date.Add(hours)
+		dateRemoval := GuildMap[guildID].RssThreadChecks[p].Date.Add(hours)
 		difference := t.Sub(dateRemoval)
 
 		// Removes the fact that the thread had been posted already if it's time
@@ -440,29 +436,15 @@ func feedHandler(s *discordgo.Session, guildID string) {
 			continue
 		}
 
-		Mutex.Lock()
-		err := RssThreadsTimerRemove(rssThreadChecks[p].Thread, guildID)
+		err := RssThreadsTimerRemove(GuildMap[guildID].RssThreadChecks[p].Thread, guildID)
 		if err != nil {
-			Mutex.Unlock()
 			log.Println(err)
 			continue
 		}
-		Mutex.Unlock()
 
-		rssThreadChecksFlag = true
 	}
-	rssThreadChecks = rssThreadChecks[:n]
-
-	Mutex.Lock()
-	GuildMap[guildID].RssThreadChecks = rssThreadChecks
+	GuildMap[guildID].RssThreadChecks = GuildMap[guildID].RssThreadChecks[:n]
 	Mutex.Unlock()
-
-	// Updates rssThreadChecks var after the removal
-	if rssThreadChecksFlag {
-		Mutex.RLock()
-		rssThreadChecks = GuildMap[guildID].RssThreadChecks
-		Mutex.RUnlock()
-	}
 
 	// Save all feeds early to save performance
 	for _, thread := range rssThreads {
@@ -496,7 +478,9 @@ func feedHandler(s *discordgo.Session, guildID string) {
 
 			// Check if this item exists in rssThreadChecks and skips the item if it does
 			var skip = false
-			for _, check := range rssThreadChecks {
+
+			Mutex.RLock()
+			for _, check := range GuildMap[guildID].RssThreadChecks {
 				if check == nil {
 					skip = true
 					continue
@@ -508,6 +492,8 @@ func feedHandler(s *discordgo.Session, guildID string) {
 					break
 				}
 			}
+			Mutex.RUnlock()
+
 			if skip {
 				continue
 			}
@@ -534,8 +520,6 @@ func feedHandler(s *discordgo.Session, guildID string) {
 				log.Println(err)
 				continue
 			}
-			// Updates rssThreadChecks var after the write
-			rssThreadChecks = GuildMap[guildID].RssThreadChecks
 			Mutex.Unlock()
 
 			// Adds the item to the threads to send map
@@ -543,59 +527,75 @@ func feedHandler(s *discordgo.Session, guildID string) {
 		}
 	}
 
-	// Sends the threads concurrently in slow mode
-	go func() {
-		Mutex.Lock()
-		redditFeedBlock = true
-		Mutex.Unlock()
-		for thread, items := range threadsToPost {
-			for _, item := range items {
-				// Sends the feed item
-				time.Sleep(time.Second * 4)
-				message, err := feedEmbed(s, thread, item)
-				if err != nil {
-					continue
-				}
+	// Sends the threads
+	Mutex.Lock()
+	redditFeedBlock = true
+	Mutex.Unlock()
 
-				// Pins/unpins the feed items if necessary
-				if !thread.Pin {
-					continue
-				}
-				if _, ok := pinnedItems[item]; ok {
-					continue
-				}
+	for thread, items := range threadsToPost {
+		for _, item := range items {
 
-				pins, err := s.ChannelMessagesPinned(message.ChannelID)
-				if err != nil {
-					continue
+			// Check if the thread should still be sent
+			ok := false
+			Mutex.RLock()
+			for _, feedThread := range GuildMap[guildID].Feeds {
+				if feedThread.Subreddit == thread.Subreddit {
+					ok = true
+					break
 				}
-				// Unpins if necessary
-				for _, pin := range pins {
-
-					// Checks for whether the pin is one that should be unpinned
-					if pin.Author.ID != s.State.User.ID {
-						continue
-					}
-					if len(pin.Embeds) == 0 {
-						continue
-					}
-					if pin.Embeds[0].Author == nil {
-						continue
-					}
-					if !strings.HasPrefix(strings.ToLower(pin.Embeds[0].Author.URL), fmt.Sprintf("https://www.reddit.com/r/%s/comments/", thread.Subreddit)) {
-						continue
-					}
-
-					_ = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
-				}
-				// Pins
-				_ = s.ChannelMessagePin(message.ChannelID, message.ID)
-				pinnedItems[item] = true
 			}
-			delete(threadsToPost, thread)
+			Mutex.RUnlock()
+			if !ok {
+				continue
+			}
+
+			// Sends the feed item
+			message, err := feedEmbed(s, thread, item)
+			if err != nil {
+				continue
+			}
+
+			// Pins/unpins the feed items if necessary
+			if !thread.Pin {
+				continue
+			}
+			if _, ok := pinnedItems[item]; ok {
+				continue
+			}
+
+			pins, err := s.ChannelMessagesPinned(message.ChannelID)
+			if err != nil {
+				continue
+			}
+			// Unpins if necessary
+			for _, pin := range pins {
+
+				// Checks for whether the pin is one that should be unpinned
+				if pin.Author.ID != s.State.User.ID {
+					continue
+				}
+				if len(pin.Embeds) == 0 {
+					continue
+				}
+				if pin.Embeds[0].Author == nil {
+					continue
+				}
+				if !strings.HasPrefix(strings.ToLower(pin.Embeds[0].Author.URL), fmt.Sprintf("https://www.reddit.com/r/%s/comments/", thread.Subreddit)) {
+					continue
+				}
+
+				_ = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
+			}
+			// Pins
+			_ = s.ChannelMessagePin(message.ChannelID, message.ID)
+			pinnedItems[item] = true
+
+			time.Sleep(time.Second * 4)
 		}
-		Mutex.Lock()
-		redditFeedBlock = false
-		Mutex.Unlock()
-	}()
+		delete(threadsToPost, thread)
+	}
+
+	Mutex.Lock()
+	redditFeedBlock = false
+	Mutex.Unlock()
 }

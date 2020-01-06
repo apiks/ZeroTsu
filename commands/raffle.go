@@ -107,7 +107,13 @@ func raffleLeaveCommand(s *discordgo.Session, m *discordgo.Message) {
 			for i, ID := range raffle.ParticipantIDs {
 				if ID == m.Author.ID {
 					userInRaffle = true
-					functionality.GuildMap[m.GuildID].Raffles = append(functionality.GuildMap[m.GuildID].Raffles[:i], functionality.GuildMap[m.GuildID].Raffles[i+1:]...)
+
+					if i < len(functionality.GuildMap[m.GuildID].Raffles)-1 {
+						copy(functionality.GuildMap[m.GuildID].Raffles[i:], functionality.GuildMap[m.GuildID].Raffles[i+1:])
+					}
+					functionality.GuildMap[m.GuildID].Raffles[len(functionality.GuildMap[m.GuildID].Raffles)-1] = nil
+					functionality.GuildMap[m.GuildID].Raffles = functionality.GuildMap[m.GuildID].Raffles[:len(functionality.GuildMap[m.GuildID].Raffles)-1]
+
 					break
 				}
 			}

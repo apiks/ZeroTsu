@@ -91,7 +91,13 @@ func removeWaifu(s *discordgo.Session, m *discordgo.Message) {
 	functionality.Mutex.Lock()
 	for i, waifu := range functionality.GuildMap[m.GuildID].Waifus {
 		if strings.ToLower(waifu.Name) == strings.ToLower(commandStrings[1]) {
-			functionality.GuildMap[m.GuildID].Waifus = append(functionality.GuildMap[m.GuildID].Waifus[:i], functionality.GuildMap[m.GuildID].Waifus[i+1:]...)
+
+			if i < len(functionality.GuildMap[m.GuildID].Waifus)-1 {
+				copy(functionality.GuildMap[m.GuildID].Waifus[i:], functionality.GuildMap[m.GuildID].Waifus[i+1:])
+			}
+			functionality.GuildMap[m.GuildID].Waifus[len(functionality.GuildMap[m.GuildID].Waifus)-1] = nil
+			functionality.GuildMap[m.GuildID].Waifus = functionality.GuildMap[m.GuildID].Waifus[:len(functionality.GuildMap[m.GuildID].Waifus)-1]
+
 			_ = functionality.WaifusWrite(functionality.GuildMap[m.GuildID].Waifus, m.GuildID)
 			functionality.Mutex.Unlock()
 			_, err := s.ChannelMessageSend(m.ChannelID, "Success! Removed waifu `"+commandStrings[1]+"` from waifu list.")
@@ -497,7 +503,12 @@ func acceptTrade(s *discordgo.Session, m *discordgo.Message) {
 			functionality.GuildMap[m.GuildID].MemberInfoMap[trade.InitiatorID].Waifu = accepteeWaifu
 			_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
 
-			functionality.GuildMap[m.GuildID].WaifuTrades = append(functionality.GuildMap[m.GuildID].WaifuTrades[:i], functionality.GuildMap[m.GuildID].WaifuTrades[i+1:]...)
+			if i < len(functionality.GuildMap[m.GuildID].WaifuTrades)-1 {
+				copy(functionality.GuildMap[m.GuildID].WaifuTrades[i:], functionality.GuildMap[m.GuildID].WaifuTrades[i+1:])
+			}
+			functionality.GuildMap[m.GuildID].WaifuTrades[len(functionality.GuildMap[m.GuildID].WaifuTrades)-1] = nil
+			functionality.GuildMap[m.GuildID].WaifuTrades = functionality.GuildMap[m.GuildID].WaifuTrades[:len(functionality.GuildMap[m.GuildID].WaifuTrades)-1]
+
 			_ = functionality.WaifuTradesWrite(functionality.GuildMap[m.GuildID].WaifuTrades, m.GuildID)
 			break
 		}
@@ -567,7 +578,12 @@ func cancelTrade(s *discordgo.Session, m *discordgo.Message) {
 			}
 
 			// Removes a trade
-			functionality.GuildMap[m.GuildID].WaifuTrades = append(functionality.GuildMap[m.GuildID].WaifuTrades[:i], functionality.GuildMap[m.GuildID].WaifuTrades[i+1:]...)
+			if i < len(functionality.GuildMap[m.GuildID].WaifuTrades)-1 {
+				copy(functionality.GuildMap[m.GuildID].WaifuTrades[i:], functionality.GuildMap[m.GuildID].WaifuTrades[i+1:])
+			}
+			functionality.GuildMap[m.GuildID].WaifuTrades[len(functionality.GuildMap[m.GuildID].WaifuTrades)-1] = nil
+			functionality.GuildMap[m.GuildID].WaifuTrades = functionality.GuildMap[m.GuildID].WaifuTrades[:len(functionality.GuildMap[m.GuildID].WaifuTrades)-1]
+
 			_ = functionality.WaifuTradesWrite(functionality.GuildMap[m.GuildID].WaifuTrades, m.GuildID)
 			break
 		}

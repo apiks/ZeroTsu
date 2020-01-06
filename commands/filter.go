@@ -94,7 +94,7 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if err != nil {
 		return
 	}
-	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message `%v` was removed for using: _%v_ \n\n", strings.ToLower(m.Content), removals))
+	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message `%s` was removed for using: _%s_ \n\n", strings.ToLower(m.Content), removals))
 }
 
 // Handles filter in an onEdit basis

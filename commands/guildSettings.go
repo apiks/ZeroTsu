@@ -116,7 +116,11 @@ func removeCommandRole(s *discordgo.Session, m *discordgo.Message) {
 
 	for i, role := range guildSettings.CommandRoles {
 		if role.ID == roleID {
-			guildSettings.CommandRoles = append(guildSettings.CommandRoles[:i], guildSettings.CommandRoles[i+1:]...)
+			if i < len(guildSettings.CommandRoles)-1 {
+				copy(guildSettings.CommandRoles[i:], guildSettings.CommandRoles[i+1:])
+			}
+			guildSettings.CommandRoles[len(guildSettings.CommandRoles)-1] = nil
+			guildSettings.CommandRoles = guildSettings.CommandRoles[:len(guildSettings.CommandRoles)-1]
 			break
 		}
 	}
@@ -582,7 +586,11 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 							chaDeleted = true
 						}
 
-						guildSettings.VoiceChas[i].Roles = append(guildSettings.VoiceChas[i].Roles[:j], guildSettings.VoiceChas[i].Roles[j+1:]...)
+						if j < len(guildSettings.VoiceChas[i].Roles)-1 {
+							copy(guildSettings.VoiceChas[i].Roles[j:], guildSettings.VoiceChas[i].Roles[j+1:])
+						}
+						guildSettings.VoiceChas[i].Roles[len(guildSettings.VoiceChas[i].Roles)-1] = nil
+						guildSettings.VoiceChas[i].Roles = guildSettings.VoiceChas[i].Roles[:len(guildSettings.VoiceChas[i].Roles)-1]
 						break
 					}
 				}
@@ -591,7 +599,13 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 	} else {
 		for i, voiceCha := range guildSettings.VoiceChas {
 			if voiceCha.ID == cha.ID {
-				guildSettings.VoiceChas = append(guildSettings.VoiceChas[:i], guildSettings.VoiceChas[i+1:]...)
+
+				if i < len(guildSettings.VoiceChas)-1 {
+					copy(guildSettings.VoiceChas[i:], guildSettings.VoiceChas[i+1:])
+				}
+				guildSettings.VoiceChas[len(guildSettings.VoiceChas)-1] = nil
+				guildSettings.VoiceChas = guildSettings.VoiceChas[:len(guildSettings.VoiceChas)-1]
+
 				chaDeleted = true
 				break
 			}
@@ -696,11 +710,11 @@ func voteCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Displays current vote category
 	if len(commandStrings) == 1 {
 		if guildSettings.VoteChannelCategory == nil {
-			message = fmt.Sprintf("Error: Vote Module is currently not set. Please use `%vvotecategory [category]`", guildSettings.Prefix)
+			message = fmt.Sprintf("Error: Vote Module is currently not set. Please use `%svotecategory [category]`", guildSettings.Prefix)
 		} else if guildSettings.VoteChannelCategory.ID == "" {
-			message = fmt.Sprintf("Error: Vote Module is currently not set. Please use `%vvotecategory [category]`", guildSettings.Prefix)
+			message = fmt.Sprintf("Error: Vote Module is currently not set. Please use `%svotecategory [category]`", guildSettings.Prefix)
 		} else {
-			message = fmt.Sprintf("Current Vote Module is: `%v - %v` \n\n To change Vote Module please use `%vvotecategory [category]`", guildSettings.VoteChannelCategory.Name, guildSettings.VoteChannelCategory.ID, guildSettings.Prefix)
+			message = fmt.Sprintf("Current Vote Module is: `%s - %s` \n\n To change Vote Module please use `%svotecategory [category]`", guildSettings.VoteChannelCategory.Name, guildSettings.VoteChannelCategory.ID, guildSettings.Prefix)
 		}
 
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
@@ -751,10 +765,10 @@ func voteModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Displays current module setting
 	if len(commandStrings) == 1 {
-		if guildSettings.VoteModule {
-			message = fmt.Sprintf("Vote module is disabled. Please use `%vvotemodule true` to enable it.", guildSettings.Prefix)
+		if !guildSettings.VoteModule {
+			message = fmt.Sprintf("Vote module is disabled. Please use `%svotemodule true` to enable it.", guildSettings.Prefix)
 		} else {
-			message = fmt.Sprintf("Vote module is enabled. Please use `%vvotemodule false` to disable it.", guildSettings.Prefix)
+			message = fmt.Sprintf("Vote module is enabled. Please use `%svotemodule false` to disable it.", guildSettings.Prefix)
 		}
 
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
@@ -1111,6 +1125,76 @@ func setMutedRole(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
+// Handles mod only disable or enable
+func modOnlyCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	var (
+		message string
+		mode    bool
+	)
+
+	functionality.Mutex.RLock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.Mutex.RUnlock()
+
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
+
+	// Displays current mode setting
+	if len(commandStrings) == 1 {
+		if !guildSettings.ModOnly {
+			message = fmt.Sprintf("Mod-only mode is disabled. Please use `%smodonly true` to enable it.", guildSettings.Prefix)
+		} else {
+			message = fmt.Sprintf("Mod-only mode is enabled. Please use `%smodonly false` to disable it.", guildSettings.Prefix)
+		}
+
+		_, err := s.ChannelMessageSend(m.ChannelID, message)
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	} else if len(commandStrings) > 2 {
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%smodonly [true/false]`", guildSettings.Prefix))
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	}
+
+	// Parses bool
+	if commandStrings[1] == "true" ||
+		commandStrings[1] == "1" ||
+		commandStrings[1] == "enable" {
+		mode = true
+		message = "Success! Mod-only mode was enabled."
+	} else if commandStrings[1] == "false" ||
+		commandStrings[1] == "0" ||
+		commandStrings[1] == "disable" {
+		mode = false
+		message = "Success! Mod-only mode was disabled."
+	} else {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid value. Please use `true` or `false`.")
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	}
+
+	// Changes and writes mode bool to guild
+	functionality.Mutex.Lock()
+	functionality.GuildMap[m.GuildID].GuildConfig.ModOnly = mode
+	_ = functionality.GuildSettingsWrite(functionality.GuildMap[m.GuildID].GuildConfig, m.GuildID)
+	functionality.Mutex.Unlock()
+
+	_, err := s.ChannelMessageSend(m.ChannelID, message)
+	if err != nil {
+		functionality.LogError(s, guildSettings.BotLog, err)
+		return
+	}
+}
+
 func init() {
 	functionality.Add(&functionality.Command{
 		Execute:    addCommandRole,
@@ -1240,6 +1324,13 @@ func init() {
 		Trigger:    "setmuted",
 		Aliases:    []string{"setmutedrole", "addmuted", "addmutedrole"},
 		Desc:       "Sets a role as the muted role",
+		Permission: functionality.Admin,
+		Module:     "settings",
+	})
+	functionality.Add(&functionality.Command{
+		Execute:    modOnlyCommand,
+		Trigger:    "modonly",
+		Desc:       "Allow only Mods and Admins to use BOT commands in the entire server",
 		Permission: functionality.Admin,
 		Module:     "settings",
 	})

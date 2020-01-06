@@ -20,7 +20,7 @@ func sendServers(s *discordgo.Session) {
 	}
 
 	guildCountStr := strconv.Itoa(len(s.State.Guilds))
-	client := &http.Client{}
+	client := &http.Client{Timeout: 10 * time.Second}
 
 	// Discord Bots
 	discordBotsGuildCount(client, guildCountStr)
