@@ -157,7 +157,7 @@ func Start() {
 	// Logs each user that joins the server
 	if config.ServerID == "267799767843602452" {
 		goBot.AddHandler(functionality.GuildJoin)
-		goBot.AddHandler(functionality.SpambotJoin)
+		//goBot.AddHandler(functionality.SpambotJoin)
 	}
 
 	// Anime subscription handler
