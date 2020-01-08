@@ -36,7 +36,14 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Println(rec)
-			log.Println("Recovery in HandleCommand with message: " + m.Content)
+			log.Println("Recovery in HandleCommand with message: " + m.Content )
+			if m.GuildID != "" {
+				log.Println("Guild ID: " + m.GuildID)
+				Mutex.RLock()
+				guildSettings := GuildMap[m.GuildID].GetGuildSettings()
+				Mutex.RUnlock()
+				log.Println(guildSettings.Prefix)
+			}
 		}
 	}()
 
@@ -67,7 +74,7 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Parse the command
 	var guildPrefix = "."
-	if m.Message.Content[0:len(guildPrefix)] != guildPrefix {
+	if len(m.Message.Content) <= 1 || m.Message.Content[0:len(guildPrefix)] != guildPrefix {
 		return
 	}
 	cmdTrigger := strings.Split(m.Content, " ")[0][len(guildPrefix):]
@@ -97,7 +104,7 @@ func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guildSettings := GuildMap[m.GuildID].GetGuildSettings()
 	Mutex.RUnlock()
 
-	if m.Message.Content[0:len(guildSettings.Prefix)] != guildSettings.Prefix {
+	if len(m.Message.Content) <= len(guildSettings.Prefix) || m.Message.Content[0:len(guildSettings.Prefix)] != guildSettings.Prefix {
 		return
 	}
 	cmdTrigger := strings.Split(m.Content, " ")[0][len(guildSettings.Prefix):]
