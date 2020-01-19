@@ -710,11 +710,11 @@ func voteCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Displays current vote category
 	if len(commandStrings) == 1 {
 		if guildSettings.VoteChannelCategory == nil {
-			message = fmt.Sprintf("Error: Vote Module is currently not set. Please use `%svotecategory [category]`", guildSettings.Prefix)
+			message = fmt.Sprintf("Error: Vote Category is currently not set. Please use `%svotecategory [category]`", guildSettings.Prefix)
 		} else if guildSettings.VoteChannelCategory.ID == "" {
-			message = fmt.Sprintf("Error: Vote Module is currently not set. Please use `%svotecategory [category]`", guildSettings.Prefix)
+			message = fmt.Sprintf("Error: Vote Category is currently not set. Please use `%svotecategory [category]`", guildSettings.Prefix)
 		} else {
-			message = fmt.Sprintf("Current Vote Module is: `%s - %s` \n\n To change Vote Module please use `%svotecategory [category]`", guildSettings.VoteChannelCategory.Name, guildSettings.VoteChannelCategory.ID, guildSettings.Prefix)
+			message = fmt.Sprintf("Current Vote Category is: `%s - %s` \n\n To change Vote Category please use `%svotecategory [category]`", guildSettings.VoteChannelCategory.Name, guildSettings.VoteChannelCategory.ID, guildSettings.Prefix)
 		}
 
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
