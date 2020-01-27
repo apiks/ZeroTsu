@@ -16,7 +16,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.Mutex.RUnlock()
 
-	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 3)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 3)
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"say OPTIONAL[channelID] [message]`")
@@ -32,8 +32,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Sends the message to the channel the original message was in. Else continues to custom channel ID
 	if channelID == "" {
-		message := strings.TrimPrefix(m.Content, guildSettings.Prefix+"say ")
-		_, err := s.ChannelMessageSend(m.ChannelID, message)
+		_, err := s.ChannelMessageSend(m.ChannelID, commandStrings[1])
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
@@ -46,8 +45,16 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	message := strings.TrimPrefix(m.Content, guildSettings.Prefix+"say "+channelID)
-	_, err := s.ChannelMessageSend(channelID, message)
+	if len(commandStrings) < 3 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"say OPTIONAL[channelID] [message]`\n\nError: Missing non-channel text.")
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	}
+
+	_, err := s.ChannelMessageSend(channelID, commandStrings[2])
 	if err != nil {
 		functionality.LogError(s, guildSettings.BotLog, err)
 		return
@@ -67,7 +74,7 @@ func sayEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.Mutex.RUnlock()
 
-	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 3)
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 3)
 
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"embed OPTIONAL[channelID] [message]`")
@@ -83,8 +90,7 @@ func sayEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Sends the message embed to the channel the original message was in. Else continues to custom channel ID
 	if channelID == "" {
-		message := strings.TrimPrefix(m.Content, guildSettings.Prefix+"embed ")
-		err := functionality.SayEmbed(s, message, m.ChannelID)
+		err := functionality.SayEmbed(s, commandStrings[1], m.ChannelID)
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
@@ -97,8 +103,16 @@ func sayEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	message := strings.TrimPrefix(m.Content, guildSettings.Prefix+"embed "+channelID)
-	err := functionality.SayEmbed(s, message, m.ChannelID)
+	if len(commandStrings) < 3 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"embed OPTIONAL[channelID] [message]`\n\nError: Missing non-channel text.")
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	}
+
+	err := functionality.SayEmbed(s, commandStrings[2], m.ChannelID)
 	if err != nil {
 		functionality.LogError(s, guildSettings.BotLog, err)
 		return
@@ -169,6 +183,64 @@ func editCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
+// Edits an embed message sent by the bot with another embed message
+func editEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
+
+	functionality.Mutex.RLock()
+	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+	functionality.Mutex.RUnlock()
+
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 4)
+
+	if len(commandStrings) < 4 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"edit [channelID] [messageID] [message]`")
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	}
+
+	// Checks if the channel is present and valid
+	channelID, _ := functionality.ChannelParser(s, commandStrings[1], m.GuildID)
+	if channelID == "" {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid channel.")
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	}
+
+	// Checks if it's a valid message ID
+	_, err := strconv.ParseInt(commandStrings[2], 10, 64)
+	if len(commandStrings[2]) < 17 || err != nil {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid message.")
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	}
+
+	// Edits the target message
+	err = functionality.EditEmbed(s, commandStrings[1], commandStrings[2], commandStrings[3])
+	if err != nil {
+		_, err = s.ChannelMessageSend(m.ChannelID, err.Error()+"\n"+functionality.ErrorLocation(err))
+		if err != nil {
+			functionality.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	}
+
+	_, err = s.ChannelMessageSend(m.ChannelID, "Success! Selected message embed edited.")
+	if err != nil {
+		functionality.LogError(s, guildSettings.BotLog, err)
+		return
+	}
+}
+
 func init() {
 	functionality.Add(&functionality.Command{
 		Execute:    sayCommand,
@@ -188,6 +260,13 @@ func init() {
 		Execute:    editCommand,
 		Trigger:    "edit",
 		Desc:       "Edits a message sent by the bot",
+		Permission: functionality.Mod,
+		Module:     "misc",
+	})
+	functionality.Add(&functionality.Command{
+		Execute:    editEmbedCommand,
+		Trigger:    "editembed",
+		Desc:       "Edits a message embed sent by the bot",
 		Permission: functionality.Mod,
 		Module:     "misc",
 	})

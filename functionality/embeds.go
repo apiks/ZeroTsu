@@ -612,7 +612,7 @@ func AboutEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	return nil
 }
 
-// Embed message for say command
+// Embed message for say embed command
 func SayEmbed(s *discordgo.Session, message, channelID string) error {
 	embed := &discordgo.MessageEmbed{
 		Description: message,
@@ -620,6 +620,21 @@ func SayEmbed(s *discordgo.Session, message, channelID string) error {
 	}
 
 	_, err := s.ChannelMessageSendEmbed(channelID, embed)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Edits an embed message for edit embed command
+func EditEmbed(s *discordgo.Session, channelID, messageID, message string) error {
+	embed := &discordgo.MessageEmbed{
+		Description: message,
+		Color:       16758465,
+	}
+
+	_, err := s.ChannelMessageEditEmbed(channelID, messageID, embed)
 	if err != nil {
 		return err
 	}
