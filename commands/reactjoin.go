@@ -9,7 +9,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/functionality"
+	"ZeroTsu/functionality"
 )
 
 // Gives a specific role to a user if they react

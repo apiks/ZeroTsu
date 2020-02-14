@@ -7,7 +7,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/functionality"
+	"ZeroTsu/functionality"
 )
 
 // Sets a remindMe note for after the target time has passed to be sent to the user

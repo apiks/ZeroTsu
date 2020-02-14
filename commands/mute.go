@@ -8,7 +8,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/functionality"
+	"ZeroTsu/functionality"
 )
 
 // Mutes a user for a set period with a reason

@@ -6,7 +6,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/functionality"
+	"ZeroTsu/functionality"
 )
 
 // Sets a reddit feed by subreddit and other params

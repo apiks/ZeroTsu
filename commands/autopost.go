@@ -6,7 +6,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/functionality"
+	"ZeroTsu/functionality"
 )
 
 // Sets a channel ID as the autopost daily stats target channel

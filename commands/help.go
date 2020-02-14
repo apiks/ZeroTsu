@@ -7,8 +7,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/config"
-	"github.com/r-anime/ZeroTsu/functionality"
+	"ZeroTsu/config"
+	"ZeroTsu/functionality"
 )
 
 // Command categories in sorted form and map form(map for descriptions)

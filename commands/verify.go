@@ -6,8 +6,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/config"
-	"github.com/r-anime/ZeroTsu/functionality"
+	"ZeroTsu/config"
+	"ZeroTsu/functionality"
 )
 
 // Verifies a user with a reddit username and gives them the verified role

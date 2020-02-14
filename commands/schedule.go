@@ -10,8 +10,8 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/config"
-	"github.com/r-anime/ZeroTsu/functionality"
+	"ZeroTsu/config"
+	"ZeroTsu/functionality"
 )
 
 // Shows todays airing anime times, fetched from AnimeSchedule.net

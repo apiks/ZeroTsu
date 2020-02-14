@@ -2,9 +2,11 @@ package commands
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/r-anime/ZeroTsu/functionality"
 	"strings"
+
+	"github.com/bwmarrin/discordgo"
+
+	"ZeroTsu/functionality"
 )
 
 // Prints the amount of users in a guild have a specific role

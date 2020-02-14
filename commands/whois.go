@@ -8,8 +8,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/config"
-	"github.com/r-anime/ZeroTsu/functionality"
+	"ZeroTsu/config"
+	"ZeroTsu/functionality"
 )
 
 // Sends memberInfo user information to channel
