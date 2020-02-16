@@ -32,7 +32,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Sends the message to the channel the original message was in. Else continues to custom channel ID
 	if channelID == "" {
-		_, err := s.ChannelMessageSend(m.ChannelID, commandStrings[1])
+		_, err := s.ChannelMessageSend(m.ChannelID, commandStrings[1] + " " + commandStrings[2])
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
@@ -46,7 +46,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if len(commandStrings) < 3 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"say OPTIONAL[channelID] [message]`\n\nError: Missing non-channel text.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"say OPTIONAL[channelID] [message]`\n\nError: Missing non-channel text. Maybe the first word was the name of a channel?")
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
@@ -90,7 +90,7 @@ func sayEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Sends the message embed to the channel the original message was in. Else continues to custom channel ID
 	if channelID == "" {
-		err := functionality.SayEmbed(s, commandStrings[1], m.ChannelID)
+		err := functionality.SayEmbed(s, commandStrings[1] + " " + commandStrings[2], m.ChannelID)
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
@@ -252,6 +252,7 @@ func init() {
 	functionality.Add(&functionality.Command{
 		Execute:    sayEmbedCommand,
 		Trigger:    "embed",
+		Aliases:    []string{"esay"},
 		Desc:       "Sends an embed message from bot in the command channel",
 		Permission: functionality.Mod,
 		Module:     "misc",
