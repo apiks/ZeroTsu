@@ -21,6 +21,7 @@ var (
 	Redis     bool
 	RedisIP   string
 	RedisPort string
+	RedisAddress string
 
 	RedditAppName   string
 	RedditAppSecret string
@@ -87,6 +88,7 @@ func ReadConfig() error {
 	Redis = config.Redis
 	RedisIP = config.RedisIP
 	RedisPort = config.RedisPort
+	RedisAddress = RedisIP + ":" + RedisPort
 
 	// Takes the bot token from the environment variable. Reason is to avoid pushing token to github
 	if os.Getenv("ZeroTsuToken") == "" {

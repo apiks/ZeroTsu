@@ -1,16 +1,17 @@
 package functionality
 
 import (
-	"github.com/mediocregopher/radix/v3"
 	"log"
 	"strconv"
+
+	"github.com/mediocregopher/radix/v3"
 
 	"ZeroTsu/config"
 )
 
 // TransferGuildToRedis transfers a guild's json database values to the Redis instance
 func TransferGuildToRedis(guildID string) error {
-	redis, err := radix.NewPool("tcp", config.RedisIP+":"+config.RedisPort, 10)
+	redis, err := radix.NewPool("tcp", config.RedisAddress, 10)
 	if err != nil {
 		return err
 	}
@@ -25,8 +26,7 @@ func TransferGuildToRedis(guildID string) error {
 	log.Println("Starting transfer to redis instance. . .")
 
 	Mutex.RLock()
-	err = redis.Do(radix.Cmd(nil, "HSET", "guild:"+guildID,
-		"id", guildID,
+	err = redis.Do(radix.Cmd(nil, "HSET", "guilds:"+guildID,
 		"prefix", GuildMap[guildID].GuildConfig.Prefix,
 		"pingMessage", GuildMap[guildID].GuildConfig.PingMessage,
 		"modOnly", strconv.FormatBool(GuildMap[guildID].GuildConfig.ModOnly),
@@ -113,6 +113,18 @@ func TransferGuildToRedis(guildID string) error {
 	if err != nil {
 		return err
 	}
+	err = transferGuildReactJoinsToRedis(redis, guildID)
+	if err != nil {
+		return err
+	}
+	err = transferGuildExtensionsToRedis(redis, guildID)
+	if err != nil {
+		return err
+	}
+	err = transferGuildAutopostsToRedis(redis, guildID)
+	if err != nil {
+		return err
+	}
 
 	log.Println("Transfer to redis instance has been completed!")
 
@@ -131,8 +143,8 @@ func transferGuildSettings(redis *radix.Pool, guildID string) error {
 			return err
 		}
 		err = redis.Do(radix.Cmd(nil, "HSET", "guilds:"+guildID+":botLog",
-			"botLogName", GuildMap[guildID].GuildConfig.BotLog.Name,
-			"botLogID", GuildMap[guildID].GuildConfig.BotLog.ID))
+			"id", GuildMap[guildID].GuildConfig.BotLog.ID,
+			"name", GuildMap[guildID].GuildConfig.BotLog.Name))
 		if err != nil {
 			return err
 		}
@@ -145,9 +157,9 @@ func transferGuildSettings(redis *radix.Pool, guildID string) error {
 			return err
 		}
 		err = redis.Do(radix.Cmd(nil, "HSET", "guilds:"+guildID+":optInUnder",
-			"optInUnderName", GuildMap[guildID].GuildConfig.OptInUnder.Name,
-			"optInUnderID", GuildMap[guildID].GuildConfig.OptInUnder.ID,
-			"optInUnderPosition", strconv.Itoa(GuildMap[guildID].GuildConfig.OptInUnder.Position)))
+			"id", GuildMap[guildID].GuildConfig.OptInUnder.ID,
+			"name", GuildMap[guildID].GuildConfig.OptInUnder.Name,
+			"position", strconv.Itoa(GuildMap[guildID].GuildConfig.OptInUnder.Position)))
 		if err != nil {
 			return err
 		}
@@ -160,9 +172,9 @@ func transferGuildSettings(redis *radix.Pool, guildID string) error {
 			return err
 		}
 		err = redis.Do(radix.Cmd(nil, "HSET", "guilds:"+guildID+":optInAbove",
-			"optInAboveName", GuildMap[guildID].GuildConfig.OptInAbove.Name,
-			"optInAboveID", GuildMap[guildID].GuildConfig.OptInAbove.ID,
-			"optInAbovePosition", strconv.Itoa(GuildMap[guildID].GuildConfig.OptInAbove.Position)))
+			"id", GuildMap[guildID].GuildConfig.OptInAbove.ID,
+			"name", GuildMap[guildID].GuildConfig.OptInAbove.Name,
+			"position", strconv.Itoa(GuildMap[guildID].GuildConfig.OptInAbove.Position)))
 		if err != nil {
 			return err
 		}
@@ -170,14 +182,13 @@ func transferGuildSettings(redis *radix.Pool, guildID string) error {
 
 	// MutedRole
 	if GuildMap[guildID].GuildConfig.MutedRole != nil {
-		err := redis.Do(radix.Cmd(nil, "DEL", "guilds:"+guildID+":mutedRole:"+GuildMap[guildID].GuildConfig.MutedRole.ID))
+		err := redis.Do(radix.Cmd(nil, "DEL", "guilds:"+guildID+":mutedRole"))
 		if err != nil {
 			return err
 		}
-		err = redis.Do(radix.Cmd(nil, "HSET", "guilds:"+guildID+":mutedRole:"+GuildMap[guildID].GuildConfig.MutedRole.ID,
+		err = redis.Do(radix.Cmd(nil, "HSET", "guilds:"+guildID+":mutedRole",
 			"id", GuildMap[guildID].GuildConfig.MutedRole.ID,
-			"name", GuildMap[guildID].GuildConfig.MutedRole.Name,
-			"position", strconv.Itoa(GuildMap[guildID].GuildConfig.MutedRole.Position)))
+			"name", GuildMap[guildID].GuildConfig.MutedRole.Name))
 		if err != nil {
 			return err
 		}
@@ -193,8 +204,7 @@ func transferGuildSettings(redis *radix.Pool, guildID string) error {
 
 			err = redis.Do(radix.Cmd(nil, "HSET", "guilds:"+guildID+":commandRoles:"+commandRole.ID,
 				"id", commandRole.ID,
-				"name", commandRole.Name,
-				"position", strconv.Itoa(commandRole.Position)))
+				"name", commandRole.Name))
 			if err != nil {
 				return err
 			}
@@ -224,8 +234,7 @@ func transferGuildSettings(redis *radix.Pool, guildID string) error {
 				}
 				err = redis.Do(radix.Cmd(nil, "HSET", "guilds:"+guildID+":voiceChannels:"+voiceCha.ID+":roles:"+voiceRole.ID,
 					"id", voiceRole.ID,
-					"name", voiceRole.Name,
-					"position", strconv.Itoa(voiceRole.Position)))
+					"name", voiceRole.Name))
 				if err != nil {
 					return err
 				}
@@ -235,11 +244,11 @@ func transferGuildSettings(redis *radix.Pool, guildID string) error {
 
 	// VoteChannelCategory
 	if GuildMap[guildID].GuildConfig.VoteChannelCategory != nil {
-		err := redis.Do(radix.Cmd(nil, "DEL", "guilds:"+guildID+":voteChannelCategory:"+GuildMap[guildID].GuildConfig.VoteChannelCategory.ID))
+		err := redis.Do(radix.Cmd(nil, "DEL", "guilds:"+guildID+":voteChannelCategory"))
 		if err != nil {
 			return err
 		}
-		err = redis.Do(radix.Cmd(nil, "HSET", "guilds:"+guildID+":voteChannelCategory:"+GuildMap[guildID].GuildConfig.VoteChannelCategory.ID,
+		err = redis.Do(radix.Cmd(nil, "HSET", "guilds:"+guildID+":voteChannelCategory",
 			"id", GuildMap[guildID].GuildConfig.VoteChannelCategory.ID,
 			"name", GuildMap[guildID].GuildConfig.VoteChannelCategory.Name))
 		if err != nil {
@@ -297,20 +306,12 @@ func transferGuildSpoilerRolesToRedis(redis *radix.Pool, guildID string) error {
 	Mutex.RLock()
 	defer Mutex.RUnlock()
 
+	err := redis.Do(radix.Cmd(nil, "DEL", "guilds:"+guildID+":spoilerRoles"))
+	if err != nil {
+		return err
+	}
 	for _, role := range GuildMap[guildID].SpoilerRoles {
-		err := redis.Do(radix.Cmd(nil, "DEL", "guilds:"+guildID+":spoilerRoles:"+role.ID))
-		if err != nil {
-			return err
-		}
-		err = redis.Do(radix.Cmd(nil, "HSET", "guilds:"+guildID+":spoilerRoles:"+role.ID,
-			"id", role.ID,
-			"name", role.Name,
-			"color", strconv.Itoa(role.Color),
-			"hoist", strconv.FormatBool(role.Hoist),
-			"managed", strconv.FormatBool(role.Managed),
-			"mentionable", strconv.FormatBool(role.Mentionable),
-			"permissions", strconv.Itoa(role.Permissions),
-			"position", strconv.Itoa(role.Position)))
+		err = redis.Do(radix.Cmd(nil, "SADD", "guilds:"+guildID+":spoilerRoles", role.ID))
 		if err != nil {
 			return err
 		}
@@ -697,12 +698,7 @@ func transferGuildSpoilerMapToRedis(redis *radix.Pool, guildID string) error {
 		err = redis.Do(radix.Cmd(nil, "HSET", "guilds:"+guildID+":spoilerMap:"+spoilerRole.ID,
 			"id", spoilerRole.ID,
 			"name", spoilerRole.Name,
-			"position", strconv.Itoa(spoilerRole.Position),
-			"color", strconv.Itoa(spoilerRole.Color),
-			"permissions", strconv.Itoa(spoilerRole.Permissions),
-			"mentionable", strconv.FormatBool(spoilerRole.Mentionable),
-			"hoist", strconv.FormatBool(spoilerRole.Hoist),
-			"managed", strconv.FormatBool(spoilerRole.Managed)))
+			"position", strconv.Itoa(spoilerRole.Position)))
 		if err != nil {
 			return err
 		}
@@ -879,11 +875,11 @@ func transferGuildTempChaToRedis(redis *radix.Pool, guildID string) error {
 	defer Mutex.Unlock()
 
 	for roleID, tempCha := range GuildMap[guildID].TempChaMap {
-		err := redis.Do(radix.Cmd(nil, "DEL", "guilds:"+guildID+":tempChas:"+roleID))
+		err := redis.Do(radix.Cmd(nil, "DEL", "guilds:"+guildID+":tempChannels:"+roleID))
 		if err != nil {
 			return err
 		}
-		err = redis.Do(radix.Cmd(nil, "HSET", "guilds:"+guildID+":tempChas:"+roleID,
+		err = redis.Do(radix.Cmd(nil, "HSET", "guilds:"+guildID+":tempChannels:"+roleID,
 			"creationDate", tempCha.CreationDate.String(),
 			"roleName", tempCha.RoleName,
 			"elevated", strconv.FormatBool(tempCha.Elevated)))
@@ -892,24 +888,65 @@ func transferGuildTempChaToRedis(redis *radix.Pool, guildID string) error {
 	return nil
 }
 
-//// transferGuildReactJoinsToRedis transfers a guild's react join autoroles to the Redis instance
-//func transferGuildReactJoinsToRedis(redis *radix.Pool, guildID string) error {
-//	Mutex.Lock()
-//	defer Mutex.Unlock()
-//
-//	for messageID, reactMap := range GuildMap[guildID].ReactJoinMap {
-//		err := redis.Do(radix.Cmd(nil, "DEL", "guilds:"+guildID+":reactJoins:"+messageID))
-//		if err != nil {
-//			return err
-//		}
-//
-//		for _, t := range reactMap {
-//			err := redis.Do(radix.Cmd(nil, "DEL", "guilds:"+guildID+":reactJoins:"+messageID+":"+t))
-//			if err != nil {
-//				return err
-//			}
-//		}
-//	}
-//
-//	return nil
-//}
+// transferGuildReactJoinsToRedis transfers a guild's react join autoroles to the Redis instance
+func transferGuildReactJoinsToRedis(redis *radix.Pool, guildID string) error {
+	Mutex.Lock()
+	defer Mutex.Unlock()
+
+	for messageID, reactMap := range GuildMap[guildID].ReactJoinMap {
+		for _, roles := range reactMap.RoleEmojiMap {
+			for roleID, emojis := range roles {
+				err := redis.Do(radix.Cmd(nil, "DEL", "guilds:"+guildID+":reactJoins:"+messageID+":roles:"+roleID+":emojis"))
+				if err != nil {
+					return err
+				}
+
+				for _, emoji := range emojis {
+					err = redis.Do(radix.Cmd(nil, "SADD", "guilds:"+guildID+":reactJoins:"+messageID+":roles:"+roleID+":emojis", emoji))
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// transferGuildExtensionsToRedis transfers a guild's extensions to the Redis instance
+func transferGuildExtensionsToRedis(redis *radix.Pool, guildID string) error {
+	Mutex.Lock()
+	defer Mutex.Unlock()
+
+	for _, extension := range GuildMap[guildID].ExtensionList {
+		err := redis.Do(radix.Cmd(nil, "DEL", "guilds:"+guildID+":extensions"))
+		if err != nil {
+			return err
+		}
+		err = redis.Do(radix.Cmd(nil, "SADD", "guilds:"+guildID+":extensions", extension))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// transferGuildAutopostsToRedis transfers a guild's autoposts to the Redis instance
+func transferGuildAutopostsToRedis(redis *radix.Pool, guildID string) error {
+	Mutex.Lock()
+	defer Mutex.Unlock()
+
+	for postType, autopost := range GuildMap[guildID].Autoposts {
+		err := redis.Do(radix.Cmd(nil, "DEL", "guilds:"+guildID+":autoposts:"+postType))
+		if err != nil {
+			return err
+		}
+		err = redis.Do(radix.Cmd(nil, "HSET", "guilds:"+guildID+":autoposts:"+postType,
+			"id", autopost.ID,
+			"name", autopost.Name))
+	}
+
+	return nil
+}

@@ -131,7 +131,7 @@ type Filter struct {
 }
 
 type MessRequirement struct {
-	ID         string
+	ID         string  `json:"ID"`
 	Phrase     string `json:"Phrase"`
 	Type       string `json:"Type"`
 	Channel    string `json:"Channel"`
@@ -139,7 +139,7 @@ type MessRequirement struct {
 }
 
 type Feed struct {
-	ID        string
+	ID        string  `json:"ID"`
 	Subreddit string `json:"Subreddit"`
 	Title     string `json:"Title"`
 	Author    string `json:"Author"`
@@ -149,7 +149,7 @@ type Feed struct {
 }
 
 type FeedCheck struct {
-	ID     string
+	ID     string  `json:"ID"`
 	Thread *Feed     `json:"Thread"`
 	Date   time.Time `json:"Date"`
 	GUID   string    `json:"GUID"`
@@ -185,19 +185,19 @@ type RemindMe struct {
 }
 
 type Raffle struct {
-	ID             string
+	ID             string `json:"ID"`
 	Name           string   `json:"Name"`
 	ParticipantIDs []string `json:"ParticipantIDs"`
 	ReactMessageID string   `json:"ReactMessageID"`
 }
 
 type Waifu struct {
-	ID   string
+	ID   string `json:"ID"`
 	Name string `json:"Name"`
 }
 
 type WaifuTrade struct {
-	ID          string
+	ID          string `json:"ID"`
 	TradeID     string `json:"TradeID"`
 	InitiatorID string `json:"InitiatorID"`
 	AccepteeID  string `json:"AccepteeID"`

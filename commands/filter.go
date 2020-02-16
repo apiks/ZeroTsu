@@ -762,7 +762,7 @@ func viewMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 //		return
 //	}
 //
-//	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
+//	guildSettings := functionality.GuildMap[m.GuildID].GetRedisGuildSettings()
 //
 //	// Counter for how many rapidly sent user messages a user has
 //	if spamFilterMap[m.Author.ID] < 4 {

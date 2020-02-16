@@ -45,7 +45,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		// Changes nickname dynamically based on prefix
 		DynamicNicknameChange(s, guild.ID)
 
-		// Transfers this guild to the Redis Instance
+		//// Transfers this guild to the Redis Instance
 		//err = TransferGuildToRedis(guild.ID)
 		//if err != nil {
 		//	log.Println(err)

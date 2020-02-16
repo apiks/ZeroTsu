@@ -1,6 +1,7 @@
 package functionality
 
 import (
+	"ZeroTsu/config"
 	"log"
 	"strings"
 
@@ -99,10 +100,18 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 // Handles a command from a guild
 func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 	HandleNewGuild(s, m.GuildID)
+	var guildSettings *GuildSettings
 
-	Mutex.RLock()
-	guildSettings := GuildMap[m.GuildID].GetGuildSettings()
-	Mutex.RUnlock()
+	if config.Redis {
+		guildSettings, _ = GetRedisGuildSettings(m.GuildID)
+	} else {
+		Mutex.RLock()
+		guildSettings = GuildMap[m.GuildID].GetGuildSettings()
+		Mutex.RUnlock()
+	}
+	if guildSettings == nil {
+		return
+	}
 
 	if len(m.Message.Content) <= len(guildSettings.Prefix) || m.Message.Content[0:len(guildSettings.Prefix)] != guildSettings.Prefix {
 		return

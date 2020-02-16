@@ -13,6 +13,8 @@ import (
 	"unicode"
 
 	"github.com/bwmarrin/discordgo"
+
+	"ZeroTsu/config"
 )
 
 // File for misc. functions, commands and variables.
@@ -762,4 +764,22 @@ func RemoveSpaces(str string) string {
 // Replaces all instances of hyphens in a string with spaces
 func RemoveHyphens(str string) string {
 	return strings.Replace(str, "-", " ", -1)
+}
+
+// GetGuildSettings returns either the redis instance guild settings or the in-memory guild settings depending on whether Redis is enabled
+func GetGuildSettings(guildID string) (*GuildSettings, error) {
+	var guildSettings *GuildSettings
+
+	if config.Redis {
+		guildSettings, _ = GetRedisGuildSettings(guildID)
+	} else {
+		Mutex.RLock()
+		guildSettings = GuildMap[guildID].GetGuildSettings()
+		Mutex.RUnlock()
+	}
+	if guildSettings == nil {
+		return nil, fmt.Errorf("error: no guild settings found")
+	}
+
+	return guildSettings, nil
 }
