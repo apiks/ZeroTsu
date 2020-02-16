@@ -606,7 +606,7 @@ func SaveReactJoin(messageID string, role string, emoji string, guildID string) 
 func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		role		*discordgo.Role
+		role *discordgo.Role
 
 		name        string
 		chanMention string
@@ -796,7 +796,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		role		*discordgo.Role
+		role        *discordgo.Role
 		name        string
 		chanMention string
 

@@ -53,7 +53,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 	functionality.Mutex.Lock()
 	for rssLoopFlag {
 		if rssTimerFlag {
-			for _, rssTimer := range functionality.GuildMap[m.GuildID].RssThreadChecks {
+			for _, rssTimer := range functionality.GuildMap[m.GuildID].FeedChecks {
 				if rssTimer.Thread.ChannelID == channelID {
 					rssTimerFlag = true
 					err := functionality.RssThreadsTimerRemove(rssTimer.Thread, m.GuildID)
@@ -67,7 +67,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 					rssTimerFlag = false
 				}
 			}
-			if len(functionality.GuildMap[m.GuildID].RssThreadChecks) == 0 {
+			if len(functionality.GuildMap[m.GuildID].FeedChecks) == 0 {
 				rssTimerFlag = false
 			}
 		}

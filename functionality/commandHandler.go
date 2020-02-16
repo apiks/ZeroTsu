@@ -36,7 +36,7 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Println(rec)
-			log.Println("Recovery in HandleCommand with message: " + m.Content )
+			log.Println("Recovery in HandleCommand with message: " + m.Content)
 			if m.GuildID != "" {
 				log.Println("Guild ID: " + m.GuildID)
 				Mutex.RLock()

@@ -158,7 +158,7 @@ Loop:
 func unsubscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		isDeleted   bool
+		isDeleted bool
 
 		guildSettings = &functionality.GuildSettings{
 			Prefix: ".",

@@ -397,7 +397,7 @@ func feedHandler(s *discordgo.Session, guildID string) {
 	var (
 		pinnedItems   = make(map[*gofeed.Item]bool)
 		subMap        = make(map[string]*gofeed.Feed)
-		threadsToPost = make(map[*RssThread][]*gofeed.Item)
+		threadsToPost = make(map[*Feed][]*gofeed.Item)
 	)
 
 	t := time.Now()
@@ -419,16 +419,16 @@ func feedHandler(s *discordgo.Session, guildID string) {
 
 	// Removes a thread if more than 60 days have passed from the rss thread checks. This is to keep DB manageable
 	n := 0
-	for p := 0; p < len(GuildMap[guildID].RssThreadChecks); p++ {
-		if GuildMap[guildID].RssThreadChecks[p] != nil && GuildMap[guildID].RssThreadChecks[p].Thread != nil {
-			GuildMap[guildID].RssThreadChecks[n] = GuildMap[guildID].RssThreadChecks[p]
+	for p := 0; p < len(GuildMap[guildID].FeedChecks); p++ {
+		if GuildMap[guildID].FeedChecks[p] != nil && GuildMap[guildID].FeedChecks[p].Thread != nil {
+			GuildMap[guildID].FeedChecks[n] = GuildMap[guildID].FeedChecks[p]
 			n++
 		} else {
 			continue
 		}
 
 		// Calculates if it's time to remove
-		dateRemoval := GuildMap[guildID].RssThreadChecks[p].Date.Add(hours)
+		dateRemoval := GuildMap[guildID].FeedChecks[p].Date.Add(hours)
 		difference := t.Sub(dateRemoval)
 
 		// Removes the fact that the thread had been posted already if it's time
@@ -436,14 +436,14 @@ func feedHandler(s *discordgo.Session, guildID string) {
 			continue
 		}
 
-		err := RssThreadsTimerRemove(GuildMap[guildID].RssThreadChecks[p].Thread, guildID)
+		err := RssThreadsTimerRemove(GuildMap[guildID].FeedChecks[p].Thread, guildID)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
 
 	}
-	GuildMap[guildID].RssThreadChecks = GuildMap[guildID].RssThreadChecks[:n]
+	GuildMap[guildID].FeedChecks = GuildMap[guildID].FeedChecks[:n]
 	Mutex.Unlock()
 
 	// Save all feeds early to save performance
@@ -480,7 +480,7 @@ func feedHandler(s *discordgo.Session, guildID string) {
 			var skip = false
 
 			Mutex.RLock()
-			for _, check := range GuildMap[guildID].RssThreadChecks {
+			for _, check := range GuildMap[guildID].FeedChecks {
 				if check == nil {
 					skip = true
 					continue

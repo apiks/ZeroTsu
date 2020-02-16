@@ -10,15 +10,21 @@ import (
 // File for BOT, server, channel and role info
 
 var (
-	Token               string
-	BotID               string
-	ServerID            string
-	BotLogID            string
-	OwnerID             string
-	Website             string
-	PlayingMsg          []string
-	RedditAppName       string
-	RedditAppSecret     string
+	Token      string
+	BotID      string
+	ServerID   string
+	BotLogID   string
+	OwnerID    string
+	Website    string
+	PlayingMsg []string
+
+	Redis     bool
+	RedisIP   string
+	RedisPort string
+
+	RedditAppName   string
+	RedditAppSecret string
+
 	DiscordAppSecret    string
 	DiscordBotsSecret   string
 	DiscordBoatsSecret  string
@@ -39,6 +45,10 @@ type configStruct struct {
 	Kaguya                string   `json:"Kaguya"`
 	MsgAttachRemoval      string   `json:"MsgAttachRemoval"`
 	PlayingMsg            []string `json:"PlayingMsg"`
+
+	Redis     bool   `json:"Redis"`
+	RedisIP   string `json:"RedisIP"`
+	RedisPort string `json:"RedisPort"`
 }
 
 type configSecrets struct {
@@ -73,6 +83,10 @@ func ReadConfig() error {
 	OwnerID = config.OwnerID
 	Website = config.Website
 	PlayingMsg = config.PlayingMsg
+
+	Redis = config.Redis
+	RedisIP = config.RedisIP
+	RedisPort = config.RedisPort
 
 	// Takes the bot token from the environment variable. Reason is to avoid pushing token to github
 	if os.Getenv("ZeroTsuToken") == "" {
@@ -121,6 +135,10 @@ func WriteConfig() error {
 	config.OwnerID = OwnerID
 	config.Website = Website
 	config.PlayingMsg = PlayingMsg
+
+	config.Redis = Redis
+	config.RedisIP = RedisIP
+	config.RedisPort = RedisPort
 
 	// Turns the config struct to bytes
 	marshaledStruct, err := json.MarshalIndent(config, "", "    ")

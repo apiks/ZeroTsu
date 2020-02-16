@@ -75,7 +75,7 @@ func UnmuteEmbed(s *discordgo.Session, user *UserInfo, mod string, botLog string
 	return err
 }
 
-func feedEmbed(s *discordgo.Session, thread *RssThread, item *gofeed.Item) (*discordgo.Message, error) {
+func feedEmbed(s *discordgo.Session, thread *Feed, item *gofeed.Item) (*discordgo.Message, error) {
 	var (
 		embedImage = &discordgo.MessageEmbedImage{}
 		imageLink  = "https://"

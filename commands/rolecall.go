@@ -12,7 +12,7 @@ import (
 // Prints the amount of users in a guild have a specific role
 func rolecallCommand(s *discordgo.Session, m *discordgo.Message) {
 	var (
-		role functionality.Role
+		role    functionality.Role
 		counter int
 	)
 

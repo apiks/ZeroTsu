@@ -32,7 +32,7 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Sends the message to the channel the original message was in. Else continues to custom channel ID
 	if channelID == "" {
-		_, err := s.ChannelMessageSend(m.ChannelID, commandStrings[1] + " " + commandStrings[2])
+		_, err := s.ChannelMessageSend(m.ChannelID, commandStrings[1]+" "+commandStrings[2])
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
@@ -90,7 +90,7 @@ func sayEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Sends the message embed to the channel the original message was in. Else continues to custom channel ID
 	if channelID == "" {
-		err := functionality.SayEmbed(s, commandStrings[1] + " " + commandStrings[2], m.ChannelID)
+		err := functionality.SayEmbed(s, commandStrings[1]+" "+commandStrings[2], m.ChannelID)
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return

@@ -55,6 +55,7 @@ type PunishedUsers struct {
 
 // Struct where we'll hold punishment timestamps
 type Punishment struct {
+	ID         string
 	Punishment string    `json:"punishment"`
 	Type       string    `json:"type"`
 	Timestamp  time.Time `json:"timestamp"`

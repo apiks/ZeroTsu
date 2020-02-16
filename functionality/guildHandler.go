@@ -35,8 +35,8 @@ type GuildInfo struct {
 	Filters             []*Filter
 	MessageRequirements []*MessRequirement
 	SpoilerRoles        []*discordgo.Role
-	Feeds               []*RssThread
-	RssThreadChecks     []*RssThreadCheck
+	Feeds               []*Feed
+	FeedChecks          []*FeedCheck
 	Raffles             []*Raffle
 	Waifus              []*Waifu
 	WaifuTrades         []*WaifuTrade
@@ -109,7 +109,7 @@ type VoteInfo struct {
 	Date         time.Time          `json:"Date"`
 	Channel      string             `json:"Channel"`
 	ChannelType  string             `json:"ChannelType"`
-	Category     string             `json:"Module,omitempty"`
+	Category     string             `json:"Category,omitempty"`
 	Description  string             `json:"Description,omitempty"`
 	VotesReq     int                `json:"VotesReq"`
 	MessageReact *discordgo.Message `json:"MessageReact"`
@@ -131,13 +131,15 @@ type Filter struct {
 }
 
 type MessRequirement struct {
+	ID         string
 	Phrase     string `json:"Phrase"`
 	Type       string `json:"Type"`
 	Channel    string `json:"Channel"`
 	LastUserID string
 }
 
-type RssThread struct {
+type Feed struct {
+	ID        string
 	Subreddit string `json:"Subreddit"`
 	Title     string `json:"Title"`
 	Author    string `json:"Author"`
@@ -146,8 +148,9 @@ type RssThread struct {
 	ChannelID string `json:"ChannelID"`
 }
 
-type RssThreadCheck struct {
-	Thread *RssThread `json:"Thread"`
+type FeedCheck struct {
+	ID     string
+	Thread *Feed     `json:"Thread"`
 	Date   time.Time `json:"Date"`
 	GUID   string    `json:"GUID"`
 }
@@ -182,16 +185,19 @@ type RemindMe struct {
 }
 
 type Raffle struct {
+	ID             string
 	Name           string   `json:"Name"`
 	ParticipantIDs []string `json:"ParticipantIDs"`
 	ReactMessageID string   `json:"ReactMessageID"`
 }
 
 type Waifu struct {
+	ID   string
 	Name string `json:"Name"`
 }
 
 type WaifuTrade struct {
+	ID          string
 	TradeID     string `json:"TradeID"`
 	InitiatorID string `json:"InitiatorID"`
 	AccepteeID  string `json:"AccepteeID"`
@@ -255,7 +261,7 @@ func LoadGuilds() {
 			MessageRequirements: nil,
 			SpoilerRoles:        nil,
 			Feeds:               nil,
-			RssThreadChecks:     nil,
+			FeedChecks:          nil,
 			Raffles:             nil,
 			Waifus:              nil,
 			WaifuTrades:         nil,
@@ -312,7 +318,7 @@ func LoadGuild(guildID string) {
 		MessageRequirements: nil,
 		SpoilerRoles:        nil,
 		Feeds:               nil,
-		RssThreadChecks:     nil,
+		FeedChecks:          nil,
 		Raffles:             nil,
 		Waifus:              nil,
 		WaifuTrades:         nil,
@@ -412,7 +418,7 @@ func LoadGuildFile(guildID string, file string) {
 	case "rssThreads.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].Feeds)
 	case "rssThreadCheck.json":
-		_ = json.Unmarshal(infoByte, &GuildMap[guildID].RssThreadChecks)
+		_ = json.Unmarshal(infoByte, &GuildMap[guildID].FeedChecks)
 	case "raffles.json":
 		_ = json.Unmarshal(infoByte, &GuildMap[guildID].Raffles)
 	case "waifus.json":
@@ -995,7 +1001,13 @@ func MessRequirementWrite(phrase string, channel string, filterType string, guil
 	}
 
 	// Adds the phrase to the message requirement list
-	GuildMap[guildID].MessageRequirements = append(GuildMap[guildID].MessageRequirements, &MessRequirement{phrase, filterType, channel, ""})
+	id, err := GenerateID(guildID)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	GuildMap[guildID].MessageRequirements = append(GuildMap[guildID].MessageRequirements, &MessRequirement{id, phrase, filterType, channel, ""})
 
 	// Turns that struct slice into bytes again to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(GuildMap[guildID].MessageRequirements, "", "    ")
@@ -1146,7 +1158,13 @@ func RssThreadsWrite(subreddit, author, title, postType, channelID, guildID stri
 	}
 
 	// Appends the thread to the guild's threads
-	GuildMap[guildID].Feeds = append(GuildMap[guildID].Feeds, &RssThread{subreddit, title, author, pin, postType, channelID})
+	id, err := GenerateID(guildID)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	GuildMap[guildID].Feeds = append(GuildMap[guildID].Feeds, &Feed{id, subreddit, title, author, pin, postType, channelID})
 
 	// Turns that struct slice into bytes ready to written to file
 	marshaledStruct, err := json.MarshalIndent(GuildMap[guildID].Feeds, "", "    ")
@@ -1223,19 +1241,25 @@ func RssThreadsRemove(subreddit, title, author, postType, channelID, guildID str
 }
 
 // Writes an rssThread with a date to rssThreadCheck.json
-func RssThreadsTimerWrite(thread *RssThread, date time.Time, GUID, guildID string) error {
+func RssThreadsTimerWrite(thread *Feed, date time.Time, GUID, guildID string) error {
 
 	// Appends the new item to a slice of all of the old ones if it doesn't exist
-	for _, check := range GuildMap[guildID].RssThreadChecks {
+	for _, check := range GuildMap[guildID].FeedChecks {
 		if check.GUID == guildID {
 			return nil
 		}
 	}
 
-	GuildMap[guildID].RssThreadChecks = append(GuildMap[guildID].RssThreadChecks, &RssThreadCheck{thread, date, GUID})
+	id, err := GenerateID(guildID)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	GuildMap[guildID].FeedChecks = append(GuildMap[guildID].FeedChecks, &FeedCheck{id, thread, date, GUID})
 
 	// Turns that struct slice into bytes again to be ready to written to file
-	marshaledStruct, err := json.MarshalIndent(GuildMap[guildID].RssThreadChecks, "", "    ")
+	marshaledStruct, err := json.MarshalIndent(GuildMap[guildID].FeedChecks, "", "    ")
 	if err != nil {
 		return err
 	}
@@ -1250,19 +1274,19 @@ func RssThreadsTimerWrite(thread *RssThread, date time.Time, GUID, guildID strin
 }
 
 // Removes a feedCheck from rssThreadCheck.json
-func RssThreadsTimerRemove(thread *RssThread, guildID string) error {
+func RssThreadsTimerRemove(thread *Feed, guildID string) error {
 
 	var threadExists bool
 
 	// Deletes the check if it finds it, else throw error
-	for i := len(GuildMap[guildID].RssThreadChecks) - 1; i >= 0; i-- {
-		if GuildMap[guildID].RssThreadChecks[i].Thread == thread {
+	for i := len(GuildMap[guildID].FeedChecks) - 1; i >= 0; i-- {
+		if GuildMap[guildID].FeedChecks[i].Thread == thread {
 
-			if i < len(GuildMap[guildID].RssThreadChecks)-1 {
-				copy(GuildMap[guildID].RssThreadChecks[i:], GuildMap[guildID].RssThreadChecks[i+1:])
+			if i < len(GuildMap[guildID].FeedChecks)-1 {
+				copy(GuildMap[guildID].FeedChecks[i:], GuildMap[guildID].FeedChecks[i+1:])
 			}
-			GuildMap[guildID].RssThreadChecks[len(GuildMap[guildID].RssThreadChecks)-1] = nil
-			GuildMap[guildID].RssThreadChecks = GuildMap[guildID].RssThreadChecks[:len(GuildMap[guildID].RssThreadChecks)-1]
+			GuildMap[guildID].FeedChecks[len(GuildMap[guildID].FeedChecks)-1] = nil
+			GuildMap[guildID].FeedChecks = GuildMap[guildID].FeedChecks[:len(GuildMap[guildID].FeedChecks)-1]
 
 			threadExists = true
 			break
@@ -1274,7 +1298,7 @@ func RssThreadsTimerRemove(thread *RssThread, guildID string) error {
 	}
 
 	// Turns that struct slice into bytes again to be ready to written to file
-	marshaledStruct, err := json.Marshal(GuildMap[guildID].RssThreadChecks)
+	marshaledStruct, err := json.Marshal(GuildMap[guildID].FeedChecks)
 	if err != nil {
 		return err
 	}
