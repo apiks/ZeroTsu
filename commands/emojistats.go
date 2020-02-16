@@ -8,7 +8,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"ZeroTsu/functionality"
+	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 // Tracks emoji usage of server emojis

@@ -6,7 +6,7 @@ import (
 
 	"github.com/mediocregopher/radix/v3"
 
-	"ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 // TransferGuildToRedis transfers a guild's json database values to the Redis instance

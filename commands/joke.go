@@ -7,7 +7,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"ZeroTsu/functionality"
+	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 const jokeURL = "https://official-joke-api.herokuapp.com/random_joke"

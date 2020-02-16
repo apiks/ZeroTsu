@@ -6,7 +6,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"ZeroTsu/functionality"
+	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 // Sorts all spoiler roles created with the create command between the two opt-in dummy roles alphabetically

@@ -7,7 +7,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"ZeroTsu/functionality"
+	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 // Bans a user for a set period with a reason

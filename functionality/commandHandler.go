@@ -1,11 +1,12 @@
 package functionality
 
 import (
-	"ZeroTsu/config"
 	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 var (

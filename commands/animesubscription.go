@@ -9,8 +9,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"ZeroTsu/config"
-	"ZeroTsu/functionality"
+	"github.com/r-anime/ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 // Add Notifications for anime episode releases SUBBED

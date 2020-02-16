@@ -1,4 +1,4 @@
-module ZeroTsu
+module github.com/r-anime/ZeroTsu
 
 go 1.12
 

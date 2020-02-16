@@ -6,7 +6,7 @@ import (
 
 	"github.com/mediocregopher/radix/v3"
 
-	"ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 // GetRedisGuildSettings fetches a guild's existing settings from redis and returns them

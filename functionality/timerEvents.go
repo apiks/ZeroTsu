@@ -13,7 +13,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/mmcdole/gofeed"
 
-	"ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 var redditFeedBlock bool

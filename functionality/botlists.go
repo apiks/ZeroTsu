@@ -10,7 +10,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 // Send number of servers via post request

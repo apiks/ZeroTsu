@@ -14,7 +14,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/config"
 )
 
 // File for misc. functions, commands and variables.

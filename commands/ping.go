@@ -3,7 +3,7 @@ package commands
 import (
 	"github.com/bwmarrin/discordgo"
 
-	"ZeroTsu/functionality"
+	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 // Prints a message to see if the BOT is alive
