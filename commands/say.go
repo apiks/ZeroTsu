@@ -11,7 +11,6 @@ import (
 
 // Sends a message from the bot to a channel
 func sayCommand(s *discordgo.Session, m *discordgo.Message) {
-
 	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.Mutex.RUnlock()
@@ -32,7 +31,13 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Sends the message to the channel the original message was in. Else continues to custom channel ID
 	if channelID == "" {
-		_, err := s.ChannelMessageSend(m.ChannelID, commandStrings[1]+" "+commandStrings[2])
+		message := commandStrings[1]
+		if len(commandStrings) == 3 {
+			message += " "
+			message += commandStrings[2]
+		}
+
+		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
@@ -69,7 +74,6 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 
 // Sends a message embed from the bot to a channel
 func sayEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
-
 	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.Mutex.RUnlock()
@@ -90,7 +94,13 @@ func sayEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Sends the message embed to the channel the original message was in. Else continues to custom channel ID
 	if channelID == "" {
-		err := functionality.SayEmbed(s, commandStrings[1]+" "+commandStrings[2], m.ChannelID)
+		message := commandStrings[1]
+		if len(commandStrings) == 3 {
+			message += " "
+			message += commandStrings[2]
+		}
+
+		err := functionality.SayEmbed(s, message, m.ChannelID)
 		if err != nil {
 			functionality.LogError(s, guildSettings.BotLog, err)
 			return
@@ -127,7 +137,6 @@ func sayEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 
 // Edits a message sent by the bot with another message
 func editCommand(s *discordgo.Session, m *discordgo.Message) {
-
 	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.Mutex.RUnlock()
@@ -185,7 +194,6 @@ func editCommand(s *discordgo.Session, m *discordgo.Message) {
 
 // Edits an embed message sent by the bot with another embed message
 func editEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
-
 	functionality.Mutex.RLock()
 	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
 	functionality.Mutex.RUnlock()
