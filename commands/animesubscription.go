@@ -294,7 +294,7 @@ func viewSubscriptions(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
 	if len(commandStrings) != 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vsubs`", guildSettings.GetPrefix()))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%ssubs`", guildSettings.GetPrefix()))
 		if err != nil {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
@@ -307,12 +307,16 @@ func viewSubscriptions(s *discordgo.Session, m *discordgo.Message) {
 	animeSubs := entities.SharedInfo.GetAnimeSubsMap()
 	entities.Mutex.RUnlock()
 	for userID, shows := range animeSubs {
+		if shows == nil {
+			continue
+		}
+
 		if userID != m.Author.ID {
 			continue
 		}
 
 		for i := 0; i < len(shows); i++ {
-			message += fmt.Sprintf("**%d.** %v\n", i+1, shows[i].GetShow())
+			message += fmt.Sprintf("**%d.** %s\n", i+1, shows[i].GetShow())
 		}
 	}
 

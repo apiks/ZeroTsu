@@ -109,8 +109,6 @@ func getDaySchedule(weekday int) string {
 				continue
 			}
 
-			log.Println("Name: ", show.Name)
-
 			// Parses the time in a proper time object
 			t, err := time.Parse("15:04", show.GetAirTime())
 			if err != nil {

@@ -269,7 +269,7 @@ func LoadSharedDB() {
 
 func LoadSharedDBFile(file string) {
 	// Reads all the info from the file and puts them in infoByte as bytes
-	infoByte, err := ioutil.ReadFile(fmt.Sprintf("database/shared/%v", file))
+	infoByte, err := ioutil.ReadFile(fmt.Sprintf("database/shared/%s", file))
 	if err != nil {
 		log.Println(err)
 		return
@@ -278,9 +278,9 @@ func LoadSharedDBFile(file string) {
 	// Takes the data and puts it into the appropriate field
 	switch file {
 	case "remindMes.json":
-		_ = json.Unmarshal(infoByte, SharedInfo.GetRemindMesMap())
+		_ = json.Unmarshal(infoByte, &SharedInfo.RemindMes)
 	case "animeSubs.json":
-		_ = json.Unmarshal(infoByte, SharedInfo.GetAnimeSubsMap())
+		_ = json.Unmarshal(infoByte, &SharedInfo.AnimeSubs)
 	}
 }
 
