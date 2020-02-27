@@ -486,7 +486,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		if state == "overlordconfirmsreddit" {
 			// Fetches reddit username and checks whether account is at least 1 week old
 			Name, DateUnix, err := getRedditUsername(SafeCookieMap.userCookieMap[cookie.Value].Code)
-			log.Println(Name, DateUnix)
 			if err != nil {
 				// Sets error message
 				tempUser.Error = "Error: Bad reddit verification occurred. Please try to verify again."
@@ -567,7 +566,7 @@ func getRedditUsername(code string) (string, float64, error) {
 	client := &http.Client{Timeout: time.Second * 2}
 
 	// Sets reddit required post info
-	POSTinfo := "grant_type=authorization_code&code=" + code + fmt.Sprintf("&redirect_uri=http://%v/verification", config.Website)
+	POSTinfo := "grant_type=authorization_code&code=" + code + fmt.Sprintf("&redirect_uri=http://%s/verification", config.Website)
 
 	// Starts request to reddit
 	req, err := http.NewRequest("POST", "https://www.reddit.com/api/v1/access_token", bytes.NewBuffer([]byte(POSTinfo)))
@@ -665,8 +664,11 @@ func getRedditUsername(code string) (string, float64, error) {
 		return "", 0, fmt.Errorf("Error: Banned users from the subreddit are not allowed on the Discord server.")
 	}
 
+	log.Println("RedditName: ", user.RedditName)
+	log.Println("AccCreation: ", user.AccCreation)
+
 	// Returns user reddit username and date of account creation in epoch time
-	return user.RedditName, user.AccCreation, err
+	return user.RedditName, user.AccCreation, nil
 }
 
 // Verifies user on discord and returns their discord username and discrim
