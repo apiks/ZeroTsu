@@ -486,6 +486,10 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		if state == "overlordconfirmsreddit" {
 			// Fetches reddit username and checks whether account is at least 1 week old
 			Name, DateUnix, err := getRedditUsername(SafeCookieMap.userCookieMap[cookie.Value].Code)
+
+			log.Println("Name: ", Name)
+			log.Println("DateUnix: ", DateUnix)
+
 			if err != nil {
 				// Sets error message
 				tempUser.Error = "Error: Bad reddit verification occurred. Please try to verify again."
