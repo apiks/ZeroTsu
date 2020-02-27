@@ -196,7 +196,7 @@ func UpdateAnimeSchedule() {
 		log.Println(err)
 		return
 	}
-	request.Header.Set("Username-Agent", common.UserAgent)
+	request.Header.Set("User-Agent", common.UserAgent)
 
 	// Make request
 	response, err := client.Do(request)

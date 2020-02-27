@@ -573,7 +573,7 @@ func getRedditUsername(code string) (string, float64, error) {
 	}
 
 	// Sets needed request parameters Username Agent and Basic Auth
-	req.Header.Set("Username-Agent", common.UserAgent)
+	req.Header.Set("User-Agent", common.UserAgent)
 	req.SetBasicAuth(config.RedditAppName, config.RedditAppSecret)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -603,7 +603,7 @@ func getRedditUsername(code string) (string, float64, error) {
 
 	// Sets needed reqAPI parameters
 	reqAPI.Header.Add("Authorization", "Bearer "+access.RedditAccessToken)
-	reqAPI.Header.Add("Username-Agent", common.UserAgent)
+	reqAPI.Header.Add("User-Agent", common.UserAgent)
 
 	// Does the GET request and puts it into the respAPI
 	respAPI, err := client.Do(reqAPI)
