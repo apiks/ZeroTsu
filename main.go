@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/gorilla/mux"
-	"github.com/pkg/profile"
 	"github.com/r-anime/ZeroTsu/commands"
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/config"
@@ -15,12 +14,12 @@ import (
 	"net/http"
 	"time"
 
-	_ "net/http/pprof"
+	//_ "net/http/pprof"
 )
 
 // Initializes and starts Bot and website
 func main() {
-	defer profile.Start(profile.MemProfile, profile.ProfilePath(".")).Stop()
+	//defer profile.Start(profile.MemProfile, profile.ProfilePath(".")).Stop()
 
 	// Initialize Config values
 	err := config.ReadConfig()
