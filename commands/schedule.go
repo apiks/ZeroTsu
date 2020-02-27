@@ -67,7 +67,7 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Add AnimeSchedule.net if public ZeroTsu
 	if config.ServerID != "267799767843602452" {
-		printMessage += "\n\nFull Week: <https://AnimeSchedule.net>"
+		printMessage += "\n\n**Full Week:** <https://AnimeSchedule.net>"
 	}
 
 	// Print the daily schedule
@@ -77,7 +77,7 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 // Gets a target weekday's anime schedule
 func getDaySchedule(weekday int) string {
 	var (
-		printMessage = fmt.Sprintf("**__%v:__**\n\n", time.Weekday(weekday).String())
+		printMessage = fmt.Sprintf("**__%s:__**\n\n", time.Weekday(weekday).String())
 		DST          = isTimeDST(time.Now())
 		JST          *time.Location
 		BST          *time.Location
@@ -96,47 +96,58 @@ func getDaySchedule(weekday int) string {
 
 	entities.Mutex.Lock()
 	for dayInt, showSlice := range entities.AnimeSchedule {
-		if dayInt == weekday {
-			for _, show := range showSlice {
+		if showSlice == nil {
+			continue
+		}
 
-				// Parses the time in a proper time object
-				t, err := time.Parse("15:04", show.GetAirTime())
-				if err != nil {
-					log.Println(err)
-					continue
-				}
+		if dayInt != weekday {
+			continue
+		}
 
-				// Format print message for show's air times and timezones
-				jstTimezoneString, _ := t.In(JST).Zone()
-				if DST {
-					ukTimezoneString, _ := t.In(BST).Zone()
-					westAmericanTimezoneString, _ := t.In(PDT).Zone()
+		for _, show := range showSlice {
+			if show == nil {
+				continue
+			}
 
-					if show.GetDelayed() == "" {
-						printMessage += fmt.Sprintf("**%v %v** - %v %v **|** %v %v **|** %v %v\n\n", show.GetName(), show.GetEpisode(), t.UTC().In(BST).Format("15:04"), ukTimezoneString,
-							t.UTC().In(PDT).Format("15:04"), westAmericanTimezoneString,
-							t.UTC().In(JST).Format("15:04"), jstTimezoneString)
-					} else {
-						printMessage += fmt.Sprintf("**%v %v** __%v__ - %v %v **|** %v %v **|** %v %v\n\n", show.GetName(), show.GetEpisode(), show.GetDelayed(), t.UTC().In(BST).Format("15:04"), ukTimezoneString,
-							t.UTC().In(PDT).Format("15:04"), westAmericanTimezoneString,
-							t.UTC().In(JST).Format("15:04"), jstTimezoneString)
-					}
+			log.Println("Name: ", show.Name)
+
+			// Parses the time in a proper time object
+			t, err := time.Parse("15:04", show.GetAirTime())
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+
+			// Format print message for show's air times and timezones
+			jstTimezoneString, _ := t.In(JST).Zone()
+			if DST {
+				ukTimezoneString, _ := t.In(BST).Zone()
+				westAmericanTimezoneString, _ := t.In(PDT).Zone()
+
+				if show.GetDelayed() == "" {
+					printMessage += fmt.Sprintf("**%s %s** - %s %s **|** %s %s **|** %s %s\n\n", show.GetName(), show.GetEpisode(), t.UTC().In(BST).Format("15:04"), ukTimezoneString,
+						t.UTC().In(PDT).Format("15:04"), westAmericanTimezoneString,
+						t.UTC().In(JST).Format("15:04"), jstTimezoneString)
 				} else {
-					westAmericanTimezoneString, _ := t.In(PST).Zone()
+					printMessage += fmt.Sprintf("**%s %s** __%s__ - %s %s **|** %s %s **|** %s %s\n\n", show.GetName(), show.GetEpisode(), show.GetDelayed(), t.UTC().In(BST).Format("15:04"), ukTimezoneString,
+						t.UTC().In(PDT).Format("15:04"), westAmericanTimezoneString,
+						t.UTC().In(JST).Format("15:04"), jstTimezoneString)
+				}
+			} else {
+				westAmericanTimezoneString, _ := t.In(PST).Zone()
 
-					if show.GetDelayed() == "" {
-						printMessage += fmt.Sprintf("**%v %v** - %v GMT **|** %v %v **|** %v %v\n\n", show.GetName(), show.GetEpisode(), t.UTC().Format("15:04"),
-							t.UTC().In(PST).Format("15:04"), westAmericanTimezoneString,
-							t.UTC().In(JST).Format("15:04"), jstTimezoneString)
-					} else {
-						printMessage += fmt.Sprintf("**%v %v** __%v__ - %v GMT **|** %v %v **|** %v %v\n\n", show.GetName(), show.GetEpisode(), show.GetDelayed(), t.UTC().Format("15:04"),
-							t.UTC().In(PST).Format("15:04"), westAmericanTimezoneString,
-							t.UTC().In(JST).Format("15:04"), jstTimezoneString)
-					}
+				if show.GetDelayed() == "" {
+					printMessage += fmt.Sprintf("**%s %s** - %s GMT **|** %s %s **|** %s %s\n\n", show.GetName(), show.GetEpisode(), t.UTC().Format("15:04"),
+						t.UTC().In(PST).Format("15:04"), westAmericanTimezoneString,
+						t.UTC().In(JST).Format("15:04"), jstTimezoneString)
+				} else {
+					printMessage += fmt.Sprintf("**%s %s** __%s__ - %s GMT **|** %s %s **|** %s %s\n\n", show.GetName(), show.GetEpisode(), show.GetDelayed(), t.UTC().Format("15:04"),
+						t.UTC().In(PST).Format("15:04"), westAmericanTimezoneString,
+						t.UTC().In(JST).Format("15:04"), jstTimezoneString)
 				}
 			}
-			break
 		}
+		break
 	}
 	entities.Mutex.Unlock()
 
@@ -169,7 +180,7 @@ func processEachShow(_ int, element *goquery.Selection) {
 
 	show.SetName(element.Find(".show-name").Text())
 	show.SetEpisode("Ep " + element.Parent().Parent().Parent().Find(".episode-number").Text())
-	show.SetName(strings.Replace(show.GetEpisode(), "\n", "", -1))
+	show.SetEpisode(strings.Replace(show.GetEpisode(), "\n", "", -1))
 	show.SetAirTime(element.Find(".air-time").Text())
 	show.SetDelayed(strings.TrimPrefix(element.Parent().Parent().Parent().Find(".delay").Text(), " "))
 	show.SetDelayed(strings.Trim(show.GetDelayed(), "\n"))
