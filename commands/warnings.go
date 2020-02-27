@@ -204,7 +204,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Sends message in DMs that they have been warned if able
 	dm, _ := s.UserChannelCreate(userID)
-	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have been warned on **%s**:\n`%s`", guild.Name, warning))
+	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have been warned on **%s**:\n**\"**%s**\"**", guild.Name, warning))
 
 	// Sends warning embed message to channel
 	if userMem == nil {

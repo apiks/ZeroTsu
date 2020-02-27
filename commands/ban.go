@@ -219,12 +219,12 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Assigns success ban print string for user
 	if perma && m.GuildID == "267799767843602452" {
-		success = fmt.Sprintf("You have been banned from **%s**:\n`%s`\n\nUntil: `Forever`\n\nIf you would like to appeal, use modmail at <https://reddit.com/r/anime>", guild.Name, reason)
+		success = fmt.Sprintf("You have been banned from **%s**:\n**\"**%s**\"**\n\nUntil: `Forever`\n\nIf you would like to appeal, use modmail at <https://reddit.com/r/anime>", guild.Name, reason)
 	} else if perma {
-		success = fmt.Sprintf("You have been banned from **%s**:\n`%s`\n\nUntil: `Forever`", guild.Name, reason)
+		success = fmt.Sprintf("You have been banned from **%s**:\n**\"**%s**\"**\n\nUntil: `Forever`", guild.Name, reason)
 	} else {
 		z, _ := time.Now().Zone()
-		success = fmt.Sprintf("You have been banned from **%s**:\n`%s`\n\nUntil: `%s` %s\nRemaining: `%s`", guild.Name, reason, UnbanDate.Format("2006-01-02 15:04:05"), z, remaining)
+		success = fmt.Sprintf("You have been banned from **%s**:\n**\"**%s**\"**\n\nUntil: `%s` %s\nRemaining: `%s`", guild.Name, reason, UnbanDate.Format("2006-01-02 15:04:05"), z, remaining)
 	}
 
 	// Sends success string to user in DMs if able
