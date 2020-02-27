@@ -494,6 +494,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				epochT := time.Unix(int64(DateUnix), 0)
 				prevWeek := time.Now().AddDate(0, 0, -7)
 				accOldEnough := epochT.Before(prevWeek)
+				accOldEnough = true
 
 				// Print error if acc is not old enough
 				if !accOldEnough {
