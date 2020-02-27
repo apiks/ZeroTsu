@@ -71,10 +71,6 @@ func HasPrivilegedPermissions(m *discordgo.Member) bool {
 	guildSettings := db.GetGuildSettings(m.GuildID)
 
 	for _, privilegedRole := range guildSettings.GetCommandRoles() {
-		if privilegedRole == nil {
-			continue
-		}
-
 		for _, role := range m.Roles {
 			if role == privilegedRole.GetID() {
 				return true

@@ -12,98 +12,80 @@ type Emoji struct {
 	Reactions          int    `json:"reactions"`
 }
 
-func NewEmoji(ID string, name string, messageUsage int, uniqueMessageUsage int, reactions int) *Emoji {
-	return &Emoji{ID: ID, Name: name, MessageUsage: messageUsage, UniqueMessageUsage: uniqueMessageUsage, Reactions: reactions}
+func NewEmoji(ID string, name string, messageUsage int, uniqueMessageUsage int, reactions int) Emoji {
+	return Emoji{ID: ID, Name: name, MessageUsage: messageUsage, UniqueMessageUsage: uniqueMessageUsage, Reactions: reactions}
 }
 
-func (e *Emoji) SetID(id string) {
-	e.Lock()
+func (e Emoji) SetID(id string) Emoji {
 	e.ID = id
-	e.Unlock()
+	return e
 }
 
-func (e *Emoji) GetID() string {
-	e.RLock()
-	defer e.RUnlock()
-	if e == nil {
+func (e Emoji) GetID() string {
+	if e == (Emoji{}) {
 		return ""
 	}
 	return e.ID
 }
 
-func (e *Emoji) SetName(name string) {
-	e.Lock()
+func (e Emoji) SetName(name string) Emoji {
 	e.Name = name
-	e.Unlock()
+	return e
 }
 
-func (e *Emoji) GetName() string {
-	e.RLock()
-	defer e.RUnlock()
-	if e == nil {
+func (e Emoji) GetName() string {
+	if e == (Emoji{}) {
 		return ""
 	}
 	return e.Name
 }
 
-func (e *Emoji) AddMessageUsage(amount int) {
-	e.Lock()
+func (e Emoji) AddMessageUsage(amount int) Emoji {
 	e.MessageUsage += amount
-	e.Unlock()
+	return e
 }
 
-func (e *Emoji) SetMessageUsage(amount int) {
-	e.Lock()
+func (e Emoji) SetMessageUsage(amount int) Emoji {
 	e.MessageUsage = amount
-	e.Unlock()
+	return e
 }
 
-func (e *Emoji) GetMessageUsage() int {
-	e.RLock()
-	defer e.RUnlock()
-	if e == nil {
+func (e Emoji) GetMessageUsage() int {
+	if e == (Emoji{}) {
 		return 0
 	}
 	return e.MessageUsage
 }
 
-func (e *Emoji) AddUniqueMessageUsage(amount int) {
-	e.Lock()
+func (e Emoji) AddUniqueMessageUsage(amount int) Emoji {
 	e.UniqueMessageUsage += amount
-	e.Unlock()
+	return e
 }
 
-func (e *Emoji) SetUniqueMessageUsage(amount int) {
-	e.Lock()
+func (e Emoji) SetUniqueMessageUsage(amount int) Emoji {
 	e.UniqueMessageUsage = amount
-	e.Unlock()
+	return e
 }
 
-func (e *Emoji) GetUniqueMessageUsage() int {
-	e.RLock()
-	defer e.RUnlock()
-	if e == nil {
+func (e Emoji) GetUniqueMessageUsage() int {
+	if e == (Emoji{}) {
 		return 0
 	}
 	return e.UniqueMessageUsage
 }
 
-func (e *Emoji) AddSetReactions(amount int) {
-	e.Lock()
+func (e Emoji) AddSetReactions(amount int) Emoji {
 	e.Reactions += amount
-	e.Unlock()
+	return e
 }
 
-func (e *Emoji) SetReactions(amount int) {
-	e.Lock()
+func (e Emoji) SetReactions(amount int) Emoji {
 	e.Reactions = amount
-	e.Unlock()
+	return e
 }
 
-func (e *Emoji) GetReactions() int {
-	e.RLock()
-	defer e.RUnlock()
-	if e == nil {
+func (e Emoji) GetReactions() int {
+	if e == (Emoji{}) {
 		return 0
 	}
 	return e.Reactions

@@ -55,24 +55,24 @@ func (g *GuildInfo) GetID() string {
 	return g.ID
 }
 
-func (g *GuildInfo) SetGuildSettings(guildSettings *GuildSettings) {
+func (g *GuildInfo) SetGuildSettings(guildSettings GuildSettings) {
 	g.Lock()
-	g.GuildSettings = guildSettings
+	*g.GuildSettings = guildSettings
 	g.Unlock()
 }
 
-func (g *GuildInfo) GetGuildSettings() *GuildSettings {
+func (g *GuildInfo) GetGuildSettings() GuildSettings {
 	g.RLock()
 	defer g.RUnlock()
 	if g == nil {
-		return nil
+		return GuildSettings{}
 	}
-	return g.GuildSettings
+	return *g.GuildSettings
 }
 
-func (g *GuildInfo) AppendToPunishedUsers(punishedUser *PunishedUsers) {
+func (g *GuildInfo) AppendToPunishedUsers(punishedUser PunishedUsers) {
 	g.Lock()
-	g.PunishedUsers = append(g.PunishedUsers, punishedUser)
+	g.PunishedUsers = append(g.PunishedUsers, &punishedUser)
 	g.Unlock()
 }
 
@@ -101,9 +101,9 @@ func (g *GuildInfo) GetPunishedUsers() []*PunishedUsers {
 	return g.PunishedUsers
 }
 
-func (g *GuildInfo) AppendToFilters(filter *Filter) {
+func (g *GuildInfo) AppendToFilters(filter Filter) {
 	g.Lock()
-	g.Filters = append(g.Filters, filter)
+	g.Filters = append(g.Filters, &filter)
 	g.Unlock()
 }
 
@@ -132,9 +132,9 @@ func (g *GuildInfo) GetFilters() []*Filter {
 	return g.Filters
 }
 
-func (g *GuildInfo) AppendToMessageRequirements(messageRequirement *MessRequirement) {
+func (g *GuildInfo) AppendToMessageRequirements(messageRequirement MessRequirement) {
 	g.Lock()
-	g.MessageRequirements = append(g.MessageRequirements, messageRequirement)
+	g.MessageRequirements = append(g.MessageRequirements, &messageRequirement)
 	g.Unlock()
 }
 
@@ -194,9 +194,9 @@ func (g *GuildInfo) GetSpoilerRoles() []*discordgo.Role {
 	return g.SpoilerRoles
 }
 
-func (g *GuildInfo) AppendToFeeds(feed *Feed) {
+func (g *GuildInfo) AppendToFeeds(feed Feed) {
 	g.Lock()
-	g.Feeds = append(g.Feeds, feed)
+	g.Feeds = append(g.Feeds, &feed)
 	g.Unlock()
 }
 
@@ -225,9 +225,9 @@ func (g *GuildInfo) GetFeeds() []*Feed {
 	return g.Feeds
 }
 
-func (g *GuildInfo) AppendToFeedChecks(feedCheck *FeedCheck) {
+func (g *GuildInfo) AppendToFeedChecks(feedCheck FeedCheck) {
 	g.Lock()
-	g.FeedChecks = append(g.FeedChecks, feedCheck)
+	g.FeedChecks = append(g.FeedChecks, &feedCheck)
 	g.Unlock()
 }
 
@@ -287,9 +287,9 @@ func (g *GuildInfo) GetRaffles() []*Raffle {
 	return g.Raffles
 }
 
-func (g *GuildInfo) AppendToWaifus(waifu *Waifu) {
+func (g *GuildInfo) AppendToWaifus(waifu Waifu) {
 	g.Lock()
-	g.Waifus = append(g.Waifus, waifu)
+	g.Waifus = append(g.Waifus, &waifu)
 	g.Unlock()
 }
 
@@ -587,13 +587,16 @@ func (g *GuildInfo) Load(file, guildID string) error {
 // WriteData writes some kind of guild data to the target guild file
 func (g *GuildInfo) WriteData(fileName string, data interface{}) {
 	g.RLock()
-	marshaledData, err := json.MarshalIndent(data, "", "    ")
+	marshaledData, err := json.MarshalIndent(&data, "", "    ")
 	if err != nil {
 		g.RUnlock()
 		log.Println(err)
 		return
 	}
 	g.RUnlock()
+	if len(marshaledData) == 0 {
+		return
+	}
 
 	err = ioutil.WriteFile(fmt.Sprintf(DBPath+"/%s/%s.json", g.ID, fileName), marshaledData, 0644)
 	if err != nil {

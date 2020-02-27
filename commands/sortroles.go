@@ -75,7 +75,10 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Saves the original opt-in-above position
 	for i := 0; i < len(deb); i++ {
 		if deb[i].ID == guildSettings.GetOptInAbove().GetID() {
-			guildSettings.GetOptInAbove().SetPosition(deb[i].Position)
+			optInAbove := guildSettings.GetOptInAbove()
+			optInAbove = optInAbove.SetPosition(deb[i].Position)
+			guildSettings = guildSettings.SetOptInUnder(optInAbove)
+
 			db.SetGuildSettings(m.GuildID, guildSettings)
 			break
 		}
@@ -143,7 +146,10 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Saves the new opt-in-above position
 		for i := 0; i < len(debPost); i++ {
 			if deb[i].ID == guildSettings.GetOptInAbove().GetID() {
-				guildSettings.GetOptInAbove().SetPosition(deb[i].Position)
+				optInAbove := guildSettings.GetOptInAbove()
+				optInAbove = optInAbove.SetPosition(deb[i].Position)
+				guildSettings = guildSettings.SetOptInUnder(optInAbove)
+
 				db.SetGuildSettings(m.GuildID, guildSettings)
 				break
 			}
@@ -151,7 +157,7 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 
 		for i := range spoilerRoles {
 			spoilerRoles[i].Position = guildSettings.GetOptInAbove().GetPosition() + len(spoilerRoles) - i
-			_ = db.SetGuildSpoilerRole(m.GuildID, spoilerRoles[i])
+			db.SetGuildSpoilerRole(m.GuildID, spoilerRoles[i])
 		}
 
 		// Pushes the sorted list to the server

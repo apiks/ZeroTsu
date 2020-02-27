@@ -52,7 +52,7 @@ func PunishmentRemoval(s *discordgo.Session, m *discordgo.Message, punishmentTyp
 }
 
 // AutoPunishmentRemoval sends an embed notification message about auto punishment removal to the guild log
-func AutoPunishmentRemoval(s *discordgo.Session, user *entities.UserInfo, logId, punishmentVerb string, punisher ...*discordgo.User) error {
+func AutoPunishmentRemoval(s *discordgo.Session, user entities.UserInfo, logId, punishmentVerb string, punisher ...*discordgo.User) error {
 	var embed discordgo.MessageEmbed
 
 	embed.Timestamp = time.Now().Format(time.RFC3339)

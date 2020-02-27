@@ -63,27 +63,29 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 		}
 
-		channelStatsVar.SetChannelID(channel.ID)
-		channelStatsVar.SetName(channel.Name)
-		channelStatsVar.SetRoleCount(channel.Name, common.GetRoleUserAmount(guild, guild.Roles, channel.Name))
+		channelStatsVar = channelStatsVar.SetChannelID(channel.ID)
+		channelStatsVar = channelStatsVar.SetName(channel.Name)
+		channelStatsVar = channelStatsVar.SetRoleCount(channel.Name, common.GetRoleUserAmount(guild, guild.Roles, channel.Name))
 
 		// Removes role stat for channels without associated roles. Else turns bool to true
 		if channelStatsVar.GetRoleCount(channel.Name) == 0 {
-			channelStatsVar.SetRoleCountMap(nil)
+			channelStatsVar = channelStatsVar.SetRoleCountMap(nil)
 		} else {
-			channelStatsVar.SetOptin(true)
+			channelStatsVar = channelStatsVar.SetOptin(true)
 		}
 
-		channelStatsVar.SetMessagesMap(make(map[string]int))
-		channelStatsVar.SetExists(true)
+		channelStatsVar = channelStatsVar.SetMessagesMap(make(map[string]int))
+		channelStatsVar = channelStatsVar.SetExists(true)
 
 		guildChannelStats[m.ChannelID] = &channelStatsVar
 	}
 	if guildChannelStats[m.ChannelID].GetChannelID() == "" {
-		guildChannelStats[m.ChannelID].SetChannelID(m.ChannelID)
+		channelStats := guildChannelStats[m.ChannelID].SetChannelID(m.ChannelID)
+		guildChannelStats[m.ChannelID] = &channelStats
 	}
 
-	guildChannelStats[m.ChannelID].AddMessages(t.Format(common.ShortDateFormat), 1)
+	channelMessages := guildChannelStats[m.ChannelID].AddMessages(t.Format(common.ShortDateFormat), 1)
+	guildChannelStats[m.ChannelID] = &channelMessages
 }
 
 // Prints all channel stats
@@ -115,7 +117,8 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		if channel.GetChannelID() == "" {
-			channel.SetChannelID(id)
+			newChannel := channel.SetChannelID(id)
+			channel = &newChannel
 			flag = true
 		}
 	}
@@ -171,9 +174,13 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	// Updates opt-in-under and opt-in-above position for use later in isChannelUsable func
 	for i := 0; i < len(deb); i++ {
 		if deb[i].ID == guildSettings.GetOptInUnder().GetID() {
-			guildSettings.GetOptInUnder().SetPosition(deb[i].Position)
+			optInUnder := guildSettings.GetOptInUnder()
+			optInUnder = optInUnder.SetPosition(deb[i].Position)
+			guildSettings = guildSettings.SetOptInUnder(optInUnder)
 		} else if deb[i].ID == guildSettings.GetOptInAbove().GetID() {
-			guildSettings.GetOptInAbove().SetPosition(deb[i].Position)
+			optInAbove := guildSettings.GetOptInAbove()
+			optInAbove = optInAbove.SetPosition(deb[i].Position)
+			guildSettings = guildSettings.SetOptInUnder(optInAbove)
 		}
 	}
 
@@ -335,7 +342,7 @@ func OnMemberRemoval(_ *discordgo.Session, u *discordgo.GuildMemberRemove) {
 }
 
 // Checks if specific channel stat should be printed
-func isChannelUsable(channel entities.Channel, guild *discordgo.Guild, guildSettings *entities.GuildSettings) (*entities.Channel, bool) {
+func isChannelUsable(channel entities.Channel, guild *discordgo.Guild, guildSettings entities.GuildSettings) (*entities.Channel, bool) {
 
 	// Checks if channel exists and if it's optin
 	for guildIndex := range guild.Channels {
@@ -343,22 +350,22 @@ func isChannelUsable(channel entities.Channel, guild *discordgo.Guild, guildSett
 			if guild.Roles[roleIndex].Position < guildSettings.GetOptInUnder().GetPosition() &&
 				guild.Roles[roleIndex].Position > guildSettings.GetOptInAbove().GetPosition() &&
 				guild.Channels[guildIndex].Name == guild.Roles[roleIndex].Name {
-				channel.SetOptin(true)
+				channel = channel.SetOptin(true)
 				break
 			} else {
-				channel.SetOptin(false)
+				channel = channel.SetOptin(false)
 			}
 		}
 		if guild.Channels[guildIndex].Name == channel.GetName() &&
 			guild.Channels[guildIndex].ID == channel.GetChannelID() {
-			channel.SetExists(true)
+			channel = channel.SetExists(true)
 			break
 		} else {
-			channel.SetExists(false)
+			channel = channel.SetExists(false)
 		}
 	}
 
-	db.SetGuildChannelStat(guild.ID, &channel)
+	db.SetGuildChannelStat(guild.ID, channel)
 
 	if channel.GetExists() {
 		return &channel, true
@@ -426,7 +433,7 @@ func dailyStats(s *discordgo.Session) {
 		guildSettings := db.GetGuildSettings(guildID)
 
 		dailyStats := db.GetGuildAutopost(guildID, "dailystats")
-		if dailyStats == nil || dailyStats.GetID() == "" {
+		if dailyStats == (entities.Cha{}) || dailyStats.GetID() == "" {
 			continue
 		}
 		guildDailyStatsID := dailyStats.GetID()

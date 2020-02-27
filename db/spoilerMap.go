@@ -37,7 +37,7 @@ func SetGuildSpoilerMap(guildID string, spoilerMap map[string]*discordgo.Role) {
 }
 
 // SetGuildSpoilerRole sets a guild's spoiler map role in-memory
-func SetGuildSpoilerRole(guildID string, role *discordgo.Role, deleteSlice ...bool) error {
+func SetGuildSpoilerRole(guildID string, role *discordgo.Role, deleteSlice ...bool) {
 	var spoilerRoles []*discordgo.Role
 
 	entities.HandleNewGuild(guildID)
@@ -76,6 +76,4 @@ func SetGuildSpoilerRole(guildID string, role *discordgo.Role, deleteSlice ...bo
 	entities.Guilds.Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("spoilerRoles", spoilerRoles)
-
-	return nil
 }

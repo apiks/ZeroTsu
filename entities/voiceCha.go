@@ -7,69 +7,50 @@ type VoiceCha struct {
 
 	Name  string  `json:"Name"`
 	ID    string  `json:"ID"`
-	Roles []*Role `json:"Roles"`
+	Roles []Role `json:"Roles"`
 }
 
-func NewVoiceCha(name string, ID string, roles []*Role) *VoiceCha {
-	return &VoiceCha{Name: name, ID: ID, Roles: roles}
-}
-
-func (v *VoiceCha) SetName(name string) {
-	v.Lock()
+func (v VoiceCha) SetName(name string) VoiceCha {
 	v.Name = name
-	v.Unlock()
+	return v
 }
 
-func (v *VoiceCha) GetName() string {
-	v.RLock()
-	defer v.RUnlock()
-	if v == nil {
+func (v VoiceCha) GetName() string {
+	if v.Name == "" {
 		return ""
 	}
 	return v.Name
 }
 
-func (v *VoiceCha) SetID(id string) {
-	v.Lock()
+func (v VoiceCha) SetID(id string) VoiceCha {
 	v.ID = id
-	v.Unlock()
+	return v
 }
 
-func (v *VoiceCha) GetID() string {
-	v.RLock()
-	defer v.RUnlock()
-	if v == nil {
+func (v VoiceCha) GetID() string {
+	if v.ID == "" {
 		return ""
 	}
 	return v.ID
 }
 
-func (v *VoiceCha) AppendToRoles(role *Role) {
-	v.Lock()
+func (v VoiceCha) AppendToRoles(role Role) VoiceCha {
 	v.Roles = append(v.Roles, role)
-	v.Unlock()
+	return v
 }
 
-func (v *VoiceCha) RemoveFromRoles(index int) {
-	v.Lock()
-	if index < len(v.Roles)-1 {
-		copy(v.Roles[index:], v.Roles[index+1:])
-	}
-	v.Roles[len(v.Roles)-1] = nil
-	v.Roles = v.Roles[:len(v.Roles)-1]
-	v.Unlock()
+func (v VoiceCha) RemoveFromRoles(index int) VoiceCha {
+	v.Roles = append(v.Roles[:index], v.Roles[index+1:]...)
+	return v
 }
 
-func (v *VoiceCha) SetRoles(roles []*Role) {
-	v.Lock()
+func (v VoiceCha) SetRoles(roles []Role) VoiceCha {
 	v.Roles = roles
-	v.Unlock()
+	return v
 }
 
-func (v *VoiceCha) GetRoles() []*Role {
-	v.RLock()
-	defer v.RUnlock()
-	if v == nil {
+func (v VoiceCha) GetRoles() []Role {
+	if v.Roles == nil {
 		return nil
 	}
 	return v.Roles

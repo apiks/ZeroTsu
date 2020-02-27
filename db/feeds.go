@@ -68,7 +68,7 @@ func GetGuildFeed(guildID, subreddit, channelID string) *entities.Feed {
 }
 
 // SetGuildFeed sets a guild's feed in-memory
-func SetGuildFeed(guildID string, feed *entities.Feed, delete ...bool) error {
+func SetGuildFeed(guildID string, feed entities.Feed, delete ...bool) error {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
@@ -81,7 +81,7 @@ func SetGuildFeed(guildID string, feed *entities.Feed, delete ...bool) error {
 		return fmt.Errorf("Error: You have reached the reddit feed autopost limit (100) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
 
-	feed.SetSubreddit(strings.ToLower(feed.GetSubreddit()))
+	feed = feed.SetSubreddit(strings.ToLower(feed.GetSubreddit()))
 
 	if len(delete) == 0 {
 		var exists bool
@@ -119,7 +119,7 @@ func SetGuildFeed(guildID string, feed *entities.Feed, delete ...bool) error {
 }
 
 // deleteGuildFeed safely deletes a feed from the feeds slice
-func deleteGuildFeed(guildID string, feed *entities.Feed) error {
+func deleteGuildFeed(guildID string, feed entities.Feed) error {
 	var exists bool
 
 	for i, guildFeed := range entities.Guilds.DB[guildID].GetFeeds() {

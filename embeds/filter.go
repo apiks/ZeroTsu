@@ -5,6 +5,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
 	"strings"
 	"time"
 )
@@ -57,7 +58,7 @@ func Filter(s *discordgo.Session, m *discordgo.Message, removals []string, chann
 	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Message:", Value: fmt.Sprintf("%s", content)})
 
 	// Sends embed in log channel channel
-	if guildSettings.BotLog != nil && guildSettings.BotLog.GetID() != "" {
+	if guildSettings.BotLog != (entities.Cha{}) && guildSettings.BotLog.GetID() != "" {
 		_, err := s.ChannelMessageSendEmbed(guildSettings.BotLog.GetID(), &embed)
 		if err != nil {
 			return err

@@ -1,23 +1,26 @@
 package main
 
 import (
+	"fmt"
+	"github.com/bwmarrin/discordgo"
+	"github.com/gorilla/mux"
+	"github.com/pkg/profile"
+	"github.com/r-anime/ZeroTsu/commands"
 	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/entities"
 	"github.com/r-anime/ZeroTsu/events"
+	"github.com/r-anime/ZeroTsu/web"
 	"log"
 	"net/http"
 	"time"
 
-	"github.com/bwmarrin/discordgo"
-	"github.com/gorilla/mux"
-
-	"github.com/r-anime/ZeroTsu/commands"
-	"github.com/r-anime/ZeroTsu/config"
-	"github.com/r-anime/ZeroTsu/web"
+	_ "net/http/pprof"
 )
 
 // Initializes and starts Bot and website
 func main() {
+	defer profile.Start(profile.MemProfile, profile.ProfilePath(".")).Stop()
 
 	// Initialize Config values
 	err := config.ReadConfig()
@@ -28,12 +31,17 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	// Load animeschedule data
+	commands.UpdateAnimeSchedule()
+
 	// Load all guild and shared info
 	entities.Mutex.Lock()
 	entities.LoadSharedDB()
 	//entities.LoadGuilds()
 	entities.Mutex.Unlock()
 	entities.Guilds.LoadAll()
+	commands.ResetSubscriptions()
 
 	Start()
 
@@ -55,13 +63,15 @@ func main() {
 		}
 	}
 
+	go func() { log.Println(http.ListenAndServe(":6060", nil)) }()
+
 	<-make(chan struct{})
 	return
 }
 
 // Starts BOT and its Handlers
 func Start() {
-	goBot, err := discordgo.New("Bot " + config.Token)
+	goBot, err := discordgo.New(fmt.Sprintf("Bot %s", config.Token))
 	if err != nil {
 		log.Println(err)
 	}
@@ -69,10 +79,6 @@ func Start() {
 	// Guild join and leave listener
 	goBot.AddHandler(events.GuildCreate)
 	goBot.AddHandler(events.GuildDelete)
-
-	// Updates schedule command print message on load
-	commands.UpdateAnimeSchedule()
-	commands.ResetSubscriptions()
 
 	// Periodic events and status
 	goBot.AddHandler(events.StatusReady)
@@ -170,6 +176,4 @@ func Start() {
 
 	// Start tracking uptime from here
 	common.StartTime = time.Now()
-
-	log.Println("BOT is running!")
 }

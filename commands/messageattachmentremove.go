@@ -16,7 +16,6 @@ import (
 
 // Checks messages with uploads if they're uploading a blacklisted file type. If so it removvvevs them
 func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -25,11 +24,7 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		}
 	}()
 
-	if m.GuildID == "" {
-		return
-	}
-
-	if m.Author.ID == s.State.User.ID || len(m.Attachments) == 0 {
+	if m.GuildID == "" || len(m.Attachments) == 0 || m.Author.ID == s.State.User.ID{
 		return
 	}
 
@@ -65,7 +60,7 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		now := time.Now().Format("2006-01-02 15:04:05")
 
 		// Prints success in bot-log channel
-		if guildSettings.BotLog != nil {
+		if guildSettings.BotLog != (entities.Cha{}) {
 			if guildSettings.BotLog.GetID() != "" {
 				if guildSettings.GetWhitelistFileFilter() {
 					_, _ = s.ChannelMessageSend(guildSettings.BotLog.GetID(), m.Author.Mention()+" had their message removed for uploading a non-whitelisted file type `"+
@@ -119,7 +114,6 @@ func isBannedExtension(filename string, extensions map[string]string) bool {
 // Blacklists a file extension
 func filterExtensionCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {

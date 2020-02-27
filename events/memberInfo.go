@@ -36,10 +36,10 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 	// Initializes and handles user if he's new
 	mem := db.GetGuildMember(e.GuildID, e.User.ID)
-	if mem == nil {
+	if mem.GetID() == "" {
 		functionality.InitializeUser(e.User, e.GuildID)
 		mem = db.GetGuildMember(e.GuildID, e.User.ID)
-		if mem == nil || mem.GetID() == "" {
+		if mem.GetID() == "" {
 			return
 		}
 
@@ -76,9 +76,9 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		}
 
 		if flag {
-			mem.AppendToPastUsernames(e.User.Username)
+			mem = mem.AppendToPastUsernames(e.User.Username)
 		}
-		mem.SetUsername(e.User.Username)
+		mem = mem.SetUsername(e.User.Username)
 		writeFlag = true
 	}
 
@@ -94,15 +94,15 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		}
 
 		if flag {
-			mem.AppendToPastNicknames(e.Nick)
+			mem = mem.AppendToPastNicknames(e.Nick)
 		}
-		mem.SetNickname(e.Nick)
+		mem = mem.SetNickname(e.Nick)
 		writeFlag = true
 	}
 
 	// Checks if the discrim in database is the same as the discrim used by the user. If not it changes it
 	if e.User.Discriminator != mem.GetDiscrim() && e.User.Discriminator != "" {
-		mem.SetDiscrim(e.User.Discriminator)
+		mem = mem.SetDiscrim(e.User.Discriminator)
 		writeFlag = true
 	}
 
@@ -133,12 +133,8 @@ func OnMemberUpdate(_ *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 
 	// Fetches user from memberInfo if possible
 	mem := db.GetGuildMember(e.GuildID, e.User.ID)
-	if mem == nil {
-		functionality.InitializeUser(e.User, e.GuildID)
-		mem = db.GetGuildMember(e.GuildID, e.User.ID)
-		if mem == nil || mem.GetID() == "" {
-			return
-		}
+	if mem.GetID() == "" {
+		return
 	}
 
 	// Checks usernames and updates if needed
@@ -153,9 +149,9 @@ func OnMemberUpdate(_ *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 		}
 
 		if flag {
-			mem.AppendToPastUsernames(e.User.Username)
+			mem = mem.AppendToPastUsernames(e.User.Username)
 		}
-		mem.SetUsername(e.User.Username)
+		mem = mem.SetUsername(e.User.Username)
 		writeFlag = true
 	}
 
@@ -171,15 +167,15 @@ func OnMemberUpdate(_ *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 		}
 
 		if flag {
-			mem.AppendToPastNicknames(e.Nick)
+			mem = mem.AppendToPastNicknames(e.Nick)
 		}
-		mem.SetNickname(e.Nick)
+		mem = mem.SetNickname(e.Nick)
 		writeFlag = true
 	}
 
 	// Checks if the discrim in database is the same as the discrim used by the memberInfoUser. If not it changes it
 	if mem.GetDiscrim() != e.User.Discriminator && e.User.Discriminator != "" {
-		mem.SetDiscrim(e.User.Discriminator)
+		mem = mem.SetDiscrim(e.User.Discriminator)
 		writeFlag = true
 	}
 
@@ -210,12 +206,8 @@ func OnPresenceUpdate(_ *discordgo.Session, e *discordgo.PresenceUpdate) {
 
 	// Fetches user from memberInfo if possible
 	mem := db.GetGuildMember(e.GuildID, e.User.ID)
-	if mem == nil || mem.GetID() == "" {
-		functionality.InitializeUser(e.User, e.GuildID)
-		mem = db.GetGuildMember(e.GuildID, e.User.ID)
-		if mem == nil || mem.GetID() == "" {
-			return
-		}
+	if mem.GetID() == "" {
+		return
 	}
 
 	// Checks usernames and updates if needed
@@ -230,9 +222,9 @@ func OnPresenceUpdate(_ *discordgo.Session, e *discordgo.PresenceUpdate) {
 		}
 
 		if flag {
-			mem.AppendToPastUsernames(e.User.Username)
+			mem = mem.AppendToPastUsernames(e.User.Username)
 		}
-		mem.SetUsername(e.User.Username)
+		mem = mem.SetUsername(e.User.Username)
 		writeFlag = true
 	}
 
@@ -248,15 +240,15 @@ func OnPresenceUpdate(_ *discordgo.Session, e *discordgo.PresenceUpdate) {
 		}
 
 		if flag {
-			mem.AppendToPastNicknames(e.Nick)
+			mem = mem.AppendToPastNicknames(e.Nick)
 		}
-		mem.SetNickname(e.Nick)
+		mem = mem.SetNickname(e.Nick)
 		writeFlag = true
 	}
 
 	// Checks if the discrim in database is the same as the discrim used by the memberInfoUser. If not it changes it
 	if mem.GetDiscrim() != e.User.Discriminator && e.User.Discriminator != "" {
-		mem.SetDiscrim(e.User.Discriminator)
+		mem = mem.SetDiscrim(e.User.Discriminator)
 		writeFlag = true
 	}
 

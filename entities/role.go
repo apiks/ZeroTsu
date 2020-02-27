@@ -10,50 +10,41 @@ type Role struct {
 	Position int    `json:"Position"`
 }
 
-func NewRole(name string, ID string, position int) *Role {
-	return &Role{Name: name, ID: ID, Position: position}
+func NewRole(name string, ID string, position int) Role {
+	return Role{Name: name, ID: ID, Position: position}
 }
 
-func (r *Role) SetName(name string) {
-	r.Lock()
+func (r Role) SetName(name string) Role {
 	r.Name = name
-	r.Unlock()
+	return r
 }
 
-func (r *Role) GetName() string {
-	r.RLock()
-	defer r.RUnlock()
-	if r == nil {
+func (r Role) GetName() string {
+	if r == (Role{}) {
 		return ""
 	}
 	return r.Name
 }
 
-func (r *Role) SetID(id string) {
-	r.Lock()
+func (r Role) SetID(id string) Role {
 	r.ID = id
-	r.Unlock()
+	return r
 }
 
-func (r *Role) GetID() string {
-	r.RLock()
-	defer r.RUnlock()
-	if r == nil {
+func (r Role) GetID() string {
+	if r == (Role{}) {
 		return ""
 	}
 	return r.ID
 }
 
-func (r *Role) SetPosition(position int) {
-	r.Lock()
+func (r Role) SetPosition(position int) Role {
 	r.Position = position
-	r.Unlock()
+	return r
 }
 
-func (r *Role) GetPosition() int {
-	r.RLock()
-	defer r.RUnlock()
-	if r == nil {
+func (r Role) GetPosition() int {
+	if r == (Role{}) {
 		return 0
 	}
 	return r.Position

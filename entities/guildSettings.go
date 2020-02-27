@@ -7,15 +7,15 @@ type GuildSettings struct {
 	sync.RWMutex
 
 	Prefix              string      `json:"Prefix"`
-	BotLog              *Cha        `json:"BotLogID"`
-	CommandRoles        []*Role     `json:"CommandRoles"`
-	OptInUnder          *Role       `json:"OptInUnder"`
-	OptInAbove          *Role       `json:"OptInAbove"`
-	MutedRole           *Role       `json:"MutedRole"`
-	VoiceChas           []*VoiceCha `json:"VoiceChas"`
+	BotLog              Cha        `json:"BotLogID"`
+	CommandRoles        []Role     `json:"CommandRoles"`
+	OptInUnder          Role       `json:"OptInUnder"`
+	OptInAbove          Role       `json:"OptInAbove"`
+	MutedRole           Role       `json:"MutedRole"`
+	VoiceChas           []VoiceCha `json:"VoiceChas"`
 	VoteModule          bool        `json:"VoteModule"`
 	ModOnly             bool        `json:"ModOnly"`
-	VoteChannelCategory *Cha        `json:"VoteChannelCategory"`
+	VoteChannelCategory Cha        `json:"VoteChannelCategory"`
 	WaifuModule         bool        `json:"WaifuModule"`
 	WhitelistFileFilter bool        `json:"WhitelistFileFilter"`
 	ReactsModule        bool        `json:"ReactsModule"`
@@ -23,262 +23,201 @@ type GuildSettings struct {
 	Premium             bool        `json:"Premium"`
 }
 
-func NewGuildSettings(prefix string, botLog *Cha, commandRoles []*Role, optInUnder *Role, optInAbove *Role, mutedRole *Role, voiceChas []*VoiceCha, voteModule bool, modOnly bool, voteChannelCategory *Cha, waifuModule bool, whitelistFileFilter bool, reactsModule bool, pingMessage string, premium bool) *GuildSettings {
-	return &GuildSettings{Prefix: prefix, BotLog: botLog, CommandRoles: commandRoles, OptInUnder: optInUnder, OptInAbove: optInAbove, MutedRole: mutedRole, VoiceChas: voiceChas, VoteModule: voteModule, ModOnly: modOnly, VoteChannelCategory: voteChannelCategory, WaifuModule: waifuModule, WhitelistFileFilter: whitelistFileFilter, ReactsModule: reactsModule, PingMessage: pingMessage, Premium: premium}
-}
-
-func (g *GuildSettings) SetPrefix(prefix string) {
-	g.Lock()
+func (g GuildSettings) SetPrefix(prefix string) GuildSettings {
 	g.Prefix = prefix
-	g.Unlock()
+	return g
 }
 
-func (g *GuildSettings) GetPrefix() string {
-	g.RLock()
-	defer g.RUnlock()
-	if g == nil {
+func (g GuildSettings) GetPrefix() string {
+	if g.Prefix == "" {
 		return ""
 	}
 	return g.Prefix
 }
 
-func (g *GuildSettings) SetBotLog(cha *Cha) {
-	g.Lock()
+func (g GuildSettings) SetBotLog(cha Cha) GuildSettings {
 	g.BotLog = cha
-	g.Unlock()
+	return g
 }
 
-func (g *GuildSettings) GetBotLog() *Cha {
-	g.RLock()
-	defer g.RUnlock()
-	if g == nil {
-		return nil
+func (g GuildSettings) GetBotLog() Cha {
+	if g.BotLog == (Cha{}) {
+		return Cha{}
 	}
 	return g.BotLog
 }
 
-func (g *GuildSettings) AppendToCommandRoles(commandRole *Role) {
-	g.Lock()
+func (g GuildSettings) AppendToCommandRoles(commandRole Role) GuildSettings {
 	g.CommandRoles = append(g.CommandRoles, commandRole)
-	g.Unlock()
+	return g
 }
 
-func (g *GuildSettings) RemoveFromCommandRoles(index int) {
-	g.Lock()
-	if index < len(g.CommandRoles)-1 {
-		copy(g.CommandRoles[index:], g.CommandRoles[index+1:])
-	}
-	g.CommandRoles[len(g.CommandRoles)-1] = nil
-	g.CommandRoles = g.CommandRoles[:len(g.CommandRoles)-1]
-	g.Unlock()
+func (g GuildSettings) RemoveFromCommandRoles(index int) GuildSettings {
+	g.CommandRoles = append(g.CommandRoles[:index], g.CommandRoles[index+1:]...)
+	return g
 }
 
-func (g *GuildSettings) SetCommandRoles(roles []*Role) {
-	g.Lock()
+func (g GuildSettings) SetCommandRoles(roles []Role) GuildSettings {
 	g.CommandRoles = roles
-	g.Unlock()
+	return g
 }
 
-func (g *GuildSettings) GetCommandRoles() []*Role {
-	g.RLock()
-	defer g.RUnlock()
-	if g == nil {
+func (g GuildSettings) GetCommandRoles() []Role {
+	if g.CommandRoles == nil {
 		return nil
 	}
 	return g.CommandRoles
 }
 
-func (g *GuildSettings) SetOptInUnder(role *Role) {
-	g.Lock()
+func (g GuildSettings) SetOptInUnder(role Role) GuildSettings {
 	g.OptInUnder = role
-	g.Unlock()
+	return g
 }
 
-func (g *GuildSettings) GetOptInUnder() *Role {
-	g.RLock()
-	defer g.RUnlock()
-	if g == nil {
-		return nil
+func (g GuildSettings) GetOptInUnder() Role {
+	if g.OptInUnder == (Role{}) {
+		return Role{}
 	}
 	return g.OptInUnder
 }
 
-func (g *GuildSettings) SetOptInAbove(role *Role) {
-	g.Lock()
+func (g GuildSettings) SetOptInAbove(role Role) GuildSettings {
 	g.OptInAbove = role
-	g.Unlock()
+	return g
 }
 
-func (g *GuildSettings) GetOptInAbove() *Role {
-	g.RLock()
-	defer g.RUnlock()
-	if g == nil {
-		return nil
+func (g GuildSettings) GetOptInAbove() Role {
+	if g.OptInAbove == (Role{}) {
+		return Role{}
 	}
 	return g.OptInAbove
 }
 
-func (g *GuildSettings) SetMutedRole(role *Role) {
-	g.Lock()
+func (g GuildSettings) SetMutedRole(role Role) GuildSettings {
 	g.MutedRole = role
-	g.Unlock()
+	return g
 }
 
-func (g *GuildSettings) GetMutedRole() *Role {
-	g.RLock()
-	defer g.RUnlock()
-	if g == nil {
-		return nil
+func (g GuildSettings) GetMutedRole() Role {
+	if g.MutedRole == (Role{}) {
+		return Role{}
 	}
 	return g.MutedRole
 }
 
-func (g *GuildSettings) AppendToVoiceChas(voiceCha *VoiceCha) {
-	g.Lock()
+func (g GuildSettings) AppendToVoiceChas(voiceCha VoiceCha) GuildSettings {
 	g.VoiceChas = append(g.VoiceChas, voiceCha)
-	g.Unlock()
+	return g
 }
 
-func (g *GuildSettings) RemoveFromVoiceChas(index int) {
-	g.Lock()
-	if index < len(g.VoiceChas)-1 {
-		copy(g.VoiceChas[index:], g.VoiceChas[index+1:])
-	}
-	g.VoiceChas[len(g.VoiceChas)-1] = nil
-	g.VoiceChas = g.VoiceChas[:len(g.VoiceChas)-1]
-	g.Unlock()
+func (g GuildSettings) RemoveFromVoiceChas(index int) GuildSettings {
+	g.VoiceChas = append(g.VoiceChas[:index], g.VoiceChas[index+1:]...)
+	return g
 }
 
-func (g *GuildSettings) SetVoiceChas(voiceChas []*VoiceCha) {
-	g.Lock()
+func (g GuildSettings) SetVoiceChas(voiceChas []VoiceCha) GuildSettings {
 	g.VoiceChas = voiceChas
-	g.Unlock()
+	return g
 }
 
-func (g *GuildSettings) GetVoiceChas() []*VoiceCha {
-	g.RLock()
-	defer g.RUnlock()
-	if g == nil {
+func (g GuildSettings) GetVoiceChas() []VoiceCha {
+	if g.VoiceChas == nil {
 		return nil
 	}
 	return g.VoiceChas
 }
 
-func (g *GuildSettings) SetVoteModule(voteModule bool) {
-	g.Lock()
+func (g GuildSettings) SetVoteModule(voteModule bool) GuildSettings {
 	g.VoteModule = voteModule
-	g.Unlock()
+	return g
 }
 
-func (g *GuildSettings) GetVoteModule() bool {
-	g.RLock()
-	defer g.RUnlock()
-	if g == nil {
+func (g GuildSettings) GetVoteModule() bool {
+	if g.VoteModule == false {
 		return false
 	}
 	return g.VoteModule
 }
 
-func (g *GuildSettings) SetModOnly(modOnly bool) {
-	g.Lock()
+func (g GuildSettings) SetModOnly(modOnly bool) GuildSettings {
 	g.ModOnly = modOnly
-	g.Unlock()
+	return g
 }
 
-func (g *GuildSettings) GetModOnly() bool {
-	g.RLock()
-	defer g.RUnlock()
-	if g == nil {
+func (g GuildSettings) GetModOnly() bool {
+	if g.ModOnly == false {
 		return false
 	}
 	return g.ModOnly
 }
 
-func (g *GuildSettings) SetVoteChannelCategory(cha *Cha) {
-	g.Lock()
+func (g GuildSettings) SetVoteChannelCategory(cha Cha) GuildSettings {
 	g.VoteChannelCategory = cha
-	g.Unlock()
+	return g
 }
 
-func (g *GuildSettings) GetVoteChannelCategory() *Cha {
-	g.RLock()
-	defer g.RUnlock()
-	if g == nil {
-		return nil
+func (g GuildSettings) GetVoteChannelCategory() Cha {
+	if g.VoteChannelCategory == (Cha{}) {
+		return Cha{}
 	}
 	return g.VoteChannelCategory
 }
 
-func (g *GuildSettings) SetWaifuModule(waifuModule bool) {
-	g.Lock()
+func (g GuildSettings) SetWaifuModule(waifuModule bool) GuildSettings {
 	g.WaifuModule = waifuModule
-	g.Unlock()
+	return g
 }
 
-func (g *GuildSettings) GetWaifuModule() bool {
-	g.RLock()
-	defer g.RUnlock()
-	if g == nil {
+func (g GuildSettings) GetWaifuModule() bool {
+	if g.WaifuModule == false {
 		return false
 	}
 	return g.WaifuModule
 }
 
-func (g *GuildSettings) SetWhitelistFileFilter(whitelistFileFilter bool) {
-	g.Lock()
+func (g GuildSettings) SetWhitelistFileFilter(whitelistFileFilter bool) GuildSettings {
 	g.WhitelistFileFilter = whitelistFileFilter
-	g.Unlock()
+	return g
 }
 
-func (g *GuildSettings) GetWhitelistFileFilter() bool {
-	g.RLock()
-	defer g.RUnlock()
-	if g == nil {
+func (g GuildSettings) GetWhitelistFileFilter() bool {
+	if g.WhitelistFileFilter == false {
 		return false
 	}
 	return g.WhitelistFileFilter
 }
 
-func (g *GuildSettings) SetReactsModule(reactsModule bool) {
-	g.Lock()
+func (g GuildSettings) SetReactsModule(reactsModule bool) GuildSettings {
 	g.ReactsModule = reactsModule
-	g.Unlock()
+	return g
 }
 
-func (g *GuildSettings) GetReactsModule() bool {
-	g.RLock()
-	defer g.RUnlock()
-	if g == nil {
+func (g GuildSettings) GetReactsModule() bool {
+	if g.ReactsModule == false {
 		return false
 	}
 	return g.ReactsModule
 }
 
-func (g *GuildSettings) SetPingMessage(pingMessage string) {
-	g.Lock()
+func (g GuildSettings) SetPingMessage(pingMessage string) GuildSettings {
 	g.PingMessage = pingMessage
-	g.Unlock()
+	return g
 }
 
-func (g *GuildSettings) GetPingMessage() string {
-	g.RLock()
-	defer g.RUnlock()
-	if g == nil {
+func (g GuildSettings) GetPingMessage() string {
+	if g.PingMessage == "" {
 		return ""
 	}
 	return g.PingMessage
 }
 
-func (g *GuildSettings) SetPremium(premium bool) {
-	g.Lock()
+func (g GuildSettings) SetPremium(premium bool) GuildSettings {
 	g.Premium = premium
-	g.Unlock()
+	return g
 }
 
-func (g *GuildSettings) GetPremium() bool {
-	g.RLock()
-	defer g.RUnlock()
-	if g == nil {
+func (g GuildSettings) GetPremium() bool {
+	if g.Premium == false {
 		return false
 	}
 	return g.Premium

@@ -26,7 +26,7 @@ func SetGuildFeedChecks(guildID string, feedChecks []*entities.FeedCheck) {
 }
 
 // SetGuildFeedCheck sets a target guild's feed check in the redis instance or in-memory
-func SetGuildFeedCheck(guildID string, feedCheck *entities.FeedCheck, delete ...bool) error {
+func SetGuildFeedCheck(guildID string, feedCheck entities.FeedCheck, delete ...bool) error {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
@@ -38,8 +38,8 @@ func SetGuildFeedCheck(guildID string, feedCheck *entities.FeedCheck, delete ...
 				continue
 			}
 
-			if *guildFeedCheck == *feedCheck {
-				*guildFeedCheck = *feedCheck
+			if *guildFeedCheck == feedCheck {
+				*guildFeedCheck = feedCheck
 				exists = true
 				break
 			}
@@ -60,13 +60,13 @@ func SetGuildFeedCheck(guildID string, feedCheck *entities.FeedCheck, delete ...
 }
 
 // deleteGuildFeedCheck safely deletes a feed Check from the feedChecks slice
-func deleteGuildFeedCheck(guildID string, feedCheck *entities.FeedCheck) {
+func deleteGuildFeedCheck(guildID string, feedCheck entities.FeedCheck) {
 	for i, guildFeedCheck := range entities.Guilds.DB[guildID].GetFeedChecks() {
 		if guildFeedCheck == nil {
 			continue
 		}
 
-		if *guildFeedCheck == *feedCheck {
+		if *guildFeedCheck == feedCheck {
 			entities.Guilds.DB[guildID].RemoveFromFeedChecks(i)
 			break
 		}

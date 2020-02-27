@@ -32,12 +32,7 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}()
 
-	if m.GuildID == "" || m.Author == nil {
-		return
-	}
-
-	// Checks if it's the bot that sent the message
-	if m.Author.ID == s.State.User.ID {
+	if m.GuildID == "" || m.Author == nil || m.Author.ID == s.State.User.ID{
 		return
 	}
 
@@ -109,12 +104,7 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 		}
 	}()
 
-	if m.GuildID == "" || m.Author == nil {
-		return
-	}
-
-	// Checks if it's the bot that sent the message
-	if m.Author.ID == s.State.User.ID {
+	if m.GuildID == "" || m.Author == nil || m.Author.ID == s.State.User.ID {
 		return
 	}
 
@@ -172,7 +162,6 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 
 // Filters reactions that contain a filtered phrase
 func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
-
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -181,12 +170,7 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 		}
 	}()
 
-	if r.GuildID == "" || r.UserID == "" {
-		return
-	}
-
-	// Checks if it's the bot that sent the message
-	if r.UserID == s.State.User.ID {
+	if r.GuildID == "" || r.UserID == "" || r.UserID == s.State.User.ID {
 		return
 	}
 
@@ -218,7 +202,6 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 
 // Checks if the message is supposed to be filtered
 func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
-
 	var (
 		mLowercase string
 		mentions   string
@@ -262,7 +245,7 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 
 					// Checks first in memberInfo. Only checks serverside if it doesn't exist. Saves performance
 					mem := db.GetGuildMember(m.GuildID, userID)
-					if mem != nil {
+					if mem.GetID() != "" {
 						if mem.GetNickname() == "" {
 							return
 						}
@@ -332,13 +315,15 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 
 		// If a required phrase exists in the message or mentions, check if it should be removed
 		if messRequireCheck != nil {
-			requirement.SetLastUserID(m.Author.ID)
-			_ = db.SetGuildMessageRequirement(m.GuildID, requirement)
+			newRequirement := requirement.SetLastUserID(m.Author.ID)
+			requirement = &newRequirement
+			_ = db.SetGuildMessageRequirement(m.GuildID, *requirement)
 			continue
 		}
 		if messRequireCheckMentions != nil {
-			requirement.SetLastUserID(m.Author.ID)
-			_ = db.SetGuildMessageRequirement(m.GuildID, requirement)
+			newRequirement := requirement.SetLastUserID(m.Author.ID)
+			requirement = &newRequirement
+			_ = db.SetGuildMessageRequirement(m.GuildID, *requirement)
 			continue
 		}
 
@@ -396,7 +381,6 @@ func isFilteredReact(r *discordgo.MessageReactionAdd) bool {
 // Adds a filter phrase to storage and memory
 func addFilterCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
@@ -510,7 +494,6 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 
 // Adds a message requirement phrase to storage and memory
 func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
-
 	var (
 		channelID       string
 		requirementType string
@@ -594,7 +577,6 @@ func addMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 
 // Removes a message requirement from storage and memory
 func removeMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
-
 	var (
 		channelID string
 		phrase    string
@@ -656,7 +638,6 @@ func removeMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 
 // Print message requirements from memory in chat
 func viewMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
-
 	var mRequirements string
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
@@ -678,7 +659,8 @@ func viewMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		if requirement.GetChannelID() == "" {
-			requirement.SetChannelID("All channels")
+			newRequirement := requirement.SetChannelID("All channels")
+			requirement = &newRequirement
 		}
 		mRequirements += fmt.Sprintf("**%s** - **%s** - **%s**\n", requirement.GetPhrase(), requirement.GetChannelID(), requirement.GetRequirementType())
 	}

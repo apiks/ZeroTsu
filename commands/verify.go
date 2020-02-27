@@ -65,7 +65,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
-	} else if mem == nil {
+	} else if mem.GetID() == "" {
 		var user *discordgo.User
 
 		if userMem != nil {
@@ -86,7 +86,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.InitializeUser(user, m.GuildID)
 
 		mem = db.GetGuildMember(m.GuildID, userID)
-		if mem == nil {
+		if mem.GetID() == "" {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, fmt.Errorf("error: member object is empty"))
 			return
 		}
@@ -96,8 +96,8 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	t := time.Now()
 	z, _ := t.Zone()
 	ver := t.Format("2006-01-02 15:04:05") + " " + z
-	mem.SetRedditUsername(redditUsername)
-	mem.SetVerifiedDate(ver)
+	mem = mem.SetRedditUsername(redditUsername)
+	mem = mem.SetVerifiedDate(ver)
 
 	// Write
 	db.SetGuildMember(m.GuildID, mem)
@@ -179,7 +179,7 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
-	} else if mem == nil {
+	} else if mem.GetID() == "" {
 		if userMem == nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in the server and internal database. Cannot unverify until user joins the server.")
 			if err != nil {
@@ -193,15 +193,15 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.InitializeUser(userMem.User, m.GuildID)
 
 		mem = db.GetGuildMember(m.GuildID, userID)
-		if mem == nil {
+		if mem.GetID() == "" {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, fmt.Errorf("error: member object is empty"))
 			return
 		}
 	}
 
 	// Remove reddit username from member
-	mem.SetRedditUsername("")
-	mem.SetVerifiedDate("")
+	mem = mem.SetRedditUsername("")
+	mem = mem.SetVerifiedDate("")
 
 	// Write
 	db.SetGuildMember(m.GuildID, mem)

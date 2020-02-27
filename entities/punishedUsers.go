@@ -15,65 +15,53 @@ type PunishedUsers struct {
 	UnmuteDate time.Time `json:"unmuteDate"`
 }
 
-func NewPunishedUsers(ID string, username string, unbanDate time.Time, unmuteDate time.Time) *PunishedUsers {
-	return &PunishedUsers{ID: ID, Username: username, UnbanDate: unbanDate, UnmuteDate: unmuteDate}
+func NewPunishedUsers(ID string, username string, unbanDate time.Time, unmuteDate time.Time) PunishedUsers {
+	return PunishedUsers{ID: ID, Username: username, UnbanDate: unbanDate, UnmuteDate: unmuteDate}
 }
 
-func (p *PunishedUsers) SetID(id string) {
-	p.Lock()
+func (p PunishedUsers) SetID(id string) PunishedUsers {
 	p.ID = id
-	p.Unlock()
+	return p
 }
 
-func (p *PunishedUsers) GetID() string {
-	p.RLock()
-	defer p.RUnlock()
-	if p == nil {
+func (p PunishedUsers) GetID() string {
+	if p == (PunishedUsers{}) {
 		return ""
 	}
 	return p.ID
 }
 
-func (p *PunishedUsers) SetUsername(username string) {
-	p.Lock()
+func (p PunishedUsers) SetUsername(username string) PunishedUsers {
 	p.Username = username
-	p.Unlock()
+	return p
 }
 
-func (p *PunishedUsers) GetUsername() string {
-	p.RLock()
-	defer p.RUnlock()
-	if p == nil {
+func (p PunishedUsers) GetUsername() string {
+	if p == (PunishedUsers{}) {
 		return ""
 	}
 	return p.Username
 }
 
-func (p *PunishedUsers) SetUnbanDate(date time.Time) {
-	p.Lock()
+func (p PunishedUsers) SetUnbanDate(date time.Time) PunishedUsers {
 	p.UnbanDate = date
-	p.Unlock()
+	return p
 }
 
-func (p *PunishedUsers) GetUnbanDate() time.Time {
-	p.RLock()
-	defer p.RUnlock()
-	if p == nil {
+func (p PunishedUsers) GetUnbanDate() time.Time {
+	if p == (PunishedUsers{}) {
 		return time.Time{}
 	}
 	return p.UnbanDate
 }
 
-func (p *PunishedUsers) SetUnmuteDate(date time.Time) {
-	p.Lock()
+func (p PunishedUsers) SetUnmuteDate(date time.Time) PunishedUsers {
 	p.UnmuteDate = date
-	p.Unlock()
+	return p
 }
 
-func (p *PunishedUsers) GetUnmuteDate() time.Time {
-	p.RLock()
-	defer p.RUnlock()
-	if p == nil {
+func (p PunishedUsers) GetUnmuteDate() time.Time {
+	if p == (PunishedUsers{}) {
 		return time.Time{}
 	}
 	return p.UnmuteDate

@@ -23,357 +23,286 @@ type UserInfo struct {
 	VerifiedDate     string        `json:"verifiedDate,omitempty"`
 	UnmuteDate       string        `json:"unmuteDate,omitempty"`
 	UnbanDate        string        `json:"unbanDate,omitempty"`
-	Timestamps       []*Punishment `json:"timestamps,omitempty"`
-	Waifu            *Waifu        `json:"waifu,omitempty"`
+	Timestamps       []Punishment `json:"timestamps,omitempty"`
+	Waifu            Waifu        `json:"waifu,omitempty"`
 	SuspectedSpambot bool
 }
 
-func NewUserInfo(ID string, discrim string, username string, nickname string, pastUsernames []string, pastNicknames []string, warnings []string, mutes []string, kicks []string, bans []string, joinDate string, redditUsername string, verifiedDate string, unmuteDate string, unbanDate string, timestamps []*Punishment, waifu *Waifu, suspectedSpambot bool) *UserInfo {
-	return &UserInfo{ID: ID, Discrim: discrim, Username: username, Nickname: nickname, PastUsernames: pastUsernames, PastNicknames: pastNicknames, Warnings: warnings, Mutes: mutes, Kicks: kicks, Bans: bans, JoinDate: joinDate, RedditUsername: redditUsername, VerifiedDate: verifiedDate, UnmuteDate: unmuteDate, UnbanDate: unbanDate, Timestamps: timestamps, Waifu: waifu, SuspectedSpambot: suspectedSpambot}
+func NewUserInfo(ID string, discrim string, username string, nickname string, pastUsernames []string, pastNicknames []string, warnings []string, mutes []string, kicks []string, bans []string, joinDate string, redditUsername string, verifiedDate string, unmuteDate string, unbanDate string, timestamps []Punishment, waifu Waifu, suspectedSpambot bool) UserInfo {
+	return UserInfo{ID: ID, Discrim: discrim, Username: username, Nickname: nickname, PastUsernames: pastUsernames, PastNicknames: pastNicknames, Warnings: warnings, Mutes: mutes, Kicks: kicks, Bans: bans, JoinDate: joinDate, RedditUsername: redditUsername, VerifiedDate: verifiedDate, UnmuteDate: unmuteDate, UnbanDate: unbanDate, Timestamps: timestamps, Waifu: waifu, SuspectedSpambot: suspectedSpambot}
 }
 
-func (u *UserInfo) SetID(id string) {
-	u.Lock()
+func (u UserInfo) SetID(id string) UserInfo {
 	u.ID = id
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) GetID() string {
-	u.RLock()
-	defer u.RUnlock()
-	if u == nil {
+func (u UserInfo) GetID() string {
+	if u.ID == "" {
 		return ""
 	}
 	return u.ID
 }
 
-func (u *UserInfo) SetDiscrim(discrim string) {
-	u.Lock()
+func (u UserInfo) SetDiscrim(discrim string) UserInfo {
 	u.Discrim = discrim
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) GetDiscrim() string {
-	u.RLock()
-	defer u.RUnlock()
-	if u == nil {
+func (u UserInfo) GetDiscrim() string {
+	if u.Discrim == "" {
 		return ""
 	}
 	return u.Discrim
 }
 
-func (u *UserInfo) SetUsername(username string) {
-	u.Lock()
+func (u UserInfo) SetUsername(username string) UserInfo {
 	u.Username = username
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) GetUsername() string {
-	u.RLock()
-	defer u.RUnlock()
-	if u == nil {
+func (u UserInfo) GetUsername() string {
+	if u.Username == "" {
 		return ""
 	}
 	return u.Username
 }
 
-func (u *UserInfo) SetNickname(nickname string) {
-	u.Lock()
+func (u UserInfo) SetNickname(nickname string) UserInfo {
 	u.Nickname = nickname
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) GetNickname() string {
-	u.RLock()
-	defer u.RUnlock()
-	if u == nil {
+func (u UserInfo) GetNickname() string {
+	if u.Nickname == "" {
 		return ""
 	}
 	return u.Nickname
 }
 
-func (u *UserInfo) AppendToPastUsernames(pastUsername string) {
-	u.Lock()
+func (u UserInfo) AppendToPastUsernames(pastUsername string) UserInfo {
 	u.PastUsernames = append(u.PastUsernames, pastUsername)
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) SetPastUsernames(pastUsernames []string) {
-	u.Lock()
+func (u UserInfo) SetPastUsernames(pastUsernames []string) UserInfo {
 	u.PastUsernames = pastUsernames
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) GetPastUsernames() []string {
-	u.RLock()
-	defer u.RUnlock()
-	if u == nil {
+func (u UserInfo) GetPastUsernames() []string {
+	if u.PastUsernames == nil {
 		return nil
 	}
 	return u.PastUsernames
 }
 
-func (u *UserInfo) AppendToPastNicknames(pastNickname string) {
-	u.Lock()
+func (u UserInfo) AppendToPastNicknames(pastNickname string) UserInfo {
 	u.PastNicknames = append(u.PastNicknames, pastNickname)
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) SetPastNicknames(pastNicknames []string) {
-	u.Lock()
+func (u UserInfo) SetPastNicknames(pastNicknames []string) UserInfo {
 	u.PastNicknames = pastNicknames
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) GetPastNicknames() []string {
-	u.RLock()
-	defer u.RUnlock()
-	if u == nil {
+func (u UserInfo) GetPastNicknames() []string {
+	if u.PastNicknames== nil {
 		return nil
 	}
 	return u.PastNicknames
 }
 
-func (u *UserInfo) AppendToWarnings(warning string) {
-	u.Lock()
+func (u UserInfo) AppendToWarnings(warning string) UserInfo {
 	u.Warnings = append(u.Warnings, warning)
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) RemoveFromWarnings(index int) {
-	u.Lock()
+func (u UserInfo) RemoveFromWarnings(index int) UserInfo {
 	u.Warnings = append(u.Warnings[:index], u.Warnings[index+1:]...)
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) SetWarnings(warnings []string) {
-	u.Lock()
+func (u UserInfo) SetWarnings(warnings []string) UserInfo {
 	u.Warnings = warnings
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) GetWarnings() []string {
-	u.RLock()
-	defer u.RUnlock()
-	if u == nil {
+func (u UserInfo) GetWarnings() []string {
+	if u.Warnings == nil {
 		return nil
 	}
 	return u.Warnings
 }
 
-func (u *UserInfo) AppendToMutes(mute string) {
-	u.Lock()
+func (u UserInfo) AppendToMutes(mute string) UserInfo {
 	u.Mutes = append(u.Mutes, mute)
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) RemoveFromMutes(index int) {
-	u.Lock()
+func (u UserInfo) RemoveFromMutes(index int) UserInfo {
 	u.Mutes = append(u.Mutes[:index], u.Mutes[index+1:]...)
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) SetMutes(mutes []string) {
-	u.Lock()
+func (u UserInfo) SetMutes(mutes []string) UserInfo {
 	u.Mutes = mutes
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) GetMutes() []string {
-	u.RLock()
-	defer u.RUnlock()
-	if u == nil {
+func (u UserInfo) GetMutes() []string {
+	if u.Mutes == nil {
 		return nil
 	}
 	return u.Mutes
 }
 
-func (u *UserInfo) AppendToKicks(kick string) {
-	u.Lock()
+func (u UserInfo) AppendToKicks(kick string) UserInfo{
 	u.Kicks = append(u.Kicks, kick)
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) RemoveFromKicks(index int) {
-	u.Lock()
+func (u UserInfo) RemoveFromKicks(index int) UserInfo {
 	u.Kicks = append(u.Kicks[:index], u.Kicks[index+1:]...)
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) SetKicks(kicks []string) {
-	u.Lock()
+func (u UserInfo) SetKicks(kicks []string) UserInfo {
 	u.Kicks = kicks
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) GetKicks() []string {
-	u.RLock()
-	defer u.RUnlock()
-	if u == nil {
+func (u UserInfo) GetKicks() []string {
+	if u.Kicks == nil {
 		return nil
 	}
 	return u.Kicks
 }
 
-func (u *UserInfo) AppendToBans(ban string) {
-	u.Lock()
+func (u UserInfo) AppendToBans(ban string) UserInfo {
 	u.Bans = append(u.Bans, ban)
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) RemoveFromBans(index int) {
-	u.Lock()
+func (u UserInfo) RemoveFromBans(index int) UserInfo {
 	u.Bans = append(u.Bans[:index], u.Bans[index+1:]...)
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) SetBans(bans []string) {
-	u.Lock()
+func (u UserInfo) SetBans(bans []string) UserInfo{
 	u.Bans = bans
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) GetBans() []string {
-	u.RLock()
-	defer u.RUnlock()
-	if u == nil {
+func (u UserInfo) GetBans() []string {
+	if u.Bans == nil {
 		return nil
 	}
 	return u.Bans
 }
 
-func (u *UserInfo) SetJoinDate(joinDate string) {
-	u.Lock()
+func (u UserInfo) SetJoinDate(joinDate string) UserInfo {
 	u.JoinDate = joinDate
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) GetJoinDate() string {
-	u.RLock()
-	defer u.RUnlock()
-	if u == nil {
+func (u UserInfo) GetJoinDate() string {
+	if u.JoinDate == "" {
 		return ""
 	}
 	return u.JoinDate
 }
 
-func (u *UserInfo) SetRedditUsername(redditUsername string) {
-	u.Lock()
+func (u UserInfo) SetRedditUsername(redditUsername string) UserInfo {
 	u.RedditUsername = redditUsername
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) GetRedditUsername() string {
-	u.RLock()
-	defer u.RUnlock()
-	if u == nil {
+func (u UserInfo) GetRedditUsername() string {
+	if u.RedditUsername == "" {
 		return ""
 	}
 	return u.RedditUsername
 }
 
-func (u *UserInfo) SetVerifiedDate(verifiedDate string) {
-	u.Lock()
+func (u UserInfo) SetVerifiedDate(verifiedDate string) UserInfo {
 	u.VerifiedDate = verifiedDate
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) GetVerifiedDate() string {
-	u.RLock()
-	defer u.RUnlock()
-	if u == nil {
+func (u UserInfo) GetVerifiedDate() string {
+	if u.VerifiedDate == "" {
 		return ""
 	}
 	return u.VerifiedDate
 }
 
-func (u *UserInfo) SetUnmuteDate(UnmuteDate string) {
-	u.Lock()
+func (u UserInfo) SetUnmuteDate(UnmuteDate string) UserInfo {
 	u.UnmuteDate = UnmuteDate
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) GetUnmuteDate() string {
-	u.RLock()
-	defer u.RUnlock()
-	if u == nil {
+func (u UserInfo) GetUnmuteDate() string {
+	if u.UnmuteDate == "" {
 		return ""
 	}
 	return u.UnmuteDate
 }
 
-func (u *UserInfo) SetUnbanDate(UnbanDate string) {
-	u.Lock()
+func (u UserInfo) SetUnbanDate(UnbanDate string) UserInfo {
 	u.UnbanDate = UnbanDate
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) GetUnbanDate() string {
-	u.RLock()
-	defer u.RUnlock()
-	if u == nil {
+func (u UserInfo) GetUnbanDate() string {
+	if u.UnbanDate == "" {
 		return ""
 	}
 	return u.UnbanDate
 }
 
-func (u *UserInfo) AppendToTimestamps(timestamp *Punishment) {
-	u.Lock()
+func (u UserInfo) AppendToTimestamps(timestamp Punishment) UserInfo {
 	u.Timestamps = append(u.Timestamps, timestamp)
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) RemoveFromTimestamps(index int) {
-	u.Lock()
-	if index < len(u.Timestamps)-1 {
-		copy(u.Timestamps[index:], u.Timestamps[index+1:])
-	}
-	u.Timestamps[len(u.Timestamps)-1] = nil
-	u.Timestamps = u.Timestamps[:len(u.Timestamps)-1]
-	u.Unlock()
+func (u UserInfo) RemoveFromTimestamps(index int) UserInfo {
+	u.Timestamps = append(u.Timestamps[:index], u.Timestamps[index+1:]...)
+	return u
 }
 
-func (u *UserInfo) SetTimestamps(timestamps []*Punishment) {
-	u.Lock()
+func (u UserInfo) SetTimestamps(timestamps []Punishment) UserInfo {
 	u.Timestamps = timestamps
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) GetTimestamps() []*Punishment {
-	u.RLock()
-	defer u.RUnlock()
-	if u == nil {
+func (u UserInfo) GetTimestamps() []Punishment {
+	if u.Timestamps == nil {
 		return nil
 	}
-
 	return u.Timestamps
 }
 
-func (u *UserInfo) SetWaifu(waifu *Waifu) {
-	u.Lock()
+func (u UserInfo) SetWaifu(waifu Waifu) UserInfo {
 	u.Waifu = waifu
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) GetWaifu() *Waifu {
-	u.RLock()
-	defer u.RUnlock()
-	if u == nil {
-		return nil
+func (u UserInfo) GetWaifu() Waifu {
+	if u.Waifu == (Waifu{}) {
+		return Waifu{}
 	}
 	return u.Waifu
 }
 
-func (u *UserInfo) SetSuspectedSpambot(suspectedSpambot bool) {
-	u.Lock()
+func (u UserInfo) SetSuspectedSpambot(suspectedSpambot bool) UserInfo {
 	u.SuspectedSpambot = suspectedSpambot
-	u.Unlock()
+	return u
 }
 
-func (u *UserInfo) GetSuspectedSpambot() bool {
-	u.RLock()
-	defer u.RUnlock()
-	if u == nil {
+func (u UserInfo) GetSuspectedSpambot() bool {
+	if u.SuspectedSpambot == false {
 		return false
 	}
 	return u.SuspectedSpambot

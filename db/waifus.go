@@ -40,7 +40,7 @@ func SetGuildWaifus(guildID string, waifus []*entities.Waifu) error {
 }
 
 // SetGuildWaifu sets a target guild's waifu in-memory
-func SetGuildWaifu(guildID string, waifu *entities.Waifu, delete ...bool) error {
+func SetGuildWaifu(guildID string, waifu entities.Waifu, delete ...bool) error {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
@@ -88,7 +88,7 @@ func SetGuildWaifu(guildID string, waifu *entities.Waifu, delete ...bool) error 
 }
 
 // deleteGuildWaifu safely deletes a waifu from the waifus slice
-func deleteGuildWaifu(guildID string, waifu *entities.Waifu) error {
+func deleteGuildWaifu(guildID string, waifu entities.Waifu) error {
 	var exists bool
 
 	for i, guildWaifu := range entities.Guilds.DB[guildID].GetWaifus() {

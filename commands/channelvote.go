@@ -124,7 +124,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		voteChannel.Name = strings.Replace(strings.ToLower(m.Content), guildSettings.GetPrefix()+"startvote ", "", -1)
-		if guildSettings.GetVoteChannelCategory() != nil {
+		if guildSettings.GetVoteChannelCategory() != (entities.Cha{}) {
 			if guildSettings.GetVoteChannelCategory().GetID() != "" {
 				voteChannel.Category = guildSettings.GetVoteChannelCategory().GetID()
 			}
@@ -258,7 +258,7 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if !admin {
-		if guildSettings.BotLog == nil {
+		if guildSettings.BotLog == (entities.Cha{}) {
 			return
 		}
 		if guildSettings.BotLog.GetID() == "" {
@@ -476,7 +476,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				entities.Mutex.Unlock()
 
 				if vote.GetChannelType() == "temp" || vote.GetChannelType() == "temporary" {
-					if guildSettings.BotLog == nil {
+					if guildSettings.BotLog == (entities.Cha{}) {
 						continue
 					}
 					if guildSettings.BotLog.GetID() != "" {
@@ -530,7 +530,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 						difference := t.Sub(timestamp)
 						if difference > 0 {
 
-							if guildSettings.BotLog != nil {
+							if guildSettings.BotLog != (entities.Cha{}) {
 								if guildSettings.BotLog.GetID() != "" {
 									_, err = s.ChannelMessageSend(guildSettings.BotLog.GetID(), fmt.Sprintf("Temp channel `%v` has been deleted due to being inactive for 3 hours.", cha[i].Name))
 									if err != nil {

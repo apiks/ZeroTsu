@@ -112,7 +112,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
-	} else if mem == nil {
+	} else if mem.GetID() == "" {
 		var user *discordgo.User
 
 		if userMem != nil {
@@ -133,14 +133,14 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.InitializeUser(user, m.GuildID)
 
 		mem = db.GetGuildMember(m.GuildID, userID)
-		if mem == nil {
+		if mem.GetID() == "" {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, fmt.Errorf("error: member object is empty"))
 			return
 		}
 	}
 
 	// Adds ban date to memberInfo and checks if perma
-	mem.AppendToBans(reason)
+	mem = mem.AppendToBans(reason)
 	UnbanDate, perma, err := common.ResolveTimeFromString(length)
 	if err != nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid time given.")
@@ -154,9 +154,9 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		perma = true
 	}
 	if !perma {
-		mem.SetUnbanDate(UnbanDate.Format("2006-01-02 15:04:05.999999999 -0700 MST"))
+		mem = mem.SetUnbanDate(UnbanDate.Format("2006-01-02 15:04:05.999999999 -0700 MST"))
 	} else {
-		mem.SetUnbanDate("_Never_")
+		mem = mem.SetUnbanDate("_Never_")
 	}
 
 	// Adds timestamp for that ban
@@ -165,31 +165,31 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	banTimestamp.SetTimestamp(t)
-	banTimestamp.SetPunishment(reason)
-	banTimestamp.SetPunishmentType("Ban")
-	mem.AppendToTimestamps(banTimestamp)
+	banTimestamp = banTimestamp.SetTimestamp(t)
+	banTimestamp = banTimestamp.SetPunishment(reason)
+	banTimestamp = banTimestamp.SetPunishmentType("Ban")
+	mem = mem.AppendToTimestamps(banTimestamp)
 
 	// Write
 	db.SetGuildMember(m.GuildID, mem)
 
 	// Saves the details in punishedUserObject
-	punishedUserObject.SetID(userID)
+	punishedUserObject = punishedUserObject.SetID(userID)
 	if userMem != nil {
-		punishedUserObject.SetUsername(userMem.User.Username)
+		punishedUserObject = punishedUserObject.SetUsername(userMem.User.Username)
 	} else {
-		punishedUserObject.SetUsername(mem.GetUsername())
+		punishedUserObject = punishedUserObject.SetUsername(mem.GetUsername())
 	}
 
 	if perma {
-		punishedUserObject.SetUnbanDate(time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local))
+		punishedUserObject = punishedUserObject.SetUnbanDate(time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local))
 	} else {
 		unbanDate, err := time.Parse(common.LongDateFormat, UnbanDate.Format(common.LongDateFormat))
 		if err != nil {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
-		punishedUserObject.SetUnbanDate(unbanDate)
+		punishedUserObject = punishedUserObject.SetUnbanDate(unbanDate)
 	}
 
 	// Adds or updates the now banned user in PunishedUsers
@@ -250,7 +250,7 @@ func banCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sends embed bot-log message
-	if guildSettings.BotLog == nil {
+	if guildSettings.BotLog == (entities.Cha{}) {
 		return
 	}
 	if guildSettings.BotLog.GetID() == "" {

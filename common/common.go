@@ -15,7 +15,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 	"unicode"
 
@@ -131,11 +130,7 @@ func (c *UserAgentTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 // Every time a role is deleted it deletes it from SpoilerMap
 func ListenForDeletedRoleHandler(_ *discordgo.Session, g *discordgo.GuildRoleDelete) {
 	entities.HandleNewGuild(g.GuildID)
-	err := db.SetGuildSpoilerRole(g.GuildID, &discordgo.Role{ID: g.RoleID}, true)
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	db.SetGuildSpoilerRole(g.GuildID, &discordgo.Role{ID: g.RoleID}, true)
 }
 
 // ResolveTimeFromString resolves a time (usually for unbanning) from a given string formatted #w#d#h#m.
@@ -260,10 +255,10 @@ func ChMentionID(channelID string) string {
 }
 
 // Sends error message to channel command is in. If that throws an error send error message to bot log channel
-func CommandErrorHandler(s *discordgo.Session, m *discordgo.Message, botLog *entities.Cha, err error) {
+func CommandErrorHandler(s *discordgo.Session, m *discordgo.Message, botLog entities.Cha, err error) {
 	_, err = s.ChannelMessageSend(m.ChannelID, err.Error())
 	if err != nil {
-		if botLog == nil || botLog.GetID() == "" {
+		if botLog == (entities.Cha{}) || botLog.GetID() == "" {
 			return
 		}
 		if _, ok := err.(*discordgo.RESTError); ok && err.(*discordgo.RESTError).Response.Status == "500: Internal Server Error" {
@@ -275,8 +270,8 @@ func CommandErrorHandler(s *discordgo.Session, m *discordgo.Message, botLog *ent
 }
 
 // Logs the error in the guild BotLog
-func LogError(s *discordgo.Session, botLog *entities.Cha, err error) {
-	if botLog == nil || botLog.GetID() == "" {
+func LogError(s *discordgo.Session, botLog entities.Cha, err error) {
+	if botLog == (entities.Cha{}) || botLog.GetID() == "" {
 		return
 	}
 
@@ -360,43 +355,34 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 				return m
 			}
 
-			var wg sync.WaitGroup
-			wg.Add(len(userMentionCheck))
-
 			mem := db.GetGuildMember(guildID, userID)
 
 			for _, mention := range userMentionCheck {
-				go func(mention string) {
-					defer wg.Done()
+				if len(entities.Guilds.DB[guildID].GetMemberInfoMap()) != 0 {
+					continue
+				}
 
-					if len(entities.Guilds.DB[guildID].GetMemberInfoMap()) != 0 {
-						return
-					}
+				userID = strings.TrimPrefix(mention, "<@")
+				userID = strings.TrimPrefix(userID, "!")
+				userID = strings.TrimSuffix(userID, ">")
 
-					userID = strings.TrimPrefix(mention, "<@")
-					userID = strings.TrimPrefix(userID, "!")
-					userID = strings.TrimSuffix(userID, ">")
+				// Checks first in memberInfo. Only checks serverside if it doesn't exist. Saves performance
+				if mem.GetID() != "" && mem.GetNickname() != "" {
+					mentions += " " + strings.ToLower(mem.GetNickname())
+					continue
+				}
 
-					// Checks first in memberInfo. Only checks serverside if it doesn't exist. Saves performance
-					if mem != nil && mem.GetID() != "" {
-						mentions += " " + strings.ToLower(mem.GetNickname())
-						return
-					}
-
-					// If user wasn't found in memberInfo then fetch manually from Discord
-					user, err := s.State.Member(guildID, userID)
+				// If user wasn't found in memberInfo then fetch manually from Discord
+				user, err := s.State.Member(guildID, userID)
+				if err != nil {
+					user, err = s.GuildMember(guildID, userID)
 					if err != nil {
-						user, err = s.GuildMember(guildID, userID)
-						if err != nil {
-							return
-						}
+						continue
 					}
+				}
 
-					m = strings.Replace(m, mention, fmt.Sprintf("@%s", user.Nick), -1)
-				}(mention)
+				m = strings.Replace(m, mention, fmt.Sprintf("@%s", user.Nick), -1)
 			}
-
-			wg.Wait()
 		}
 	}
 
@@ -409,29 +395,20 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 				return m
 			}
 
-			var wg sync.WaitGroup
-			wg.Add(len(channelMentionCheck))
-
 			for _, mention := range channelMentionCheck {
-				go func(mention string) {
-					defer wg.Done()
+				channelID := strings.TrimPrefix(mention, "<#")
+				channelID = strings.TrimSuffix(channelID, ">")
 
-					channelID := strings.TrimPrefix(mention, "<#")
-					channelID = strings.TrimSuffix(channelID, ">")
-
-					// Fetches channel so we can parse its string name
-					cha, err := s.State.Channel(channelID)
+				// Fetches channel so we can parse its string name
+				cha, err := s.State.Channel(channelID)
+				if err != nil {
+					cha, err = s.Channel(channelID)
 					if err != nil {
-						cha, err = s.Channel(channelID)
-						if err != nil {
-							return
-						}
+						continue
 					}
-					m = strings.Replace(m, mention, fmt.Sprintf("#%s", cha.Name), -1)
-				}(mention)
+				}
+				m = strings.Replace(m, mention, fmt.Sprintf("#%s", cha.Name), -1)
 			}
-
-			wg.Wait()
 		}
 	}
 
@@ -596,7 +573,6 @@ func Uptime() time.Duration {
 
 // Checks if optins exist and creates them if they don't
 func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
-
 	var (
 		optInUnderExists bool
 		optInAboveExists bool
@@ -611,7 +587,7 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 	guildSettings := db.GetGuildSettings(guildID)
 
 	// Checks if optins exist
-	if guildSettings.GetOptInUnder() != nil {
+	if guildSettings.GetOptInUnder() != (entities.Role{}) {
 		if guildSettings.GetOptInUnder().GetID() != "" {
 			for _, role := range roles {
 				if role.ID == guildSettings.GetOptInUnder().GetID() {
@@ -622,7 +598,7 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 		}
 	}
 
-	if guildSettings.GetOptInAbove() != nil {
+	if guildSettings.GetOptInAbove() != (entities.Role{}) {
 		if guildSettings.GetOptInAbove().GetID() != "" {
 			for _, role := range roles {
 				if role.ID == guildSettings.GetOptInAbove().GetID() {
@@ -643,7 +619,7 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 
 		_, err := s.ChannelMessageSend(channelID, "Necessary opt-in-under role not detected. Trying to create it.")
 		if err != nil {
-			if guildSettings.BotLog != nil {
+			if guildSettings.BotLog != (entities.Cha{}) {
 				if guildSettings.BotLog.GetID() != "" {
 					_, _ = s.ChannelMessageSend(guildSettings.BotLog.GetID(), "Necessary opt-in-under role not detected. Trying to create it.")
 				}
@@ -662,12 +638,12 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 		}
 
 		// Sets values
-		optIn.SetID(role.ID)
-		optIn.SetName(role.Name)
-		optIn.SetPosition(5)
+		optIn = optIn.SetID(role.ID)
+		optIn = optIn.SetName(role.Name)
+		optIn = optIn.SetPosition(5)
 
 		// Saves the new opt-in guild data
-		guildSettings.SetOptInUnder(&optIn)
+		guildSettings = guildSettings.SetOptInUnder(optIn)
 	}
 	// Handles opt-in-above
 	if !optInAboveExists {
@@ -675,7 +651,7 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 
 		_, err := s.ChannelMessageSend(channelID, "Necessary opt-in-above role not detected. Trying to create it.")
 		if err != nil {
-			if guildSettings.BotLog != nil {
+			if guildSettings.BotLog != (entities.Cha{}) {
 				if guildSettings.BotLog.GetID() != "" {
 					_, _ = s.ChannelMessageSend(guildSettings.BotLog.GetID(), "Necessary opt-in-above role not detected. Trying to create it.")
 				}
@@ -694,12 +670,12 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 		}
 
 		// Sets values
-		optIn.SetID(role.ID)
-		optIn.SetName(role.Name)
-		optIn.SetPosition(2)
+		optIn = optIn.SetID(role.ID)
+		optIn = optIn.SetName(role.Name)
+		optIn = optIn.SetPosition(2)
 
 		// Saves the new opt-in guild data
-		guildSettings.SetOptInAbove(&optIn)
+		guildSettings = guildSettings.SetOptInAbove(optIn)
 	}
 
 	// Reorders the optin roles with space inbetween them

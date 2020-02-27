@@ -17,7 +17,6 @@ import (
 
 // Gives a specific role to a user if they react
 func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
-
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -95,7 +94,6 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 
 // Removes a role from user if they unreact
 func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove) {
-
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -691,10 +689,16 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Updates the position of opt-in-under and opt-in-above position
 	for i := 0; i < len(deb); i++ {
 		if deb[i].ID == guildSettings.GetOptInUnder().GetID() {
-			guildSettings.GetOptInUnder().SetPosition(deb[i].Position)
+			optInUnder := guildSettings.GetOptInUnder()
+			optInUnder = optInUnder.SetPosition(deb[i].Position)
+			guildSettings = guildSettings.SetOptInUnder(optInUnder)
+
 			db.SetGuildSettings(m.GuildID, guildSettings)
 		} else if deb[i].ID == guildSettings.GetOptInAbove().GetID() {
-			guildSettings.GetOptInUnder().SetPosition(deb[i].Position)
+			optInAbove := guildSettings.GetOptInAbove()
+			optInAbove = optInAbove.SetPosition(deb[i].Position)
+			guildSettings = guildSettings.SetOptInUnder(optInAbove)
+
 			db.SetGuildSettings(m.GuildID, guildSettings)
 		}
 	}
@@ -877,10 +881,16 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Updates the position of opt-in-under and opt-in-above position
 	for i := 0; i < len(deb); i++ {
 		if deb[i].ID == guildSettings.GetOptInUnder().GetID() {
-			guildSettings.GetOptInUnder().SetPosition(deb[i].Position)
+			optInUnder := guildSettings.GetOptInUnder()
+			optInUnder = optInUnder.SetPosition(deb[i].Position)
+			guildSettings = guildSettings.SetOptInUnder(optInUnder)
+
 			db.SetGuildSettings(m.GuildID, guildSettings)
 		} else if deb[i].ID == guildSettings.GetOptInAbove().GetID() {
-			guildSettings.GetOptInAbove().SetPosition(deb[i].Position)
+			optInAbove := guildSettings.GetOptInAbove()
+			optInAbove = optInAbove.SetPosition(deb[i].Position)
+			guildSettings = guildSettings.SetOptInUnder(optInAbove)
+
 			db.SetGuildSettings(m.GuildID, guildSettings)
 		}
 	}

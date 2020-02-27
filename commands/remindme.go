@@ -20,9 +20,7 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 		flag           bool
 		dummySlice     entities.RemindMeSlice
 
-		guildSettings = &entities.GuildSettings{
-			Prefix: ".",
-		}
+		guildSettings = entities.GuildSettings{Prefix: "."}
 	)
 
 	if m.GuildID != "" {
@@ -112,9 +110,7 @@ func viewRemindMe(s *discordgo.Session, m *discordgo.Message) {
 		remindMes []string
 		message   string
 
-		guildSettings = &entities.GuildSettings{
-			Prefix: ".",
-		}
+		guildSettings = entities.GuildSettings{Prefix: ".",}
 	)
 
 	userID = m.Author.ID
@@ -187,9 +183,7 @@ func removeRemindMe(s *discordgo.Session, m *discordgo.Message) {
 		remindID int
 		flag     bool
 
-		guildSettings = &entities.GuildSettings{
-			Prefix: ".",
-		}
+		guildSettings = entities.GuildSettings{Prefix: ".",}
 	)
 
 	userID = m.Author.ID

@@ -47,65 +47,56 @@ func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 			guildIds = append(guildIds, guild.ID)
 		}
 
-		var wg sync.WaitGroup
-		wg.Add(len(guildIds))
-
 		for _, guildID := range guildIds {
-			go func(guildID string) {
-				defer wg.Done()
+			entities.HandleNewGuild(guildID)
 
-				entities.HandleNewGuild(guildID)
+			// Updates BOT nickname
+			DynamicNicknameChange(s, guildID)
 
-				// Updates BOT nickname
-				DynamicNicknameChange(s, guildID)
+			// Clears up spoilerRoles.json
+			err := cleanSpoilerRoles(s, guildID)
+			if err != nil {
+				log.Println(err)
+			}
 
-				// Clears up spoilerRoles.json
-				err := cleanSpoilerRoles(s, guildID)
-				if err != nil {
-					log.Println(err)
-				}
+			// Fetches all server roles
+			roles, err := s.GuildRoles(guildID)
+			if err != nil {
+				log.Println(err)
+			}
 
-				// Fetches all server roles
-				roles, err := s.GuildRoles(guildID)
-				if err != nil {
-					log.Println(err)
-				}
-
-				// Updates optin role stat
-				guildChannelStats := db.GetGuildChannelStats(guildID)
-				if roles != nil {
-					guild, err := s.Guild(guildID)
-					if err == nil {
-						for _, stat := range guildChannelStats {
-							if stat.GetRoleCountMap() == nil {
-								stat.SetRoleCountMap(make(map[string]int))
-							}
-							if stat.GetOptin() {
-								stat.SetRoleCount(t.Format(common.ShortDateFormat), common.GetRoleUserAmount(guild, roles, stat.GetName()))
-							}
+			// Updates optin role stat
+			guildChannelStats := db.GetGuildChannelStats(guildID)
+			if roles != nil {
+				guild, err := s.Guild(guildID)
+				if err == nil {
+					for _, stat := range guildChannelStats {
+						if stat.GetRoleCountMap() == nil {
+							stat.SetRoleCountMap(make(map[string]int))
+						}
+						if stat.GetOptin() {
+							stat.SetRoleCount(t.Format(common.ShortDateFormat), common.GetRoleUserAmount(guild, roles, stat.GetName()))
 						}
 					}
 				}
-				// Writes channel stats to disk
-				db.SetGuildChannelStats(guildID, guildChannelStats)
+			}
+			// Writes channel stats to disk
+			db.SetGuildChannelStats(guildID, guildChannelStats)
 
-				// Writes emoji stats to disk
-				guildEmojiStats := db.GetGuildEmojiStats(guildID)
-				db.SetGuildEmojiStats(guildID, guildEmojiStats)
+			// Writes emoji stats to disk
+			guildEmojiStats := db.GetGuildEmojiStats(guildID)
+			db.SetGuildEmojiStats(guildID, guildEmojiStats)
 
-				// Writes user gain stats to disk
-				guildUserChangeStats := db.GetGuildUserChangeStats(guildID)
-				db.SetGuildUserChangeStats(guildID, guildUserChangeStats)
+			// Writes user gain stats to disk
+			guildUserChangeStats := db.GetGuildUserChangeStats(guildID)
+			db.SetGuildUserChangeStats(guildID, guildUserChangeStats)
 
-				// Writes verified stats to disk
-				if config.Website != "" {
-					guildVerifiedStats := db.GetGuildVerifiedStats(guildID)
-					db.SetGuildVerifiedStats(guildID, guildVerifiedStats)
-				}
-			}(guildID)
+			// Writes verified stats to disk
+			if config.Website != "" {
+				guildVerifiedStats := db.GetGuildVerifiedStats(guildID)
+				db.SetGuildVerifiedStats(guildID, guildVerifiedStats)
+			}
 		}
-
-		wg.Wait()
 
 		// Sends server count to bot list sites if it's the public ZeroTsu
 		functionality.SendServers(s)
@@ -200,30 +191,30 @@ func unbanHandler(s *discordgo.Session, guildID string, user *entities.PunishedU
 
 	// Removes unban date entirely
 	mem := db.GetGuildMember(guildID, user.GetID())
-	if mem != nil {
+	if mem.GetID() != "" {
 		mem.SetUnbanDate("")
 	}
 
 	// Removes the unbanDate or the entire object
 	if user.GetUnmuteDate() != (time.Time{}) {
-		user = entities.NewPunishedUsers(user.GetID(), user.GetUsername(), time.Time{}, user.GetUnmuteDate())
+		*user = entities.NewPunishedUsers(user.GetID(), user.GetUsername(), time.Time{}, user.GetUnmuteDate())
 	} else {
 		_ = db.SetGuildPunishedUser(guildID, entities.NewPunishedUsers("", "", time.Time{}, time.Time{}))
 	}
 
 	// Sends an embed message to bot-log
-	if banFlag && mem != nil {
+	if banFlag && mem.GetID() != "" {
 		guildSettings := db.GetGuildSettings(guildID)
-		if guildSettings.BotLog != nil && guildSettings.BotLog.GetID() != "" {
+		if guildSettings.BotLog != (entities.Cha{}) && guildSettings.BotLog.GetID() != "" {
 			_ = embeds.AutoPunishmentRemoval(s, mem, guildSettings.BotLog.GetID(), "unbanned")
 		}
 	}
 
-	if mem != nil {
+	if mem.GetID() != "" {
 		db.SetGuildMember(guildID, mem)
 	}
 
-	_ = db.SetGuildPunishedUser(guildID, user)
+	_ = db.SetGuildPunishedUser(guildID, *user)
 
 	return true
 }
@@ -247,7 +238,7 @@ func unmuteHandler(s *discordgo.Session, guildID string, user *entities.Punished
 		guildSettings := db.GetGuildSettings(guildID)
 
 		for _, roleID := range guildMember.Roles {
-			if guildSettings.GetMutedRole() != nil {
+			if guildSettings.GetMutedRole() != (entities.Role{}) {
 				if roleID == guildSettings.GetMutedRole().GetID() {
 					err := s.GuildMemberRoleRemove(guildID, user.GetID(), roleID)
 					if err == nil {
@@ -275,26 +266,26 @@ func unmuteHandler(s *discordgo.Session, guildID string, user *entities.Punished
 
 	// Removes unmute date entirely
 	mem := db.GetGuildMember(guildID, user.GetID())
-	if err == nil && mem != nil {
+	if err == nil && mem.GetID() != "" {
 		mem.SetUnmuteDate("")
 	}
 
 	// Removes the unmuteDate or the entire object
 	if user.GetUnbanDate() != (time.Time{}) {
-		user = entities.NewPunishedUsers(user.GetID(), user.GetUsername(), user.GetUnbanDate(), time.Time{})
+		*user = entities.NewPunishedUsers(user.GetID(), user.GetUsername(), user.GetUnbanDate(), time.Time{})
 	} else {
 		_ = db.SetGuildPunishedUser(guildID, entities.NewPunishedUsers("", "", time.Time{}, time.Time{}))
 	}
 
 	// Sends an embed message to bot-log
-	if muteFlag && mem != nil {
+	if muteFlag && mem.GetID() != "" {
 		guildSettings := db.GetGuildSettings(guildID)
-		if guildSettings.BotLog != nil && guildSettings.BotLog.GetID() != "" {
+		if guildSettings.BotLog != (entities.Cha{}) && guildSettings.BotLog.GetID() != "" {
 			_ = embeds.AutoPunishmentRemoval(s, mem, guildSettings.BotLog.GetID(), "unmuted")
 		}
 	}
 
-	if mem != nil {
+	if mem.GetID() != "" {
 		db.SetGuildMember(guildID, mem)
 		if err != nil {
 			guildSettings := db.GetGuildSettings(guildID)
@@ -302,7 +293,7 @@ func unmuteHandler(s *discordgo.Session, guildID string, user *entities.Punished
 		}
 	}
 
-	_ = db.SetGuildPunishedUser(guildID, user)
+	_ = db.SetGuildPunishedUser(guildID, *user)
 }
 
 // remindMeHandler handles sending remindMe messages when called if it's time.
@@ -455,7 +446,7 @@ func guildFeedsHandler(guildID string) (map[entities.Feed][]*gofeed.Item, error)
 			continue
 		}
 
-		err := db.SetGuildFeedCheck(guildID, feedCheck, true)
+		err := db.SetGuildFeedCheck(guildID, *feedCheck, true)
 		if err != nil {
 			log.Println(err)
 			continue
@@ -599,7 +590,7 @@ func feedPostHandler(s *discordgo.Session, guildID string, feedsToPost map[entit
 			}
 
 			// Writes that feed has been posted
-			err = db.SetGuildFeedCheck(guildID, entities.NewFeedCheck(&feed, t, item.GUID))
+			err = db.SetGuildFeedCheck(guildID, entities.NewFeedCheck(feed, t, item.GUID))
 
 			// Pins/unpins the feed items if necessary
 			if !feed.GetPin() {

@@ -16,7 +16,7 @@ import (
 func rollCommand(s *discordgo.Session, m *discordgo.Message) {
 	var (
 		err           error
-		guildSettings = &entities.GuildSettings{Prefix: "."}
+		guildSettings = entities.GuildSettings{Prefix: "."}
 	)
 
 	if m.GuildID != "" {

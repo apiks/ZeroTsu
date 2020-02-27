@@ -11,35 +11,29 @@ type Cha struct {
 	ID   string `json:"ID"`
 }
 
-func NewCha(name string, ID string) *Cha {
-	return &Cha{Name: name, ID: ID}
+func NewCha(name string, ID string) Cha {
+	return Cha{Name: name, ID: ID}
 }
 
-func (c *Cha) SetName(name string) {
-	c.Lock()
+func (c Cha) SetName(name string) Cha {
 	c.Name = name
-	c.Unlock()
+	return c
 }
 
-func (c *Cha) GetName() string {
-	c.RLock()
-	defer c.RUnlock()
-	if c == nil {
+func (c Cha) GetName() string {
+	if c == (Cha{}) {
 		return ""
 	}
 	return c.Name
 }
 
-func (c *Cha) SetID(id string) {
-	c.Lock()
+func (c Cha) SetID(id string) Cha {
 	c.ID = id
-	c.Unlock()
+	return c
 }
 
-func (c *Cha) GetID() string {
-	c.RLock()
-	defer c.RUnlock()
-	if c == nil {
+func (c Cha) GetID() string {
+	if c == (Cha{}) {
 		return ""
 	}
 	return c.ID

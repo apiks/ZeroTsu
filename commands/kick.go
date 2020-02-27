@@ -75,7 +75,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo and handles them
 	mem := db.GetGuildMember(m.GuildID, userID)
-	if mem == nil {
+	if mem.GetID() == "" {
 		if userMem == nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server. Cannot kick until user joins the server.")
 			if err != nil {
@@ -89,14 +89,14 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.InitializeUser(userMem.User, m.GuildID)
 
 		mem = db.GetGuildMember(m.GuildID, userID)
-		if mem == nil {
+		if mem.GetID() == "" {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, fmt.Errorf("error: member object is empty"))
 			return
 		}
 	}
 
 	// Adds kick reason to user memberInfo info
-	mem.AppendToKicks(reason)
+	mem = mem.AppendToKicks(reason)
 
 	// Adds timestamp for that kick
 	t, err := m.Timestamp.Parse()
@@ -104,10 +104,10 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	kickTimestamp.SetTimestamp(t)
-	kickTimestamp.SetPunishment(reason)
-	kickTimestamp.SetPunishmentType("Kick")
-	mem.AppendToTimestamps(kickTimestamp)
+	kickTimestamp = kickTimestamp.SetTimestamp(t)
+	kickTimestamp = kickTimestamp.SetPunishment(reason)
+	kickTimestamp = kickTimestamp.SetPunishmentType("Kick")
+	mem = mem.AppendToTimestamps(kickTimestamp)
 
 	// Write
 	db.SetGuildMember(m.GuildID, mem)
@@ -138,7 +138,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sends embed bot-log message
-	if guildSettings.BotLog == nil {
+	if guildSettings.BotLog == (entities.Cha{}) {
 		return
 	}
 	if guildSettings.BotLog.GetID() == "" {

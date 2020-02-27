@@ -11,65 +11,53 @@ type MessRequirement struct {
 	LastUserID      string
 }
 
-func NewMessRequirement(phrase string, requirementType string, channelID string, lastUserID string) *MessRequirement {
-	return &MessRequirement{Phrase: phrase, RequirementType: requirementType, ChannelID: channelID, LastUserID: lastUserID}
+func NewMessRequirement(phrase string, requirementType string, channelID string, lastUserID string) MessRequirement {
+	return MessRequirement{Phrase: phrase, RequirementType: requirementType, ChannelID: channelID, LastUserID: lastUserID}
 }
 
-func (m *MessRequirement) SetPhrase(phrase string) {
-	m.Lock()
+func (m MessRequirement) SetPhrase(phrase string) MessRequirement {
 	m.Phrase = phrase
-	m.Unlock()
+	return m
 }
 
-func (m *MessRequirement) GetPhrase() string {
-	m.RLock()
-	defer m.RUnlock()
-	if m == nil {
+func (m MessRequirement) GetPhrase() string {
+	if m == (MessRequirement{}) {
 		return ""
 	}
 	return m.Phrase
 }
 
-func (m *MessRequirement) SetRequirementType(requirementType string) {
-	m.Lock()
+func (m MessRequirement) SetRequirementType(requirementType string) MessRequirement {
 	m.RequirementType = requirementType
-	m.Unlock()
+	return m
 }
 
-func (m *MessRequirement) GetRequirementType() string {
-	m.RLock()
-	defer m.RUnlock()
-	if m == nil {
+func (m MessRequirement) GetRequirementType() string {
+	if m == (MessRequirement{}) {
 		return ""
 	}
 	return m.RequirementType
 }
 
-func (m *MessRequirement) SetChannelID(channelID string) {
-	m.Lock()
+func (m MessRequirement) SetChannelID(channelID string) MessRequirement {
 	m.ChannelID = channelID
-	m.Unlock()
+	return m
 }
 
-func (m *MessRequirement) GetChannelID() string {
-	m.RLock()
-	defer m.RUnlock()
-	if m == nil {
+func (m MessRequirement) GetChannelID() string {
+	if m == (MessRequirement{}) {
 		return ""
 	}
 	return m.ChannelID
 }
 
-func (m *MessRequirement) SetLastUserID(lastUserID string) {
-	m.Lock()
+func (m MessRequirement) SetLastUserID(lastUserID string) MessRequirement {
 	m.LastUserID = lastUserID
-	m.Unlock()
+	return m
 }
 
-func (m *MessRequirement) GetLastUserID() string {
-	m.RLock()
-	defer m.RUnlock()
-	if m == nil {
+func (m MessRequirement) GetLastUserID() string {
+	if m == (MessRequirement{}) {
 		return ""
 	}
 	return m.LastUserID

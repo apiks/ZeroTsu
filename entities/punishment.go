@@ -14,50 +14,43 @@ type Punishment struct {
 	Timestamp      time.Time `json:"timestamp"`
 }
 
-func NewPunishment(punishment string, punishmentType string, timestamp time.Time) *Punishment {
-	return &Punishment{Punishment: punishment, PunishmentType: punishmentType, Timestamp: timestamp}
+func NewPunishment(punishment string, punishmentType string, timestamp time.Time) Punishment {
+	return Punishment{Punishment: punishment, PunishmentType: punishmentType, Timestamp: timestamp}
 }
 
-func (p *Punishment) SetPunishment(punishment string) {
-	p.Lock()
+func (p Punishment) SetPunishment(punishment string) Punishment {
 	p.Punishment = punishment
-	p.Unlock()
+	return p
 }
 
-func (p *Punishment) GetPunishment() string {
-	p.RLock()
-	defer p.RUnlock()
-	if p == nil {
+func (p Punishment) GetPunishment() string {
+	if p == (Punishment{}) {
 		return ""
 	}
 	return p.Punishment
 }
 
-func (p *Punishment) SetPunishmentType(punishmentType string) {
-	p.Lock()
+func (p Punishment) SetPunishmentType(punishmentType string) Punishment {
 	p.PunishmentType = punishmentType
-	p.Unlock()
+	return p
 }
 
-func (p *Punishment) GetPunishmentType() string {
-	p.RLock()
-	defer p.RUnlock()
-	if p == nil {
+func (p Punishment) GetPunishmentType() string {
+	if p == (Punishment{}) {
 		return ""
 	}
 	return p.PunishmentType
 }
 
-func (p *Punishment) SetTimestamp(timestamp time.Time) {
-	p.Lock()
+func (p Punishment) SetTimestamp(timestamp time.Time) Punishment {
 	p.Timestamp = timestamp
-	p.Unlock()
+	return p
 }
 
-func (p *Punishment) GetTimestamp() time.Time {
+func (p Punishment) GetTimestamp() time.Time {
 	p.RLock()
 	defer p.RUnlock()
-	if p == nil {
+	if p == (Punishment{}) {
 		return time.Time{}
 	}
 	return p.Timestamp

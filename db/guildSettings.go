@@ -5,7 +5,7 @@ import (
 )
 
 // GetGuildSettings returns the guild settings from in-memory
-func GetGuildSettings(guildID string) *entities.GuildSettings {
+func GetGuildSettings(guildID string) entities.GuildSettings {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.RLock()
@@ -15,7 +15,7 @@ func GetGuildSettings(guildID string) *entities.GuildSettings {
 }
 
 // SetGuildSettings sets the guild settings from in-memory
-func SetGuildSettings(guildID string, guildSettings *entities.GuildSettings) {
+func SetGuildSettings(guildID string, guildSettings entities.GuildSettings) {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()

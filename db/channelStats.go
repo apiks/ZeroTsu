@@ -26,25 +26,25 @@ func SetGuildChannelStats(guildID string, channelStats map[string]*entities.Chan
 }
 
 // GetGuildEmojiStat returns a guild's emoji stat from the in-memory
-func GetGuildChannelStat(guildID, channelID string) *entities.Channel {
+func GetGuildChannelStat(guildID, channelID string) entities.Channel {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.RLock()
 	defer entities.Guilds.RUnlock()
 
 	if stat, ok := entities.Guilds.DB[guildID].GetChannelStats()[channelID]; !ok {
-		return stat
+		return *stat
 	}
 
-	return nil
+	return entities.Channel{}
 }
 
 // SetGuildChannelStat sets a guild's channel stat in-memory
-func SetGuildChannelStat(guildID string, channel *entities.Channel) {
+func SetGuildChannelStat(guildID string, channel entities.Channel) {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
-	entities.Guilds.DB[guildID].GetChannelStats()[channel.GetChannelID()] = channel
+	entities.Guilds.DB[guildID].GetChannelStats()[channel.GetChannelID()] = &channel
 	entities.Guilds.Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("channelStats", entities.Guilds.DB[guildID].GetChannelStats())

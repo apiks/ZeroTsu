@@ -13,95 +13,77 @@ type Feed struct {
 	ChannelID string `json:"ChannelID"`
 }
 
-func NewFeed(subreddit string, title string, author string, pin bool, postType string, channelID string) *Feed {
-	return &Feed{Subreddit: subreddit, Title: title, Author: author, Pin: pin, PostType: postType, ChannelID: channelID}
+func NewFeed(subreddit string, title string, author string, pin bool, postType string, channelID string) Feed {
+	return Feed{Subreddit: subreddit, Title: title, Author: author, Pin: pin, PostType: postType, ChannelID: channelID}
 }
 
-func (f *Feed) SetSubreddit(subreddit string) {
-	f.Lock()
+func (f Feed) SetSubreddit(subreddit string) Feed {
 	f.Subreddit = subreddit
-	f.Unlock()
+	return f
 }
 
-func (f *Feed) GetSubreddit() string {
-	f.RLock()
-	defer f.RUnlock()
-	if f == nil {
+func (f Feed) GetSubreddit() string {
+	if f == (Feed{}) {
 		return ""
 	}
 	return f.Subreddit
 }
 
-func (f *Feed) SetTitle(title string) {
-	f.Lock()
+func (f Feed) SetTitle(title string) Feed {
 	f.Title = title
-	f.Unlock()
+	return f
 }
 
-func (f *Feed) GetTitle() string {
-	f.RLock()
-	defer f.RUnlock()
-	if f == nil {
+func (f Feed) GetTitle() string {
+	if f == (Feed{}) {
 		return ""
 	}
 	return f.Title
 }
 
-func (f *Feed) SetAuthor(author string) {
-	f.Lock()
+func (f Feed) SetAuthor(author string) Feed{
 	f.Author = author
-	f.Unlock()
+	return f
 }
 
-func (f *Feed) GetAuthor() string {
-	f.RLock()
-	defer f.RUnlock()
-	if f == nil {
+func (f Feed) GetAuthor() string {
+	if f == (Feed{}) {
 		return ""
 	}
 	return f.Author
 }
 
-func (f *Feed) SetPin(pin bool) {
-	f.Lock()
+func (f Feed) SetPin(pin bool) Feed{
 	f.Pin = pin
-	f.Unlock()
+	return f
 }
 
-func (f *Feed) GetPin() bool {
-	f.RLock()
-	defer f.RUnlock()
-	if f == nil {
+func (f Feed) GetPin() bool {
+	if f == (Feed{}) {
 		return false
 	}
 	return f.Pin
 }
 
-func (f *Feed) SetPostType(postType string) {
-	f.Lock()
+func (f Feed) SetPostType(postType string) Feed {
 	f.PostType = postType
-	f.Unlock()
+	return f
 }
 
-func (f *Feed) GetPostType() string {
-	f.RLock()
-	defer f.RUnlock()
-	if f == nil {
+func (f Feed) GetPostType() string {
+	if f == (Feed{}) {
 		return ""
 	}
 	return f.PostType
 }
 
-func (f *Feed) SetChannelID(channelID string) {
-	f.Lock()
+func (f Feed) SetChannelID(channelID string) Feed {
 	f.ChannelID = channelID
-	f.Unlock()
+	return f
 }
 
-func (f *Feed) GetChannelID() string {
-	f.RLock()
-	defer f.RUnlock()
-	if f == nil {
+func (f Feed) GetChannelID() string {
+	if f == (Feed{}) {
 		return ""
 	}
 	return f.ChannelID

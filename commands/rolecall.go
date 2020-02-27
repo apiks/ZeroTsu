@@ -34,8 +34,8 @@ func rolecallCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Parse role for roleID
 	roleID, roleName := common.RoleParser(s, commandStrings[1], m.GuildID)
-	role.SetID(roleID)
-	role.SetName(roleName)
+	role = role.SetID(roleID)
+	role = role.SetName(roleName)
 	if role.GetID() == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such role exists.")
 		if err != nil {

@@ -55,7 +55,7 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
-	} else if mem == nil {
+	} else if mem.GetID() == "" {
 		var user *discordgo.User
 
 		if userMem != nil {
@@ -76,14 +76,14 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.InitializeUser(user, m.GuildID)
 
 		mem = db.GetGuildMember(m.GuildID, userID)
-		if mem == nil {
+		if mem.GetID() == "" {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, fmt.Errorf("error: member object is empty"))
 			return
 		}
 	}
 
 	// Appends warning to user in memberInfo
-	mem.AppendToWarnings(warning)
+	mem = mem.AppendToWarnings(warning)
 
 	// Adds timestamp for that warning
 	t, err := m.Timestamp.Parse()
@@ -91,10 +91,10 @@ func addWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	warningTimestamp.SetTimestamp(t)
-	warningTimestamp.SetPunishmentType(warning)
-	warningTimestamp.SetPunishmentType("Warning")
-	mem.AppendToTimestamps(warningTimestamp)
+	warningTimestamp = warningTimestamp.SetTimestamp(t)
+	warningTimestamp = warningTimestamp.SetPunishment(warning)
+	warningTimestamp = warningTimestamp.SetPunishmentType("Warning")
+	mem = mem.AppendToTimestamps(warningTimestamp)
 
 	// Write
 	db.SetGuildMember(m.GuildID, mem)
@@ -158,7 +158,7 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
-	} else if mem == nil {
+	} else if mem.GetID() == "" {
 		var user *discordgo.User
 
 		if userMem != nil {
@@ -179,14 +179,14 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.InitializeUser(user, m.GuildID)
 
 		mem = db.GetGuildMember(m.GuildID, userID)
-		if mem == nil {
+		if mem.GetID() == "" {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, fmt.Errorf("error: member object is empty"))
 			return
 		}
 	}
 
 	// Appends warning to user in memberInfo
-	mem.AppendToWarnings(warning)
+	mem = mem.AppendToWarnings(warning)
 
 	// Adds timestamp for that warning
 	t, err := m.Timestamp.Parse()
@@ -194,10 +194,10 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	warningTimestamp.SetTimestamp(t)
-	warningTimestamp.SetPunishment(warning)
-	warningTimestamp.SetPunishmentType("Warning")
-	mem.AppendToTimestamps(warningTimestamp)
+	warningTimestamp = warningTimestamp.SetTimestamp(t)
+	warningTimestamp = warningTimestamp.SetPunishment(warning)
+	warningTimestamp = warningTimestamp.SetPunishmentType("Warning")
+	mem = mem.AppendToTimestamps(warningTimestamp)
 
 	// Write
 	db.SetGuildMember(m.GuildID, mem)

@@ -22,7 +22,7 @@ func InitializeUser(u *discordgo.User, guildID string) {
 	user := entities.NewUserInfo(u.ID, u.Discriminator, u.Username, "",
 		nil, nil, nil, nil, nil,
 		nil, joinDate.String(), "", "", "",
-		"", nil, nil, false)
+		"", nil, entities.Waifu{}, false)
 
 	db.SetGuildMember(guildID, user)
 }

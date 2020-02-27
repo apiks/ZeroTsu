@@ -258,7 +258,7 @@ func isTimeDST(t time.Time) bool {
 // Posts the schedule in a target channel if a guild has enabled it
 func DailySchedule(s *discordgo.Session, guildID string) {
 	dailyschedule := db.GetGuildAutopost(guildID, "dailyschedule")
-	if dailyschedule == nil || dailyschedule.GetID() == "" {
+	if dailyschedule == (entities.Cha{}) || dailyschedule.GetID() == "" {
 		return
 	}
 

@@ -5,7 +5,6 @@ import (
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/entities"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -46,7 +45,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-	if guildSettings.GetMutedRole() != nil && guildSettings.GetMutedRole().GetID() != "" {
+	if guildSettings.GetMutedRole() != (entities.Role{}) && guildSettings.GetMutedRole().GetID() != "" {
 		guildMutedRoleID = guildSettings.GetMutedRole().GetID()
 	}
 
@@ -175,10 +174,7 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		// Adds the role to the SpoilerMap and writes to storage
-		err = db.SetGuildSpoilerRole(m.GuildID, &discordgo.Role{ID: newRole.ID, Name: command})
-		if err != nil {
-			log.Println(err)
-		}
+		db.SetGuildSpoilerRole(m.GuildID, &discordgo.Role{ID: newRole.ID, Name: command})
 	}
 
 	// Pulls info on server roles
@@ -224,18 +220,11 @@ func createChannelCommand(s *discordgo.Session, m *discordgo.Message) {
 		airing = airingRole.ID
 
 		// Adds the role to the SpoilerMap and writes to storage
-		err = db.SetGuildSpoilerRole(m.GuildID, &discordgo.Role{ID: airingRole.ID, Name: "airing"})
-		if err != nil {
-			log.Println(err)
-		}
+		db.SetGuildSpoilerRole(m.GuildID, &discordgo.Role{ID: airingRole.ID, Name: "airing"})
 	}
 
 	// Assigns channel permission overwrites
 	for _, goodRole := range guildSettings.GetCommandRoles() {
-		if goodRole == nil {
-			continue
-		}
-
 		// Mod perms
 		_ = s.ChannelPermissionSet(newCha.ID, goodRole.GetID(), "role", common.FullSpoilerPerms, 0)
 	}

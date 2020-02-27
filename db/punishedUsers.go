@@ -15,7 +15,7 @@ func GetGuildPunishedUsers(guildID string) []*entities.PunishedUsers {
 }
 
 // GetGuildPunishedUser returns a guild's punished user object from in-memory
-func GetGuildPunishedUser(guildID string, userID string) *entities.PunishedUsers {
+func GetGuildPunishedUser(guildID string, userID string) entities.PunishedUsers {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.RLock()
@@ -27,15 +27,15 @@ func GetGuildPunishedUser(guildID string, userID string) *entities.PunishedUsers
 		}
 
 		if guildPunishedUser.GetID() == userID {
-			return guildPunishedUser
+			return *guildPunishedUser
 		}
 	}
 
-	return nil
+	return entities.PunishedUsers{}
 }
 
 // SetGuildPunishedUser sets a guild's punished user object in-memory
-func SetGuildPunishedUser(guildID string, punishedUser *entities.PunishedUsers, delete ...bool) error {
+func SetGuildPunishedUser(guildID string, punishedUser entities.PunishedUsers, delete ...bool) error {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
@@ -48,7 +48,7 @@ func SetGuildPunishedUser(guildID string, punishedUser *entities.PunishedUsers, 
 			}
 
 			if guildPunishedUser.ID == punishedUser.ID {
-				*guildPunishedUser = *punishedUser
+				*guildPunishedUser = punishedUser
 				exists = true
 				break
 			}
@@ -69,7 +69,7 @@ func SetGuildPunishedUser(guildID string, punishedUser *entities.PunishedUsers, 
 }
 
 // deleteGuildMessageRequirement safely deletes a message requirement from the message requirements slice
-func deleteGuildPunishedUser(guildID string, punishedUser *entities.PunishedUsers) {
+func deleteGuildPunishedUser(guildID string, punishedUser entities.PunishedUsers) {
 	for i, guildPunishedUser := range entities.Guilds.DB[guildID].GetPunishedUsers() {
 		if guildPunishedUser == nil {
 			continue

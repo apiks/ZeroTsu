@@ -8,7 +8,7 @@ import (
 )
 
 // Ping sends an embed ping message
-func Ping(s *discordgo.Session, m *discordgo.Message, settings *entities.GuildSettings) error {
+func Ping(s *discordgo.Session, m *discordgo.Message, settings entities.GuildSettings) error {
 	embed := &discordgo.MessageEmbed{
 		Title:       ":ping_pong:",
 		Description: settings.GetPingMessage(),

@@ -61,7 +61,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 
 				if feedCheck.GetFeed().GetChannelID() == channelID {
 					rssTimerFlag = true
-					err := db.SetGuildFeedCheck(m.GuildID, feedCheck, true)
+					err := db.SetGuildFeedCheck(m.GuildID, *feedCheck, true)
 					if err != nil {
 						common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 						return
@@ -83,7 +83,7 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 
 			if feed.GetChannelID() == channelID {
 				rssLoopFlag = true
-				err := db.SetGuildFeed(m.GuildID, feed, true)
+				err := db.SetGuildFeed(m.GuildID, *feed, true)
 				if err != nil {
 					common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 					return

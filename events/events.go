@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"runtime/debug"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -29,37 +28,28 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 		guildIds = append(guildIds, guild.ID)
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(len(guildIds))
-
 	for _, guildID := range guildIds {
-		go func(guildID string) {
-			defer wg.Done()
+		// Initialize guild if missing
+		entities.HandleNewGuild(guildID)
 
-			// Initialize guild if missing
-			entities.HandleNewGuild(guildID)
+		// Clean up SpoilerRoles.json in each guild
+		err := cleanSpoilerRoles(s, guildID)
+		if err != nil {
+			log.Println(err)
+		}
 
-			// Clean up SpoilerRoles.json in each guild
-			err := cleanSpoilerRoles(s, guildID)
-			if err != nil {
-				log.Println(err)
-			}
+		// Handles Unbans and Unmutes
+		punishmentHandler(s, guildID)
 
-			// Handles Unbans and Unmutes
-			punishmentHandler(s, guildID)
+		// Handles RemindMes
+		remindMeHandler(s, guildID)
 
-			// Handles RemindMes
-			remindMeHandler(s, guildID)
+		// Reload null guild anime subs
+		fixGuildSubsCommand(guildID)
 
-			// Reload null guild anime subs
-			fixGuildSubsCommand(guildID)
-
-			// Changes nickname dynamically based on prefix
-			DynamicNicknameChange(s, guildID)
-		}(guildID)
+		// Changes nickname dynamically based on prefix
+		DynamicNicknameChange(s, guildID)
 	}
-
-	wg.Wait()
 
 	// Handles Reddit Feeds
 	err := feedHandler(s, guildIds)
@@ -106,20 +96,13 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 	}
 
 	var (
-		noRemovalRoles []*entities.Role
+		noRemovalRoles []entities.Role
 		dontRemove     bool
 	)
 
 	// Goes through each guild voice channel and removes/adds roles
 	for _, cha := range guildSettings.GetVoiceChas() {
-		if cha == nil {
-			continue
-		}
-
 		for _, chaRole := range cha.GetRoles() {
-			if chaRole == nil {
-				continue
-			}
 
 			// Resets value
 			dontRemove = false
@@ -135,10 +118,6 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 
 			// Checks if this role should be removable
 			for _, role := range noRemovalRoles {
-				if role == nil {
-					continue
-				}
-
 				if chaRole.GetID() == role.GetID() {
 					dontRemove = true
 				}
@@ -165,7 +144,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	var guildSettings = &entities.GuildSettings{
+	var guildSettings = entities.GuildSettings{
 		Prefix: ".",
 	}
 
@@ -376,12 +355,12 @@ func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
 	}
 
 	user := db.GetGuildPunishedUser(e.GuildID, e.User.ID)
-	if err == nil || user != nil {
+	if user != (entities.PunishedUsers{}) {
 		return
 	}
 
 	guildSettings := db.GetGuildSettings(e.GuildID)
-	if guildSettings.BotLog == nil || guildSettings.BotLog.GetID() == "" {
+	if guildSettings.BotLog == (entities.Cha{}) || guildSettings.BotLog.GetID() == "" {
 		return
 	}
 
@@ -408,13 +387,13 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	// Gives the user the muted role if he is muted and has rejoined the server
 	punishedUser := db.GetGuildPunishedUser(u.GuildID, u.User.ID)
-	if punishedUser != nil && punishedUser.GetUnmuteDate() != (time.Time{}) {
+	if punishedUser != (entities.PunishedUsers{}) && punishedUser.GetUnmuteDate() != (time.Time{}) {
 		t := time.Now()
 		muteDifference := t.Sub(punishedUser.GetUnmuteDate())
 
 		if muteDifference <= 0 {
 			guildSettings := db.GetGuildSettings(u.GuildID)
-			if guildSettings == nil || guildSettings.GetMutedRole() == nil || guildSettings.GetMutedRole().GetID() == "" {
+			if guildSettings.GetMutedRole() == (entities.Role{}) || guildSettings.GetMutedRole().GetID() == "" {
 				deb, _ := s.GuildRoles(u.GuildID)
 				for _, role := range deb {
 					if strings.ToLower(role.Name) == "muted" || strings.ToLower(role.Name) == "t-mute" {
@@ -422,7 +401,6 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 						break
 					}
 				}
-
 			} else {
 				_ = s.GuildMemberRoleAdd(u.GuildID, punishedUser.GetID(), guildSettings.GetMutedRole().GetID())
 			}
@@ -436,9 +414,7 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	creationDate, err := common.CreationTime(u.User.ID)
 	if err != nil {
 		guildSettings := db.GetGuildSettings(u.GuildID)
-		if guildSettings != nil {
-			common.LogError(s, guildSettings.BotLog, err)
-		}
+		common.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 
@@ -501,7 +477,7 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	// Initializes user if he's not in memberInfo
 	memberInfoUser := db.GetGuildMember(u.GuildID, u.User.ID)
-	if memberInfoUser == nil || memberInfoUser.GetID() == "" {
+	if memberInfoUser.GetID() == "" {
 		functionality.InitializeUser(u.User, u.GuildID)
 	}
 	memberInfoUser = db.GetGuildMember(u.GuildID, u.User.ID)
@@ -529,7 +505,7 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 
 	// Adds a bool to memberInfo that it's a suspected spambot account in case they try to reverify
-	memberInfoUser.SetSuspectedSpambot(true)
+	memberInfoUser = memberInfoUser.SetSuspectedSpambot(true)
 	db.SetGuildMember(u.GuildID, memberInfoUser)
 
 	// Sends a message to the user warning them in case it's a false positive
@@ -549,7 +525,7 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	}
 
 	// Botlog message
-	if guildSettings.BotLog == nil || guildSettings.BotLog.GetID() == "" {
+	if guildSettings.BotLog == (entities.Cha{}) || guildSettings.BotLog.GetID() == "" {
 		return
 	}
 	_, _ = s.ChannelMessageSend(guildSettings.BotLog.GetID(), fmt.Sprintf("Suspected spambot was banned. Username: <@!%s>", u.User.ID))
@@ -587,7 +563,7 @@ func cleanSpoilerRoles(s *discordgo.Session, guildID string) error {
 			}
 		}
 		if shouldDelete {
-			_ = db.SetGuildSpoilerRole(guildID, spoilerRole, true)
+			db.SetGuildSpoilerRole(guildID, spoilerRole, true)
 		}
 	}
 
@@ -663,6 +639,5 @@ func fixGuildSubsCommand(guildID string) {
 		entities.SetupGuildSub(guildID)
 		break
 	}
-
 	entities.Mutex.Unlock()
 }

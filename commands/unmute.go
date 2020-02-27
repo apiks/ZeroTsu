@@ -23,7 +23,7 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-	if guildSettings.GetMutedRole() == nil || guildSettings.GetMutedRole().GetID() == "" {
+	if guildSettings.GetMutedRole() == (entities.Role{}) || guildSettings.GetMutedRole().GetID() == "" {
 		return
 	}
 
@@ -79,15 +79,15 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 			muteFlag = true
 
 			if user.GetUnbanDate() == common.NilTime {
-				user = entities.NewPunishedUsers("", "", time.Time{}, time.Time{})
-				err = db.SetGuildPunishedUser(m.GuildID, user)
+				*user = entities.NewPunishedUsers("", "", time.Time{}, time.Time{})
+				err = db.SetGuildPunishedUser(m.GuildID, *user)
 				if err != nil {
 					common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 					return
 				}
 			} else {
-				user = entities.NewPunishedUsers(user.GetID(), user.GetUsername(), user.GetUnbanDate(), time.Time{})
-				err = db.SetGuildPunishedUser(m.GuildID, user)
+				*user = entities.NewPunishedUsers(user.GetID(), user.GetUsername(), user.GetUnbanDate(), time.Time{})
+				err = db.SetGuildPunishedUser(m.GuildID, *user)
 				if err != nil {
 					common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 					return
@@ -175,7 +175,7 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo and fetches them
 	mem := db.GetGuildMember(m.GuildID, userID)
-	if mem == nil {
+	if mem.GetID() == "" {
 		var user *discordgo.User
 
 		if userMem != nil {
@@ -196,7 +196,7 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.InitializeUser(user, m.GuildID)
 
 		mem = db.GetGuildMember(m.GuildID, userID)
-		if mem == nil {
+		if mem.GetID() == "" {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, fmt.Errorf("error: member object is empty"))
 			return
 		}
@@ -215,7 +215,7 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sends an embed message to bot-log if possible
-	if guildSettings.BotLog != nil {
+	if guildSettings.BotLog != (entities.Cha{}) {
 		if guildSettings.BotLog.GetID() != "" {
 			_ = embeds.AutoPunishmentRemoval(s, mem, guildSettings.BotLog.GetID(), "unmuted", m.Author)
 		}

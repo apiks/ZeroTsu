@@ -63,11 +63,6 @@ func (g *GuildMap) Init(guildID string) {
 			Prefix:              ".",
 			ReactsModule:        true,
 			PingMessage:         "Hmmm~ So this is what you do all day long?",
-			BotLog:              &Cha{},
-			VoteChannelCategory: &Cha{},
-			OptInUnder:          &Role{},
-			OptInAbove:          &Role{},
-			MutedRole:           &Role{},
 		},
 		MemberInfoMap:   make(map[string]*UserInfo),
 		SpoilerMap:      make(map[string]*discordgo.Role),
@@ -121,7 +116,7 @@ func (g *GuildMap) Load(guildID string) error {
 	}
 
 	g.Lock()
-	g.DB[guildID] = guild
+	*g.DB[guildID] = *guild
 	g.Unlock()
 
 	return nil
@@ -159,6 +154,9 @@ func (g *GuildMap) LoadAll() {
 			log.Panicln(err)
 		}
 	}
+
+	// Write to shared AnimeSubs DB
+	_ = AnimeSubsWrite(SharedInfo.AnimeSubs)
 }
 
 // HandleNewGuild initializes a guild if it's not in memory

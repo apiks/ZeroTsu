@@ -1274,13 +1274,10 @@ func SetupGuildSub(guildID string) {
 				}
 			}
 
-			guildSub := NewShowSub("", false, false)
+			guildSub := NewShowSub(show.GetName(), false, true)
 			guildSub.SetGuild(true)
-			guildSub.SetShow(show.GetName())
 			if hasAiredToday {
 				guildSub.SetNotified(true)
-			} else {
-				guildSub.SetNotified(false)
 			}
 
 			shows = append(shows, guildSub)
@@ -1288,8 +1285,6 @@ func SetupGuildSub(guildID string) {
 	}
 
 	SharedInfo.GetAnimeSubsMap()[guildID] = shows
-	// Write to shared AnimeSubs DB
-	_ = AnimeSubsWrite(SharedInfo.GetAnimeSubsMap())
 }
 
 // Returns if a file really exists

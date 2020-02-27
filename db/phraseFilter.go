@@ -17,7 +17,7 @@ func GetGuildFilters(guildID string) []*entities.Filter {
 }
 
 // SetGuildFilter sets a target guild's filter in-memory
-func SetGuildFilter(guildID string, filter *entities.Filter, delete ...bool) error {
+func SetGuildFilter(guildID string, filter entities.Filter, delete ...bool) error {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
@@ -30,7 +30,7 @@ func SetGuildFilter(guildID string, filter *entities.Filter, delete ...bool) err
 		return fmt.Errorf("Error: You have reached the filter limit (50) for this server. Please remove some or increase them to 300 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
 
-	filter.SetFilter(strings.ToLower(filter.GetFilter()))
+	filter = filter.SetFilter(strings.ToLower(filter.GetFilter()))
 
 	if len(delete) == 0 {
 		var exists bool
@@ -67,7 +67,7 @@ func SetGuildFilter(guildID string, filter *entities.Filter, delete ...bool) err
 }
 
 // deleteGuildFilter safely deletes a phrase filter from the filters slice
-func deleteGuildFilter(guildID string, filter *entities.Filter) error {
+func deleteGuildFilter(guildID string, filter entities.Filter) error {
 	var exists bool
 
 	for i, guildFilter := range entities.Guilds.DB[guildID].GetFilters() {

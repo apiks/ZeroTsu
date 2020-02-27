@@ -18,7 +18,6 @@ func addCommandRole(s *discordgo.Session, m *discordgo.Message) {
 	var role entities.Role
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
@@ -32,8 +31,8 @@ func addCommandRole(s *discordgo.Session, m *discordgo.Message) {
 
 	// Parse role for roleID
 	roleID, roleName := common.RoleParser(s, commandStrings[1], m.GuildID)
-	role.SetID(roleID)
-	role.SetName(roleName)
+	role = role.SetID(roleID)
+	role = role.SetName(roleName)
 	if role.GetID() == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such role exists.")
 		if err != nil {
@@ -45,10 +44,6 @@ func addCommandRole(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if the role already exists as a command role
 	for _, commandRole := range guildSettings.GetCommandRoles() {
-		if commandRole == nil {
-			continue
-		}
-
 		if commandRole.GetID() == role.GetID() {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: That role is already a command role.")
 			if err != nil {
@@ -60,7 +55,7 @@ func addCommandRole(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Adds the role to the guild command roles
-	guildSettings.AppendToCommandRoles(&role)
+	guildSettings = guildSettings.AppendToCommandRoles(role)
 	db.SetGuildSettings(m.GuildID, guildSettings)
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Role `%s` is now a privileged role.", role.GetName()))
@@ -72,11 +67,9 @@ func addCommandRole(s *discordgo.Session, m *discordgo.Message) {
 
 // Removes a role from the command role list
 func removeCommandRole(s *discordgo.Session, m *discordgo.Message) {
-
 	var roleExists bool
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
@@ -101,10 +94,6 @@ func removeCommandRole(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if that role is in the command role list
 	for _, commandRole := range guildSettings.GetCommandRoles() {
-		if commandRole == nil {
-			continue
-		}
-
 		if commandRole.GetID() == roleID {
 			roleExists = true
 			break
@@ -121,12 +110,8 @@ func removeCommandRole(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	for i, role := range guildSettings.GetCommandRoles() {
-		if role == nil {
-			continue
-		}
-
 		if role.GetID() == roleID {
-			guildSettings.RemoveFromCommandRoles(i)
+			guildSettings = guildSettings.RemoveFromCommandRoles(i)
 			break
 		}
 	}
@@ -142,14 +127,12 @@ func removeCommandRole(s *discordgo.Session, m *discordgo.Message) {
 
 // Prints all command roles
 func viewCommandRoles(s *discordgo.Session, m *discordgo.Message) {
-
 	var (
 		message      string
 		splitMessage []string
 	)
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) != 1 {
@@ -171,10 +154,6 @@ func viewCommandRoles(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	for _, role := range guildSettings.GetCommandRoles() {
-		if role == nil {
-			continue
-		}
-
 		message += fmt.Sprintf("**Name:** `%s` | **ID:** `%s`\n", role.GetName(), role.GetID())
 	}
 
@@ -207,7 +186,6 @@ func viewCommandRoles(s *discordgo.Session, m *discordgo.Message) {
 // Handles prefix view or change
 func prefixCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	// Displays current prefix
@@ -221,7 +199,7 @@ func prefixCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Changes and writes new prefix to storage
-	guildSettings.SetPrefix(commandStrings[1])
+	guildSettings = guildSettings.SetPrefix(commandStrings[1])
 	db.SetGuildSettings(m.GuildID, guildSettings)
 
 	events.DynamicNicknameChange(s, m.GuildID, guildSettings.GetPrefix())
@@ -237,11 +215,11 @@ func prefixCommand(s *discordgo.Session, m *discordgo.Message) {
 func botLogCommand(s *discordgo.Session, m *discordgo.Message) {
 	var (
 		message     string
-		guildBotLog *entities.Cha
+		guildBotLog entities.Cha
 	)
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-	if guildSettings.BotLog != nil {
+	if guildSettings.BotLog != (entities.Cha{}) {
 		guildBotLog = guildSettings.BotLog
 	}
 
@@ -249,7 +227,7 @@ func botLogCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Displays current botlog channel
 	if len(commandStrings) == 1 {
-		if guildSettings.BotLog == nil {
+		if guildSettings.BotLog == (entities.Cha{}) {
 			message = fmt.Sprintf("Error: Bot Log is currently not set. Please use `%sbotlog [channel]`", guildSettings.GetPrefix())
 		} else if guildSettings.BotLog.GetID() == "" {
 			message = fmt.Sprintf("Error: Bot Log is currently not set. Please use `%sbotlog [channel]`", guildSettings.GetPrefix())
@@ -267,7 +245,7 @@ func botLogCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Parse and save the target channel
 	if commandStrings[1] == "disable" {
-		guildBotLog = nil
+		guildBotLog = entities.Cha{}
 	} else {
 		channelID, channelName := common.ChannelParser(s, commandStrings[1], m.GuildID)
 		if channelID == "" && channelName == "" {
@@ -282,10 +260,10 @@ func botLogCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Changes and writes new bot log to storage
-	guildSettings.BotLog = guildBotLog
+	guildSettings = guildSettings.SetBotLog(guildBotLog)
 	db.SetGuildSettings(m.GuildID, guildSettings)
 
-	if guildBotLog == nil {
+	if guildBotLog == (entities.Cha{}) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Success! BotLog has been disabled!")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
@@ -307,12 +285,11 @@ func optInUnderCommand(s *discordgo.Session, m *discordgo.Message) {
 	var message string
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	// Displays current optinunder role
 	if len(commandStrings) == 1 {
-		if guildSettings.GetOptInUnder() == nil {
+		if guildSettings.GetOptInUnder() == (entities.Role{}) {
 			message = fmt.Sprintf("Error: 'Opt In Under' role is currently not set. Please use `%soptinunder [role]`", guildSettings.GetPrefix())
 		} else if guildSettings.GetOptInUnder().GetID() == "" {
 			message = fmt.Sprintf("Error: 'Opt In Under' role is currently not set. Please use `%soptinunder [role]`", guildSettings.GetPrefix())
@@ -340,7 +317,7 @@ func optInUnderCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Changes and writes new optinunder role to storage
-	guildSettings.SetOptInUnder(entities.NewRole(roleName, roleID, 0))
+	guildSettings = guildSettings.SetOptInUnder(entities.NewRole(roleName, roleID, 0))
 	db.SetGuildSettings(m.GuildID, guildSettings)
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! 'Opt In Under' role is: `%v - %v`", roleName, roleID))
@@ -351,16 +328,14 @@ func optInUnderCommand(s *discordgo.Session, m *discordgo.Message) {
 
 // Handles optInAbove view or change
 func optInAboveCommand(s *discordgo.Session, m *discordgo.Message) {
-
 	var message string
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	// Displays current optinabove role
 	if len(commandStrings) == 1 {
-		if guildSettings.GetOptInAbove() == nil {
+		if guildSettings.GetOptInAbove() == (entities.Role{}) {
 			message = fmt.Sprintf("Error: 'Opt In Above' role is currently not set. Please use `%soptinunder [role]`", guildSettings.GetPrefix())
 		} else if guildSettings.GetOptInAbove().GetID() == "" {
 			message = fmt.Sprintf("Error: 'Opt In Above' role is currently not set. Please use `%soptinunder [role]`", guildSettings.GetPrefix())
@@ -380,7 +355,7 @@ func optInAboveCommand(s *discordgo.Session, m *discordgo.Message) {
 	roleID, roleName := common.RoleParser(s, commandStrings[1], m.GuildID)
 
 	// Changes and writes new optinabove role to storage
-	guildSettings.SetOptInAbove(entities.NewRole(roleName, roleID, 0))
+	guildSettings = guildSettings.SetOptInAbove(entities.NewRole(roleName, roleID, 0))
 	db.SetGuildSettings(m.GuildID, guildSettings)
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! 'Opt In Above' role is: `%v - %v`", roleName, roleID))
@@ -400,7 +375,6 @@ func addVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 3)
 
 	if len(commandStrings) < 3 {
@@ -414,8 +388,8 @@ func addVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 
 	// Parse channel
 	chaID, chaName := common.ChannelParser(s, commandStrings[1], m.GuildID)
-	cha.SetID(chaID)
-	cha.SetName(chaName)
+	cha = cha.SetID(chaID)
+	cha = cha.SetName(chaName)
 	if cha.GetID() == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such channel exists.")
 		if err != nil {
@@ -439,8 +413,8 @@ func addVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 	}
 	// Parse role
 	roleID, roleName := common.RoleParser(s, commandStrings[2], m.GuildID)
-	role.SetID(roleID)
-	role.SetName(roleName)
+	role = role.SetID(roleID)
+	role = role.SetName(roleName)
 	if role.GetID() == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such role exists.")
 		if err != nil {
@@ -452,16 +426,8 @@ func addVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if the role is already set
 	for i, voiceCha := range guildSettings.GetVoiceChas() {
-		if voiceCha == nil {
-			continue
-		}
-
 		if voiceCha.GetID() == cha.GetID() {
 			for _, roleIteration := range voiceCha.GetRoles() {
-				if roleIteration == nil {
-					continue
-				}
-
 				if roleIteration.GetID() == role.GetID() {
 					_, err := s.ChannelMessageSend(m.ChannelID, "Error: That role is already set to that channel.")
 					if err != nil {
@@ -472,9 +438,12 @@ func addVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 				}
 			}
 			// Adds the voice channel and role to the guild voice channels
-			cha.SetRoles(voiceCha.GetRoles())
-			cha.AppendToRoles(&role)
-			guildSettings.GetVoiceChas()[i].SetRoles(cha.GetRoles())
+			cha = cha.SetRoles(voiceCha.GetRoles())
+			cha = cha.AppendToRoles(role)
+			voiceChas := guildSettings.GetVoiceChas()
+			voiceChas[i] = voiceChas[i].SetRoles(cha.GetRoles())
+			guildSettings = guildSettings.SetVoiceChas(voiceChas)
+
 			merge = true
 			break
 		}
@@ -482,8 +451,8 @@ func addVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 
 	// Adds the voice channel and role to the guild voice channels
 	if !merge {
-		cha.AppendToRoles(&role)
-		guildSettings.AppendToVoiceChas(&cha)
+		cha = cha.AppendToRoles(role)
+		guildSettings = guildSettings.AppendToVoiceChas(cha)
 	}
 
 	db.SetGuildSettings(m.GuildID, guildSettings)
@@ -510,7 +479,6 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 3)
 
 	if len(commandStrings) == 1 {
@@ -524,8 +492,8 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 
 	// Parse channel
 	chaID, chaName := common.ChannelParser(s, commandStrings[1], m.GuildID)
-	cha.SetID(chaID)
-	cha.SetName(chaName)
+	cha = cha.SetID(chaID)
+	cha = cha.SetName(chaName)
 	if cha.GetID() == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such channel exists.")
 		if err != nil {
@@ -537,8 +505,8 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 	// Parse role
 	if len(commandStrings) == 3 {
 		roleID, roleName := common.RoleParser(s, commandStrings[2], m.GuildID)
-		role.SetID(roleID)
-		role.SetID(roleName)
+		role = role.SetID(roleID)
+		role = role.SetName(roleName)
 		if role.GetID() == "" {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such role exists.")
 			if err != nil {
@@ -554,10 +522,6 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if that channel exists in the voice channel list
 	for _, voiceCha := range guildSettings.GetVoiceChas() {
-		if voiceCha == nil {
-			continue
-		}
-
 		if voiceCha.GetID() == cha.GetID() {
 			chaExists = true
 			break
@@ -576,23 +540,15 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 	// Delete only the role if there, else delete the entire channel
 	if roleExistsInCmd {
 		for _, voiceCha := range guildSettings.GetVoiceChas() {
-			if voiceCha == nil {
-				continue
-			}
-
 			if voiceCha.GetID() == cha.GetID() {
 				for j, roleIteration := range voiceCha.GetRoles() {
-					if roleIteration == nil {
-						continue
-					}
-
 					if roleIteration.GetID() == role.GetID() {
 
 						if len(voiceCha.GetRoles()) == 1 {
 							chaDeleted = true
 						}
 
-						voiceCha.RemoveFromRoles(j)
+						voiceCha = voiceCha.RemoveFromRoles(j)
 						break
 					}
 				}
@@ -600,12 +556,8 @@ func removeVoiceChaRole(s *discordgo.Session, m *discordgo.Message) {
 		}
 	} else {
 		for i, voiceCha := range guildSettings.GetVoiceChas() {
-			if voiceCha == nil {
-				continue
-			}
-
 			if voiceCha.GetID() == cha.GetID() {
-				guildSettings.RemoveFromVoiceChas(i)
+				guildSettings = guildSettings.RemoveFromVoiceChas(i)
 				chaDeleted = true
 				break
 			}
@@ -636,7 +588,6 @@ func viewVoiceChaRoles(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) != 1 {
@@ -658,10 +609,6 @@ func viewVoiceChaRoles(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	for _, cha := range guildSettings.GetVoiceChas() {
-		if cha == nil {
-			continue
-		}
-
 		message += fmt.Sprintf("**%v : %v**\n\n", cha.GetName(), cha.GetID())
 		for _, role := range cha.GetRoles() {
 			message += fmt.Sprintf("`%s - %s`\n", role.GetName(), role.GetID())
@@ -701,12 +648,11 @@ func voteCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	var message string
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	// Displays current vote category
 	if len(commandStrings) == 1 {
-		if guildSettings.VoteChannelCategory == nil {
+		if guildSettings.VoteChannelCategory == (entities.Cha{}) {
 			message = fmt.Sprintf("Error: Vote Category is currently not set. Please use `%svotecategory [category]`", guildSettings.GetPrefix())
 		} else if guildSettings.VoteChannelCategory.GetID() == "" {
 			message = fmt.Sprintf("Error: Vote Category is currently not set. Please use `%svotecategory [category]`", guildSettings.GetPrefix())
@@ -734,7 +680,7 @@ func voteCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Changes and writes new vote category to storage
-	guildSettings.VoteChannelCategory = entities.NewCha(catName, catID)
+	guildSettings = guildSettings.SetVoteChannelCategory(entities.NewCha(catName, catID))
 	db.SetGuildSettings(m.GuildID, guildSettings)
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Vote Module is: `%v - %v`", catName, catID))
@@ -753,7 +699,6 @@ func voteModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	// Displays current module setting
@@ -800,7 +745,7 @@ func voteModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Changes and writes module bool to guild
-	guildSettings.VoteModule = module
+	guildSettings = guildSettings.SetVoteModule(module)
 	db.SetGuildSettings(m.GuildID, guildSettings)
 
 	_, err := s.ChannelMessageSend(m.ChannelID, message)
@@ -819,7 +764,6 @@ func waifuModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	// Displays current module setting
@@ -865,7 +809,7 @@ func waifuModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Changes and writes module bool to guild
-	guildSettings.SetWaifuModule(module)
+	guildSettings = guildSettings.SetWaifuModule(module)
 	db.SetGuildSettings(m.GuildID, guildSettings)
 
 	_, err := s.ChannelMessageSend(m.ChannelID, message)
@@ -884,7 +828,6 @@ func reactModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	// Displays current module setting
@@ -930,7 +873,7 @@ func reactModuleCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Changes and writes module bool to guild
-	guildSettings.SetReactsModule(module)
+	guildSettings = guildSettings.SetReactsModule(module)
 	db.SetGuildSettings(m.GuildID, guildSettings)
 
 	_, err := s.ChannelMessageSend(m.ChannelID, message)
@@ -995,7 +938,7 @@ func whitelistFileFilter(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Changes and writes module bool to guild
-	guildSettings.SetWhitelistFileFilter(module)
+	guildSettings = guildSettings.SetWhitelistFileFilter(module)
 	db.SetGuildSettings(m.GuildID, guildSettings)
 
 	_, err := s.ChannelMessageSend(m.ChannelID, message)
@@ -1023,7 +966,7 @@ func pingMessageCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Changes and writes new ping message to storage
-	guildSettings.SetPingMessage(commandStrings[1])
+	guildSettings = guildSettings.SetPingMessage(commandStrings[1])
 	db.SetGuildSettings(m.GuildID, guildSettings)
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New ping message is: `%s`", guildSettings.GetPingMessage()))
@@ -1042,7 +985,7 @@ func setMutedRole(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
-		if guildSettings.GetMutedRole() == nil || guildSettings.GetMutedRole().GetID() == "" {
+		if guildSettings.GetMutedRole() == (entities.Role{}) || guildSettings.GetMutedRole().GetID() == "" {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("The muted role is not set. Please use `%ssetmuted [Role ID]` to set it.", guildSettings.GetPrefix()))
 			if err != nil {
 				common.LogError(s, guildSettings.BotLog, err)
@@ -1061,8 +1004,8 @@ func setMutedRole(s *discordgo.Session, m *discordgo.Message) {
 
 	// Parse role for roleID
 	roleID, roleName := common.RoleParser(s, commandStrings[1], m.GuildID)
-	role.SetID(roleID)
-	role.SetName(roleName)
+	role = role.SetID(roleID)
+	role = role.SetName(roleName)
 	if role.GetID() == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such role exists.")
 		if err != nil {
@@ -1073,7 +1016,7 @@ func setMutedRole(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if the role already exists as a muted role
-	if guildSettings.GetMutedRole() != nil {
+	if guildSettings.GetMutedRole() != (entities.Role{}) {
 		if guildSettings.GetMutedRole().GetID() == role.GetID() {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: That role is already the muted role.")
 			if err != nil {
@@ -1085,7 +1028,7 @@ func setMutedRole(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sets the role as the muted role and writes to disk
-	guildSettings.SetMutedRole(&role)
+	guildSettings = guildSettings.SetMutedRole(role)
 	db.SetGuildSettings(m.GuildID, guildSettings)
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! Role `%v` is now the muted role.", role.GetName()))
@@ -1151,7 +1094,7 @@ func modOnlyCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Changes and writes mode bool to guild
-	guildSettings.ModOnly = mode
+	guildSettings = guildSettings.SetModOnly(mode)
 	db.SetGuildSettings(m.GuildID, guildSettings)
 
 	_, err := s.ChannelMessageSend(m.ChannelID, message)

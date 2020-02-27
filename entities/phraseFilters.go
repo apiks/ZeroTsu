@@ -8,20 +8,17 @@ type Filter struct {
 	Filter string `json:"Filter"`
 }
 
-func NewFilter(filter string) *Filter {
-	return &Filter{Filter: filter}
+func NewFilter(filter string) Filter {
+	return Filter{Filter: filter}
 }
 
-func (f *Filter) SetFilter(filter string) {
-	f.Lock()
+func (f Filter) SetFilter(filter string) Filter{
 	f.Filter = filter
-	f.Unlock()
+	return f
 }
 
-func (f *Filter) GetFilter() string {
-	f.RLock()
-	defer f.RUnlock()
-	if f == nil {
+func (f Filter) GetFilter() string {
+	if f == (Filter{}) {
 		return ""
 	}
 	return f.Filter

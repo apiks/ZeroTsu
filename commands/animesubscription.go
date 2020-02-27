@@ -24,10 +24,7 @@ func subscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 		hasAiredToday bool
 
 		err           error
-		guildSettings = &entities.GuildSettings{
-			Prefix: ".",
-			BotLog: nil,
-		}
+		guildSettings = entities.GuildSettings{Prefix: "."}
 	)
 
 	if m.GuildID != "" {
@@ -178,10 +175,7 @@ func unsubscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 		isDeleted bool
 
 		err           error
-		guildSettings = &entities.GuildSettings{
-			Prefix: ".",
-			BotLog: nil,
-		}
+		guildSettings = entities.GuildSettings{Prefix: "."}
 	)
 
 	if m.GuildID != "" {
@@ -281,10 +275,7 @@ func viewSubscriptions(s *discordgo.Session, m *discordgo.Message) {
 		message  string
 		messages []string
 
-		guildSettings = &entities.GuildSettings{
-			Prefix: ".",
-			BotLog: nil,
-		}
+		guildSettings = entities.GuildSettings{Prefix: "."}
 	)
 
 	if m.GuildID != "" {
@@ -447,7 +438,7 @@ func animeSubsHandler(s *discordgo.Session) {
 				if userShow.GetGuild() {
 
 					newepisodes := db.GetGuildAutopost(userID, "newepisodes")
-					if newepisodes == nil {
+					if newepisodes == (entities.Cha{}) {
 						continue
 					}
 

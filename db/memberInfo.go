@@ -26,26 +26,26 @@ func SetGuildMemberInfo(guildID string, memberInfo map[string]*entities.UserInfo
 }
 
 // GetGuildMember a guild's member object from in-memory
-func GetGuildMember(guildID string, userID string) *entities.UserInfo {
+func GetGuildMember(guildID string, userID string) entities.UserInfo {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.RLock()
 	defer entities.Guilds.RUnlock()
 
 	if member, ok := entities.Guilds.DB[guildID].GetMemberInfoMap()[userID]; ok {
-		return member
+		return *member
 	}
 
-	return nil
+	return entities.UserInfo{}
 }
 
 // SetGuildMember sets a target guild's member object in-memory
-func SetGuildMember(guildID string, member *entities.UserInfo, deleteSlice ...bool) {
+func SetGuildMember(guildID string, member entities.UserInfo, deleteSlice ...bool) {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
 	if len(deleteSlice) == 0 {
-		entities.Guilds.DB[guildID].GetMemberInfoMap()[member.GetID()] = member
+		entities.Guilds.DB[guildID].GetMemberInfoMap()[member.GetID()] = &member
 	} else {
 		delete(entities.Guilds.DB[guildID].GetMemberInfoMap(), member.GetID())
 	}

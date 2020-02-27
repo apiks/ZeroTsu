@@ -8,10 +8,6 @@ type ReactJoin struct {
 	RoleEmojiMap []map[string][]string `json:"roleEmoji"`
 }
 
-func NewReactJoin(roleEmojiMap []map[string][]string) *ReactJoin {
-	return &ReactJoin{RoleEmojiMap: roleEmojiMap}
-}
-
 func (r *ReactJoin) AppendToRoleEmojiMap(roleEmoji map[string][]string) {
 	r.Lock()
 	r.RoleEmojiMap = append(r.RoleEmojiMap, roleEmoji)

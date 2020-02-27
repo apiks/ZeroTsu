@@ -18,11 +18,6 @@ var (
 	Website    string
 	PlayingMsg []string
 
-	Redis     bool
-	RedisIP   string
-	RedisPort string
-	RedisAddress string
-
 	RedditAppName   string
 	RedditAppSecret string
 
@@ -46,10 +41,6 @@ type configStruct struct {
 	Kaguya                string   `json:"Kaguya"`
 	MsgAttachRemoval      string   `json:"MsgAttachRemoval"`
 	PlayingMsg            []string `json:"PlayingMsg"`
-
-	Redis     bool   `json:"Redis"`
-	RedisIP   string `json:"RedisIP"`
-	RedisPort string `json:"RedisPort"`
 }
 
 type configSecrets struct {
@@ -84,11 +75,6 @@ func ReadConfig() error {
 	OwnerID = config.OwnerID
 	Website = config.Website
 	PlayingMsg = config.PlayingMsg
-
-	Redis = config.Redis
-	RedisIP = config.RedisIP
-	RedisPort = config.RedisPort
-	RedisAddress = RedisIP + ":" + RedisPort
 
 	// Takes the bot token from the environment variable. Reason is to avoid pushing token to github
 	if os.Getenv("ZeroTsuToken") == "" {
@@ -137,10 +123,6 @@ func WriteConfig() error {
 	config.OwnerID = OwnerID
 	config.Website = Website
 	config.PlayingMsg = PlayingMsg
-
-	config.Redis = Redis
-	config.RedisIP = RedisIP
-	config.RedisPort = RedisPort
 
 	// Turns the config struct to bytes
 	marshaledStruct, err := json.MarshalIndent(config, "", "    ")

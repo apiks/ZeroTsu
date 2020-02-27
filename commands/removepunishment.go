@@ -16,7 +16,6 @@ import (
 // Removes a warning log entry via index from memberInfo entry
 func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	// Checks if there's enough parameters
@@ -50,7 +49,7 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks and fetches user
 	mem := db.GetGuildMember(m.GuildID, userID)
-	if mem == nil {
+	if mem.GetID() == "" {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, fmt.Errorf("Error: User does not exist in the internal database. Cannot remove nonexisting warning."))
 		return
 	}
@@ -72,16 +71,12 @@ func removeWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Removes warning from map and sets punishment
 	punishment := mem.GetWarnings()[index]
 	for i, timestamp := range mem.GetTimestamps() {
-		if timestamp == nil {
-			continue
-		}
-
 		if strings.ToLower(timestamp.GetPunishment()) == strings.ToLower(mem.GetWarnings()[index]) {
-			mem.RemoveFromTimestamps(i)
+			mem = mem.RemoveFromTimestamps(i)
 			break
 		}
 	}
-	mem.RemoveFromWarnings(index)
+	mem = mem.RemoveFromWarnings(index)
 
 	// Write
 	db.SetGuildMember(m.GuildID, mem)
@@ -130,7 +125,7 @@ func removeMuteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks and fetches user
 	mem := db.GetGuildMember(m.GuildID, userID)
-	if mem == nil {
+	if mem.GetID() == "" {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, fmt.Errorf("Error: User does not exist in the internal database. Cannot remove nonexisting mute."))
 		return
 	}
@@ -153,11 +148,11 @@ func removeMuteCommand(s *discordgo.Session, m *discordgo.Message) {
 	punishment := mem.GetMutes()[index]
 	for i, timestamp := range mem.GetTimestamps() {
 		if strings.ToLower(timestamp.GetPunishment()) == strings.ToLower(mem.GetMutes()[index]) {
-			mem.RemoveFromTimestamps(i)
+			mem = mem.RemoveFromTimestamps(i)
 			break
 		}
 	}
-	mem.RemoveFromMutes(index)
+	mem = mem.RemoveFromMutes(index)
 
 	// Write
 	db.SetGuildMember(m.GuildID, mem)
@@ -205,7 +200,7 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks and fetches user
 	mem := db.GetGuildMember(m.GuildID, userID)
-	if mem == nil {
+	if mem.GetID() == "" {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, fmt.Errorf("Error: User does not exist in the internal database. Cannot remove nonexisting kick."))
 		return
 	}
@@ -228,11 +223,11 @@ func removeKickCommand(s *discordgo.Session, m *discordgo.Message) {
 	punishment := mem.GetKicks()[index]
 	for i, timestamp := range mem.GetTimestamps() {
 		if strings.ToLower(timestamp.GetPunishment()) == strings.ToLower(mem.GetKicks()[index]) {
-			mem.RemoveFromTimestamps(i)
+			mem = mem.RemoveFromTimestamps(i)
 			break
 		}
 	}
-	mem.RemoveFromKicks(index)
+	mem = mem.RemoveFromKicks(index)
 
 	// Write
 	db.SetGuildMember(m.GuildID, mem)
@@ -281,7 +276,7 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks and fetches user
 	mem := db.GetGuildMember(m.GuildID, userID)
-	if mem == nil {
+	if mem.GetID() == "" {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, fmt.Errorf("Error: User does not exist in the internal database. Cannot remove nonexisting ban."))
 		return
 	}
@@ -304,11 +299,11 @@ func removeBanCommand(s *discordgo.Session, m *discordgo.Message) {
 	punishment := mem.GetBans()[index]
 	for i, timestamp := range mem.GetTimestamps() {
 		if strings.ToLower(timestamp.GetPunishment()) == strings.ToLower(mem.GetBans()[index]) {
-			mem.RemoveFromTimestamps(i)
+			mem = mem.RemoveFromTimestamps(i)
 			break
 		}
 	}
-	mem.RemoveFromBans(index)
+	mem = mem.RemoveFromBans(index)
 
 	// Write
 	db.SetGuildMember(m.GuildID, mem)

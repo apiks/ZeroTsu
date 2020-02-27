@@ -375,7 +375,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Sets the username + discrim combo if it exists in memberinfo via ID, also sorts out the reddit verified status
 	mem := db.GetGuildMember(config.ServerID, SafeCookieMap.userCookieMap[cookie.Value].ID)
-	if mem != nil && mem.GetID() == "" {
+	if mem.GetID() == "" {
 		usernameDiscrim := mem.GetUsername() + "#" + mem.GetDiscrim()
 		tempUser.UsernameDiscrim = usernameDiscrim
 
@@ -393,7 +393,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 	// Verifies user if they have a reddit account linked in memberInfo already, skipping the entire verification process
 	if SafeCookieMap.userCookieMap[cookie.Value].ID != "" {
 		mem := db.GetGuildMember(config.ServerID, SafeCookieMap.userCookieMap[cookie.Value].ID)
-		if mem != nil && mem.GetID() == "" && mem.GetRedditUsername() != "" {
+		if mem.GetID() != "" && mem.GetRedditUsername() != "" {
 			// Verifies user
 			err := Verify(cookie, r)
 			if err != nil {
@@ -445,7 +445,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 				if SafeCookieMap.userCookieMap[cookie.Value].AccOldEnough && SafeCookieMap.userCookieMap[cookie.Value].ID != "" &&
 					SafeCookieMap.userCookieMap[cookie.Value].RedditVerifiedStatus && SafeCookieMap.userCookieMap[cookie.Value].RedditName != "" {
 					mem := db.GetGuildMember(config.ServerID, SafeCookieMap.userCookieMap[cookie.Value].ID)
-					if mem == nil || mem.GetID() == "" {
+					if mem.GetID() == "" {
 						tempUser.Error = "Error: Are you sure you verified with the correct Discord account? It uses the browser Discord account so please go back and check if it is correct. If it is please notify a mod with the following: Username not found in memberInfo with the UserCookieMap UserID."
 						SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
 					} else {
@@ -515,7 +515,7 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 						SafeCookieMap.userCookieMap[cookie.Value].RedditName != "" {
 
 						mem := db.GetGuildMember(config.ServerID, SafeCookieMap.userCookieMap[cookie.Value].ID)
-						if mem == nil || mem.GetID() == "" {
+						if mem.GetID() == "" {
 							tempUser.Error = "Error: Are you sure you verified with the correct Discord account? It uses the browser Discord account so please go back and check if it is correct. If it is please notify a mod with the following: Username not found in memberInfo with the UserCookieMap UserID."
 							SafeCookieMap.userCookieMap[cookie.Value] = &tempUser
 						} else {
@@ -765,8 +765,8 @@ func Verify(cookieValue *http.Cookie, _ *http.Request) error {
 
 	// Assigns needed values to temp
 	temp = *memberInfoMap[userID]
-	temp.SetRedditUsername(SafeCookieMap.userCookieMap[cookieValue.Value].RedditName)
-	temp.SetVerifiedDate(joinDate)
+	temp = temp.SetRedditUsername(SafeCookieMap.userCookieMap[cookieValue.Value].RedditName)
+	temp = temp.SetVerifiedDate(joinDate)
 	memberInfoMap[userID] = &temp
 
 	// Saves the userID for verified timer
@@ -812,7 +812,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 
 				// Checks if banned suspected spambot accounts verified
 				mem := db.GetGuildMember(config.ServerID, userID)
-				if mem == nil || mem.GetID() == "" {
+				if mem.GetID() == "" {
 					continue
 				}
 
@@ -823,7 +823,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 						}
 
 						if banUser.GetID() == userID {
-							_ = db.SetGuildPunishedUser(config.ServerID, banUser, true)
+							_ = db.SetGuildPunishedUser(config.ServerID, *banUser, true)
 							break
 						}
 					}
@@ -836,7 +836,7 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 						}
 						continue
 					}
-					mem.SetSuspectedSpambot(false)
+					mem = mem.SetSuspectedSpambot(false)
 					db.SetGuildMember(config.ServerID, mem)
 				}
 
@@ -927,7 +927,7 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	mem := db.GetGuildMember(config.ServerID, userID)
 
 	// Checks if the user is an already verified one
-	if len(guildMemberInfo) == 0 || mem == nil || mem.GetID() == "" || mem.GetRedditUsername() == "" {
+	if len(guildMemberInfo) == 0 || mem.GetID() == "" || mem.GetRedditUsername() == "" {
 		return
 	}
 
@@ -971,7 +971,7 @@ func CheckAltAccount(s *discordgo.Session, id string) bool {
 	guildMemberInfo := db.GetGuildMemberInfo(config.ServerID)
 	mem := db.GetGuildMember(config.ServerID, id)
 
-	if len(guildMemberInfo) == 0 || mem == nil || mem.GetID() == "" {
+	if len(guildMemberInfo) == 0 || mem.GetID() == "" {
 		return false
 	}
 

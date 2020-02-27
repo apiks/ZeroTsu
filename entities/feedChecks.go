@@ -8,55 +8,46 @@ import (
 type FeedCheck struct {
 	sync.RWMutex
 
-	Feed *Feed     `json:"Thread"`
+	Feed Feed     `json:"Thread"`
 	Date time.Time `json:"Date"`
 	GUID string    `json:"GUID"`
 }
 
-func NewFeedCheck(feed *Feed, date time.Time, GUID string) *FeedCheck {
-	return &FeedCheck{Feed: feed, Date: date, GUID: GUID}
+func NewFeedCheck(feed Feed, date time.Time, GUID string) FeedCheck {
+	return FeedCheck{Feed: feed, Date: date, GUID: GUID}
 }
 
-func (f *FeedCheck) SetFeed(feed *Feed) {
-	f.Lock()
+func (f FeedCheck) SetFeed(feed Feed) FeedCheck{
 	f.Feed = feed
-	f.Unlock()
+	return f
 }
 
-func (f *FeedCheck) GetFeed() *Feed {
-	f.RLock()
-	defer f.RUnlock()
-	if f == nil {
-		return nil
+func (f FeedCheck) GetFeed() Feed {
+	if f == (FeedCheck{}) {
+		return Feed{}
 	}
 	return f.Feed
 }
 
-func (f *FeedCheck) SetDate(date time.Time) {
-	f.Lock()
+func (f FeedCheck) SetDate(date time.Time) FeedCheck {
 	f.Date = date
-	f.Unlock()
+	return f
 }
 
-func (f *FeedCheck) GetDate() time.Time {
-	f.RLock()
-	defer f.RUnlock()
-	if f == nil {
+func (f FeedCheck) GetDate() time.Time {
+	if f == (FeedCheck{}) {
 		return time.Time{}
 	}
 	return f.Date
 }
 
-func (f *FeedCheck) SetGUID(guid string) {
-	f.Lock()
+func (f FeedCheck) SetGUID(guid string) FeedCheck {
 	f.GUID = guid
-	f.Unlock()
+	return f
 }
 
-func (f *FeedCheck) GetGUID() string {
-	f.RLock()
-	defer f.RUnlock()
-	if f == nil {
+func (f FeedCheck) GetGUID() string {
+	if f == (FeedCheck{}) {
 		return ""
 	}
 	return f.GUID

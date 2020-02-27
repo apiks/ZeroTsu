@@ -40,7 +40,7 @@ func SetGuildMessageRequirements(guildID string, messRequirements []*entities.Me
 }
 
 // SetGuildMessageRequirement sets a target guild's message requirement filter in-memory
-func SetGuildMessageRequirement(guildID string, messRequirement *entities.MessRequirement, delete ...bool) error {
+func SetGuildMessageRequirement(guildID string, messRequirement entities.MessRequirement, delete ...bool) error {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
@@ -53,7 +53,7 @@ func SetGuildMessageRequirement(guildID string, messRequirement *entities.MessRe
 		return fmt.Errorf("Error: You have reached the message requirement filter limit (50) for this server. Please remove some or increase them to 150 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
 
-	messRequirement.SetPhrase(strings.ToLower(messRequirement.GetPhrase()))
+	messRequirement = messRequirement.SetPhrase(strings.ToLower(messRequirement.GetPhrase()))
 
 	if len(delete) == 0 {
 		var exists bool
@@ -90,7 +90,7 @@ func SetGuildMessageRequirement(guildID string, messRequirement *entities.MessRe
 }
 
 // deleteGuildMessageRequirement safely deletes a message requirement from the message requirements slice
-func deleteGuildMessageRequirement(guildID string, messReq *entities.MessRequirement) error {
+func deleteGuildMessageRequirement(guildID string, messReq entities.MessRequirement) error {
 	var exists bool
 
 	for i, guildMessReq := range entities.Guilds.DB[guildID].GetMessageRequirements() {

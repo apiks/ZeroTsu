@@ -61,7 +61,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo and fetches them
 	mem := db.GetGuildMember(m.GuildID, userID)
-	if mem == nil || mem.GetID() == "" {
+	if mem.GetID() == "" {
 		var user *discordgo.User
 
 		if userMem != nil {
@@ -82,7 +82,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.InitializeUser(user, m.GuildID)
 
 		mem = db.GetGuildMember(m.GuildID, userID)
-		if mem == nil {
+		if mem.GetID() == "" {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, fmt.Errorf("error: member object is empty"))
 			return
 		}
@@ -239,7 +239,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 			altsBuilder.WriteString("\n\n**Alts:**\n")
 			for _, altID := range alts {
 				alt := db.GetGuildMember(m.GuildID, altID)
-				if alt == nil || alt.GetID() == "" {
+				if alt.GetID() == "" {
 					continue
 				}
 				altsBuilder.WriteString(alt.GetUsername())
@@ -288,7 +288,7 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 }
 
 // Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Whois version
-func CheckAltAccountWhois(guildID string, user *entities.UserInfo) []string {
+func CheckAltAccountWhois(guildID string, user entities.UserInfo) []string {
 
 	var alts []string
 
@@ -348,7 +348,7 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo and fetches them
 	mem := db.GetGuildMember(m.GuildID, userID)
-	if mem == nil || mem.GetID() == "" {
+	if mem.GetID() == "" {
 		var user *discordgo.User
 
 		// Fetches user from server if possible and sets whether they're inside the server
@@ -375,8 +375,8 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.InitializeUser(user, m.GuildID)
 
 		mem = db.GetGuildMember(m.GuildID, userID)
-		if err != nil || mem == nil {
-			if mem == nil && err == nil {
+		if err != nil || mem.GetID() == "" {
+			if mem.GetID() == "" && err == nil {
 				err = fmt.Errorf("error: member object is empty")
 			}
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
@@ -396,10 +396,6 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Formats message
 	for _, timestamp := range mem.GetTimestamps() {
-		if timestamp == nil {
-			continue
-		}
-
 		timezone, displacement := timestamp.GetTimestamp().Zone()
 		message += fmt.Sprintf("**%v:** `%v` - _%v %v %v, %v:%v:%v %v+%v_\n", timestamp.GetPunishmentType(), timestamp.GetPunishment(), timestamp.GetTimestamp().Day(),
 			timestamp.GetTimestamp().Month(), timestamp.GetTimestamp().Year(), timestamp.GetTimestamp().Hour(), timestamp.GetTimestamp().Minute(), timestamp.GetTimestamp().Second(), timezone, displacement)

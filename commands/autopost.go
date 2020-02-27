@@ -21,7 +21,7 @@ func setDailyStatsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Displays current dailystats channel
 	if len(commandStrings) == 1 {
-		if dailyStats == nil {
+		if dailyStats == (entities.Cha{}) {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: Autopost Daily Stats channel is currently not set. Please use `%sdailystats [channel]`", guildSettings.GetPrefix()))
 			if err != nil {
 				common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
@@ -47,7 +47,7 @@ func setDailyStatsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Parse and save the target channel
 	if commandStrings[1] == "disable" {
-		dailyStats = nil
+		dailyStats = entities.Cha{}
 	} else {
 		channelID, channelName := common.ChannelParser(s, commandStrings[1], m.GuildID)
 		dailyStats = entities.NewCha(channelName, channelID)
@@ -56,7 +56,7 @@ func setDailyStatsCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Write
 	db.SetGuildAutopost(m.GuildID, "dailystats", dailyStats)
 
-	if dailyStats == nil {
+	if dailyStats == (entities.Cha{}) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Success! Autopost Daily Stats has been disabled!")
 		if err != nil {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
@@ -81,7 +81,7 @@ func setDailyScheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Displays current dailyschedule channel
 	if len(commandStrings) == 1 {
-		if dailySchedule == nil {
+		if dailySchedule == (entities.Cha{}) {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: Autopost Daily Anime Schedule channel is currently not set. Please use `%sdailyschedule [channel]`", guildSettings.GetPrefix()))
 			if err != nil {
 				common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
@@ -105,13 +105,13 @@ func setDailyScheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	if dailySchedule == nil {
+	if dailySchedule == (entities.Cha{}) {
 		dailySchedule = entities.NewCha("", "")
 	}
 
 	// Parse and save the target channel
 	if commandStrings[1] == "disable" {
-		dailySchedule = nil
+		dailySchedule = entities.Cha{}
 	} else {
 		channelID, channelName := common.ChannelParser(s, commandStrings[1], m.GuildID)
 		dailySchedule = entities.NewCha(channelName, channelID)
@@ -120,7 +120,7 @@ func setDailyScheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Write
 	db.SetGuildAutopost(m.GuildID, "dailyschedule", dailySchedule)
 
-	if dailySchedule == nil {
+	if dailySchedule == (entities.Cha{}) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Success! Autopost Daily Anime Schedule has been disabled!")
 		if err != nil {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
@@ -144,7 +144,7 @@ func setNewEpisodesCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Displays current new episodes channel
 	if len(commandStrings) == 1 {
-		if newEpisodes == nil {
+		if newEpisodes == (entities.Cha{}) {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: Autopost channel for new airing anime episodes is currently not set. Please use `%snewepisodes [channel]`", guildSettings.GetPrefix()))
 			if err != nil {
 				common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
@@ -168,13 +168,13 @@ func setNewEpisodesCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	if newEpisodes == nil {
+	if newEpisodes == (entities.Cha{}) {
 		newEpisodes = entities.NewCha("", "")
 	}
 
 	// Parse and save the target channel
 	if commandStrings[1] == "disable" {
-		newEpisodes = nil
+		newEpisodes = entities.Cha{}
 	} else {
 		channelID, channelName := common.ChannelParser(s, commandStrings[1], m.GuildID)
 		newEpisodes = entities.NewCha(channelName, channelID)
@@ -183,7 +183,7 @@ func setNewEpisodesCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Write
 	db.SetGuildAutopost(m.GuildID, "newepisodes", newEpisodes)
 
-	if newEpisodes == nil {
+	if newEpisodes == (entities.Cha{}) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Success! Autopost for new airing anime episodes has been disabled!")
 		if err != nil {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)

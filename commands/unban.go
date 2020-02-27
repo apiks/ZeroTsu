@@ -66,15 +66,15 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 			banFlag = true
 
 			if user.GetUnmuteDate() == (time.Time{}) {
-				user = entities.NewPunishedUsers("", "", time.Time{}, time.Time{})
-				err = db.SetGuildPunishedUser(m.GuildID, user)
+				*user = entities.NewPunishedUsers("", "", time.Time{}, time.Time{})
+				err = db.SetGuildPunishedUser(m.GuildID, *user)
 				if err != nil {
 					common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 					return
 				}
 			} else {
-				user = entities.NewPunishedUsers(user.GetID(), user.GetUsername(), time.Time{}, user.GetUnmuteDate())
-				err = db.SetGuildPunishedUser(m.GuildID, user)
+				*user = entities.NewPunishedUsers(user.GetID(), user.GetUsername(), time.Time{}, user.GetUnmuteDate())
+				err = db.SetGuildPunishedUser(m.GuildID, *user)
 				if err != nil {
 					common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 					return
@@ -121,19 +121,19 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo and fetches them
 	mem := db.GetGuildMember(m.GuildID, userID)
-	if mem == nil {
+	if mem.GetID() == "" {
 		// Initializes user if he doesn't exist in memberInfo but is in server
 		functionality.InitializeUser(user, m.GuildID)
 
 		mem = db.GetGuildMember(m.GuildID, userID)
-		if mem == nil {
+		if mem.GetID() == "" {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, fmt.Errorf("error: member object is empty"))
 			return
 		}
 	}
 
 	// Set member unban date
-	mem.SetUnbanDate(t.Format("2006-01-02 15:04:05"))
+	mem = mem.SetUnbanDate(t.Format("2006-01-02 15:04:05"))
 
 	// Write
 	db.SetGuildMember(m.GuildID, mem)
@@ -145,7 +145,7 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sends an embed message to bot-log if possible
-	if guildSettings.BotLog != nil {
+	if guildSettings.BotLog != (entities.Cha{}) {
 		if guildSettings.BotLog.GetID() != "" {
 			_ = embeds.AutoPunishmentRemoval(s, mem, guildSettings.BotLog.GetID(), "unbanned", m.Author)
 		}

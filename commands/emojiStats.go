@@ -16,7 +16,6 @@ import (
 
 // Tracks emoji usage of server emojis
 func OnMessageEmoji(s *discordgo.Session, m *discordgo.MessageCreate) {
-
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -58,19 +57,22 @@ func OnMessageEmoji(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		// If Emoji stat doesn't exist create it
 		if _, ok := guildEmojiStats[emoji.ID]; !ok {
-			guildEmojiStats[emoji.ID] = entities.NewEmoji(emoji.ID, emoji.Name, 0, 0, 0)
+			newEmoji := entities.NewEmoji(emoji.ID, emoji.Name, 0, 0, 0)
+			guildEmojiStats[emoji.ID] = &newEmoji
 		}
 		// If it's missing ID or Name add it while preserving stats
 		if guildEmojiStats[emoji.ID].GetID() == "" || guildEmojiStats[emoji.ID].GetName() == "" {
-			emojiStat := guildEmojiStats[emoji.ID]
-			emojiStat.SetID(emoji.ID)
-			emojiStat.SetName(emoji.Name)
-			guildEmojiStats[emoji.ID] = emojiStat
+			emojiStat := *guildEmojiStats[emoji.ID]
+			emojiStat = emojiStat.SetID(emoji.ID)
+			emojiStat = emojiStat.SetName(emoji.Name)
+			guildEmojiStats[emoji.ID] = &emojiStat
 		}
 
 		// Adds to that emoji usage
-		guildEmojiStats[emoji.ID].AddMessageUsage(emojiCount)
-		guildEmojiStats[emoji.ID].AddUniqueMessageUsage(1)
+		emojiCopy := *guildEmojiStats[emoji.ID]
+		emojiCopy = emojiCopy.AddMessageUsage(emojiCount)
+		emojiCopy = emojiCopy.AddUniqueMessageUsage(1)
+		guildEmojiStats[emoji.ID] = &emojiCopy
 
 		saveFlag = true
 	}
@@ -121,18 +123,21 @@ func OnMessageEmojiReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 
 		// If Emoji stat doesn't exist create it
 		if _, ok := guildEmojiStats[emoji.ID]; !ok {
-			guildEmojiStats[emoji.ID] = entities.NewEmoji(emoji.ID, emoji.Name, 0, 0, 0)
+			newEmoji := entities.NewEmoji(emoji.ID, emoji.Name, 0, 0, 0)
+			guildEmojiStats[emoji.ID] = &newEmoji
 		}
 		// If it's missing ID or Name add it while preserving stats
 		if guildEmojiStats[emoji.ID].GetID() == "" || guildEmojiStats[emoji.ID].GetName() == "" {
-			emojiStat := guildEmojiStats[emoji.ID]
-			emojiStat.SetID(emoji.ID)
-			emojiStat.SetName(emoji.Name)
-			guildEmojiStats[emoji.ID] = emojiStat
+			emojiStat := *guildEmojiStats[emoji.ID]
+			emojiStat = emojiStat.SetID(emoji.ID)
+			emojiStat = emojiStat.SetName(emoji.Name)
+			guildEmojiStats[emoji.ID] = &emojiStat
 		}
 
 		// Adds to that emoji usage
-		guildEmojiStats[emoji.ID].AddSetReactions(1)
+		emojiCopy := *guildEmojiStats[emoji.ID]
+		emojiCopy = emojiCopy.AddSetReactions(1)
+		guildEmojiStats[emoji.ID] = &emojiCopy
 
 		saveFlag = true
 	}
@@ -183,18 +188,21 @@ func OnMessageEmojiUnreact(s *discordgo.Session, r *discordgo.MessageReactionRem
 
 		// If Emoji stat doesn't exist create it
 		if _, ok := guildEmojiStats[emoji.ID]; !ok {
-			guildEmojiStats[emoji.ID] = entities.NewEmoji(emoji.ID, emoji.Name, 0, 0, 0)
+			newEmoji := entities.NewEmoji(emoji.ID, emoji.Name, 0, 0, 0)
+			guildEmojiStats[emoji.ID] = &newEmoji
 		}
 		// If it's missing ID or Name add it while preserving stats
 		if guildEmojiStats[emoji.ID].GetID() == "" || guildEmojiStats[emoji.ID].GetName() == "" {
-			emojiStat := guildEmojiStats[emoji.ID]
-			emojiStat.SetID(emoji.ID)
-			emojiStat.SetName(emoji.Name)
-			guildEmojiStats[emoji.ID] = emojiStat
+			emojiStat := *guildEmojiStats[emoji.ID]
+			emojiStat = emojiStat.SetID(emoji.ID)
+			emojiStat = emojiStat.SetName(emoji.Name)
+			guildEmojiStats[emoji.ID] = &emojiStat
 		}
 
 		// Adds to that emoji usage
-		guildEmojiStats[emoji.ID].AddSetReactions(-1)
+		emojiCopy := *guildEmojiStats[emoji.ID]
+		emojiCopy = emojiCopy.AddSetReactions(-1)
+		guildEmojiStats[emoji.ID] = &emojiCopy
 
 		saveFlag = true
 	}
@@ -368,11 +376,11 @@ func mergeDuplicates(guildID string) (map[string]*entities.Emoji, error) {
 		}
 
 		if _, ok := printEmojiMap[duplicateOneName]; !ok {
-			emoji.SetName(duplicateOneName)
-			emoji.SetID(duplicateOneID)
-			emoji.SetMessageUsage(msgTotal)
-			emoji.SetUniqueMessageUsage(uniqueTotal)
-			emoji.SetReactions(reactTotal)
+			emoji = emoji.SetName(duplicateOneName)
+			emoji = emoji.SetID(duplicateOneID)
+			emoji = emoji.SetMessageUsage(msgTotal)
+			emoji = emoji.SetUniqueMessageUsage(uniqueTotal)
+			emoji = emoji.SetReactions(reactTotal)
 			printEmojiMap[duplicateOneName] = &emoji
 		}
 

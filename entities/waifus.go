@@ -8,20 +8,17 @@ type Waifu struct {
 	Name string `json:"Name"`
 }
 
-func NewWaifu(name string) *Waifu {
-	return &Waifu{Name: name}
+func NewWaifu(name string) Waifu {
+	return Waifu{Name: name}
 }
 
-func (w *Waifu) SetName(name string) {
-	w.Lock()
+func (w Waifu) SetName(name string) Waifu {
 	w.Name = name
-	w.Unlock()
+	return w
 }
 
-func (w *Waifu) GetName() string {
-	w.RLock()
-	defer w.RUnlock()
-	if w == nil {
+func (w Waifu) GetName() string {
+	if w == (Waifu{}) {
 		return ""
 	}
 	return w.Name

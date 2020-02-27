@@ -3,6 +3,7 @@ package commands
 import (
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -100,10 +101,6 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Adds mod role overwrites if they don't exist
 	for _, perm := range cha.PermissionOverwrites {
 		for _, modRole := range guildSettings.GetCommandRoles() {
-			if modRole == nil {
-				continue
-			}
-
 			if perm.ID == modRole.GetID() {
 				roleExists = true
 				break
@@ -115,10 +112,6 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	if !roleExists {
 		for _, modRole := range guildSettings.GetCommandRoles() {
-			if modRole == nil {
-				continue
-			}
-
 			err = s.ChannelPermissionSet(m.ChannelID, modRole.GetID(), "role", discordgo.PermissionSendMessages, 0)
 			if err != nil {
 				common.LogError(s, guildSettings.BotLog, err)
@@ -133,7 +126,7 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	if guildSettings.BotLog == nil {
+	if guildSettings.BotLog == (entities.Cha{}) {
 		return
 	}
 	if guildSettings.BotLog.GetID() == "" {
@@ -226,10 +219,6 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Adds mod role overwrites if they don't exist
 	for _, perm := range cha.PermissionOverwrites {
 		for _, modRole := range guildSettings.GetCommandRoles() {
-			if modRole == nil {
-				continue
-			}
-
 			if perm.ID == modRole.GetID() {
 				roleExists = true
 				break
@@ -241,10 +230,6 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 	if !roleExists {
 		for _, modRole := range guildSettings.GetCommandRoles() {
-			if modRole == nil {
-				continue
-			}
-
 			err = s.ChannelPermissionSet(m.ChannelID, modRole.GetID(), "role", discordgo.PermissionSendMessages, 0)
 			if err != nil {
 				common.LogError(s, guildSettings.BotLog, err)
@@ -259,7 +244,7 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	if guildSettings.BotLog == nil {
+	if guildSettings.BotLog == (entities.Cha{}) {
 		return
 	}
 	if guildSettings.BotLog.GetID() == "" {

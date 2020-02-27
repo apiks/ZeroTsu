@@ -77,9 +77,7 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 		// Slice for sorting
 		commands []string
 
-		guildSettings = &entities.GuildSettings{
-			Prefix: ".",
-		}
+		guildSettings = entities.GuildSettings{Prefix: "."}
 	)
 
 	if m.GuildID != "" {

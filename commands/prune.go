@@ -55,7 +55,7 @@ func pruneCommand(s *discordgo.Session, m *discordgo.Message) {
 }
 
 // Removes the previous X amount of messages in X channel
-func pruneMessages(s *discordgo.Session, m *discordgo.Message, amount int, guildBotLog *entities.Cha) {
+func pruneMessages(s *discordgo.Session, m *discordgo.Message, amount int, guildBotLog entities.Cha) {
 	var (
 		deleteMessageIDs []string
 		lastMessageID    string

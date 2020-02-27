@@ -40,10 +40,6 @@ func addWaifu(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if such a waifu already exists
 	for _, waifu := range guildWaifus {
-		if waifu == nil {
-			continue
-		}
-
 		if waifu.GetName() == strings.ToLower(commandStrings[1]) {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: That waifu already exists.")
 			if err != nil {
@@ -55,8 +51,8 @@ func addWaifu(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Adds the waifu to the slice and writes to storage
-	temp.SetName(commandStrings[1])
-	err := db.SetGuildWaifu(m.GuildID, &temp)
+	temp = temp.SetName(commandStrings[1])
+	err := db.SetGuildWaifu(m.GuildID, temp)
 	if err != nil {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
@@ -126,10 +122,6 @@ func viewWaifus(s *discordgo.Session, m *discordgo.Message) {
 
 	// Iterates through all the waifus if they exist and adds them to the message string
 	for _, waifu := range guildWaifus {
-		if waifu == nil {
-			continue
-		}
-
 		if message == "" {
 			message = "Waifus:\n\n`" + waifu.GetName() + "`"
 		} else {
@@ -165,12 +157,12 @@ func rollWaifu(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	memberInfoUser := db.GetGuildMember(m.GuildID, m.Author.ID)
-	if memberInfoUser == nil || memberInfoUser.GetID() == "" {
+	if memberInfoUser.GetID() == "" {
 		functionality.InitializeUser(m.Author, m.GuildID)
 	}
 	memberInfoUser = db.GetGuildMember(m.GuildID, m.Author.ID)
 
-	if memberInfoUser.GetWaifu() != nil && memberInfoUser.GetWaifu().GetName() == "" {
+	if memberInfoUser.GetWaifu().GetName() == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: More than one waifu will ruin your laifu.")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
@@ -190,7 +182,7 @@ func rollWaifu(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	randomWaifuIndex = rand.Intn(waifuLen)
-	memberInfoUser.SetWaifu(guildWaifus[randomWaifuIndex])
+	memberInfoUser = memberInfoUser.SetWaifu(*guildWaifus[randomWaifuIndex])
 	db.SetGuildMember(m.GuildID, memberInfoUser)
 
 	_, err := s.ChannelMessageSend(m.ChannelID, "Your assigned waifu is "+guildWaifus[randomWaifuIndex].GetName()+"! Congratulations!")
@@ -215,12 +207,12 @@ func myWaifu(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	memberInfoUser := db.GetGuildMember(m.GuildID, m.Author.ID)
-	if memberInfoUser == nil || memberInfoUser.GetID() == "" {
+	if memberInfoUser.GetID() == "" {
 		functionality.InitializeUser(m.Author, m.GuildID)
 	}
 	memberInfoUser = db.GetGuildMember(m.GuildID, m.Author.ID)
 
-	if memberInfoUser.GetWaifu() == nil || memberInfoUser.GetWaifu().GetName() == "" {
+	if memberInfoUser.GetWaifu().GetName() == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You don't have a waifu. Please roll one with `"+guildSettings.GetPrefix()+"rollwaifu`!")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
@@ -263,12 +255,12 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	memberInfoUser := db.GetGuildMember(m.GuildID, m.Author.ID)
-	if memberInfoUser == nil || memberInfoUser.GetID() == "" {
+	if memberInfoUser.GetID() == "" {
 		functionality.InitializeUser(m.Author, m.GuildID)
 	}
 	memberInfoUser = db.GetGuildMember(m.GuildID, m.Author.ID)
 
-	if memberInfoUser.GetWaifu() == nil || memberInfoUser.GetWaifu().GetName() == "" {
+	if memberInfoUser.GetWaifu().GetName() == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You don't have a waifu. Please roll one with `"+guildSettings.GetPrefix()+"rollwaifu` before initiating a trade!")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
@@ -278,7 +270,7 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	memberInfoUserTarget := db.GetGuildMember(m.GuildID, m.Author.ID)
-	if memberInfoUserTarget == nil || memberInfoUserTarget.GetID() == "" {
+	if memberInfoUserTarget.GetID() == "" {
 		member, err := s.State.Member(m.GuildID, m.Author.ID)
 		if err != nil {
 			if member, err = s.GuildMember(m.GuildID, m.Author.ID); err != nil {
@@ -294,7 +286,7 @@ func tradeWaifu(s *discordgo.Session, m *discordgo.Message) {
 	}
 	memberInfoUserTarget = db.GetGuildMember(m.GuildID, m.Author.ID)
 
-	if memberInfoUserTarget.GetWaifu() == nil || memberInfoUserTarget.GetWaifu().GetName() == "" {
+	if memberInfoUserTarget.GetWaifu().GetName() == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Target user doesn't have a waifu. Please wait for them to roll for one before initiating a trade!")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
@@ -366,13 +358,13 @@ func acceptTrade(s *discordgo.Session, m *discordgo.Message) {
 
 			// Checks whether the two users are in memberinfo or server
 			memberInfoUser := db.GetGuildMember(m.GuildID, m.Author.ID)
-			if memberInfoUser == nil || memberInfoUser.GetID() == "" {
+			if memberInfoUser.GetID() == "" {
 				functionality.InitializeUser(m.Author, m.GuildID)
 			}
 			memberInfoUser = db.GetGuildMember(m.GuildID, m.Author.ID)
 
 			memberInfoUserTarget := db.GetGuildMember(m.GuildID, m.Author.ID)
-			if memberInfoUserTarget == nil || memberInfoUserTarget.GetID() == "" {
+			if memberInfoUserTarget.GetID() == "" {
 				member, err := s.State.Member(m.GuildID, m.Author.ID)
 				if err != nil {
 					if member, err = s.GuildMember(m.GuildID, m.Author.ID); err != nil {
@@ -390,8 +382,8 @@ func acceptTrade(s *discordgo.Session, m *discordgo.Message) {
 
 			// Trades waifus by switching them around and removes the trade
 			accepteeWaifu := memberInfoUser.GetWaifu()
-			memberInfoUserTarget.SetWaifu(memberInfoUserTarget.GetWaifu())
-			memberInfoUserTarget.SetWaifu(accepteeWaifu)
+			memberInfoUser = memberInfoUser.SetWaifu(memberInfoUserTarget.GetWaifu())
+			memberInfoUserTarget = memberInfoUserTarget.SetWaifu(accepteeWaifu)
 
 			db.SetGuildMember(m.GuildID, memberInfoUser)
 			db.SetGuildMember(m.GuildID, memberInfoUserTarget)
@@ -526,10 +518,6 @@ func showOwners(s *discordgo.Session, m *discordgo.Message) {
 
 	// Iterates through each waifu and member, increasing the waifuNum each time it detects a user with that waifu, and saves it to the messsage
 	for _, waifu := range guildWaifus {
-		if waifu == nil {
-			continue
-		}
-
 		for _, member := range guildMemberInfo {
 			if member == nil {
 				continue

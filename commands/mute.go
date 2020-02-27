@@ -35,7 +35,7 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-	if guildSettings.GetMutedRole() != nil && guildSettings.GetMutedRole().GetID() != "" {
+	if guildSettings.GetMutedRole() != (entities.Role{}) && guildSettings.GetMutedRole().GetID() != "" {
 		guildMutedRoleID = guildSettings.GetMutedRole().GetID()
 	}
 
@@ -117,7 +117,7 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
-	} else if mem == nil {
+	} else if mem.GetID() == "" {
 		var user *discordgo.User
 
 		if userMem != nil {
@@ -138,14 +138,14 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.InitializeUser(user, m.GuildID)
 
 		mem = db.GetGuildMember(m.GuildID, userID)
-		if mem == nil {
+		if mem.GetID() == "" {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, fmt.Errorf("error: member object is empty"))
 			return
 		}
 	}
 
 	// Adds mute date to memberInfo and checks if perma
-	mem.AppendToMutes(reason)
+	mem = mem.AppendToMutes(reason)
 	UnmuteDate, perma, err := common.ResolveTimeFromString(length)
 	if err != nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid time given.")
@@ -159,9 +159,9 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 		perma = true
 	}
 	if !perma {
-		mem.SetUnmuteDate(UnmuteDate.Format(common.LongDateFormat))
+		mem = mem.SetUnmuteDate(UnmuteDate.Format(common.LongDateFormat))
 	} else {
-		mem.SetUnmuteDate("_Never_")
+		mem = mem.SetUnmuteDate("_Never_")
 	}
 
 	// Adds timestamp for that mute
@@ -170,31 +170,31 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	muteTimestamp.SetTimestamp(t)
-	muteTimestamp.SetPunishment(reason)
-	muteTimestamp.SetPunishmentType("Mute")
-	mem.AppendToTimestamps(muteTimestamp)
+	muteTimestamp = muteTimestamp.SetTimestamp(t)
+	muteTimestamp = muteTimestamp.SetPunishment(reason)
+	muteTimestamp = muteTimestamp.SetPunishmentType("Mute")
+	mem = mem.AppendToTimestamps(muteTimestamp)
 
 	// Write
 	db.SetGuildMember(m.GuildID, mem)
 
 	// Saves the details in punishedUserObject
-	punishedUserObject.SetID(userID)
+	punishedUserObject = punishedUserObject.SetID(userID)
 	if userMem != nil {
-		punishedUserObject.SetUsername(userMem.User.Username)
+		punishedUserObject = punishedUserObject.SetUsername(userMem.User.Username)
 	} else {
-		punishedUserObject.SetUsername(mem.GetUsername())
+		punishedUserObject = punishedUserObject.SetUsername(mem.GetUsername())
 	}
 
 	if perma {
-		punishedUserObject.SetUnmuteDate(time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local))
+		punishedUserObject = punishedUserObject.SetUnmuteDate(time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local))
 	} else {
 		unmuteDate, err := time.Parse(common.LongDateFormat, UnmuteDate.Format(common.LongDateFormat))
 		if err != nil {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
-		punishedUserObject.SetUnmuteDate(unmuteDate)
+		punishedUserObject = punishedUserObject.SetUnmuteDate(unmuteDate)
 	}
 
 	// Adds or updates the now muted user in PunishedUsers
@@ -279,7 +279,7 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sends embed bot-log message
-	if guildSettings.BotLog == nil {
+	if guildSettings.BotLog == (entities.Cha{}) {
 		return
 	}
 	if guildSettings.BotLog.GetID() == "" {
