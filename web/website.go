@@ -14,7 +14,6 @@ import (
 	"html/template"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"sort"
 	"sync"
@@ -486,10 +485,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 		if state == "overlordconfirmsreddit" {
 			// Fetches reddit username and checks whether account is at least 1 week old
 			Name, DateUnix, err := getRedditUsername(SafeCookieMap.userCookieMap[cookie.Value].Code)
-
-			log.Println("Name: ", Name)
-			log.Println("DateUnix: ", DateUnix)
-
 			if err != nil {
 				// Sets error message
 				tempUser.Error = "Error: Bad reddit verification occurred. Please try to verify again."
@@ -557,7 +552,6 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 
 // Verifies user on reddit and returns their reddit username
 func getRedditUsername(code string) (string, float64, error) {
-
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -567,10 +561,10 @@ func getRedditUsername(code string) (string, float64, error) {
 	}()
 
 	// Initializes client
-	client := &http.Client{Timeout: time.Second * 2}
+	client := &http.Client{Timeout: time.Second * 10}
 
 	// Sets reddit required post info
-	POSTinfo := "grant_type=authorization_code&code=" + code + fmt.Sprintf("&redirect_uri=http://%s/verification", config.Website)
+	POSTinfo := fmt.Sprintf("grant_type=authorization_code&code=%s&redirect_uri=http://%s/verification", code, config.Website)
 
 	// Starts request to reddit
 	req, err := http.NewRequest("POST", "https://www.reddit.com/api/v1/access_token", bytes.NewBuffer([]byte(POSTinfo)))
@@ -640,7 +634,7 @@ func getRedditUsername(code string) (string, float64, error) {
 
 	// Sets needed reqAPIBan parameters
 	reqAPIBan.Header.Add("Authorization", "Bearer "+access.RedditAccessToken)
-	reqAPIBan.Header.Add("Username-Agent", common.UserAgent)
+	reqAPIBan.Header.Add("User-Agent", common.UserAgent)
 
 	// Does the GET request and puts it into the respAPI
 	respAPIBan, err := client.Do(reqAPIBan)
@@ -667,9 +661,6 @@ func getRedditUsername(code string) (string, float64, error) {
 	if userBan.Data.UserIsBanned {
 		return "", 0, fmt.Errorf("Error: Banned users from the subreddit are not allowed on the Discord server.")
 	}
-
-	log.Println("RedditName: ", user.RedditName)
-	log.Println("AccCreation: ", user.AccCreation)
 
 	// Returns user reddit username and date of account creation in epoch time
 	return user.RedditName, user.AccCreation, nil
