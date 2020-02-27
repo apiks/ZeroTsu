@@ -2,6 +2,10 @@ package commands
 
 import (
 	"fmt"
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/embeds"
+	"github.com/r-anime/ZeroTsu/entities"
 	"strconv"
 	"strings"
 	"time"
@@ -13,7 +17,6 @@ import (
 
 // Mutes a user for a set period with a reason
 func muteCommand(s *discordgo.Session, m *discordgo.Message) {
-
 	var (
 		userID             string
 		length             string
@@ -23,51 +26,43 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 		commandStringsCopy []string
 		guildMutedRoleID   string
 
-		validSlice         bool
-		punishedUserExists bool
-		gaveRole           bool
+		validSlice bool
+		gaveRole   bool
 
-		temp functionality.PunishedUsers
+		punishedUserObject = entities.NewPunishedUsers("", "", time.Time{}, time.Time{})
 
-		muteTimestamp functionality.Punishment
-
-		user *discordgo.User
+		muteTimestamp = entities.NewPunishment("", "", time.Time{})
 	)
 
-	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.Mutex.RUnlock()
-
-	if guildSettings.MutedRole != nil {
-		if guildSettings.MutedRole.ID != "" {
-			guildMutedRoleID = guildSettings.MutedRole.ID
-		}
+	guildSettings := db.GetGuildSettings(m.GuildID)
+	if guildSettings.GetMutedRole() != nil && guildSettings.GetMutedRole().GetID() != "" {
+		guildMutedRoleID = guildSettings.GetMutedRole().GetID()
 	}
 
 	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 4)
 	commandStringsCopy = commandStrings
 
 	if len(commandStrings) != 4 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"mute [@user, userID, or username#discrim] [time] [reason]` format. \n\n"+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.GetPrefix()+"mute [@user, userID, or username#discrim] [time] [reason]` format. \n\n"+
 			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes. Use 0d for permanent.\n"+
 			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
-			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Check if the time is the 2nd parameter and handle that
-	_, _, err := functionality.ResolveTimeFromString(commandStrings[1])
+	_, _, err := common.ResolveTimeFromString(commandStrings[1])
 	if err == nil {
 		length = commandStrings[1]
 		commandStrings = append(commandStrings[:1], commandStrings[1+1:]...)
 	}
 	// Handle userID, reason and length
-	userID, err = functionality.GetUserID(m, commandStrings)
+	userID, err = common.GetUserID(m, commandStrings)
 	if err != nil {
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
@@ -79,7 +74,7 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	reason = commandStrings[3]
 	// Checks if the reason contains a mention and finds the actual name instead of ID
-	reason = functionality.MentionParser(s, reason, m.GuildID)
+	reason = common.MentionParser(s, reason, m.GuildID)
 
 	// Checks if a number is contained in length var. Fixes some cases of invalid length
 	lengthSlice := strings.Split(length, "")
@@ -90,11 +85,11 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	if !validSlice {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid length. \n Usage: `"+guildSettings.Prefix+"mute [@user or userID] [time] [reason]` format. \n\n"+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid length. \n Usage: `"+guildSettings.GetPrefix()+"mute [@user or userID] [time] [reason]` format. \n\n"+
 			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes. Use 0d for permanent.\n"+
 			"Note: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -110,45 +105,52 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 		if functionality.HasElevatedPermissions(s, userMem.User.ID, m.GuildID) {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: Target user has a privileged role. Cannot mute.")
 			if err != nil {
-				functionality.LogError(s, guildSettings.BotLog, err)
+				common.LogError(s, guildSettings.BotLog, err)
 				return
 			}
 			return
 		}
 	}
 
-	// Checks if user is in memberInfo and handles them
-	functionality.Mutex.Lock()
-	if _, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; !ok {
+	// Checks if user is in memberInfo and fetches them
+	mem := db.GetGuildMember(m.GuildID, userID)
+	if err != nil {
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		return
+	} else if mem == nil {
+		var user *discordgo.User
+
 		if userMem != nil {
-			// Initializes user if he doesn't exist in memberInfo but is in server
-			functionality.InitializeMember(userMem, m.GuildID)
-		}
-	}
-
-	// Handles user if he's not in the server
-	if userMem == nil {
-		functionality.Mutex.Unlock()
-		user, err = s.User(userID)
-		if err != nil {
-			_, err = s.ChannelMessageSend(m.ChannelID, "Error: Cannot get this user. Cannot mute.")
+			user = userMem.User
+		} else {
+			user, err = s.User(userID)
 			if err != nil {
-				functionality.LogError(s, guildSettings.BotLog, err)
+				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in the server, internal database and cannot fetch manually either. Cannot mute until user joins the server.")
+				if err != nil {
+					common.LogError(s, guildSettings.BotLog, err)
+					return
+				}
 				return
 			}
+		}
+
+		// Initializes user if he doesn't exist in memberInfo but is in server
+		functionality.InitializeUser(user, m.GuildID)
+
+		mem = db.GetGuildMember(m.GuildID, userID)
+		if mem == nil {
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, fmt.Errorf("error: member object is empty"))
 			return
 		}
-		functionality.Mutex.Lock()
 	}
 
 	// Adds mute date to memberInfo and checks if perma
-	functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Mutes = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Mutes, reason)
-	UnmuteDate, perma, err := functionality.ResolveTimeFromString(length)
+	mem.AppendToMutes(reason)
+	UnmuteDate, perma, err := common.ResolveTimeFromString(length)
 	if err != nil {
-		functionality.Mutex.Unlock()
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid time given.")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -157,57 +159,54 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 		perma = true
 	}
 	if !perma {
-		functionality.GuildMap[m.GuildID].MemberInfoMap[userID].UnmuteDate = UnmuteDate.Format("2006-01-02 15:04:05.999999999 -0700 MST")
+		mem.SetUnmuteDate(UnmuteDate.Format(common.LongDateFormat))
 	} else {
-		functionality.GuildMap[m.GuildID].MemberInfoMap[userID].UnmuteDate = "_Never_"
+		mem.SetUnmuteDate("_Never_")
 	}
 
 	// Adds timestamp for that mute
 	t, err := m.Timestamp.Parse()
 	if err != nil {
-		functionality.Mutex.Unlock()
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	muteTimestamp.Timestamp = t
-	muteTimestamp.Punishment = reason
-	muteTimestamp.Type = "Mute"
-	functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, &muteTimestamp)
+	muteTimestamp.SetTimestamp(t)
+	muteTimestamp.SetPunishment(reason)
+	muteTimestamp.SetPunishmentType("Mute")
+	mem.AppendToTimestamps(muteTimestamp)
 
-	// Writes to memberInfo.json
-	_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
+	// Write
+	db.SetGuildMember(m.GuildID, mem)
 
-	// Saves the details in temp
-	temp.ID = userID
+	// Saves the details in punishedUserObject
+	punishedUserObject.SetID(userID)
 	if userMem != nil {
-		temp.User = userMem.User.Username
+		punishedUserObject.SetUsername(userMem.User.Username)
 	} else {
-		temp.User = user.Username
+		punishedUserObject.SetUsername(mem.GetUsername())
 	}
 
 	if perma {
-		temp.UnmuteDate = time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local)
+		punishedUserObject.SetUnmuteDate(time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local))
 	} else {
-		temp.UnmuteDate = UnmuteDate
+		unmuteDate, err := time.Parse(common.LongDateFormat, UnmuteDate.Format(common.LongDateFormat))
+		if err != nil {
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			return
+		}
+		punishedUserObject.SetUnmuteDate(unmuteDate)
 	}
 
 	// Adds or updates the now muted user in PunishedUsers
-	for index, val := range functionality.GuildMap[m.GuildID].PunishedUsers {
-		if val.ID == userID {
-			temp.UnbanDate = val.UnbanDate
-			functionality.GuildMap[m.GuildID].PunishedUsers[index] = &temp
-			punishedUserExists = true
-		}
+	err = db.SetGuildPunishedUser(m.GuildID, punishedUserObject)
+	if err != nil {
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		return
 	}
-	if !punishedUserExists {
-		functionality.GuildMap[m.GuildID].PunishedUsers = append(functionality.GuildMap[m.GuildID].PunishedUsers, &temp)
-	}
-	_ = functionality.PunishedUsersWrite(functionality.GuildMap[m.GuildID].PunishedUsers, m.GuildID)
-	functionality.Mutex.Unlock()
 
 	// Parses how long is left of the mute
 	now := time.Now()
-	remainingUnformatted := temp.UnmuteDate.Sub(now)
+	remainingUnformatted := punishedUserObject.GetUnmuteDate().Sub(now)
 	if remainingUnformatted.Hours() < 1 {
 		remaining = strconv.FormatFloat(remainingUnformatted.Minutes(), 'f', 0, 64) + " minutes"
 	} else if remainingUnformatted.Hours() < 24 {
@@ -219,19 +218,18 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Pulls the guild name
 	guild, err := s.Guild(m.GuildID)
 	if err != nil {
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
 	// Assigns success mute print string for user
 	if perma && m.GuildID == "267799767843602452" {
-		success = "You have been muted from " + guild.Name + ": **" + reason + "**\n\nUntil: _Forever_ \n\nIf you would like to appeal, use modmail at <https://reddit.com/r/anime>"
+		success = fmt.Sprintf("You have been muted on **%s**:\n`%s`\n\nUntil: `Forever`\n\nIf you would like to appeal, use modmail at <https://reddit.com/r/anime>", guild.Name, reason)
 	} else if perma {
-		success = "You have been muted from " + guild.Name + ": **" + reason + "**\n\nUntil: _Forever_"
+		success = fmt.Sprintf("You have been muted on **%s**:\n`%s`\n\nUntil: `Forever`", guild.Name, reason)
 	} else {
 		z, _ := time.Now().Zone()
-		success = "You have been muted from " + guild.Name + ": **" + reason + "**\n\nUntil: _" + UnmuteDate.Format("2006-01-02 15:04:05") + " " + z + "_\n" +
-			"Remaining: " + remaining
+		success = fmt.Sprintf("You have been muted on **%s**:\n`%s`\n\nUntil: `%s` %s\nRemaining: `%s`", guild.Name, reason, UnmuteDate.Format("2006-01-02 15:04:05"), z, remaining)
 	}
 
 	// Checks if the muted role is set and gives it to the user. If it's not then tries to find a muted role on its own
@@ -242,7 +240,7 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Pulls info on server roles
 		deb, err := s.GuildRoles(m.GuildID)
 		if err != nil {
-			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 
@@ -257,9 +255,9 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if !gaveRole {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: This server does not have a set muted role. Please use `%ssetmuted [Role ID]` before trying this command again.", guildSettings.Prefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: This server does not have a set muted role. Please use `%ssetmuted [Role ID]` before trying this command again.", guildSettings.GetPrefix()))
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -270,46 +268,31 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 	_, _ = s.ChannelMessageSend(dm.ID, success)
 
 	// Sends embed channel message
-	if userMem != nil {
-		err = functionality.MuteEmbed(s, m, userMem.User, reason, UnmuteDate, perma, m.ChannelID)
-		if err != nil {
-			return
-		}
-	} else {
-		err = functionality.MuteEmbed(s, m, user, reason, UnmuteDate, perma, m.ChannelID)
-		if err != nil {
-			return
-		}
+	if userMem == nil {
+		userMem = &discordgo.Member{GuildID: m.GuildID, User: &discordgo.User{ID: mem.GetID(), Username: mem.GetUsername(), Discriminator: mem.GetDiscrim()}}
+	}
+
+	err = embeds.PunishmentAddition(s, m, userMem, "mute", "muted", reason, m.ChannelID, &UnmuteDate, perma)
+	if err != nil {
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		return
 	}
 
 	// Sends embed bot-log message
-	if userMem != nil {
-		if guildSettings.BotLog == nil {
-			return
-		}
-		if guildSettings.BotLog.ID == "" {
-			return
-		}
-		err = functionality.MuteEmbed(s, m, userMem.User, reason, UnmuteDate, perma, guildSettings.BotLog.ID)
-		if err != nil {
-			return
-		}
-	} else {
-		if guildSettings.BotLog == nil {
-			return
-		}
-		if guildSettings.BotLog.ID == "" {
-			return
-		}
-		err = functionality.MuteEmbed(s, m, user, reason, UnmuteDate, perma, guildSettings.BotLog.ID)
-		if err != nil {
-			return
-		}
+	if guildSettings.BotLog == nil {
+		return
+	}
+	if guildSettings.BotLog.GetID() == "" {
+		return
+	}
+	err = embeds.PunishmentAddition(s, m, userMem, "mute", "muted", reason, guildSettings.BotLog.GetID(), &UnmuteDate, perma)
+	if err != nil {
+		return
 	}
 }
 
 func init() {
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute:    muteCommand,
 		Trigger:    "mute",
 		Aliases:    []string{"m", "muted", "shut"},

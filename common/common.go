@@ -1,11 +1,18 @@
-package functionality
+package common
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
+	"io"
+	"log"
 	"math"
 	"net/http"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -13,15 +20,14 @@ import (
 	"unicode"
 
 	"github.com/bwmarrin/discordgo"
-
-	"github.com/r-anime/ZeroTsu/config"
 )
 
 // File for misc. functions, commands and variables.
 
 const (
-	UserAgent  = "script:github.com/r-anime/zerotsu:v1.0.0 (by /u/thechosenapiks, /u/geo1088)"
-	DateFormat = "2006-01-02"
+	UserAgent       = "script:github.com/r-anime/zerotsu:v1.0.0 (by /u/thechosenapiks, /u/geo1088)"
+	ShortDateFormat = "2006-01-02"
+	LongDateFormat  = "2006-01-02 15:04:05.999999999 -0700 MST"
 )
 
 var (
@@ -30,7 +36,7 @@ var (
 
 	StartTime time.Time
 
-	ZeroTimeValue = time.Time{}
+	NilTime = time.Time{}
 )
 
 // Sorts roles alphabetically
@@ -123,18 +129,13 @@ func (c *UserAgentTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 }
 
 // Every time a role is deleted it deletes it from SpoilerMap
-func ListenForDeletedRoleHandler(s *discordgo.Session, g *discordgo.GuildRoleDelete) {
-
-	HandleNewGuild(s, g.GuildID)
-
-	Mutex.Lock()
-	defer Mutex.Unlock()
-	if GuildMap[g.GuildID].SpoilerMap[g.RoleID] == nil {
+func ListenForDeletedRoleHandler(_ *discordgo.Session, g *discordgo.GuildRoleDelete) {
+	entities.HandleNewGuild(g.GuildID)
+	err := db.SetGuildSpoilerRole(g.GuildID, &discordgo.Role{ID: g.RoleID}, true)
+	if err != nil {
+		log.Println(err)
 		return
 	}
-
-	delete(GuildMap[g.GuildID].SpoilerMap, g.RoleID)
-	SpoilerRolesDelete(g.RoleID, g.GuildID)
 }
 
 // ResolveTimeFromString resolves a time (usually for unbanning) from a given string formatted #w#d#h#m.
@@ -175,81 +176,77 @@ func ResolveTimeFromString(given string) (ret time.Time, perma bool, err error) 
 
 // Resolves a userID from a userID, Mention or username#discrim
 func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
-
 	if len(messageSlice) < 2 {
-		return "", fmt.Errorf("Error: No @user, userID or username#discrim detected")
+		return "", fmt.Errorf("Error: No @user, userID or username#discrim detected.")
 	}
 
-	// Pulls the userID from the second parameter
-	userID := messageSlice[1]
+	// Pulls the userArgument from the second parameter
+	userArgument := strings.ToLower(messageSlice[1])
 
-	// Handles "me" string on whois
-	if strings.ToLower(userID) == "me" {
-		userID = m.Author.ID
+	// Handles "me" parameter on whois
+	if strings.ToLower(userArgument) == "me" {
+		userArgument = m.Author.ID
 	}
-	// Handles userID if it was in reddit username format
-	if strings.Contains(userID, "/u/") {
-		exists := false
-		userID = strings.TrimPrefix(userID, "/u/")
-		Mutex.RLock()
-		for _, user := range GuildMap[m.GuildID].MemberInfoMap {
-			if strings.ToLower(user.RedditUsername) == userID {
-				userID = user.ID
+
+	// Handles userArgument if it was in reddit username format
+	if strings.Contains(userArgument, "/u/") || strings.Contains(userArgument, "u/") {
+		var exists bool
+		userArgument = strings.TrimPrefix(strings.TrimPrefix(userArgument, "/u/"), "u/")
+
+		guildMemberInfo := db.GetGuildMemberInfo(m.GuildID)
+		for _, user := range guildMemberInfo {
+			if user == nil {
+				continue
+			}
+
+			if strings.ToLower(user.GetRedditUsername()) == userArgument {
+				userArgument = user.GetID()
 				exists = true
 				break
 			}
 		}
-		Mutex.RUnlock()
 
 		if !exists {
-			return userID, fmt.Errorf("Error: This reddit user is not in the internal database. Cannot whois")
+			return userArgument, fmt.Errorf("Error: This reddit user is not in the internal database. Try using an ID.")
 		}
 	}
-	if strings.Contains(userID, "u/") {
-		exists := false
-		userID = strings.TrimPrefix(userID, "u/")
-		Mutex.RLock()
-		for _, user := range GuildMap[m.GuildID].MemberInfoMap {
-			if strings.ToLower(user.RedditUsername) == userID {
-				userID = user.ID
-				exists = true
-				break
-			}
-		}
-		Mutex.RUnlock()
 
-		if !exists {
-			return userID, fmt.Errorf("Error: This reddit user is not in the internal database. Cannot whois")
-		}
-	}
-	// Handles userID if it was username#discrim format
-	if strings.Contains(userID, "#") {
-		splitUser := strings.SplitN(userID, "#", 2)
+	// Handles userArgument if it was username#discrim format
+	if strings.Contains(userArgument, "#") {
+		var exists bool
+		splitUser := strings.SplitN(userArgument, "#", 2)
 		if len(splitUser) < 2 {
-			return userID, fmt.Errorf("Error: Invalid user. You're trying to username#discrim with spaces in the username." +
-				" This command does not support that. Please use an ID")
+			return userArgument, fmt.Errorf("Error: Invalid user. You're trying to username#discrim with spaces in the username." +
+				" This command does not support that. Please use a valid ID instead.")
 		}
-		Mutex.RLock()
-		for _, user := range GuildMap[m.GuildID].MemberInfoMap {
-			if strings.ToLower(user.Username) == splitUser[0] && user.Discrim == splitUser[1] {
-				userID = user.ID
+
+		guildMemberInfo := db.GetGuildMemberInfo(m.GuildID)
+		for _, user := range guildMemberInfo {
+			if strings.ToLower(user.GetUsername()) == splitUser[0] && user.GetDiscrim() == splitUser[1] {
+				userArgument = user.GetID()
+				exists = true
 				break
 			}
 		}
-		Mutex.RUnlock()
+
+		if !exists {
+			return userArgument, fmt.Errorf("Error: This username#discrim value is not in the internal database. Try using an ID.")
+		}
 	}
 
 	// Trims fluff if it was a mention. Otherwise check if it's a correct user ID
 	if strings.Contains(messageSlice[1], "<@") {
-		userID = strings.TrimPrefix(userID, "<@")
-		userID = strings.TrimPrefix(userID, "!")
-		userID = strings.TrimSuffix(userID, ">")
+		userArgument = strings.TrimPrefix(userArgument, "<@")
+		userArgument = strings.TrimPrefix(userArgument, "!")
+		userArgument = strings.TrimSuffix(userArgument, ">")
 	}
-	_, err := strconv.ParseInt(userID, 10, 64)
-	if len(userID) < 17 || err != nil {
-		return userID, fmt.Errorf("Error: Cannot parse user")
+
+	_, err := strconv.ParseInt(userArgument, 10, 64)
+	if len(userArgument) < 17 || err != nil {
+		return userArgument, fmt.Errorf("Error: Cannot parse user.")
 	}
-	return userID, nil
+
+	return userArgument, nil
 }
 
 // Mentions channel by *discordgo.Channel. By Kagumi
@@ -263,28 +260,23 @@ func ChMentionID(channelID string) string {
 }
 
 // Sends error message to channel command is in. If that throws an error send error message to bot log channel
-func CommandErrorHandler(s *discordgo.Session, m *discordgo.Message, botLog *Cha, err error) {
+func CommandErrorHandler(s *discordgo.Session, m *discordgo.Message, botLog *entities.Cha, err error) {
 	_, err = s.ChannelMessageSend(m.ChannelID, err.Error())
 	if err != nil {
-		if botLog == nil {
+		if botLog == nil || botLog.GetID() == "" {
 			return
 		}
-		if botLog.ID == "" {
+		if _, ok := err.(*discordgo.RESTError); ok && err.(*discordgo.RESTError).Response.Status == "500: Internal Server Error" {
 			return
-		}
-		if _, ok := err.(*discordgo.RESTError); ok {
-			if err.(*discordgo.RESTError).Response.Status == "500: Internal Server Error" {
-				return
-			}
 		}
 
-		_, _ = s.ChannelMessageSend(botLog.ID, err.Error())
+		_, _ = s.ChannelMessageSend(botLog.GetID(), err.Error())
 	}
 }
 
 // Logs the error in the guild BotLog
-func LogError(s *discordgo.Session, botLog *Cha, err error) {
-	if botLog == nil || botLog.ID == "" {
+func LogError(s *discordgo.Session, botLog *entities.Cha, err error) {
+	if botLog == nil || botLog.GetID() == "" {
 		return
 	}
 
@@ -295,7 +287,7 @@ func LogError(s *discordgo.Session, botLog *Cha, err error) {
 		}
 	}
 
-	_, _ = s.ChannelMessageSend(botLog.ID, err.Error())
+	_, _ = s.ChannelMessageSend(botLog.GetID(), err.Error())
 }
 
 // SplitLongMessage takes a message and splits it if it's longer than 1900
@@ -319,13 +311,6 @@ func SplitLongMessage(message string) (split []string) {
 		split[0] = message
 	}
 	return
-}
-
-// Returns a string that shows where the error occurred exactly
-func ErrorLocation(err error) string {
-	_, file, line, _ := runtime.Caller(1)
-	errorLocation := fmt.Sprintf("Error is in file [%v] near line %v", file, line)
-	return errorLocation
 }
 
 // Finds out how many users have the role and returns that number
@@ -371,16 +356,20 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 		mentionRegex := regexp.MustCompile(`(?m)<@!?\d+>`)
 		userMentionCheck = mentionRegex.FindAllString(m, -1)
 		if userMentionCheck != nil {
-			var wg sync.WaitGroup
-			if len(userMentionCheck) != 0 {
-				wg.Add(len(userMentionCheck))
+			if len(userMentionCheck) == 0 {
+				return m
 			}
+
+			var wg sync.WaitGroup
+			wg.Add(len(userMentionCheck))
+
+			mem := db.GetGuildMember(guildID, userID)
 
 			for _, mention := range userMentionCheck {
 				go func(mention string) {
 					defer wg.Done()
 
-					if len(GuildMap[guildID].MemberInfoMap) != 0 {
+					if len(entities.Guilds.DB[guildID].GetMemberInfoMap()) != 0 {
 						return
 					}
 
@@ -389,15 +378,12 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 					userID = strings.TrimSuffix(userID, ">")
 
 					// Checks first in memberInfo. Only checks serverside if it doesn't exist. Saves performance
-					Mutex.RLock()
-					if _, ok := GuildMap[guildID].MemberInfoMap[userID]; ok {
-						mentions += " " + strings.ToLower(GuildMap[guildID].MemberInfoMap[userID].Nickname)
-						Mutex.RUnlock()
+					if mem != nil && mem.GetID() != "" {
+						mentions += " " + strings.ToLower(mem.GetNickname())
 						return
 					}
-					Mutex.RUnlock()
 
-					// If user wasn't found in memberInfo with that username+discrim combo then fetch manually from Discord
+					// If user wasn't found in memberInfo then fetch manually from Discord
 					user, err := s.State.Member(guildID, userID)
 					if err != nil {
 						user, err = s.GuildMember(guildID, userID)
@@ -419,10 +405,12 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 		channelMentionRegex := regexp.MustCompile(`(?m)(<#\d+>)`)
 		channelMentionCheck = channelMentionRegex.FindAllString(m, -1)
 		if channelMentionCheck != nil {
-			var wg sync.WaitGroup
-			if len(channelMentionCheck) != 0 {
-				wg.Add(len(channelMentionCheck))
+			if len(channelMentionCheck) == 0 {
+				return m
 			}
+
+			var wg sync.WaitGroup
+			wg.Add(len(channelMentionCheck))
 
 			for _, mention := range channelMentionCheck {
 				go func(mention string) {
@@ -473,11 +461,7 @@ func ChannelParser(s *discordgo.Session, channel string, guildID string) (string
 	// Find the channelID if it doesn't exists via channel name, else find the channel name
 	channels, err := s.GuildChannels(guildID)
 	if err != nil {
-
-		Mutex.RLock()
-		guildSettings := GuildMap[guildID].GetGuildSettings()
-		Mutex.RUnlock()
-
+		guildSettings := db.GetGuildSettings(guildID)
 		LogError(s, guildSettings.BotLog, err)
 		return channelID, channelName
 	}
@@ -521,11 +505,7 @@ func CategoryParser(s *discordgo.Session, category string, guildID string) (stri
 	// Find the categoryID if it doesn't exists via category name, else find the category name
 	channels, err := s.GuildChannels(guildID)
 	if err != nil {
-
-		Mutex.RLock()
-		guildSettings := GuildMap[guildID].GetGuildSettings()
-		Mutex.RUnlock()
-
+		guildSettings := db.GetGuildSettings(guildID)
 		LogError(s, guildSettings.BotLog, err)
 		return categoryID, categoryName
 	}
@@ -572,11 +552,7 @@ func RoleParser(s *discordgo.Session, role string, guildID string) (string, stri
 	// Find the roleID if it doesn't exists via role name, else find the role name
 	roles, err := s.GuildRoles(guildID)
 	if err != nil {
-
-		Mutex.RLock()
-		guildSettings := GuildMap[guildID].GetGuildSettings()
-		Mutex.RUnlock()
-
+		guildSettings := db.GetGuildSettings(guildID)
 		LogError(s, guildSettings.BotLog, err)
 		return roleID, roleName
 	}
@@ -632,15 +608,13 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 		return err
 	}
 
-	Mutex.RLock()
-	guildSettings := GuildMap[guildID].GetGuildSettings()
-	Mutex.RUnlock()
+	guildSettings := db.GetGuildSettings(guildID)
 
 	// Checks if optins exist
-	if guildSettings.OptInUnder != nil {
-		if guildSettings.OptInUnder.ID != "" {
+	if guildSettings.GetOptInUnder() != nil {
+		if guildSettings.GetOptInUnder().GetID() != "" {
 			for _, role := range roles {
-				if role.ID == guildSettings.OptInUnder.ID {
+				if role.ID == guildSettings.GetOptInUnder().GetID() {
 					optInUnderExists = true
 					break
 				}
@@ -648,10 +622,10 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 		}
 	}
 
-	if guildSettings.OptInAbove != nil {
-		if guildSettings.OptInAbove.ID != "" {
+	if guildSettings.GetOptInAbove() != nil {
+		if guildSettings.GetOptInAbove().GetID() != "" {
 			for _, role := range roles {
-				if role.ID == guildSettings.OptInAbove.ID {
+				if role.ID == guildSettings.GetOptInAbove().GetID() {
 					optInAboveExists = true
 					break
 				}
@@ -665,13 +639,13 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 
 	// Handles opt-in-under
 	if !optInUnderExists {
-		var optIn Role
+		var optIn entities.Role
 
 		_, err := s.ChannelMessageSend(channelID, "Necessary opt-in-under role not detected. Trying to create it.")
 		if err != nil {
 			if guildSettings.BotLog != nil {
-				if guildSettings.BotLog.ID != "" {
-					_, _ = s.ChannelMessageSend(guildSettings.BotLog.ID, "Necessary opt-in-under role not detected. Trying to create it.")
+				if guildSettings.BotLog.GetID() != "" {
+					_, _ = s.ChannelMessageSend(guildSettings.BotLog.GetID(), "Necessary opt-in-under role not detected. Trying to create it.")
 				}
 			}
 		}
@@ -688,22 +662,22 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 		}
 
 		// Sets values
-		optIn.ID = role.ID
-		optIn.Name = role.Name
-		optIn.Position = 5
+		optIn.SetID(role.ID)
+		optIn.SetName(role.Name)
+		optIn.SetPosition(5)
 
 		// Saves the new opt-in guild data
-		guildSettings.OptInUnder = &optIn
+		guildSettings.SetOptInUnder(&optIn)
 	}
 	// Handles opt-in-above
 	if !optInAboveExists {
-		var optIn Role
+		var optIn entities.Role
 
 		_, err := s.ChannelMessageSend(channelID, "Necessary opt-in-above role not detected. Trying to create it.")
 		if err != nil {
 			if guildSettings.BotLog != nil {
-				if guildSettings.BotLog.ID != "" {
-					_, _ = s.ChannelMessageSend(guildSettings.BotLog.ID, "Necessary opt-in-above role not detected. Trying to create it.")
+				if guildSettings.BotLog.GetID() != "" {
+					_, _ = s.ChannelMessageSend(guildSettings.BotLog.GetID(), "Necessary opt-in-above role not detected. Trying to create it.")
 				}
 			}
 		}
@@ -720,12 +694,12 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 		}
 
 		// Sets values
-		optIn.ID = role.ID
-		optIn.Name = role.Name
-		optIn.Position = 2
+		optIn.SetID(role.ID)
+		optIn.SetName(role.Name)
+		optIn.SetPosition(2)
 
 		// Saves the new opt-in guild data
-		guildSettings.OptInAbove = &optIn
+		guildSettings.SetOptInAbove(&optIn)
 	}
 
 	// Reorders the optin roles with space inbetween them
@@ -735,11 +709,11 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 	}
 
 	for i, role := range deb {
-		if role.ID == guildSettings.OptInUnder.ID {
-			deb[i].Position = guildSettings.OptInUnder.Position
+		if role.ID == guildSettings.GetOptInUnder().GetID() {
+			deb[i].Position = guildSettings.GetOptInUnder().GetPosition()
 		}
-		if role.ID == guildSettings.OptInAbove.ID {
-			deb[i].Position = guildSettings.OptInAbove.Position
+		if role.ID == guildSettings.GetOptInAbove().GetID() {
+			deb[i].Position = guildSettings.GetOptInAbove().GetPosition()
 		}
 	}
 
@@ -748,38 +722,61 @@ func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 		return err
 	}
 
-	Mutex.Lock()
-	GuildMap[guildID].GuildConfig = guildSettings
-	_ = GuildSettingsWrite(GuildMap[guildID].GuildConfig, guildID)
-	Mutex.Unlock()
+	db.SetGuildSettings(guildID, guildSettings)
 
 	return err
 }
 
-// Replaces all instances of spaces in a string with hyphens
-func RemoveSpaces(str string) string {
-	return strings.Replace(str, " ", "-", -1)
-}
+// Encrypt string to base64 crypto using AES
+func Encrypt(key []byte, text string) string {
+	// key := []byte(keyText)
+	plaintext := []byte(text)
 
-// Replaces all instances of hyphens in a string with spaces
-func RemoveHyphens(str string) string {
-	return strings.Replace(str, "-", " ", -1)
-}
-
-// GetGuildSettings returns either the redis instance guild settings or the in-memory guild settings depending on whether Redis is enabled
-func GetGuildSettings(guildID string) (*GuildSettings, error) {
-	var guildSettings *GuildSettings
-
-	if config.Redis {
-		guildSettings, _ = GetRedisGuildSettings(guildID)
-	} else {
-		Mutex.RLock()
-		guildSettings = GuildMap[guildID].GetGuildSettings()
-		Mutex.RUnlock()
-	}
-	if guildSettings == nil {
-		return nil, fmt.Errorf("error: no guild settings found")
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		log.Println(err)
+		return ""
 	}
 
-	return guildSettings, nil
+	// The IV needs to be unique, but not secure. Therefore it's common to
+	// include it at the beginning of the ciphertext.
+	ciphertext := make([]byte, aes.BlockSize+len(plaintext))
+	iv := ciphertext[:aes.BlockSize]
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		log.Println(err)
+		return ""
+	}
+
+	stream := cipher.NewCFBEncrypter(block, iv)
+	stream.XORKeyStream(ciphertext[aes.BlockSize:], plaintext)
+
+	// convert to base64
+	return base64.URLEncoding.EncodeToString(ciphertext)
+}
+
+// Decrypt from base64 to decrypted string
+func Decrypt(key []byte, cryptoText string) (string, bool) {
+	ciphertext, _ := base64.URLEncoding.DecodeString(cryptoText)
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		log.Println(err)
+		return "", false
+	}
+
+	// The IV needs to be unique, but not secure. Therefore it's common to
+	// include it at the beginning of the ciphertext.
+	if len(ciphertext) < aes.BlockSize {
+		log.Println("ciphertext too short")
+		return "", false
+	}
+	iv := ciphertext[:aes.BlockSize]
+	ciphertext = ciphertext[aes.BlockSize:]
+
+	stream := cipher.NewCFBDecrypter(block, iv)
+
+	// XORKeyStream can work in-place if the two arguments are the same.
+	stream.XORKeyStream(ciphertext, ciphertext)
+
+	return fmt.Sprintf("%s", ciphertext), true
 }

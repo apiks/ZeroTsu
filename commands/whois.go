@@ -2,6 +2,9 @@ package commands
 
 import (
 	"fmt"
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
 	"strconv"
 	"strings"
 	"time"
@@ -18,244 +21,255 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	var (
 		pastUsernames string
 		pastNicknames string
-		warnings      string
-		mutes         string
-		kicks         string
-		bans          string
-		unbanDate     string
+		warnings      []string
+		mutes         []string
+		kicks         []string
+		bans          []string
 		splitMessage  []string
 		isInsideGuild = true
 		creationDate  time.Time
+		messageBuilder strings.Builder
 	)
 
-	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.Mutex.RUnlock()
+	guildSettings := db.GetGuildSettings(m.GuildID)
+	cmdStrs := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
-	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
-
-	if len(commandStrings) < 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"whois [@user, userID, or username#discrim]`\n\n"+
+	if len(cmdStrs) < 2 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.GetPrefix()+"whois [@mem, userID, or username#discrim]`\n\n"+
 			"Note: this command supports username#discrim where username contains spaces.")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
-	userID, err := functionality.GetUserID(m, commandStrings)
+	userID, err := common.GetUserID(m, cmdStrs)
 	if err != nil {
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
 	// Fetches user from server if possible and sets whether they're inside the server
-	mem, err := s.State.Member(m.GuildID, userID)
+	userMem, err := s.State.Member(m.GuildID, userID)
 	if err != nil {
-		mem, err = s.GuildMember(m.GuildID, userID)
+		userMem, err = s.GuildMember(m.GuildID, userID)
 		if err != nil {
 			isInsideGuild = false
 		}
 	}
 
-	// Checks if user is in MemberInfo and assigns to user variable. Else initializes user.
-	functionality.Mutex.RLock()
-	_, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
-	if !ok {
-		functionality.Mutex.RUnlock()
+	// Checks if user is in memberInfo and fetches them
+	mem := db.GetGuildMember(m.GuildID, userID)
+	if mem == nil || mem.GetID() == "" {
+		var user *discordgo.User
 
-		if mem == nil {
-			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server and internal database. Cannot whois until user joins the server.")
+		if userMem != nil {
+			user = userMem.User
+		} else {
+			user, err = s.User(userID)
 			if err != nil {
-				functionality.LogError(s, guildSettings.BotLog, err)
+				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in the server, internal database and cannot fetch manually either. Cannot whois until user joins the server.")
+				if err != nil {
+					common.LogError(s, guildSettings.BotLog, err)
+					return
+				}
 				return
 			}
+		}
+
+		// Initializes user if he doesn't exist in memberInfo but is in server
+		functionality.InitializeUser(user, m.GuildID)
+
+		mem = db.GetGuildMember(m.GuildID, userID)
+		if mem == nil {
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, fmt.Errorf("error: member object is empty"))
 			return
 		}
-
-		// Initializes user if he doesn't exist and is in server
-		functionality.Mutex.Lock()
-		functionality.InitializeMember(mem, m.GuildID)
-		_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
-		functionality.Mutex.Unlock()
-		functionality.Mutex.RLock()
 	}
-	user := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
-	functionality.Mutex.RUnlock()
 
 	// Puts past usernames into a string
-	if len(user.PastUsernames) != 0 {
-		for i := 0; i < len(user.PastUsernames); i++ {
-			if len(pastUsernames) == 0 {
-				pastUsernames = user.PastUsernames[i]
-			} else {
-				pastUsernames = pastUsernames + ", " + user.PastUsernames[i]
-			}
-		}
+	if len(mem.GetPastUsernames()) != 0 {
+		pastUsernames = strings.Join(mem.GetPastUsernames(), ", ")
 	} else {
 		pastUsernames = "None"
 	}
 
 	// Puts past nicknames into a string
-	if len(user.PastNicknames) != 0 {
-		for i := 0; i < len(user.PastNicknames); i++ {
-			if len(pastNicknames) == 0 {
-				pastNicknames = user.PastNicknames[i]
-			} else {
-				pastNicknames = pastNicknames + ", " + user.PastNicknames[i]
-			}
-		}
+	if len(mem.GetPastNicknames()) != 0 {
+		pastNicknames = strings.Join(mem.GetPastNicknames(), ", ")
 	} else {
 		pastNicknames = "None"
 	}
 
 	// Puts warnings into a slice
-	if len(user.Warnings) != 0 {
-		for i := 0; i < len(user.Warnings); i++ {
-			if len(warnings) == 0 {
-				// Converts index to string and appends warning
-				iStr := strconv.Itoa(i + 1)
-				warnings = user.Warnings[i] + " [" + iStr + "]"
-			} else {
-				// Converts index to string and appends new warning to old ones
-				iStr := strconv.Itoa(i + 1)
-				warnings = warnings + ", " + user.Warnings[i] + " [" + iStr + "]"
+	if len(mem.GetWarnings()) != 0 {
+		for i, warning := range mem.GetWarnings() {
+			var warningBuilder strings.Builder
+			iStr := strconv.Itoa(i + 1)
 
-			}
+			warningBuilder.WriteString(warning)
+			warningBuilder.WriteString(" [")
+			warningBuilder.WriteString(iStr)
+			warningBuilder.WriteString("]")
+			warnings = append(warnings, warningBuilder.String())
 		}
 	} else {
-		warnings = "None"
+		warnings = append(warnings, "None")
 	}
 
 	// Puts mutes into a slice
-	if len(user.Mutes) != 0 {
-		for i := 0; i < len(user.Mutes); i++ {
-			if len(mutes) == 0 {
-				// Converts index to string and appends warning
-				iStr := strconv.Itoa(i + 1)
-				mutes = user.Mutes[i] + " [" + iStr + "]"
-			} else {
-				// Converts index to string and appends new warning to old ones
-				iStr := strconv.Itoa(i + 1)
-				mutes = mutes + ", " + user.Mutes[i] + " [" + iStr + "]"
+	if len(mem.GetMutes()) != 0 {
+		for i, mute := range mem.GetMutes() {
+			var muteBuilder strings.Builder
+			iStr := strconv.Itoa(i + 1)
 
-			}
+			muteBuilder.WriteString(mute)
+			muteBuilder.WriteString(" [")
+			muteBuilder.WriteString(iStr)
+			muteBuilder.WriteString("]")
+			mutes = append(mutes, muteBuilder.String())
 		}
 	} else {
-		mutes = "None"
+		mutes = append(mutes, "None")
 	}
 
 	// Puts kicks into a slice
-	if len(user.Kicks) != 0 {
-		for i := 0; i < len(user.Kicks); i++ {
-			if len(kicks) == 0 {
-				// Converts index to string and appends kick
-				iStr := strconv.Itoa(i + 1)
-				kicks = user.Kicks[i] + " [" + iStr + "]"
-			} else {
-				// Converts index to string and appends new kick to old ones
-				iStr := strconv.Itoa(i + 1)
-				kicks = kicks + ", " + user.Kicks[i] + " [" + iStr + "]"
-			}
+	if len(mem.GetKicks()) != 0 {
+		for i, kick := range mem.GetKicks() {
+			var kickBuilder strings.Builder
+			iStr := strconv.Itoa(i + 1)
+
+			kickBuilder.WriteString(kick)
+			kickBuilder.WriteString(" [")
+			kickBuilder.WriteString(iStr)
+			kickBuilder.WriteString("]")
+			kicks = append(kicks, kickBuilder.String())
 		}
 	} else {
-		kicks = "None"
+		kicks = append(kicks, "None")
 	}
 
 	// Puts bans into a slice
-	if len(user.Bans) != 0 {
-		for i := 0; i < len(user.Bans); i++ {
-			if len(bans) == 0 {
-				// Converts index to string and appends ban
-				iStr := strconv.Itoa(i + 1)
-				bans = user.Bans[i] + " [" + iStr + "]"
-			} else {
-				// Converts index to string and appends new ban to old ones
-				iStr := strconv.Itoa(i + 1)
-				bans = bans + ", " + user.Bans[i] + " [" + iStr + "]"
-			}
+	if len(mem.GetBans()) != 0 {
+		for i, ban := range mem.GetBans() {
+			var banBuilder strings.Builder
+			iStr := strconv.Itoa(i + 1)
+
+			banBuilder.WriteString(ban)
+			banBuilder.WriteString(" [")
+			banBuilder.WriteString(iStr)
+			banBuilder.WriteString("]")
+			bans = append(bans, banBuilder.String())
 		}
 	} else {
-		bans = "None"
-	}
-
-	// Puts unban Date into a separate string variable
-	unbanDate = user.UnbanDate
-	if unbanDate == "" {
-		unbanDate = "No Ban"
+		bans = append(bans, "None")
 	}
 
 	// Fetches account creation time
-	creationDate, err = functionality.CreationTime(userID)
+	creationDate, err = common.CreationTime(userID)
 	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
+		common.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 
 	// Sets whois message
-	message := "**User:** " + user.Username + "#" + user.Discrim + " | **ID:** " + user.ID +
-		"\n\n**Past Usernames:** " + pastUsernames +
-		"\n\n**Past Nicknames:** " + pastNicknames + "\n\n**Warnings:** " + warnings +
-		"\n\n**Mutes:** " + mutes +
-		"\n\n**Kicks:** " + kicks + "\n\n**Bans:** " + bans +
-		"\n\n**Join Date:** " + user.JoinDate
+	messageBuilder.WriteString("**User:** ")
+	messageBuilder.WriteString(mem.GetUsername())
+	messageBuilder.WriteString("#")
+	messageBuilder.WriteString(mem.GetDiscrim())
+	messageBuilder.WriteString(" | **ID:** ")
+	messageBuilder.WriteString(mem.GetID())
+	messageBuilder.WriteString("\n\n**Past Usernames:** ")
+	messageBuilder.WriteString(pastUsernames)
+	messageBuilder.WriteString("\n\n**Past Nicknames:** ")
+	messageBuilder.WriteString(pastNicknames)
+	messageBuilder.WriteString("\n\n**Warnings:** ")
+	messageBuilder.WriteString(strings.Join(warnings, ", "))
+	messageBuilder.WriteString("\n\n**Mutes:** ")
+	messageBuilder.WriteString(strings.Join(mutes, ", "))
+	messageBuilder.WriteString("\n\n**Kicks:** ")
+	messageBuilder.WriteString(strings.Join(kicks, ", "))
+	messageBuilder.WriteString("\n\n**Bans:** ")
+	messageBuilder.WriteString(strings.Join(bans, ", "))
+	messageBuilder.WriteString("\n\n**Join Date:** ")
+	messageBuilder.WriteString(mem.GetJoinDate())
 	if config.Website != "" {
-		message += "\n\n**Verification Date:** " + user.VerifiedDate
+		messageBuilder.WriteString("\n\n**Verification Date:** ")
+		messageBuilder.WriteString(mem.GetVerifiedDate())
 	}
-	message += "\n\n**Account Creation Date:** " + creationDate.String()
+	messageBuilder.WriteString("\n\n**Account Creation Date:** ")
+	messageBuilder.WriteString(creationDate.String())
 
 	// Sets reddit Username if it exists
 	if config.Website != "" {
-		if user.RedditUsername != "" {
-			message = message + "\n\n**Reddit Account:** " + "<https://reddit.com/u/" + user.RedditUsername + ">"
+		if mem.GetRedditUsername() != "" {
+			messageBuilder.WriteString("\n\n**Reddit Account:** <https://reddit.com/u/")
+			messageBuilder.WriteString(mem.GetRedditUsername())
+			messageBuilder.WriteString(">")
 		} else {
-			message += "\n\n**Reddit Account:** " + "None"
+			messageBuilder.WriteString("\n\n**Reddit Account:** None")
 		}
 	}
 
 	// Sets unban date if it exists
-	if user.UnbanDate != "" {
-		message += "\n\n**Unban Date:** " + user.UnbanDate
+	if mem.GetUnbanDate() != "" {
+		messageBuilder.WriteString("\n\n**Unban Date:** ")
+		messageBuilder.WriteString(mem.GetUnbanDate())
+	}
+
+	// Sets unmute date if it exists
+	if mem.GetUnmuteDate() != "" {
+		messageBuilder.WriteString("\n\n**Unmute Date:** ")
+		messageBuilder.WriteString(mem.GetUnmuteDate())
 	}
 
 	if !isInsideGuild {
-		message += "\n\n**_User is not in the server._**"
+		messageBuilder.WriteString("\n\n**_User is not in the server._**")
 	}
 
 	// Alt check
 	if config.Website != "" {
-		functionality.Mutex.RLock()
-		alts := CheckAltAccountWhois(userID, m.GuildID)
+		alts := CheckAltAccountWhois(m.GuildID, mem)
 
 		// If there's more than one account with the same reddit username add to whois message
 		if len(alts) > 1 {
+			var altsBuilder strings.Builder
 			// Forms the alts string
-			success := "\n\n**Alts:**\n"
+			altsBuilder.WriteString("\n\n**Alts:**\n")
 			for _, altID := range alts {
-				success += fmt.Sprintf("%s#%s | %s\n", functionality.GuildMap[m.GuildID].MemberInfoMap[altID].Username, functionality.GuildMap[m.GuildID].MemberInfoMap[altID].Discrim, altID)
+				alt := db.GetGuildMember(m.GuildID, altID)
+				if alt == nil || alt.GetID() == "" {
+					continue
+				}
+				altsBuilder.WriteString(alt.GetUsername())
+				altsBuilder.WriteString("#")
+				altsBuilder.WriteString(alt.GetDiscrim())
+				altsBuilder.WriteString(" | ")
+				altsBuilder.WriteString(altID)
+				altsBuilder.WriteString("\n")
 			}
 
 			// Adds the alts to the whois message
-			message += success
+			messageBuilder.WriteString(altsBuilder.String())
 			alts = nil
 		}
-		functionality.Mutex.RUnlock()
 	}
 
 	// Checks if the message contains a mention and finds the actual name instead of ID
-	message = functionality.MentionParser(s, message, m.GuildID)
+	message := messageBuilder.String()
+	message = common.MentionParser(s, message, m.GuildID)
 
 	// Splits the message if it's over 1900 characters
 	if len(message) > 1900 {
-		splitMessage = functionality.SplitLongMessage(message)
+		splitMessage = common.SplitLongMessage(message)
 	}
 
 	// Prints split or unsplit whois
 	if splitMessage == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -265,32 +279,42 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: cannot send whois message.")
 			if err != nil {
-				functionality.LogError(s, guildSettings.BotLog, err)
+				common.LogError(s, guildSettings.BotLog, err)
 				return
 			}
+			return
 		}
 	}
 }
 
 // Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Whois version
-func CheckAltAccountWhois(id string, guildID string) []string {
+func CheckAltAccountWhois(guildID string, user *entities.UserInfo) []string {
 
 	var alts []string
 
 	// Stops func if target reddit username is nil
-	if functionality.GuildMap[guildID].MemberInfoMap[id].RedditUsername == "" {
+	if user.GetRedditUsername() == "" {
 		return nil
 	}
 
 	// Iterates through all users in memberInfo.json
-	for _, user := range functionality.GuildMap[guildID].MemberInfoMap {
+	memberInfo := db.GetGuildMemberInfo(guildID)
+	if memberInfo == nil {
+		return nil
+	}
+
+	for _, memberInfoUser := range memberInfo {
+		if memberInfoUser == nil {
+			continue
+		}
+
 		// Skips iteration if iteration reddit username is nil
-		if user.RedditUsername == "" {
+		if user.GetRedditUsername() == "" {
 			continue
 		}
 		// Checks if the current user has the same reddit username as the entry parameter and adds to alts string slice if so
-		if user.RedditUsername == functionality.GuildMap[guildID].MemberInfoMap[id].RedditUsername {
-			alts = append(alts, user.ID)
+		if user.GetRedditUsername() == memberInfoUser.GetRedditUsername() {
+			alts = append(alts, user.GetID())
 		}
 	}
 	if len(alts) > 1 {
@@ -302,99 +326,107 @@ func CheckAltAccountWhois(id string, guildID string) []string {
 
 // Displays all punishments for that user with timestamps and type of punishment
 func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
-
 	var message string
 
-	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.Mutex.RUnlock()
+	guildSettings := db.GetGuildSettings(m.GuildID)
+	cmdStrs := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
-	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
-
-	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"timestamps [@user, userID, or username#discrim]`")
+	if len(cmdStrs) != 2 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.GetPrefix()+"timestamps [@user, userID, or username#discrim]`")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
-	userID, err := functionality.GetUserID(m, commandStrings)
+	userID, err := common.GetUserID(m, cmdStrs)
 	if err != nil {
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
-	// Checks if user is in MemberInfo and assigns to user variable. Else initializes user.
-	functionality.Mutex.RLock()
-	_, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
-	if !ok {
-		functionality.Mutex.RUnlock()
+	// Checks if user is in memberInfo and fetches them
+	mem := db.GetGuildMember(m.GuildID, userID)
+	if mem == nil || mem.GetID() == "" {
+		var user *discordgo.User
 
-		// Fetches user from server if possible
-		mem, err := s.State.Member(m.GuildID, userID)
+		// Fetches user from server if possible and sets whether they're inside the server
+		userMem, err := s.State.Member(m.GuildID, userID)
 		if err != nil {
-			mem, err = s.GuildMember(m.GuildID, userID)
+			userMem, _ = s.GuildMember(m.GuildID, userID)
+		}
+
+		if userMem != nil {
+			user = userMem.User
+		} else {
+			user, err = s.User(userID)
 			if err != nil {
-				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server and internal database. Cannot timestamp until they rejoin server.")
+				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in the server, internal database and cannot fetch manually either. Cannot timestamp until user joins the server.")
 				if err != nil {
-					functionality.LogError(s, guildSettings.BotLog, err)
+					common.LogError(s, guildSettings.BotLog, err)
 					return
 				}
 				return
 			}
 		}
 
-		// Initializes user if he doesn't exist and is in server
-		functionality.Mutex.Lock()
-		functionality.InitializeMember(mem, m.GuildID)
-		_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
-		functionality.Mutex.Unlock()
-		functionality.Mutex.RLock()
+		// Initializes user if he doesn't exist in memberInfo but is in server
+		functionality.InitializeUser(user, m.GuildID)
+
+		mem = db.GetGuildMember(m.GuildID, userID)
+		if err != nil || mem == nil {
+			if mem == nil && err == nil {
+				err = fmt.Errorf("error: member object is empty")
+			}
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			return
+		}
 	}
-	user := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
-	functionality.Mutex.RUnlock()
 
 	// Check if timestamps exist
-	if len(user.Timestamps) == 0 {
+	if len(mem.GetTimestamps()) == 0 {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: No saved timestamps for that user.")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Formats message
-	for _, timestamp := range user.Timestamps {
-		timezone, displacement := timestamp.Timestamp.Zone()
-		message += fmt.Sprintf("**%v:** `%v` - _%v %v %v, %v:%v:%v %v+%v_\n", timestamp.Type, timestamp.Punishment, timestamp.Timestamp.Day(),
-			timestamp.Timestamp.Month(), timestamp.Timestamp.Year(), timestamp.Timestamp.Hour(), timestamp.Timestamp.Minute(), timestamp.Timestamp.Second(), timezone, displacement)
+	for _, timestamp := range mem.GetTimestamps() {
+		if timestamp == nil {
+			continue
+		}
+
+		timezone, displacement := timestamp.GetTimestamp().Zone()
+		message += fmt.Sprintf("**%v:** `%v` - _%v %v %v, %v:%v:%v %v+%v_\n", timestamp.GetPunishmentType(), timestamp.GetPunishment(), timestamp.GetTimestamp().Day(),
+			timestamp.GetTimestamp().Month(), timestamp.GetTimestamp().Year(), timestamp.GetTimestamp().Hour(), timestamp.GetTimestamp().Minute(), timestamp.GetTimestamp().Second(), timezone, displacement)
 	}
 
 	// Splits messsage if too long
-	msgs := functionality.SplitLongMessage(message)
+	msgs := common.SplitLongMessage(message)
 
 	// Prints timestamps
 	for index := range msgs {
 		_, err = s.ChannelMessageSend(m.ChannelID, msgs[index])
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 	}
 }
 
 func init() {
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute:    whoisCommand,
 		Trigger:    "whois",
 		Desc:       "Print mod information about a user",
 		Permission: functionality.Mod,
 		Module:     "moderation",
 	})
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute:    showTimestampsCommand,
 		Trigger:    "timestamp",
 		Aliases:    []string{"timestamps"},

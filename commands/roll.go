@@ -2,26 +2,25 @@ package commands
 
 import (
 	"fmt"
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
 	"math/rand"
 	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-
-	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 // Rolls a number between 1 and a specified number (defaults to 100)
 func rollCommand(s *discordgo.Session, m *discordgo.Message) {
-
-	var guildSettings = &functionality.GuildSettings{
-		Prefix: ".",
-	}
+	var (
+		err           error
+		guildSettings = &entities.GuildSettings{Prefix: "."}
+	)
 
 	if m.GuildID != "" {
-		functionality.Mutex.RLock()
-		guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.Mutex.RUnlock()
+		guildSettings = db.GetGuildSettings(m.GuildID)
 	}
 
 	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
@@ -31,7 +30,7 @@ func rollCommand(s *discordgo.Session, m *discordgo.Message) {
 		randomNum := rand.Intn(99) + 1
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("**Rolled:** %d", randomNum))
 		if err != nil {
-			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -39,9 +38,9 @@ func rollCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Prints error if too many parameters
 	if len(commandStrings) > 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%sroll [number]`", guildSettings.Prefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%sroll [number]`", guildSettings.GetPrefix()))
 		if err != nil {
-			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -54,14 +53,14 @@ func rollCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err.(*strconv.NumError).Err == strconv.ErrRange {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: That number is too large. Please try a smaller one.")
 			if err != nil {
-				functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+				common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 				return
 			}
 			return
 		}
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid number.")
 		if err != nil {
-			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -71,7 +70,7 @@ func rollCommand(s *discordgo.Session, m *discordgo.Message) {
 	if num < 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid number. Please use a positive number.")
 		if err != nil {
-			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -81,13 +80,13 @@ func rollCommand(s *discordgo.Session, m *discordgo.Message) {
 	randomNum := rand.Intn(num) + 1
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("**Rolled:** %v", randomNum))
 	if err != nil {
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 }
 
 func init() {
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute: rollCommand,
 		Trigger: "roll",
 		Aliases: []string{"rol", "r"},

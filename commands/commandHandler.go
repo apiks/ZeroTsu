@@ -1,12 +1,13 @@
-package functionality
+package commands
 
 import (
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
+	"github.com/r-anime/ZeroTsu/functionality"
 	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-
-	"github.com/r-anime/ZeroTsu/config"
 )
 
 var (
@@ -20,7 +21,7 @@ type Command struct {
 	Aliases     []string
 	Desc        string
 	DeleteAfter bool
-	Permission  permission
+	Permission  functionality.Permission
 	Module      string
 	DMAble      bool
 }
@@ -41,10 +42,8 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			log.Println("Recovery in HandleCommand with message: " + m.Content)
 			if m.GuildID != "" {
 				log.Println("Guild ID: " + m.GuildID)
-				Mutex.RLock()
-				guildSettings := GuildMap[m.GuildID].GetGuildSettings()
-				Mutex.RUnlock()
-				log.Println(guildSettings.Prefix)
+				guildSettings := db.GetGuildSettings(m.GuildID)
+				log.Println(guildSettings.GetPrefix())
 			}
 		}
 	}()
@@ -100,24 +99,14 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 // Handles a command from a guild
 func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
-	HandleNewGuild(s, m.GuildID)
-	var guildSettings *GuildSettings
+	entities.HandleNewGuild(m.GuildID)
 
-	if config.Redis {
-		guildSettings, _ = GetRedisGuildSettings(m.GuildID)
-	} else {
-		Mutex.RLock()
-		guildSettings = GuildMap[m.GuildID].GetGuildSettings()
-		Mutex.RUnlock()
-	}
-	if guildSettings == nil {
+	guildSettings := db.GetGuildSettings(m.GuildID)
+
+	if len(m.Message.Content) <= len(guildSettings.GetPrefix()) || m.Message.Content[0:len(guildSettings.GetPrefix())] != guildSettings.GetPrefix() {
 		return
 	}
-
-	if len(m.Message.Content) <= len(guildSettings.Prefix) || m.Message.Content[0:len(guildSettings.Prefix)] != guildSettings.Prefix {
-		return
-	}
-	cmdTrigger := strings.Split(m.Content, " ")[0][len(guildSettings.Prefix):]
+	cmdTrigger := strings.Split(m.Content, " ")[0][len(guildSettings.GetPrefix()):]
 	cmdTrigger = strings.ToLower(cmdTrigger)
 	cmd, ok := CommandMap[cmdTrigger]
 	if !ok {
@@ -128,22 +117,22 @@ func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	if cmd.Trigger == "votecategory" ||
 		cmd.Trigger == "startvote" {
-		if !guildSettings.VoteModule {
+		if !guildSettings.GetVoteModule() {
 			return
 		}
 	}
 	if cmd.Module == "waifus" {
-		if !guildSettings.WaifuModule {
+		if !guildSettings.GetWaifuModule() {
 			return
 		}
 	}
 	if cmd.Module == "reacts" {
-		if !guildSettings.ReactsModule {
+		if !guildSettings.GetReactsModule() {
 			return
 		}
 	}
-	if cmd.Permission != User || guildSettings.ModOnly {
-		if !HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
+	if cmd.Permission != functionality.User || guildSettings.GetModOnly() {
+		if !functionality.HasElevatedPermissions(s, m.Author.ID, m.GuildID) {
 			return
 		}
 	}
@@ -159,18 +148,4 @@ func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 // Handles a command from DMs
 func handleDM(s *discordgo.Session, m *discordgo.MessageCreate) {
 
-}
-
-// Inits guild if it's not in memory
-func HandleNewGuild(s *discordgo.Session, guildID string) {
-	Mutex.RLock()
-	if _, ok := GuildMap[guildID]; !ok {
-		Mutex.RUnlock()
-		InitDB(s, guildID)
-		Mutex.Lock()
-		LoadGuild(guildID)
-		Mutex.Unlock()
-		return
-	}
-	Mutex.RUnlock()
 }

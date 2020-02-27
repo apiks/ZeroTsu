@@ -2,6 +2,9 @@ package commands
 
 import (
 	"fmt"
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
 	"log"
 	"sort"
 	"strings"
@@ -29,19 +32,18 @@ func OnMessageEmoji(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	functionality.HandleNewGuild(s, m.GuildID)
+	entities.HandleNewGuild(m.GuildID)
 
 	var saveFlag bool
 
-	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	guildEmojiStats := functionality.GuildMap[m.GuildID].EmojiStats
-	functionality.Mutex.RUnlock()
+	guildSettings := db.GetGuildSettings(m.GuildID)
+	guildEmojiStatsReference := db.GetGuildEmojiStats(m.GuildID)
+	guildEmojiStats := guildEmojiStatsReference
 
 	// Pulls the entire guild structure so we can check guild emojis from it later
 	guild, err := s.Guild(m.GuildID)
 	if err != nil {
-		functionality.CommandErrorHandler(s, m.Message, guildSettings.BotLog, err)
+		common.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 
@@ -56,30 +58,25 @@ func OnMessageEmoji(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		// If Emoji stat doesn't exist create it
 		if _, ok := guildEmojiStats[emoji.ID]; !ok {
-			guildEmojiStats[emoji.ID] = &functionality.Emoji{
-				ID:   emoji.ID,
-				Name: emoji.Name,
-			}
+			guildEmojiStats[emoji.ID] = entities.NewEmoji(emoji.ID, emoji.Name, 0, 0, 0)
 		}
 		// If it's missing ID or Name add it while preserving stats
-		if guildEmojiStats[emoji.ID].ID == "" || guildEmojiStats[emoji.ID].Name == "" {
+		if guildEmojiStats[emoji.ID].GetID() == "" || guildEmojiStats[emoji.ID].GetName() == "" {
 			emojiStat := guildEmojiStats[emoji.ID]
-			emojiStat.ID = emoji.ID
-			emojiStat.Name = emoji.Name
+			emojiStat.SetID(emoji.ID)
+			emojiStat.SetName(emoji.Name)
 			guildEmojiStats[emoji.ID] = emojiStat
 		}
 
 		// Adds to that emoji usage
-		guildEmojiStats[emoji.ID].MessageUsage += emojiCount
-		guildEmojiStats[emoji.ID].UniqueMessageUsage++
+		guildEmojiStats[emoji.ID].AddMessageUsage(emojiCount)
+		guildEmojiStats[emoji.ID].AddUniqueMessageUsage(1)
 
 		saveFlag = true
 	}
 
 	if saveFlag {
-		functionality.Mutex.Lock()
-		functionality.GuildMap[m.GuildID].EmojiStats = guildEmojiStats
-		functionality.Mutex.Unlock()
+		db.SetGuildEmojiStats(m.GuildID, guildEmojiStats)
 	}
 }
 
@@ -101,19 +98,18 @@ func OnMessageEmojiReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 		return
 	}
 
-	functionality.HandleNewGuild(s, r.GuildID)
+	entities.HandleNewGuild(r.GuildID)
 
 	var saveFlag bool
 
-	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[r.GuildID].GetGuildSettings()
-	guildEmojiStats := functionality.GuildMap[r.GuildID].EmojiStats
-	functionality.Mutex.RUnlock()
+	guildSettings := db.GetGuildSettings(r.GuildID)
+	guildEmojiStatsReference := db.GetGuildEmojiStats(r.GuildID)
+	guildEmojiStats := guildEmojiStatsReference
 
 	// Pulls the entire guild structure so we can check guild emojis from it later
 	guild, err := s.Guild(r.GuildID)
 	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
+		common.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 
@@ -125,29 +121,24 @@ func OnMessageEmojiReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 
 		// If Emoji stat doesn't exist create it
 		if _, ok := guildEmojiStats[emoji.ID]; !ok {
-			guildEmojiStats[emoji.ID] = &functionality.Emoji{
-				ID:   emoji.ID,
-				Name: emoji.Name,
-			}
+			guildEmojiStats[emoji.ID] = entities.NewEmoji(emoji.ID, emoji.Name, 0, 0, 0)
 		}
 		// If it's missing ID or Name add it while preserving stats
-		if guildEmojiStats[emoji.ID].ID == "" || guildEmojiStats[emoji.ID].Name == "" {
+		if guildEmojiStats[emoji.ID].GetID() == "" || guildEmojiStats[emoji.ID].GetName() == "" {
 			emojiStat := guildEmojiStats[emoji.ID]
-			emojiStat.ID = emoji.ID
-			emojiStat.Name = emoji.Name
+			emojiStat.SetID(emoji.ID)
+			emojiStat.SetName(emoji.Name)
 			guildEmojiStats[emoji.ID] = emojiStat
 		}
 
 		// Adds to that emoji usage
-		guildEmojiStats[emoji.ID].Reactions++
+		guildEmojiStats[emoji.ID].AddSetReactions(1)
 
 		saveFlag = true
 	}
 
 	if saveFlag {
-		functionality.Mutex.Lock()
-		functionality.GuildMap[r.GuildID].EmojiStats = guildEmojiStats
-		functionality.Mutex.Unlock()
+		db.SetGuildEmojiStats(r.GuildID, guildEmojiStats)
 	}
 }
 
@@ -169,19 +160,18 @@ func OnMessageEmojiUnreact(s *discordgo.Session, r *discordgo.MessageReactionRem
 		return
 	}
 
-	functionality.HandleNewGuild(s, r.GuildID)
+	entities.HandleNewGuild(r.GuildID)
 
 	var saveFlag bool
 
-	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[r.GuildID].GetGuildSettings()
-	guildEmojiStats := functionality.GuildMap[r.GuildID].EmojiStats
-	functionality.Mutex.RUnlock()
+	guildSettings := db.GetGuildSettings(r.GuildID)
+	guildEmojiStatsReference := db.GetGuildEmojiStats(r.GuildID)
+	guildEmojiStats := guildEmojiStatsReference
 
 	// Pulls the entire guild structure so we can check guild emojis from it later
 	guild, err := s.Guild(r.GuildID)
 	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
+		common.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 
@@ -193,46 +183,44 @@ func OnMessageEmojiUnreact(s *discordgo.Session, r *discordgo.MessageReactionRem
 
 		// If Emoji stat doesn't exist create it
 		if _, ok := guildEmojiStats[emoji.ID]; !ok {
-			guildEmojiStats[emoji.ID] = &functionality.Emoji{
-				ID:   emoji.ID,
-				Name: emoji.Name,
-			}
+			guildEmojiStats[emoji.ID] = entities.NewEmoji(emoji.ID, emoji.Name, 0, 0, 0)
 		}
 		// If it's missing ID or Name add it while preserving stats
-		if guildEmojiStats[emoji.ID].ID == "" || guildEmojiStats[emoji.ID].Name == "" {
+		if guildEmojiStats[emoji.ID].GetID() == "" || guildEmojiStats[emoji.ID].GetName() == "" {
 			emojiStat := guildEmojiStats[emoji.ID]
-			emojiStat.ID = emoji.ID
-			emojiStat.Name = emoji.Name
+			emojiStat.SetID(emoji.ID)
+			emojiStat.SetName(emoji.Name)
 			guildEmojiStats[emoji.ID] = emojiStat
 		}
 
 		// Adds to that emoji usage
-		guildEmojiStats[emoji.ID].Reactions--
+		guildEmojiStats[emoji.ID].AddSetReactions(-1)
 
 		saveFlag = true
 	}
 
 	if saveFlag {
-		functionality.Mutex.Lock()
-		functionality.GuildMap[r.GuildID].EmojiStats = guildEmojiStats
-		functionality.Mutex.Unlock()
+		db.SetGuildEmojiStats(r.GuildID, guildEmojiStats)
 	}
 }
 
 // Display emoji stats
 func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 
-	functionality.HandleNewGuild(s, m.GuildID)
+	entities.HandleNewGuild(m.GuildID)
 
 	var msgs []string
 
-	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	printEmojiMap := mergeDuplicates(m.GuildID)
-	functionality.Mutex.RUnlock()
+	guildSettings := db.GetGuildSettings(m.GuildID)
+
+	printEmojiMap, err := mergeDuplicates(m.GuildID)
+	if err != nil {
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		return
+	}
 
 	// Sorts emojis by their message use from the above map
-	emojis := make([]*functionality.Emoji, len(printEmojiMap))
+	emojis := make([]*entities.Emoji, len(printEmojiMap))
 	for i := 0; i < len(printEmojiMap); i++ {
 		for _, emoji := range printEmojiMap {
 			emojis[i] = emoji
@@ -243,7 +231,7 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 
 	guild, err := s.Guild(m.GuildID)
 	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
+		common.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 
@@ -254,7 +242,7 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 
 		// Checks if an emoji with that name exists on the server before adding to print
 		for _, guildEmoji := range guild.Emojis {
-			if guildEmoji.Name == emoji.Name {
+			if guildEmoji.Name == emoji.GetName() {
 				guildFlag = true
 				break
 			}
@@ -263,8 +251,8 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 			continue
 		}
 
-		if emoji.Name != "" {
-			message += lineSpaceFormatEmoji(emoji.Name, printEmojiMap)
+		if emoji.GetName() != "" {
+			message += lineSpaceFormatEmoji(emoji.GetName(), printEmojiMap)
 			msgs, message = splitStatMessages(msgs, message)
 		}
 	}
@@ -281,78 +269,86 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 	for j := 0; j < len(msgs); j++ {
 		_, err := s.ChannelMessageSend(m.ChannelID, msgs[j])
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 	}
 }
 
 // Formats the line space length for the above to keep level spacing
-func lineSpaceFormatEmoji(name string, printEmojiMap map[string]*functionality.Emoji) string {
+func lineSpaceFormatEmoji(name string, printEmojiMap map[string]*entities.Emoji) string {
 	line := fmt.Sprintf("%v", name)
 	spacesRequired := 30 - len(name)
 	for i := 0; i < spacesRequired; i++ {
 		line += " "
 	}
-	line += fmt.Sprintf("([%d])", printEmojiMap[name].MessageUsage)
+	line += fmt.Sprintf("([%d])", printEmojiMap[name].GetMessageUsage())
 	spacesRequired = 47 - len(line)
 	for i := 0; i < spacesRequired; i++ {
 		line += " "
 	}
-	line += fmt.Sprintf("| ([%d])", printEmojiMap[name].UniqueMessageUsage)
+	line += fmt.Sprintf("| ([%d])", printEmojiMap[name].GetUniqueMessageUsage())
 	spacesRequired = 64 - len(line)
 	for i := 0; i < spacesRequired; i++ {
 		line += " "
 	}
-	line += fmt.Sprintf("| ([%d])\n", printEmojiMap[name].Reactions)
+	line += fmt.Sprintf("| ([%d])\n", printEmojiMap[name].GetReactions())
 
 	return line
 }
 
 // Merges duplicate emotes in EmojiStats
-func mergeDuplicates(guildID string) map[string]*functionality.Emoji {
+func mergeDuplicates(guildID string) (map[string]*entities.Emoji, error) {
 
 	var (
 		duplicateMap  = make(map[string]string)
 		uniqueTotal   int
 		reactTotal    int
 		msgTotal      int
-		printEmojiMap = make(map[string]*functionality.Emoji)
+		printEmojiMap = make(map[string]*entities.Emoji)
 	)
 
+	guildEmojiStats := db.GetGuildEmojiStats(guildID)
+
 	// Fetches the IDs of all of the emojis that have at least one duplicate in duplicateMap
-	for _, emoji := range functionality.GuildMap[guildID].EmojiStats {
-		for _, emojiTwo := range functionality.GuildMap[guildID].EmojiStats {
-			if emoji.ID == emojiTwo.ID {
+	for _, emoji := range guildEmojiStats {
+		if emoji == nil {
+			continue
+		}
+
+		for _, emojiTwo := range guildEmojiStats {
+			if emojiTwo == nil {
 				continue
-			}
-			if emoji.Name != emojiTwo.Name {
-				continue
-			}
-			if _, ok := duplicateMap[emojiTwo.ID]; ok {
-				continue
-			}
-			if _, ok := duplicateMap[emoji.ID]; !ok {
-				duplicateMap[emoji.ID] = emoji.Name
 			}
 
-			duplicateMap[emojiTwo.ID] = emojiTwo.Name
+			if emoji.GetID() == emojiTwo.GetID() {
+				continue
+			}
+			if emoji.GetName() != emojiTwo.GetName() {
+				continue
+			}
+			if _, ok := duplicateMap[emojiTwo.GetID()]; ok {
+				continue
+			}
+			if _, ok := duplicateMap[emoji.GetID()]; !ok {
+				duplicateMap[emoji.GetID()] = emoji.GetName()
+			}
+
+			duplicateMap[emojiTwo.GetID()] = emojiTwo.GetName()
 		}
 	}
 
 	// Merges their values and leaves only one of them in a new map for printing purposes
 	for duplicateOneID, duplicateOneName := range duplicateMap {
 		// Emoji var here so it resets every iteration
-		var emoji functionality.Emoji
+		var emoji entities.Emoji
 
-		if _, ok := functionality.GuildMap[guildID].EmojiStats[duplicateOneID]; !ok {
-			continue
-		}
+		emojiStatOne := db.GetGuildEmojiStat(guildID, duplicateOneID)
 
 		// Fetch current iteration values
-		uniqueTotal = functionality.GuildMap[guildID].EmojiStats[duplicateOneID].UniqueMessageUsage
-		reactTotal = functionality.GuildMap[guildID].EmojiStats[duplicateOneID].Reactions
-		msgTotal = functionality.GuildMap[guildID].EmojiStats[duplicateOneID].MessageUsage
+		msgTotal = emojiStatOne.GetMessageUsage()
+		reactTotal = emojiStatOne.GetReactions()
+		uniqueTotal = emojiStatOne.GetUniqueMessageUsage()
 
 		for duplicateTwoID, duplicateTwoName := range duplicateMap {
 			if duplicateOneID == duplicateTwoID {
@@ -362,22 +358,21 @@ func mergeDuplicates(guildID string) map[string]*functionality.Emoji {
 				continue
 			}
 			if strings.ToLower(duplicateOneName) == strings.ToLower(duplicateTwoName) {
-				if _, ok := functionality.GuildMap[guildID].EmojiStats[duplicateTwoID]; !ok {
-					continue
-				}
-				uniqueTotal += functionality.GuildMap[guildID].EmojiStats[duplicateTwoID].UniqueMessageUsage
-				reactTotal += functionality.GuildMap[guildID].EmojiStats[duplicateTwoID].Reactions
-				msgTotal += functionality.GuildMap[guildID].EmojiStats[duplicateTwoID].MessageUsage
+				emojiStatTwo := db.GetGuildEmojiStat(guildID, duplicateTwoID)
+
+				msgTotal += emojiStatTwo.GetMessageUsage()
+				uniqueTotal += emojiStatTwo.GetUniqueMessageUsage()
+				reactTotal += emojiStatTwo.GetReactions()
 				continue
 			}
 		}
 
 		if _, ok := printEmojiMap[duplicateOneName]; !ok {
-			emoji.Name = duplicateOneName
-			emoji.ID = duplicateOneID
-			emoji.MessageUsage = msgTotal
-			emoji.Reactions = reactTotal
-			emoji.UniqueMessageUsage = uniqueTotal
+			emoji.SetName(duplicateOneName)
+			emoji.SetID(duplicateOneID)
+			emoji.SetMessageUsage(msgTotal)
+			emoji.SetUniqueMessageUsage(uniqueTotal)
+			emoji.SetReactions(reactTotal)
 			printEmojiMap[duplicateOneName] = &emoji
 		}
 
@@ -388,17 +383,21 @@ func mergeDuplicates(guildID string) map[string]*functionality.Emoji {
 	}
 
 	// Adds non-duplicate values to the print map
-	for _, statEmoji := range functionality.GuildMap[guildID].EmojiStats {
-		if _, ok := printEmojiMap[statEmoji.Name]; !ok {
-			printEmojiMap[statEmoji.Name] = statEmoji
+	for _, statEmoji := range guildEmojiStats {
+		if statEmoji == nil {
+			continue
+		}
+
+		if _, ok := printEmojiMap[statEmoji.GetName()]; !ok {
+			printEmojiMap[statEmoji.GetName()] = statEmoji
 		}
 	}
 
-	return printEmojiMap
+	return printEmojiMap, nil
 }
 
 // Sort functions for emoji use by message use
-type byEmojiFrequency []*functionality.Emoji
+type byEmojiFrequency []*entities.Emoji
 
 func (e byEmojiFrequency) Len() int {
 	return len(e)
@@ -407,15 +406,15 @@ func (e byEmojiFrequency) Swap(i, j int) {
 	e[i], e[j] = e[j], e[i]
 }
 func (e byEmojiFrequency) Less(i, j int) bool {
-	return e[j].MessageUsage < e[i].MessageUsage
+	return e[j].GetMessageUsage() < e[i].GetMessageUsage()
 }
 
 // Adds emoji stat command to the commandHandler
 func init() {
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute:    showEmojiStats,
 		Trigger:    "emoji",
-		Aliases:    []string{"emojistats", "emojis"},
+		Aliases:    []string{"emojistats", "emojis", "emotes", "emote"},
 		Desc:       "Print server emoji usage stats",
 		Permission: functionality.Mod,
 		Module:     "stats",

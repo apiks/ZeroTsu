@@ -2,12 +2,12 @@ package commands
 
 import (
 	"encoding/json"
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
 	"net/http"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-
-	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 const jokeURL = "https://official-joke-api.herokuapp.com/random_joke"
@@ -40,10 +40,8 @@ func jokeCommand(s *discordgo.Session, m *discordgo.Message) {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Joke website is not working properly. Please notify Apiks#8969 about it.")
 		if err != nil {
 			if m.GuildID != "" {
-				functionality.Mutex.RLock()
-				guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-				functionality.Mutex.RUnlock()
-				functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+				guildSettings := db.GetGuildSettings(m.GuildID)
+				common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 				return
 			}
 			return
@@ -54,16 +52,14 @@ func jokeCommand(s *discordgo.Session, m *discordgo.Message) {
 	_, err = s.ChannelMessageSend(m.ChannelID, joke.Setup+"\n\n"+joke.Punchline)
 	if err != nil {
 		if m.GuildID != "" {
-			functionality.Mutex.RLock()
-			guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-			functionality.Mutex.RUnlock()
-			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			guildSettings := db.GetGuildSettings(m.GuildID)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		}
 	}
 }
 
 func init() {
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute: jokeCommand,
 		Trigger: "joke",
 		Desc:    "Prints a (bad) joke",

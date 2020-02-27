@@ -2,6 +2,9 @@ package commands
 
 import (
 	"fmt"
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -11,40 +14,32 @@ import (
 
 // Sets a channel ID as the autopost daily stats target channel
 func setDailyStatsCommand(s *discordgo.Session, m *discordgo.Message) {
-
-	var guildDailyStats *functionality.Cha
-
-	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	if dailyStats, ok := functionality.GuildMap[m.GuildID].Autoposts["dailystats"]; ok {
-		guildDailyStats = dailyStats
-	}
-	functionality.Mutex.RUnlock()
-
-	if guildDailyStats == nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: Autopost Daily Stats channel is currently not set. Please use `%sdailystats [channel]`\nTo disable it please use `%sdailystats disable`", guildSettings.Prefix, guildSettings.Prefix))
-		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
-			return
-		}
-		return
-	}
+	guildSettings := db.GetGuildSettings(m.GuildID)
+	dailyStats := db.GetGuildAutopost(m.GuildID, "dailystats")
 
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	// Displays current dailystats channel
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current Autopost Daily Stats channel is: `%s - %s` \n\nTo change it please use `%sdailystats [channel]`\nTo disable it please use `%sdailystats disable`", guildDailyStats.Name, guildDailyStats.ID, guildSettings.Prefix, guildSettings.Prefix))
+		if dailyStats == nil {
+			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: Autopost Daily Stats channel is currently not set. Please use `%sdailystats [channel]`", guildSettings.GetPrefix()))
+			if err != nil {
+				common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+				return
+			}
+			return
+		}
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current Autopost Daily Stats channel is: `%s - %s` \n\nTo change it please use `%sdailystats [channel]`\nTo disable it please use `%sdailystats disable`", dailyStats.GetName(), dailyStats.GetID(), guildSettings.GetPrefix(), guildSettings.GetPrefix()))
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%sdailystats [channel]`", guildSettings.Prefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%sdailystats [channel]`", guildSettings.GetPrefix()))
 		if err != nil {
-			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -52,186 +47,164 @@ func setDailyStatsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Parse and save the target channel
 	if commandStrings[1] == "disable" {
-		guildDailyStats = nil
+		dailyStats = nil
 	} else {
-		channelID, channelName := functionality.ChannelParser(s, commandStrings[1], m.GuildID)
-		guildDailyStats.ID = channelID
-		guildDailyStats.Name = channelName
+		channelID, channelName := common.ChannelParser(s, commandStrings[1], m.GuildID)
+		dailyStats = entities.NewCha(channelName, channelID)
 	}
 
-	functionality.Mutex.Lock()
-	functionality.GuildMap[m.GuildID].Autoposts["dailystats"] = guildDailyStats
-	_ = functionality.AutopostsWrite(functionality.GuildMap[m.GuildID].Autoposts, m.GuildID)
-	functionality.Mutex.Unlock()
+	// Write
+	db.SetGuildAutopost(m.GuildID, "dailystats", dailyStats)
 
-	if guildDailyStats == nil {
+	if dailyStats == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Success! Autopost Daily Stats has been disabled!")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
-	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New Autopost Daily Stats channel is: `%s - %s`", guildDailyStats.Name, guildDailyStats.ID))
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New Autopost Daily Stats channel is: `%s - %s`", dailyStats.GetName(), dailyStats.GetID()))
 	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 }
 
 // Sets a channel ID as the autopost anime schedule target channel
 func setDailyScheduleCommand(s *discordgo.Session, m *discordgo.Message) {
-
-	var guildDailySchedule *functionality.Cha
-
-	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	if dailySchedule, ok := functionality.GuildMap[m.GuildID].Autoposts["dailyschedule"]; ok {
-		guildDailySchedule = dailySchedule
-	}
-	functionality.Mutex.RUnlock()
+	guildSettings := db.GetGuildSettings(m.GuildID)
+	dailySchedule := db.GetGuildAutopost(m.GuildID, "dailyschedule")
 
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	// Displays current dailyschedule channel
 	if len(commandStrings) == 1 {
-		if guildDailySchedule == nil {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: Autopost Daily Anime Schedule channel is currently not set. Please use `%sdailyschedule [channel]`", guildSettings.Prefix))
+		if dailySchedule == nil {
+			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: Autopost Daily Anime Schedule channel is currently not set. Please use `%sdailyschedule [channel]`", guildSettings.GetPrefix()))
 			if err != nil {
-				functionality.LogError(s, guildSettings.BotLog, err)
+				common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 				return
 			}
 			return
 		}
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current Autopost Daily Anime Schedule channel is: `%s - %s` \n\nTo change it please use `%sdailyschedule [channel]`\nTo disable it please use `%sdailyschedule disable`", guildDailySchedule.Name, guildDailySchedule.ID, guildSettings.Prefix, guildSettings.Prefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current Autopost Daily Anime Schedule channel is: `%s - %s` \n\nTo change it please use `%sdailyschedule [channel]`\nTo disable it please use `%sdailyschedule disable`", dailySchedule.GetName(), dailySchedule.GetID(), guildSettings.GetPrefix(), guildSettings.GetPrefix()))
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%sdailyschedule [channel]`\nTo disable it please use `%sdailyschedule disable`", guildSettings.Prefix, guildSettings.Prefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%sdailyschedule [channel]`\nTo disable it please use `%sdailyschedule disable`", guildSettings.GetPrefix(), guildSettings.GetPrefix()))
 		if err != nil {
-			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
-	if guildDailySchedule == nil {
-		guildDailySchedule = new(functionality.Cha)
+	if dailySchedule == nil {
+		dailySchedule = entities.NewCha("", "")
 	}
 
 	// Parse and save the target channel
 	if commandStrings[1] == "disable" {
-		guildDailySchedule = nil
+		dailySchedule = nil
 	} else {
-		channelID, channelName := functionality.ChannelParser(s, commandStrings[1], m.GuildID)
-		guildDailySchedule.ID = channelID
-		guildDailySchedule.Name = channelName
+		channelID, channelName := common.ChannelParser(s, commandStrings[1], m.GuildID)
+		dailySchedule = entities.NewCha(channelName, channelID)
 	}
 
-	functionality.Mutex.Lock()
-	functionality.GuildMap[m.GuildID].Autoposts["dailyschedule"] = guildDailySchedule
-	_ = functionality.AutopostsWrite(functionality.GuildMap[m.GuildID].Autoposts, m.GuildID)
-	functionality.Mutex.Unlock()
+	// Write
+	db.SetGuildAutopost(m.GuildID, "dailyschedule", dailySchedule)
 
-	if guildDailySchedule == nil {
+	if dailySchedule == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Success! Autopost Daily Anime Schedule has been disabled!")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		}
 		return
 	}
 
-	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New Autopost Daily Anime Schedule channel is: `%s - %s`", guildDailySchedule.Name, guildDailySchedule.ID))
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New Autopost Daily Anime Schedule channel is: `%s - %s`", dailySchedule.GetName(), dailySchedule.GetID()))
 	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 }
 
 // Sets a channel ID as the autopost new airing anime episodes target channel
 func setNewEpisodesCommand(s *discordgo.Session, m *discordgo.Message) {
-
-	var guildNewEpisodes *functionality.Cha
-
-	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	if newEpisodes, ok := functionality.GuildMap[m.GuildID].Autoposts["newepisodes"]; ok {
-		guildNewEpisodes = newEpisodes
-	}
-	functionality.Mutex.RUnlock()
+	guildSettings := db.GetGuildSettings(m.GuildID)
+	newEpisodes := db.GetGuildAutopost(m.GuildID, "newepisodes")
 
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	// Displays current new episodes channel
 	if len(commandStrings) == 1 {
-		if guildNewEpisodes == nil {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: Autopost channel for new airing anime episodes is currently not set. Please use `%snewepisodes [channel]`", guildSettings.Prefix))
+		if newEpisodes == nil {
+			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: Autopost channel for new airing anime episodes is currently not set. Please use `%snewepisodes [channel]`", guildSettings.GetPrefix()))
 			if err != nil {
-				functionality.LogError(s, guildSettings.BotLog, err)
+				common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 				return
 			}
 			return
 		}
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current Autopost channel for new airing anime episodes is: `%s - %s` \n\n To change it please use `%snewepisodes [channel]`\nTo disable it please use `%snewepisodes disable`", guildNewEpisodes.Name, guildNewEpisodes.ID, guildSettings.Prefix, guildSettings.Prefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current Autopost channel for new airing anime episodes is: `%s - %s` \n\n To change it please use `%snewepisodes [channel]`\nTo disable it please use `%snewepisodes disable`", newEpisodes.GetName(), newEpisodes.GetID(), guildSettings.GetPrefix(), guildSettings.GetPrefix()))
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%snewepisodes [channel]`\nTo disable it please use `%snewepisodes disable`", guildSettings.Prefix, guildSettings.Prefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%snewepisodes [channel]`\nTo disable it please use `%snewepisodes disable`", guildSettings.GetPrefix(), guildSettings.GetPrefix()))
 		if err != nil {
-			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
-	if guildNewEpisodes == nil {
-		guildNewEpisodes = new(functionality.Cha)
+	if newEpisodes == nil {
+		newEpisodes = entities.NewCha("", "")
 	}
 
 	// Parse and save the target channel
 	if commandStrings[1] == "disable" {
-		guildNewEpisodes = nil
+		newEpisodes = nil
 	} else {
-		channelID, channelName := functionality.ChannelParser(s, commandStrings[1], m.GuildID)
-		guildNewEpisodes.ID = channelID
-		guildNewEpisodes.Name = channelName
+		channelID, channelName := common.ChannelParser(s, commandStrings[1], m.GuildID)
+		newEpisodes = entities.NewCha(channelName, channelID)
 	}
 
-	functionality.Mutex.Lock()
-	functionality.GuildMap[m.GuildID].Autoposts["newepisodes"] = guildNewEpisodes
-	_ = functionality.AutopostsWrite(functionality.GuildMap[m.GuildID].Autoposts, m.GuildID)
+	// Write
+	db.SetGuildAutopost(m.GuildID, "newepisodes", newEpisodes)
 
-	if guildNewEpisodes == nil {
-		functionality.Mutex.Unlock()
+	if newEpisodes == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Success! Autopost for new airing anime episodes has been disabled!")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
-	functionality.SetupGuildSub(m.GuildID)
-	functionality.Mutex.Unlock()
+	entities.Mutex.Lock()
+	entities.SetupGuildSub(m.GuildID)
+	entities.Mutex.Unlock()
 
-	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New Autopost channel for new airing anime episodes is: `%s - %s`", guildNewEpisodes.Name, guildNewEpisodes.ID))
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New Autopost channel for new airing anime episodes is: `%s - %s`", newEpisodes.GetName(), newEpisodes.GetID()))
 	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 }
 
 func init() {
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute:    setDailyStatsCommand,
 		Trigger:    "dailystats",
 		Aliases:    []string{"dailystat", "daystats", "daystat", "setdailystats", "setdailystat", "setdaystats", "setdaystat"},
@@ -239,7 +212,7 @@ func init() {
 		Permission: functionality.Mod,
 		Module:     "autopost",
 	})
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute:    setDailyScheduleCommand,
 		Trigger:    "dailyschedule",
 		Aliases:    []string{"dailyschedul", "dayschedule", "dayschedul", "setdailyschedule", "setdailyschedul"},
@@ -247,7 +220,7 @@ func init() {
 		Permission: functionality.Mod,
 		Module:     "autopost",
 	})
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute:    setNewEpisodesCommand,
 		Trigger:    "newepisodes",
 		Aliases:    []string{"newepisode", "newepisod", "episodes", "episode"},

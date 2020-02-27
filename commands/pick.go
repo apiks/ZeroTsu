@@ -2,33 +2,32 @@ package commands
 
 import (
 	"fmt"
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
 	"math/rand"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-
-	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 // Picks one item from a specified number of item.
 func pickCommand(s *discordgo.Session, m *discordgo.Message) {
-
-	var guildSettings = &functionality.GuildSettings{
-		Prefix: ".",
-	}
+	var (
+		err           error
+		guildSettings = &entities.GuildSettings{Prefix: "."}
+	)
 
 	if m.GuildID != "" {
-		functionality.Mutex.RLock()
-		guildSettings = functionality.GuildMap[m.GuildID].GetGuildSettings()
-		functionality.Mutex.RUnlock()
+		guildSettings = db.GetGuildSettings(m.GuildID)
 	}
 
 	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%spick [item], [item]...`\n\nItem is anything that does not contain `,`\nUse `|` insead of `,` if you need a comma in the item", guildSettings.Prefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%spick [item], [item]...`\n\nItem is anything that does not contain `,`\nUse `|` insead of `,` if you need a comma in the item", guildSettings.GetPrefix()))
 		if err != nil {
-			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -52,7 +51,7 @@ func pickCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(items) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Not enough items. Please add at least one more item.")
 		if err != nil {
-			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -60,15 +59,15 @@ func pickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Picks a random item
 	randomItemNum := rand.Intn(len(items))
-	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("**Picked:** %s", items[randomItemNum]))
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("**Picked:** %s", items[randomItemNum]))
 	if err != nil {
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 }
 
 func init() {
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute: pickCommand,
 		Trigger: "pick",
 		Aliases: []string{"pic", "pik", "p"},

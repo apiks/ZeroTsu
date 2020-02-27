@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -20,22 +22,20 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		originalEveryonePerms *discordgo.PermissionOverwrite
 	)
 
-	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	spoilerMap := functionality.GuildMap[m.GuildID].SpoilerMap
-	functionality.Mutex.RUnlock()
+	guildSettings := db.GetGuildSettings(m.GuildID)
+	guildSpoilerMap := db.GetGuildSpoilerMap(m.GuildID)
 
 	// Pulls info on the channel the message is in
 	cha, err := s.Channel(m.ChannelID)
 	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
+		common.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 
 	// Fetches info on server roles from the server and puts it in roles
 	roles, err := s.GuildRoles(m.GuildID)
 	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
+		common.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 
@@ -43,7 +43,7 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 	for _, role := range roles {
 		if strings.ToLower(role.Name) == strings.ToLower(cha.Name) &&
 			role.ID != m.GuildID {
-			for roleID := range spoilerMap {
+			for roleID := range guildSpoilerMap {
 				if role.ID == roleID {
 					roleID = role.ID
 					break
@@ -72,35 +72,39 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 	if originalRolePerms != nil {
 		err = s.ChannelPermissionSet(m.ChannelID, roleID, "role", originalRolePerms.Allow & ^discordgo.PermissionSendMessages, originalRolePerms.Deny|discordgo.PermissionSendMessages)
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 	}
 	if originalAiringPerms != nil {
 		err = s.ChannelPermissionSet(m.ChannelID, airingID, "role", originalAiringPerms.Allow & ^discordgo.PermissionSendMessages, originalAiringPerms.Deny|discordgo.PermissionSendMessages)
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 	}
 	if originalEveryonePerms != nil {
 		err = s.ChannelPermissionSet(m.ChannelID, m.GuildID, "role", originalEveryonePerms.Allow & ^discordgo.PermissionSendMessages, originalEveryonePerms.Deny|discordgo.PermissionSendMessages)
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 	} else {
 		err = s.ChannelPermissionSet(m.ChannelID, m.GuildID, "role", 0, discordgo.PermissionSendMessages)
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 	}
 
 	// Adds mod role overwrites if they don't exist
 	for _, perm := range cha.PermissionOverwrites {
-		for _, modRole := range guildSettings.CommandRoles {
-			if perm.ID == modRole.ID {
+		for _, modRole := range guildSettings.GetCommandRoles() {
+			if modRole == nil {
+				continue
+			}
+
+			if perm.ID == modRole.GetID() {
 				roleExists = true
 				break
 			}
@@ -110,10 +114,14 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	if !roleExists {
-		for _, modRole := range guildSettings.CommandRoles {
-			err = s.ChannelPermissionSet(m.ChannelID, modRole.ID, "role", discordgo.PermissionSendMessages, 0)
+		for _, modRole := range guildSettings.GetCommandRoles() {
+			if modRole == nil {
+				continue
+			}
+
+			err = s.ChannelPermissionSet(m.ChannelID, modRole.GetID(), "role", discordgo.PermissionSendMessages, 0)
 			if err != nil {
-				functionality.LogError(s, guildSettings.BotLog, err)
+				common.LogError(s, guildSettings.BotLog, err)
 				return
 			}
 		}
@@ -121,17 +129,17 @@ func lockCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err = s.ChannelMessageSend(m.ChannelID, "🔒 This channel has been locked.")
 	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
+		common.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 
 	if guildSettings.BotLog == nil {
 		return
 	}
-	if guildSettings.BotLog.ID == "" {
+	if guildSettings.BotLog.GetID() == "" {
 		return
 	}
-	_, _ = s.ChannelMessageSend(guildSettings.BotLog.ID, "🔒 "+functionality.ChMention(cha)+" was locked by "+m.Author.Username)
+	_, _ = s.ChannelMessageSend(guildSettings.BotLog.GetID(), "🔒 "+common.ChMention(cha)+" was locked by "+m.Author.Username)
 }
 
 // Unlocks a specific channel and is spoiler-channel sensitive
@@ -146,22 +154,20 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 		originalEveryonePerms *discordgo.PermissionOverwrite
 	)
 
-	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	spoilerMap := functionality.GuildMap[m.GuildID].SpoilerMap
-	functionality.Mutex.RUnlock()
+	guildSettings := db.GetGuildSettings(m.GuildID)
+	guildSpoilerMap := db.GetGuildSpoilerMap(m.GuildID)
 
 	// Pulls info on the channel the message is in
 	cha, err := s.Channel(m.ChannelID)
 	if err != nil {
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
 	// Fetches info on server roles from the server and puts it in roles
 	roles, err := s.GuildRoles(m.GuildID)
 	if err != nil {
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
@@ -169,8 +175,8 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	for _, role := range roles {
 		if strings.ToLower(role.Name) == strings.ToLower(cha.Name) &&
 			role.ID != m.GuildID {
-			for rolID := range spoilerMap {
-				if role.ID == rolID {
+			for roleID := range guildSpoilerMap {
+				if role.ID == roleID {
 					roleID = role.ID
 					break
 				}
@@ -198,29 +204,33 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 	if originalRolePerms != nil {
 		err = s.ChannelPermissionSet(m.ChannelID, roleID, "role", originalRolePerms.Allow|discordgo.PermissionSendMessages, originalRolePerms.Deny & ^discordgo.PermissionSendMessages)
 		if err != nil {
-			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 	}
 	if originalAiringPerms != nil {
 		err = s.ChannelPermissionSet(m.ChannelID, airingID, "role", originalAiringPerms.Allow|discordgo.PermissionSendMessages, originalAiringPerms.Deny & ^discordgo.PermissionSendMessages)
 		if err != nil {
-			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 	}
 	if originalEveryonePerms != nil {
 		err = s.ChannelPermissionSet(m.ChannelID, m.GuildID, "role", originalEveryonePerms.Allow, originalEveryonePerms.Deny & ^discordgo.PermissionSendMessages)
 		if err != nil {
-			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 	}
 
 	// Adds mod role overwrites if they don't exist
 	for _, perm := range cha.PermissionOverwrites {
-		for _, modRole := range guildSettings.CommandRoles {
-			if perm.ID == modRole.ID {
+		for _, modRole := range guildSettings.GetCommandRoles() {
+			if modRole == nil {
+				continue
+			}
+
+			if perm.ID == modRole.GetID() {
 				roleExists = true
 				break
 			}
@@ -230,10 +240,14 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	if !roleExists {
-		for _, modRole := range guildSettings.CommandRoles {
-			err = s.ChannelPermissionSet(m.ChannelID, modRole.ID, "role", discordgo.PermissionSendMessages, 0)
+		for _, modRole := range guildSettings.GetCommandRoles() {
+			if modRole == nil {
+				continue
+			}
+
+			err = s.ChannelPermissionSet(m.ChannelID, modRole.GetID(), "role", discordgo.PermissionSendMessages, 0)
 			if err != nil {
-				functionality.LogError(s, guildSettings.BotLog, err)
+				common.LogError(s, guildSettings.BotLog, err)
 				return
 			}
 		}
@@ -241,21 +255,21 @@ func unlockCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err = s.ChannelMessageSend(m.ChannelID, "🔓 This channel has been unlocked.")
 	if err != nil {
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
 	if guildSettings.BotLog == nil {
 		return
 	}
-	if guildSettings.BotLog.ID == "" {
+	if guildSettings.BotLog.GetID() == "" {
 		return
 	}
-	_, _ = s.ChannelMessageSend(guildSettings.BotLog.ID, "🔓 "+functionality.ChMention(cha)+" was unlocked by "+m.Author.Username)
+	_, _ = s.ChannelMessageSend(guildSettings.BotLog.GetID(), "🔓 "+common.ChMention(cha)+" was unlocked by "+m.Author.Username)
 }
 
 func init() {
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute:    lockCommand,
 		Trigger:    "lock",
 		Aliases:    []string{"lockchannel", "channellock"},
@@ -263,7 +277,7 @@ func init() {
 		Permission: functionality.Mod,
 		Module:     "channel",
 	})
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute:    unlockCommand,
 		Trigger:    "unlock",
 		Aliases:    []string{"unlockchannel", "channelunlock"},

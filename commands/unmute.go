@@ -2,6 +2,10 @@ package commands
 
 import (
 	"fmt"
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/embeds"
+	"github.com/r-anime/ZeroTsu/entities"
 	"strings"
 	"time"
 
@@ -14,44 +18,39 @@ import (
 func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		muteFlag         bool
-		guildMutedRoleID string
-		tookRole         bool
+		muteFlag bool
+		tookRole bool
 	)
 
-	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.Mutex.RUnlock()
-	if guildSettings.MutedRole != nil {
-		if guildSettings.MutedRole.ID != "" {
-			guildMutedRoleID = guildSettings.MutedRole.ID
-		}
+	guildSettings := db.GetGuildSettings(m.GuildID)
+	if guildSettings.GetMutedRole() == nil || guildSettings.GetMutedRole().GetID() == "" {
+		return
 	}
 
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	if len(commandStrings) < 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"unmute [@user, userID, or username#discrim]` format.\n\n"+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.GetPrefix()+"unmute [@user, userID, or username#discrim]` format.\n\n"+
 			"Note: this command supports username#discrim where username contains spaces.")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
-	userID, err := functionality.GetUserID(m, commandStrings)
+	userID, err := common.GetUserID(m, commandStrings)
 	if err != nil {
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
 	// Pulls info on user
-	user, err := s.State.Member(m.GuildID, userID)
+	userMem, err := s.State.Member(m.GuildID, userID)
 	if err != nil {
-		user, err = s.GuildMember(m.GuildID, userID)
+		userMem, err = s.GuildMember(m.GuildID, userID)
 		if err != nil {
-			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User is not in the server. Cannot unmute.")
+			_, err = s.ChannelMessageSend(m.ChannelID, "Error: Username is not in the server. Cannot unmute.")
 			if err != nil {
 				return
 			}
@@ -59,47 +58,51 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
-	// Goes through every muted user from punishedUsers and if the user is in it, confirms that user is a mute
-	functionality.Mutex.Lock()
-	if functionality.GuildMap[m.GuildID].PunishedUsers == nil || len(functionality.GuildMap[m.GuildID].PunishedUsers) == 0 {
-		functionality.Mutex.Unlock()
+	// Goes through every muted user from PunishedUsers and if the user is in it, confirms that user is muted
+	punishedUsers := db.GetGuildPunishedUsers(m.GuildID)
+	if len(punishedUsers) == 0 {
 		_, err = s.ChannelMessageSend(m.ChannelID, "No mutes found.")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
-	for i := 0; i < len(functionality.GuildMap[m.GuildID].PunishedUsers); i++ {
-		if functionality.GuildMap[m.GuildID].PunishedUsers[i].ID == userID {
+	// Removes the mute if it finds it
+	for _, user := range punishedUsers {
+		if user == nil {
+			continue
+		}
+
+		if user.GetID() == userID {
 			muteFlag = true
 
-			// Removes the mute from punishedUsers
-			if functionality.GuildMap[m.GuildID].PunishedUsers[i].UnbanDate != functionality.ZeroTimeValue {
-				temp := functionality.PunishedUsers{
-					ID:        functionality.GuildMap[m.GuildID].PunishedUsers[i].ID,
-					User:      functionality.GuildMap[m.GuildID].PunishedUsers[i].User,
-					UnbanDate: functionality.GuildMap[m.GuildID].PunishedUsers[i].UnbanDate,
+			if user.GetUnbanDate() == common.NilTime {
+				user = entities.NewPunishedUsers("", "", time.Time{}, time.Time{})
+				err = db.SetGuildPunishedUser(m.GuildID, user)
+				if err != nil {
+					common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+					return
 				}
-				functionality.GuildMap[m.GuildID].PunishedUsers[i] = &temp
 			} else {
-				if i < len(functionality.GuildMap[m.GuildID].PunishedUsers)-1 {
-					copy(functionality.GuildMap[m.GuildID].PunishedUsers[i:], functionality.GuildMap[m.GuildID].PunishedUsers[i+1:])
+				user = entities.NewPunishedUsers(user.GetID(), user.GetUsername(), user.GetUnbanDate(), time.Time{})
+				err = db.SetGuildPunishedUser(m.GuildID, user)
+				if err != nil {
+					common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+					return
 				}
-				functionality.GuildMap[m.GuildID].PunishedUsers[len(functionality.GuildMap[m.GuildID].PunishedUsers)-1] = nil
-				functionality.GuildMap[m.GuildID].PunishedUsers = functionality.GuildMap[m.GuildID].PunishedUsers[:len(functionality.GuildMap[m.GuildID].PunishedUsers)-1]
 			}
+
 			break
 		}
 	}
-	functionality.Mutex.Unlock()
 
 	// Check if the user is muted using other means
 	if !muteFlag {
-		if guildMutedRoleID != "" {
-			for _, userRoleID := range user.Roles {
-				if userRoleID == guildMutedRoleID {
+		if guildSettings.GetMutedRole().GetID() != "" {
+			for _, userRoleID := range userMem.Roles {
+				if userRoleID == guildSettings.GetMutedRole().GetID() {
 					muteFlag = true
 					break
 				}
@@ -108,15 +111,15 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 			// Pulls info on server roles
 			deb, err := s.GuildRoles(m.GuildID)
 			if err != nil {
-				functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+				common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 				return
 			}
 
 			// Checks by string for a muted role
 			for _, role := range deb {
 				if strings.ToLower(role.Name) == "muted" || strings.ToLower(role.Name) == "t-mute" {
-					for _, userRoleID := range user.Roles {
-						if userRoleID == guildMutedRoleID {
+					for _, userRoleID := range userMem.Roles {
+						if userRoleID == guildSettings.GetMutedRole().GetID() {
 							muteFlag = true
 							break
 						}
@@ -128,23 +131,23 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if !muteFlag {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%s#%s__ is not muted.", user.User.Username, user.User.Discriminator))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%s#%s__ is not muted.", userMem.User.Username, userMem.User.Discriminator))
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Removes the mute
-	if guildMutedRoleID != "" {
-		_ = s.GuildMemberRoleRemove(m.GuildID, userID, guildMutedRoleID)
+	if guildSettings.GetMutedRole().GetID() != "" {
+		_ = s.GuildMemberRoleRemove(m.GuildID, userID, guildSettings.GetMutedRole().GetID())
 		tookRole = true
 	} else {
 		// Pulls info on server roles
 		deb, err := s.GuildRoles(m.GuildID)
 		if err != nil {
-			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 
@@ -159,9 +162,9 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if !tookRole {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: This server does not have a set muted role. Please use `%vsetmuted [Role ID]` before trying this command again.", guildSettings.Prefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: This server does not have a set muted role. Please use `%vsetmuted [Role ID]` before trying this command again.", guildSettings.GetPrefix()))
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -170,35 +173,57 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Saves time of unmute command usage
 	t := time.Now()
 
-	// Updates unmute date in memberInfo.json entry if possible and writes to storage
-	functionality.Mutex.Lock()
-	if _, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
-		functionality.GuildMap[m.GuildID].MemberInfoMap[userID].UnmuteDate = t.Format("2006-01-02 15:04:05")
-		_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
-	}
-	_ = functionality.PunishedUsersWrite(functionality.GuildMap[m.GuildID].PunishedUsers, m.GuildID)
-	functionality.Mutex.Unlock()
+	// Checks if user is in memberInfo and fetches them
+	mem := db.GetGuildMember(m.GuildID, userID)
+	if mem == nil {
+		var user *discordgo.User
 
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%s#%s__ has been unmuted.", user.User.Username, user.User.Discriminator))
+		if userMem != nil {
+			user = userMem.User
+		} else {
+			user, err = s.User(userID)
+			if err != nil {
+				_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in the server, internal database and cannot fetch manually either. Cannot unmute until user joins the server.")
+				if err != nil {
+					common.LogError(s, guildSettings.BotLog, err)
+					return
+				}
+				return
+			}
+		}
+
+		// Initializes user if he doesn't exist in memberInfo but is in server
+		functionality.InitializeUser(user, m.GuildID)
+
+		mem = db.GetGuildMember(m.GuildID, userID)
+		if mem == nil {
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, fmt.Errorf("error: member object is empty"))
+			return
+		}
+	}
+
+	// Set member unmute date
+	mem.SetUnmuteDate(t.Format("2006-01-02 15:04:05"))
+
+	// Write
+	db.SetGuildMember(m.GuildID, mem)
+
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("__%s#%s__ has been unmuted.", userMem.User.Username, userMem.User.Discriminator))
 	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
+		common.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 
 	// Sends an embed message to bot-log if possible
-	functionality.Mutex.RLock()
-	if _, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]; ok {
-		if guildSettings.BotLog != nil {
-			if guildSettings.BotLog.ID != "" {
-				_ = functionality.UnmuteEmbed(s, functionality.GuildMap[m.GuildID].MemberInfoMap[userID], m.Author.Username, guildSettings.BotLog.ID)
-			}
+	if guildSettings.BotLog != nil {
+		if guildSettings.BotLog.GetID() != "" {
+			_ = embeds.AutoPunishmentRemoval(s, mem, guildSettings.BotLog.GetID(), "unmuted", m.Author)
 		}
 	}
-	functionality.Mutex.RUnlock()
 }
 
 func init() {
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute:    unmuteCommand,
 		Trigger:    "unmute",
 		Aliases:    []string{"unshut"},

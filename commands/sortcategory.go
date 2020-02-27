@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
 	"sort"
 	"strings"
 
@@ -19,20 +21,14 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 		chaEdit          discordgo.ChannelEdit
 	)
 
-	if m.Author.ID != s.State.User.ID {
-		functionality.Mutex.Lock()
-	}
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	if m.Author.ID != s.State.User.ID {
-		functionality.Mutex.Unlock()
-	}
+	guildSettings := db.GetGuildSettings(m.GuildID)
 
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"sortcategory [category]`")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.GetPrefix()+"sortcategory [category]`")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -41,7 +37,7 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Fetches all channels from the server and puts it in deb
 	deb, err := s.GuildChannels(m.GuildID)
 	if err != nil {
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
@@ -62,7 +58,7 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	if categoryID == "" {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Invalid Category")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -76,14 +72,14 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sorts the categoryChannels slice alphabetically
-	sort.Sort(functionality.SortChannelByAlphabet(categoryChannels))
+	sort.Sort(common.SortChannelByAlphabet(categoryChannels))
 
 	// Updates the alphabetically sorted channels' position
 	for i := 0; i < len(categoryChannels); i++ {
 		chaEdit.Position = categoryPosition + i + 1
 		_, err = s.ChannelEditComplex(categoryChannels[i].ID, &chaEdit)
 		if err != nil {
-			functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 	}
@@ -94,13 +90,13 @@ func sortCategoryCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	_, err = s.ChannelMessageSend(m.ChannelID, "Category `"+commandStrings[1]+"` sorted")
 	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
+		common.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 }
 
 func init() {
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute:    sortCategoryCommand,
 		Trigger:    "sortcategory",
 		Desc:       "Sorts a category alphabetically",

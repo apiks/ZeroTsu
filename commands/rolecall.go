@@ -2,6 +2,9 @@ package commands
 
 import (
 	"fmt"
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -12,31 +15,31 @@ import (
 // Prints the amount of users in a guild have a specific role
 func rolecallCommand(s *discordgo.Session, m *discordgo.Message) {
 	var (
-		role    functionality.Role
+		role    entities.Role
 		counter int
 	)
 
-	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.Mutex.RUnlock()
+	guildSettings := db.GetGuildSettings(m.GuildID)
 
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: %srolecall [role]", guildSettings.Prefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: %srolecall [role]", guildSettings.GetPrefix()))
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Parse role for roleID
-	role.ID, role.Name = functionality.RoleParser(s, commandStrings[1], m.GuildID)
-	if role.ID == "" {
+	roleID, roleName := common.RoleParser(s, commandStrings[1], m.GuildID)
+	role.SetID(roleID)
+	role.SetName(roleName)
+	if role.GetID() == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such role exists.")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -44,27 +47,27 @@ func rolecallCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	guild, err := s.Guild(m.GuildID)
 	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
+		common.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 	for _, mem := range guild.Members {
 		for _, memRole := range mem.Roles {
-			if memRole == role.ID {
+			if memRole == role.GetID() {
 				counter++
 				break
 			}
 		}
 	}
 
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%d users have the `%s` role.", counter, role.Name))
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%d users have the `%s` role.", counter, role.GetName()))
 	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
+		common.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 }
 
 func init() {
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute:    rolecallCommand,
 		Trigger:    "rolecall",
 		Desc:       "Prints the amount of users that have a specific role",

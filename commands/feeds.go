@@ -2,6 +2,9 @@ package commands
 
 import (
 	"fmt"
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -11,7 +14,6 @@ import (
 
 // Sets a reddit feed by subreddit and other params
 func setRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
-
 	var (
 		subreddit string
 		author    string
@@ -22,16 +24,13 @@ func setRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 		subIndex int
 	)
 
-	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.Mutex.RUnlock()
-
+	guildSettings := db.GetGuildSettings(m.GuildID)
 	cmdStrs := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	if len(cmdStrs) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"addfeed [u/author]* [type]* [pin]* [r/subreddit] [title]*`\n\n* are optional.\n\nType refers to the post sort filter. Valid values are `hot`, `new` and `rising`. Defaults to `hot`.\nPin refers to whether to pin the post when the bot posts it and unpin the previous bot pin of the same subreddit. Use `true` or `false` as values.\nTitle is what a post title should start with for the BOT to post it. Leave empty for all posts.\n\nFor author and subreddit be sure to add the prefixes `u/` and `r/`. Does not work with hidden or quarantined subs.")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.GetPrefix()+"addfeed [u/author]* [type]* [pin]* [r/subreddit] [title]*`\n\n* are optional.\n\nType refers to the post sort filter. Valid values are `hot`, `new` and `rising`. Defaults to `hot`.\nPin refers to whether to pin the post when the bot posts it and unpin the previous bot pin of the same subreddit. Use `true` or `false` as values.\nTitle is what a post title should start with for the BOT to post it. Leave empty for all posts.\n\nFor author and subreddit be sure to add the prefixes `u/` and `r/`. Does not work with hidden or quarantined subs.")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -50,7 +49,7 @@ func setRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 	if subreddit == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: subreddit not found. Please start it with `/r/` or `r/`.\n\nExample: `r/subreddit`.\n\nThis is not optional.")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -86,25 +85,22 @@ func setRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 		title += cmdStrs[i] + " "
 	}
 
-	functionality.Mutex.Lock()
-	err := functionality.RssThreadsWrite(subreddit, author, title, postType, m.ChannelID, m.GuildID, pin)
+	// Write
+	err := db.SetGuildFeed(m.GuildID, entities.NewFeed(subreddit, title, author, pin, postType, m.ChannelID))
 	if err != nil {
-		functionality.Mutex.Unlock()
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	functionality.Mutex.Unlock()
 
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! This reddit feed has been saved."))
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! This reddit feed has been saved. If there are valid posts they will start appearing in a few minutes."))
 	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
+		common.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 }
 
 // Removes a previously set reddit feed
 func removeRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
-
 	var (
 		subreddit string
 		title     string
@@ -115,16 +111,14 @@ func removeRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 		subIndex int
 	)
 
-	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	guildFeeds := functionality.GuildMap[m.GuildID].Feeds
-	functionality.Mutex.RUnlock()
+	guildSettings := db.GetGuildSettings(m.GuildID)
+	guildFeeds := db.GetGuildFeeds(m.GuildID)
 
 	// Check if there are set reddit feeds for this guild
 	if guildFeeds == nil || len(guildFeeds) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error. There are no set reddit feeds.")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -133,13 +127,13 @@ func removeRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 	cmdStrs := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	if len(cmdStrs) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"removefeed [type]* [u/author]* [channel]* [r/subreddit] [title]*`\n\n* is optional\n\n"+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.GetPrefix()+"removefeed [type]* [u/author]* [channel]* [r/subreddit] [title]*`\n\n* is optional\n\n"+
 			"Type refers to the post sort filter. Valid values are `hot`, `new` and `rising`. Defaults to `hot`.\n"+
 			"\nAuthor is the name of the post author.\n"+
 			"\nChannel is the ID or name of a channel from which to remove\n"+
 			"\nTitle is what a post title should start with or be for the BOT to post it. Leave empty for all feeds fulfilling [type] and [r/subreddit].")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -158,7 +152,7 @@ func removeRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 	if subreddit == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: subreddit not found. Please start it with `/r/` or `r/`.\n\nExample: `r/subreddit`.\n\nThis is not optional.")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -176,7 +170,7 @@ func removeRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 		if val == "hot" || val == "rising" || val == "new" {
 			postType = val
 		}
-		chaID, _ := functionality.ChannelParser(s, val, m.GuildID)
+		chaID, _ := common.ChannelParser(s, val, m.GuildID)
 		if chaID != "" {
 			channelID = chaID
 		}
@@ -191,72 +185,94 @@ func removeRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
-	functionality.Mutex.Lock()
-	err := functionality.RssThreadsRemove(subreddit, title, author, postType, channelID, m.GuildID)
+	// Fetches the target feed ID
+	for _, feed := range guildFeeds {
+		if feed == nil {
+			continue
+		}
+
+		if feed.GetSubreddit() == subreddit  {
+			if title != "" && feed.GetTitle() != title {
+				continue
+			}
+			if author != "" && feed.GetAuthor() != author {
+				continue
+			}
+			if postType != "" && feed.GetPostType() != postType {
+				continue
+			}
+			if channelID != "" && feed.GetChannelID() != channelID {
+				continue
+			}
+			break
+		}
+	}
+
+	// Write
+	err := db.SetGuildFeed(m.GuildID, entities.NewFeed(subreddit, title, author, false, postType, channelID), true)
 	if err != nil {
-		functionality.Mutex.Unlock()
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	functionality.Mutex.Unlock()
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! This reddit feed has been removed."))
 	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
+		common.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 }
 
 // Prints all currently set reddit feeds
 func viewRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
-
 	var (
 		message      string
 		splitMessage []string
 	)
 
-	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	guildFeeds := functionality.GuildMap[m.GuildID].Feeds
-	functionality.Mutex.RUnlock()
+	guildSettings := db.GetGuildSettings(m.GuildID)
+	guildFeeds := db.GetGuildFeeds(m.GuildID)
 
 	if guildFeeds == nil || len(guildFeeds) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There are no set reddit feeds.")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
 	// Iterates through all the reddit feeds if they exist and adds them to the message string and print them
-	for i := 0; i < len(guildFeeds); i++ {
-		// Format print string
-		message += fmt.Sprintf("**r/%s**", guildFeeds[i].Subreddit)
-		if guildFeeds[i].Author != "" {
-			message += fmt.Sprintf(" - **u/%s**", guildFeeds[i].Author)
+	for _, feed := range guildFeeds {
+		if feed == nil {
+			continue
 		}
-		message += fmt.Sprintf(" - **%s**", guildFeeds[i].PostType)
-		if guildFeeds[i].Pin {
+
+		// Format print string
+		message += fmt.Sprintf("**r/%s**", feed.GetSubreddit())
+		if feed.GetAuthor() != "" {
+			message += fmt.Sprintf(" - **u/%s**", feed.GetAuthor())
+		}
+		message += fmt.Sprintf(" - **%s**", feed.GetPostType())
+		if feed.GetPin() {
 			message += " - **pinned**"
 		}
-		message += fmt.Sprintf(" - **%s**", guildFeeds[i].ChannelID)
-		if guildFeeds[i].Title != "" {
-			message += fmt.Sprintf(" - **%s**", guildFeeds[i].Title)
+		message += fmt.Sprintf(" - **%s**", feed.GetChannelID())
+		if feed.GetTitle() != "" {
+			message += fmt.Sprintf(" - **%s**", feed.GetTitle())
 		}
 		message += "\n"
 	}
 
 	// Splits the message if it's over 1900 characters
 	if len(message) > 1900 {
-		splitMessage = functionality.SplitLongMessage(message)
+		splitMessage = common.SplitLongMessage(message)
 	}
 
 	// Prints split or unsplit whois
 	if splitMessage == nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
@@ -267,7 +283,7 @@ func viewRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot send feed message.")
 			if err != nil {
-				functionality.LogError(s, guildSettings.BotLog, err)
+				common.LogError(s, guildSettings.BotLog, err)
 				return
 			}
 		}
@@ -275,7 +291,7 @@ func viewRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 }
 
 func init() {
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute:    setRedditFeedCommand,
 		Trigger:    "addfeed",
 		Aliases:    []string{"setfeed", "adfeed", "addreddit", "setreddit"},
@@ -283,7 +299,7 @@ func init() {
 		Permission: functionality.Mod,
 		Module:     "reddit",
 	})
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute:    removeRedditFeedCommand,
 		Trigger:    "removefeed",
 		Aliases:    []string{"killfeed", "deletefeed", "removereddit", "killreddit", "deletereddit"},
@@ -291,7 +307,7 @@ func init() {
 		Permission: functionality.Mod,
 		Module:     "reddit",
 	})
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute:    viewRedditFeedCommand,
 		Trigger:    "feeds",
 		Aliases:    []string{"showreddit", "redditview", "redditshow", "printfeed", "viewfeeds", "showfeeds", "showfeed", "viewfeed", "feed"},

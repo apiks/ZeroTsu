@@ -1,7 +1,13 @@
 package commands
 
 import (
+	"fmt"
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/embeds"
+	"github.com/r-anime/ZeroTsu/entities"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 
@@ -10,38 +16,34 @@ import (
 
 // Kicks a user from the server with a reason
 func kickCommand(s *discordgo.Session, m *discordgo.Message) {
-
 	var (
 		userID        string
 		reason        string
-		kickTimestamp functionality.Punishment
+		kickTimestamp = entities.NewPunishment("", "", time.Time{})
 	)
 
-	functionality.Mutex.RLock()
-	guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-	functionality.Mutex.RUnlock()
-
+	guildSettings := db.GetGuildSettings(m.GuildID)
 	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 3)
 
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.Prefix+"kick [@user, userID, or username#discrim] [reason]*` format.\n\n* is optional"+
+		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.GetPrefix()+"kick [@user, userID, or username#discrim] [reason]*` format.\n\n* is optional"+
 			"\n\nNote: If using username#discrim you cannot have spaces in the username. It must be a single word.")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
-	userID, err := functionality.GetUserID(m, commandStrings)
+	userID, err := common.GetUserID(m, commandStrings)
 	if err != nil {
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 	if len(commandStrings) == 3 {
 		reason = commandStrings[2]
 		// Checks if the reason contains a mention and finds the actual name instead of ID
-		reason = functionality.MentionParser(s, reason, m.GuildID)
+		reason = common.MentionParser(s, reason, m.GuildID)
 	} else {
 		reason = "[No reason given]"
 	}
@@ -53,7 +55,7 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 		if err != nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: Invalid user or user not found in server. Cannot kick user.")
 			if err != nil {
-				functionality.LogError(s, guildSettings.BotLog, err)
+				common.LogError(s, guildSettings.BotLog, err)
 				return
 			}
 			return
@@ -65,60 +67,73 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	if functionality.HasElevatedPermissions(s, userID, m.GuildID) {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Target user has a privileged role. Cannot kick.")
 		if err != nil {
-			functionality.LogError(s, guildSettings.BotLog, err)
+			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
 		return
 	}
 
-	// Initialize user if they are not in memberInfo but is in server
-	functionality.Mutex.Lock()
-	memberInfoUser, ok := functionality.GuildMap[m.GuildID].MemberInfoMap[userID]
-	if !ok {
-		functionality.InitializeMember(userMem, m.GuildID)
+	// Checks if user is in memberInfo and handles them
+	mem := db.GetGuildMember(m.GuildID, userID)
+	if mem == nil {
+		if userMem == nil {
+			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in server. Cannot kick until user joins the server.")
+			if err != nil {
+				common.LogError(s, guildSettings.BotLog, err)
+				return
+			}
+			return
+		}
+
+		// Initializes user if he doesn't exist in memberInfo but is in server
+		functionality.InitializeUser(userMem.User, m.GuildID)
+
+		mem = db.GetGuildMember(m.GuildID, userID)
+		if mem == nil {
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, fmt.Errorf("error: member object is empty"))
+			return
+		}
 	}
 
 	// Adds kick reason to user memberInfo info
-	memberInfoUser.Kicks = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Kicks, reason)
+	mem.AppendToKicks(reason)
 
 	// Adds timestamp for that kick
 	t, err := m.Timestamp.Parse()
 	if err != nil {
-		functionality.Mutex.Unlock()
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	kickTimestamp.Timestamp = t
-	kickTimestamp.Punishment = reason
-	kickTimestamp.Type = "Kick"
-	memberInfoUser.Timestamps = append(functionality.GuildMap[m.GuildID].MemberInfoMap[userID].Timestamps, &kickTimestamp)
+	kickTimestamp.SetTimestamp(t)
+	kickTimestamp.SetPunishment(reason)
+	kickTimestamp.SetPunishmentType("Kick")
+	mem.AppendToTimestamps(kickTimestamp)
 
-	// Writes memberInfo.json
-	_ = functionality.WriteMemberInfo(functionality.GuildMap[m.GuildID].MemberInfoMap, m.GuildID)
-	functionality.Mutex.Unlock()
+	// Write
+	db.SetGuildMember(m.GuildID, mem)
 
 	// Fetches the guild for the Name
 	guild, err := s.Guild(m.GuildID)
 	if err != nil {
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
 	// Sends message to user DMs if possible
 	dm, _ := s.UserChannelCreate(userID)
-	_, _ = s.ChannelMessageSend(dm.ID, "You have been kicked from "+guild.Name+":\n**"+reason+"**")
+	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have been kicked from **%s**:\n`%s`", guild.Name, reason))
 
 	// Kicks the user from the server with a reason
 	err = s.GuildMemberDeleteWithReason(m.GuildID, userID, reason)
 	if err != nil {
-		functionality.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
 	// Sends embed channel message
-	err = functionality.KickEmbed(s, m, userMem.User, reason, m.ChannelID)
+	err = embeds.PunishmentAddition(s, m, userMem, "kick", "kicked", reason, m.ChannelID, nil)
 	if err != nil {
-		functionality.LogError(s, guildSettings.BotLog, err)
+		common.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 
@@ -126,14 +141,14 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	if guildSettings.BotLog == nil {
 		return
 	}
-	if guildSettings.BotLog.ID == "" {
+	if guildSettings.BotLog.GetID() == "" {
 		return
 	}
-	_ = functionality.KickEmbed(s, m, userMem.User, reason, guildSettings.BotLog.ID)
+	_ = embeds.PunishmentAddition(s, m, userMem, "kick", "kicked", reason, guildSettings.BotLog.GetID(), nil)
 }
 
 func init() {
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute:    kickCommand,
 		Trigger:    "kick",
 		Aliases:    []string{"k", "yeet", "yut"},

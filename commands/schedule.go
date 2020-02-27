@@ -2,6 +2,9 @@ package commands
 
 import (
 	"fmt"
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
 	"log"
 	"net/http"
 	"strings"
@@ -11,7 +14,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/config"
-	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 // Shows todays airing anime times, fetched from AnimeSchedule.net
@@ -27,13 +29,7 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	if len(commandStrings) == 1 {
 		// Get the current day's schedule in print format
-		if m.Author.ID == s.State.User.ID {
-			functionality.Mutex.Unlock()
-		}
 		printMessage = getDaySchedule(currentDay)
-		if m.Author.ID == s.State.User.ID {
-			functionality.Mutex.Lock()
-		}
 	} else {
 		// Else get the target day's schedule in print format
 		switch commandStrings[1] {
@@ -58,14 +54,8 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot parse that day.")
 			if err != nil {
 				if m.GuildID != "" {
-					if m.Author.ID != s.State.User.ID {
-						functionality.Mutex.Lock()
-					}
-					guildSettings := functionality.GuildMap[m.GuildID].GetGuildSettings()
-					if m.Author.ID != s.State.User.ID {
-						functionality.Mutex.Unlock()
-					}
-					functionality.LogError(s, guildSettings.BotLog, err)
+					guildSettings := db.GetGuildSettings(m.GuildID)
+					common.LogError(s, guildSettings.BotLog, err)
 				}
 				return
 			}
@@ -104,13 +94,13 @@ func getDaySchedule(weekday int) string {
 		PST = time.FixedZone("PST", -8*3600)
 	}
 
-	functionality.Mutex.Lock()
-	for dayInt, showSlice := range functionality.AnimeSchedule {
+	entities.Mutex.Lock()
+	for dayInt, showSlice := range entities.AnimeSchedule {
 		if dayInt == weekday {
 			for _, show := range showSlice {
 
 				// Parses the time in a proper time object
-				t, err := time.Parse("15:04", show.AirTime)
+				t, err := time.Parse("15:04", show.GetAirTime())
 				if err != nil {
 					log.Println(err)
 					continue
@@ -122,24 +112,24 @@ func getDaySchedule(weekday int) string {
 					ukTimezoneString, _ := t.In(BST).Zone()
 					westAmericanTimezoneString, _ := t.In(PDT).Zone()
 
-					if show.Delayed == "" {
-						printMessage += fmt.Sprintf("**%v %v** - %v %v **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, t.UTC().In(BST).Format("15:04"), ukTimezoneString,
+					if show.GetDelayed() == "" {
+						printMessage += fmt.Sprintf("**%v %v** - %v %v **|** %v %v **|** %v %v\n\n", show.GetName(), show.GetEpisode(), t.UTC().In(BST).Format("15:04"), ukTimezoneString,
 							t.UTC().In(PDT).Format("15:04"), westAmericanTimezoneString,
 							t.UTC().In(JST).Format("15:04"), jstTimezoneString)
 					} else {
-						printMessage += fmt.Sprintf("**%v %v** __%v__ - %v %v **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, show.Delayed, t.UTC().In(BST).Format("15:04"), ukTimezoneString,
+						printMessage += fmt.Sprintf("**%v %v** __%v__ - %v %v **|** %v %v **|** %v %v\n\n", show.GetName(), show.GetEpisode(), show.GetDelayed(), t.UTC().In(BST).Format("15:04"), ukTimezoneString,
 							t.UTC().In(PDT).Format("15:04"), westAmericanTimezoneString,
 							t.UTC().In(JST).Format("15:04"), jstTimezoneString)
 					}
 				} else {
 					westAmericanTimezoneString, _ := t.In(PST).Zone()
 
-					if show.Delayed == "" {
-						printMessage += fmt.Sprintf("**%v %v** - %v GMT **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, t.UTC().Format("15:04"),
+					if show.GetDelayed() == "" {
+						printMessage += fmt.Sprintf("**%v %v** - %v GMT **|** %v %v **|** %v %v\n\n", show.GetName(), show.GetEpisode(), t.UTC().Format("15:04"),
 							t.UTC().In(PST).Format("15:04"), westAmericanTimezoneString,
 							t.UTC().In(JST).Format("15:04"), jstTimezoneString)
 					} else {
-						printMessage += fmt.Sprintf("**%v %v** __%v__ - %v GMT **|** %v %v **|** %v %v\n\n", show.Name, show.Episode, show.Delayed, t.UTC().Format("15:04"),
+						printMessage += fmt.Sprintf("**%v %v** __%v__ - %v GMT **|** %v %v **|** %v %v\n\n", show.GetName(), show.GetEpisode(), show.GetDelayed(), t.UTC().Format("15:04"),
 							t.UTC().In(PST).Format("15:04"), westAmericanTimezoneString,
 							t.UTC().In(JST).Format("15:04"), jstTimezoneString)
 					}
@@ -148,16 +138,16 @@ func getDaySchedule(weekday int) string {
 			break
 		}
 	}
-	functionality.Mutex.Unlock()
+	entities.Mutex.Unlock()
 
 	return printMessage
 }
 
 // Updates the anime schedule map
-func processEachShow(index int, element *goquery.Selection) {
+func processEachShow(_ int, element *goquery.Selection) {
 	var (
 		day  int
-		show functionality.ShowAirTime
+		show entities.ShowAirTime
 	)
 
 	switch strings.ToLower(element.Parent().Parent().Parent().SiblingsFiltered(".column-title").Text()) {
@@ -177,16 +167,19 @@ func processEachShow(index int, element *goquery.Selection) {
 		day = 6
 	}
 
-	show.Name = element.Find(".show-name").Text()
-	show.Episode = "Ep " + element.Parent().Parent().Parent().Find(".episode-number").Text()
-	show.Episode = strings.Replace(show.Episode, "\n", "", -1)
-	show.AirTime = element.Find(".air-time").Text()
-	show.Delayed = strings.TrimPrefix(element.Parent().Parent().Parent().Find(".delay").Text(), " ")
-	show.Delayed = strings.Trim(show.Delayed, "\n")
-	show.Key, _ = element.Parent().Parent().Parent().Find(".show-link").Attr("href")
-	show.Key = strings.ToLower(strings.TrimPrefix(show.Key, "/shows/"))
+	show.SetName(element.Find(".show-name").Text())
+	show.SetEpisode("Ep " + element.Parent().Parent().Parent().Find(".episode-number").Text())
+	show.SetName(strings.Replace(show.GetEpisode(), "\n", "", -1))
+	show.SetAirTime(element.Find(".air-time").Text())
+	show.SetDelayed(strings.TrimPrefix(element.Parent().Parent().Parent().Find(".delay").Text(), " "))
+	show.SetDelayed(strings.Trim(show.GetDelayed(), "\n"))
+	key, exists := element.Parent().Parent().Parent().Find(".show-link").Attr("href")
+	if exists == true {
+		show.SetKey(key)
+		show.SetKey(strings.ToLower(strings.TrimPrefix(show.GetKey(), "/shows/")))
+	}
 
-	functionality.AnimeSchedule[day] = append(functionality.AnimeSchedule[day], &show)
+	entities.AnimeSchedule[day] = append(entities.AnimeSchedule[day], &show)
 }
 
 // Scrapes https://AnimeSchedule.net for air times subbed
@@ -203,7 +196,7 @@ func UpdateAnimeSchedule() {
 		log.Println(err)
 		return
 	}
-	request.Header.Set("User-Agent", functionality.UserAgent)
+	request.Header.Set("Username-Agent", common.UserAgent)
 
 	// Make request
 	response, err := client.Do(request)
@@ -221,12 +214,12 @@ func UpdateAnimeSchedule() {
 	}
 
 	// Find all airing shows and process them after resetting map
-	functionality.Mutex.Lock()
-	for dayInt := range functionality.AnimeSchedule {
-		delete(functionality.AnimeSchedule, dayInt)
+	entities.Mutex.Lock()
+	for dayInt := range entities.AnimeSchedule {
+		delete(entities.AnimeSchedule, dayInt)
 	}
 	document.Find(".columns h3").Each(processEachShow)
-	functionality.Mutex.Unlock()
+	entities.Mutex.Unlock()
 }
 
 // isTimeDST returns true if time t occurs within daylight saving time
@@ -255,12 +248,8 @@ func isTimeDST(t time.Time) bool {
 
 // Posts the schedule in a target channel if a guild has enabled it
 func DailySchedule(s *discordgo.Session, guildID string) {
-	if dailyschedule, ok := functionality.GuildMap[guildID].Autoposts["dailyschedule"]; !ok {
-		return
-	} else if dailyschedule == nil {
-		return
-	}
-	if functionality.GuildMap[guildID].Autoposts["dailyschedule"].ID == "" {
+	dailyschedule := db.GetGuildAutopost(guildID, "dailyschedule")
+	if dailyschedule == nil || dailyschedule.GetID() == "" {
 		return
 	}
 
@@ -269,13 +258,13 @@ func DailySchedule(s *discordgo.Session, guildID string) {
 		author  discordgo.User
 	)
 
-	guildSettings := functionality.GuildMap[guildID].GetGuildSettings()
+	guildSettings := db.GetGuildSettings(guildID)
 
 	author.ID = s.State.User.ID
 	message.GuildID = guildID
 	message.Author = &author
-	message.Content = fmt.Sprintf("%sschedule", guildSettings.Prefix)
-	message.ChannelID = functionality.GuildMap[guildID].Autoposts["dailyschedule"].ID
+	message.Content = fmt.Sprintf("%sschedule", guildSettings.GetPrefix())
+	message.ChannelID = dailyschedule.GetID()
 
 	scheduleCommand(s, &message)
 }
@@ -288,7 +277,7 @@ func ScheduleTimer(s *discordgo.Session, e *discordgo.Ready) {
 }
 
 func init() {
-	functionality.Add(&functionality.Command{
+	Add(&Command{
 		Execute: scheduleCommand,
 		Trigger: "schedule",
 		Aliases: []string{"schedul", "schedu", "schedle", "schdule", "animeschedule", "anischedule"},

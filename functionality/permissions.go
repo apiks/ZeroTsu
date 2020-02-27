@@ -2,18 +2,18 @@ package functionality
 
 import (
 	"github.com/bwmarrin/discordgo"
-
 	"github.com/r-anime/ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/db"
 )
 
 const (
-	User permission = iota
+	User Permission = iota
 	Mod
 	Admin
 	Owner
 )
 
-type permission int
+type Permission int
 
 // Checks if a user has admin permissions or is a privileged role
 func HasElevatedPermissions(s *discordgo.Session, userID string, guildID string) bool {
@@ -29,7 +29,7 @@ func HasElevatedPermissions(s *discordgo.Session, userID string, guildID string)
 		return true
 	}
 
-	return HasPrivilegedPermissions(mem, guildID)
+	return HasPrivilegedPermissions(mem)
 }
 
 // Checks if member has admin permissions
@@ -63,19 +63,24 @@ func MemberIsAdmin(s *discordgo.Session, guildID string, mem *discordgo.Member, 
 }
 
 // Checks if a user has a privileged role in a given server
-func HasPrivilegedPermissions(m *discordgo.Member, guildID string) bool {
-	Mutex.RLock()
-	defer Mutex.RUnlock()
+func HasPrivilegedPermissions(m *discordgo.Member) bool {
 	if m.User.ID == config.OwnerID {
 		return true
 	}
 
-	for _, role := range m.Roles {
-		for _, privilegedRole := range GuildMap[guildID].GuildConfig.CommandRoles {
-			if role == privilegedRole.ID {
+	guildSettings := db.GetGuildSettings(m.GuildID)
+
+	for _, privilegedRole := range guildSettings.GetCommandRoles() {
+		if privilegedRole == nil {
+			continue
+		}
+
+		for _, role := range m.Roles {
+			if role == privilegedRole.GetID() {
 				return true
 			}
 		}
 	}
+
 	return false
 }
