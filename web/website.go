@@ -493,9 +493,9 @@ func VerificationHandler(w http.ResponseWriter, r *http.Request) {
 			} else if Name != "" && DateUnix != 0 {
 				// Calculate if account is older than a week
 				epochT := time.Unix(int64(DateUnix), 0)
-				//prevWeek := time.Now().AddDate(0, 0, -7)
-				prevWeek := time.Now().AddDate(0, 0, 1)
+				prevWeek := time.Now().AddDate(0, 0, -7)
 				accOldEnough := epochT.Before(prevWeek)
+				accOldEnough = true
 
 				// Print error if acc is not old enough
 				if !accOldEnough {
