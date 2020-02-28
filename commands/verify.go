@@ -124,7 +124,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Stores time of verification and adds to verification stats
-	db.SetGuildVerifiedStat(m.GuildID, t.Format(common.ShortDateFormat), 1)
+	db.AddGuildVerifiedStat(m.GuildID, t.Format(common.ShortDateFormat), 1)
 
 	// Sends warning embed message to channel
 	if userMem == nil {
@@ -228,7 +228,7 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Stores time of verification and removes from verification stats
 	t := time.Now()
-	db.SetGuildVerifiedStat(m.GuildID, t.Format(common.ShortDateFormat), -1)
+	db.AddGuildVerifiedStat(m.GuildID, t.Format(common.ShortDateFormat), -1)
 
 	err = embeds.Verification(s, m, userMem)
 	if err != nil {

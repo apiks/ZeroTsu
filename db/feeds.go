@@ -7,7 +7,7 @@ import (
 )
 
 // GetGuildFeeds returns the guild's feeds from in-memory
-func GetGuildFeeds(guildID string) []*entities.Feed {
+func GetGuildFeeds(guildID string) []entities.Feed {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.RLock()
@@ -19,7 +19,7 @@ func GetGuildFeeds(guildID string) []*entities.Feed {
 }
 
 // SetGuildFeeds sets a target guild's feeds in-memory
-func SetGuildFeeds(guildID string, feeds []*entities.Feed) error {
+func SetGuildFeeds(guildID string, feeds []entities.Feed) error {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
@@ -46,7 +46,7 @@ func SetGuildFeeds(guildID string, feeds []*entities.Feed) error {
 }
 
 // GetGuildFeed returns a guild's feed from in-memory
-func GetGuildFeed(guildID, subreddit, channelID string) *entities.Feed {
+func GetGuildFeed(guildID, subreddit, channelID string) entities.Feed {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.RLock()
@@ -55,16 +55,12 @@ func GetGuildFeed(guildID, subreddit, channelID string) *entities.Feed {
 	defer entities.Guilds.DB[guildID].RUnlock()
 
 	for _, guildFeed := range entities.Guilds.DB[guildID].GetFeeds() {
-		if guildFeed == nil {
-			continue
-		}
-
 		if guildFeed.GetSubreddit() == subreddit && guildFeed.GetChannelID() == channelID {
 			return guildFeed
 		}
 	}
 
-	return nil
+	return entities.Feed{}
 }
 
 // SetGuildFeed sets a guild's feed in-memory
@@ -86,10 +82,6 @@ func SetGuildFeed(guildID string, feed entities.Feed, delete ...bool) error {
 	if len(delete) == 0 {
 		var exists bool
 		for _, guildFeed := range entities.Guilds.DB[guildID].GetFeeds() {
-			if guildFeed == nil {
-				continue
-			}
-
 			if guildFeed.GetSubreddit() == feed.GetSubreddit() &&
 				guildFeed.GetChannelID() == feed.GetChannelID() {
 				exists = true
@@ -123,10 +115,6 @@ func deleteGuildFeed(guildID string, feed entities.Feed) error {
 	var exists bool
 
 	for i, guildFeed := range entities.Guilds.DB[guildID].GetFeeds() {
-		if guildFeed == nil {
-			continue
-		}
-
 		if feed.GetSubreddit() == guildFeed.GetSubreddit() {
 			if feed.GetChannelID() != "" && guildFeed.GetChannelID() != feed.GetChannelID() {
 				continue

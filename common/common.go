@@ -190,10 +190,6 @@ func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
 
 		guildMemberInfo := db.GetGuildMemberInfo(m.GuildID)
 		for _, user := range guildMemberInfo {
-			if user == nil {
-				continue
-			}
-
 			if strings.ToLower(user.GetRedditUsername()) == userArgument {
 				userArgument = user.GetID()
 				exists = true

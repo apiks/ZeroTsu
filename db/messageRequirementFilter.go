@@ -7,7 +7,7 @@ import (
 )
 
 // GetGuildMessageRequirements returns the guild's message requirement filters
-func GetGuildMessageRequirements(guildID string) []*entities.MessRequirement {
+func GetGuildMessageRequirements(guildID string) []entities.MessRequirement {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.RLock()
@@ -17,7 +17,7 @@ func GetGuildMessageRequirements(guildID string) []*entities.MessRequirement {
 }
 
 // SetGuildMessageRequirements sets a target guild's message requirement filters in-memory
-func SetGuildMessageRequirements(guildID string, messRequirements []*entities.MessRequirement) error {
+func SetGuildMessageRequirements(guildID string, messRequirements []entities.MessRequirement) error {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
@@ -58,10 +58,6 @@ func SetGuildMessageRequirement(guildID string, messRequirement entities.MessReq
 	if len(delete) == 0 {
 		var exists bool
 		for _, guildMessReq := range entities.Guilds.DB[guildID].GetMessageRequirements() {
-			if guildMessReq == nil {
-				continue
-			}
-
 			if strings.ToLower(guildMessReq.GetPhrase()) == messRequirement.GetPhrase() {
 				exists = true
 				break
@@ -94,10 +90,6 @@ func deleteGuildMessageRequirement(guildID string, messReq entities.MessRequirem
 	var exists bool
 
 	for i, guildMessReq := range entities.Guilds.DB[guildID].GetMessageRequirements() {
-		if guildMessReq == nil {
-			continue
-		}
-
 		if strings.ToLower(guildMessReq.GetPhrase()) == messReq.GetPhrase() {
 			entities.Guilds.DB[guildID].RemoveFromMessageRequirements(i)
 			exists = true

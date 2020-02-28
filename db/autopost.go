@@ -10,7 +10,7 @@ func GetGuildAutopost(guildID string, postType string) entities.Cha {
 	defer entities.Guilds.RUnlock()
 
 	if autopost, ok := entities.Guilds.DB[guildID].GetAutoposts()[postType]; ok {
-		return *autopost
+		return autopost
 	}
 
 	return entities.Cha{}
@@ -21,7 +21,7 @@ func SetGuildAutopost(guildID string, postType string, autopost entities.Cha) {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
-	entities.Guilds.DB[guildID].GetAutoposts()[postType] = &autopost
+	entities.Guilds.DB[guildID].GetAutoposts()[postType] = autopost
 	entities.Guilds.Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("autoposts", entities.Guilds.DB[guildID].GetAutoposts())

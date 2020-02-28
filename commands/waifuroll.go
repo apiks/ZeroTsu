@@ -519,10 +519,6 @@ func showOwners(s *discordgo.Session, m *discordgo.Message) {
 	// Iterates through each waifu and member, increasing the waifuNum each time it detects a user with that waifu, and saves it to the messsage
 	for _, waifu := range guildWaifus {
 		for _, member := range guildMemberInfo {
-			if member == nil {
-				continue
-			}
-
 			if member.GetWaifu().GetName() == waifu.GetName() {
 				waifuNum++
 			}

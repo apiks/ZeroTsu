@@ -59,22 +59,22 @@ func (g *GuildMap) Init(guildID string) {
 	defer g.Unlock()
 	g.DB[guildID] = &GuildInfo{
 		ID: guildID,
-		GuildSettings: &GuildSettings{
+		GuildSettings: GuildSettings{
 			Prefix:              ".",
 			ReactsModule:        true,
 			PingMessage:         "Hmmm~ So this is what you do all day long?",
 		},
-		MemberInfoMap:   make(map[string]*UserInfo),
+		MemberInfoMap:   make(map[string]UserInfo),
 		SpoilerMap:      make(map[string]*discordgo.Role),
-		EmojiStats:      make(map[string]*Emoji),
-		ChannelStats:    make(map[string]*Channel),
+		EmojiStats:      make(map[string]Emoji),
+		ChannelStats:    make(map[string]Channel),
 		UserChangeStats: make(map[string]int),
 		VerifiedStats:   make(map[string]int),
 		VoteInfoMap:     make(map[string]*VoteInfo),
 		TempChaMap:      make(map[string]*TempChaInfo),
 		ReactJoinMap:    make(map[string]*ReactJoin),
 		ExtensionList:   make(map[string]string),
-		Autoposts:       make(map[string]*Cha),
+		Autoposts:       make(map[string]Cha),
 	}
 }
 

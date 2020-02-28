@@ -71,23 +71,17 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Removes the mute if it finds it
 	for _, user := range punishedUsers {
-		if user == nil {
-			continue
-		}
-
 		if user.GetID() == userID {
 			muteFlag = true
 
 			if user.GetUnbanDate() == common.NilTime {
-				*user = entities.NewPunishedUsers("", "", time.Time{}, time.Time{})
-				err = db.SetGuildPunishedUser(m.GuildID, *user)
+				err = db.SetGuildPunishedUser(m.GuildID, entities.NewPunishedUsers("", "", time.Time{}, time.Time{}))
 				if err != nil {
 					common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 					return
 				}
 			} else {
-				*user = entities.NewPunishedUsers(user.GetID(), user.GetUsername(), user.GetUnbanDate(), time.Time{})
-				err = db.SetGuildPunishedUser(m.GuildID, *user)
+				err = db.SetGuildPunishedUser(m.GuildID, entities.NewPunishedUsers(user.GetID(), user.GetUsername(), user.GetUnbanDate(), time.Time{}))
 				if err != nil {
 					common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 					return

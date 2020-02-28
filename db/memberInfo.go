@@ -5,7 +5,7 @@ import (
 )
 
 // GetGuildMemberInfo returns a guild memberInfo map from in-memory
-func GetGuildMemberInfo(guildID string) map[string]*entities.UserInfo {
+func GetGuildMemberInfo(guildID string) map[string]entities.UserInfo {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.RLock()
@@ -15,7 +15,7 @@ func GetGuildMemberInfo(guildID string) map[string]*entities.UserInfo {
 }
 
 // SetGuildMemberInfo sets a target guild's memberInfo map in-memory
-func SetGuildMemberInfo(guildID string, memberInfo map[string]*entities.UserInfo) {
+func SetGuildMemberInfo(guildID string, memberInfo map[string]entities.UserInfo) {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
@@ -33,7 +33,7 @@ func GetGuildMember(guildID string, userID string) entities.UserInfo {
 	defer entities.Guilds.RUnlock()
 
 	if member, ok := entities.Guilds.DB[guildID].GetMemberInfoMap()[userID]; ok {
-		return *member
+		return member
 	}
 
 	return entities.UserInfo{}
@@ -45,9 +45,9 @@ func SetGuildMember(guildID string, member entities.UserInfo, deleteSlice ...boo
 
 	entities.Guilds.Lock()
 	if len(deleteSlice) == 0 {
-		entities.Guilds.DB[guildID].GetMemberInfoMap()[member.GetID()] = &member
+		entities.Guilds.DB[guildID].AssignToMemberInfoMap(member.GetID(), member)
 	} else {
-		delete(entities.Guilds.DB[guildID].GetMemberInfoMap(), member.GetID())
+		entities.Guilds.DB[guildID].RemoveFromMemberInfoMap(member.GetID())
 	}
 	entities.Guilds.Unlock()
 

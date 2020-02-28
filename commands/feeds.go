@@ -187,10 +187,6 @@ func removeRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Fetches the target feed ID
 	for _, feed := range guildFeeds {
-		if feed == nil {
-			continue
-		}
-
 		if feed.GetSubreddit() == subreddit  {
 			if title != "" && feed.GetTitle() != title {
 				continue
@@ -243,10 +239,6 @@ func viewRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Iterates through all the reddit feeds if they exist and adds them to the message string and print them
 	for _, feed := range guildFeeds {
-		if feed == nil {
-			continue
-		}
-
 		// Format print string
 		message += fmt.Sprintf("**r/%s**", feed.GetSubreddit())
 		if feed.GetAuthor() != "" {

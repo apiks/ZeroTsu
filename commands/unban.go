@@ -58,23 +58,17 @@ func unbanCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Removes the ban if it finds it
 	for _, user := range punishedUsers {
-		if user == nil {
-			continue
-		}
-
 		if user.GetID() == userID {
 			banFlag = true
 
 			if user.GetUnmuteDate() == (time.Time{}) {
-				*user = entities.NewPunishedUsers("", "", time.Time{}, time.Time{})
-				err = db.SetGuildPunishedUser(m.GuildID, *user)
+				err = db.SetGuildPunishedUser(m.GuildID, entities.NewPunishedUsers("", "", time.Time{}, time.Time{}))
 				if err != nil {
 					common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 					return
 				}
 			} else {
-				*user = entities.NewPunishedUsers(user.GetID(), user.GetUsername(), time.Time{}, user.GetUnmuteDate())
-				err = db.SetGuildPunishedUser(m.GuildID, *user)
+				err = db.SetGuildPunishedUser(m.GuildID, entities.NewPunishedUsers(user.GetID(), user.GetUsername(), time.Time{}, user.GetUnmuteDate()))
 				if err != nil {
 					common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 					return

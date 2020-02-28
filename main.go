@@ -37,7 +37,6 @@ func main() {
 	// Load all guild and shared info
 	entities.Mutex.Lock()
 	entities.LoadSharedDB()
-	//entities.LoadGuilds()
 	entities.Mutex.Unlock()
 	entities.Guilds.LoadAll()
 	commands.ResetSubscriptions()
@@ -62,7 +61,9 @@ func main() {
 		}
 	}
 
-	go func() { log.Println(http.ListenAndServe(":6060", nil)) }()
+	//go func() {
+	//	log.Println(http.ListenAndServe(":6969", nil))
+	//}()
 
 	<-make(chan struct{})
 	return

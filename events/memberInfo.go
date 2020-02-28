@@ -30,7 +30,6 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	if e.GuildID == "" {
 		return
 	}
-	var writeFlag bool
 
 	entities.HandleNewGuild(e.GuildID)
 
@@ -79,7 +78,6 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 			mem = mem.AppendToPastUsernames(e.User.Username)
 		}
 		mem = mem.SetUsername(e.User.Username)
-		writeFlag = true
 	}
 
 	// Checks if the user's current nickname is the same as the one in the database. Otherwise updates
@@ -97,21 +95,12 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 			mem = mem.AppendToPastNicknames(e.Nick)
 		}
 		mem = mem.SetNickname(e.Nick)
-		writeFlag = true
 	}
 
 	// Checks if the discrim in database is the same as the discrim used by the user. If not it changes it
 	if e.User.Discriminator != mem.GetDiscrim() && e.User.Discriminator != "" {
 		mem = mem.SetDiscrim(e.User.Discriminator)
-		writeFlag = true
 	}
-
-	// Write
-	if !writeFlag {
-		return
-	}
-
-	db.SetGuildMember(e.GuildID, mem)
 }
 
 // OnMemberUpdate listens for member updates to compare usernames, nicknames and discrim
@@ -127,7 +116,6 @@ func OnMemberUpdate(_ *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	if e.GuildID == "" {
 		return
 	}
-	var writeFlag bool
 
 	entities.HandleNewGuild(e.GuildID)
 
@@ -152,7 +140,6 @@ func OnMemberUpdate(_ *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 			mem = mem.AppendToPastUsernames(e.User.Username)
 		}
 		mem = mem.SetUsername(e.User.Username)
-		writeFlag = true
 	}
 
 	// Checks nicknames and updates if needed
@@ -170,21 +157,12 @@ func OnMemberUpdate(_ *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 			mem = mem.AppendToPastNicknames(e.Nick)
 		}
 		mem = mem.SetNickname(e.Nick)
-		writeFlag = true
 	}
 
 	// Checks if the discrim in database is the same as the discrim used by the memberInfoUser. If not it changes it
 	if mem.GetDiscrim() != e.User.Discriminator && e.User.Discriminator != "" {
 		mem = mem.SetDiscrim(e.User.Discriminator)
-		writeFlag = true
 	}
-
-	// Write
-	if !writeFlag {
-		return
-	}
-
-	db.SetGuildMember(e.GuildID, mem)
 }
 
 // OnPresenceUpdate listens for user updates to compare usernames and discrim
@@ -200,7 +178,6 @@ func OnPresenceUpdate(_ *discordgo.Session, e *discordgo.PresenceUpdate) {
 	if e.GuildID == "" {
 		return
 	}
-	var writeFlag bool
 
 	entities.HandleNewGuild(e.GuildID)
 
@@ -225,7 +202,6 @@ func OnPresenceUpdate(_ *discordgo.Session, e *discordgo.PresenceUpdate) {
 			mem = mem.AppendToPastUsernames(e.User.Username)
 		}
 		mem = mem.SetUsername(e.User.Username)
-		writeFlag = true
 	}
 
 	// Checks nicknames and updates if needed
@@ -243,20 +219,10 @@ func OnPresenceUpdate(_ *discordgo.Session, e *discordgo.PresenceUpdate) {
 			mem = mem.AppendToPastNicknames(e.Nick)
 		}
 		mem = mem.SetNickname(e.Nick)
-		writeFlag = true
 	}
 
 	// Checks if the discrim in database is the same as the discrim used by the memberInfoUser. If not it changes it
 	if mem.GetDiscrim() != e.User.Discriminator && e.User.Discriminator != "" {
 		mem = mem.SetDiscrim(e.User.Discriminator)
-		writeFlag = true
 	}
-
-	// Write
-	if !writeFlag {
-		return
-	}
-
-	// Saves the updates to memberInfoMap and writes to disk
-	db.SetGuildMember(e.GuildID, mem)
 }

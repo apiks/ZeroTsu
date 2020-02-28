@@ -47,12 +47,13 @@ func discordBotsGuildCount(client *http.Client, guildCount string) {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
 	req.Header.Add("Authorization", config.DiscordBotsSecret)
-	_, err = client.Do(req)
+	response, err := client.Do(req)
 	if err != nil {
 		log.Println("discordBots Err")
 		log.Println(err)
 		return
 	}
+	response.Body.Close()
 }
 
 // Sends guild count to discord.boats
@@ -68,12 +69,13 @@ func discordBoatsGuildCount(client *http.Client, guildCount string) {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
 	req.Header.Add("Authorization", config.DiscordBoatsSecret)
-	_, err = client.Do(req)
+	response, err := client.Do(req)
 	if err != nil {
 		log.Println("discordBoats Err")
 		log.Println(err)
 		return
 	}
+	response.Body.Close()
 }
 
 // Sends guild count to bots.ondiscord.xyz
@@ -89,10 +91,11 @@ func discordBotsOnDiscordGuildCount(client *http.Client, guildCount string) {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
 	req.Header.Add("Authorization", config.BotsOnDiscordSecret)
-	_, err = client.Do(req)
+	response, err := client.Do(req)
 	if err != nil {
 		log.Println("BotsOnDiscord Err")
 		log.Println(err)
 		return
 	}
+	response.Body.Close()
 }

@@ -15,29 +15,29 @@ type GuildInfo struct {
 	sync.RWMutex
 
 	ID            string
-	GuildSettings *GuildSettings
+	GuildSettings GuildSettings
 
-	PunishedUsers       []*PunishedUsers
-	Filters             []*Filter
-	MessageRequirements []*MessRequirement
+	PunishedUsers       []PunishedUsers
+	Filters             []Filter
+	MessageRequirements []MessRequirement
 	SpoilerRoles        []*discordgo.Role
-	Feeds               []*Feed
-	FeedChecks          []*FeedCheck
+	Feeds               []Feed
+	FeedChecks          []FeedCheck
 	Raffles             []*Raffle
 	Waifus              []*Waifu
 	WaifuTrades         []*WaifuTrade
 
-	MemberInfoMap   map[string]*UserInfo
+	MemberInfoMap   map[string]UserInfo
 	SpoilerMap      map[string]*discordgo.Role
-	EmojiStats      map[string]*Emoji
-	ChannelStats    map[string]*Channel
+	EmojiStats      map[string]Emoji
+	ChannelStats    map[string]Channel
 	UserChangeStats map[string]int
 	VerifiedStats   map[string]int
 	VoteInfoMap     map[string]*VoteInfo
 	TempChaMap      map[string]*TempChaInfo
 	ReactJoinMap    map[string]*ReactJoin
 	ExtensionList   map[string]string
-	Autoposts       map[string]*Cha
+	Autoposts       map[string]Cha
 }
 
 func (g *GuildInfo) SetID(id string) {
@@ -57,7 +57,7 @@ func (g *GuildInfo) GetID() string {
 
 func (g *GuildInfo) SetGuildSettings(guildSettings GuildSettings) {
 	g.Lock()
-	*g.GuildSettings = guildSettings
+	g.GuildSettings = guildSettings
 	g.Unlock()
 }
 
@@ -67,32 +67,34 @@ func (g *GuildInfo) GetGuildSettings() GuildSettings {
 	if g == nil {
 		return GuildSettings{}
 	}
-	return *g.GuildSettings
+	return g.GuildSettings
+}
+
+func (g *GuildInfo) AssignToPunishedUsers(index int, punishedUser PunishedUsers) {
+	g.Lock()
+	g.PunishedUsers[index] = punishedUser
+	g.Unlock()
 }
 
 func (g *GuildInfo) AppendToPunishedUsers(punishedUser PunishedUsers) {
 	g.Lock()
-	g.PunishedUsers = append(g.PunishedUsers, &punishedUser)
+	g.PunishedUsers = append(g.PunishedUsers, punishedUser)
 	g.Unlock()
 }
 
 func (g *GuildInfo) RemoveFromPunishedUsers(index int) {
 	g.Lock()
-	if index < len(g.PunishedUsers)-1 {
-		copy(g.PunishedUsers[index:], g.PunishedUsers[index+1:])
-	}
-	g.PunishedUsers[len(g.PunishedUsers)-1] = nil
-	g.PunishedUsers = g.PunishedUsers[:len(g.PunishedUsers)-1]
+	g.PunishedUsers = append(g.PunishedUsers[:index], g.PunishedUsers[index+1:]...)
 	g.Unlock()
 }
 
-func (g *GuildInfo) SetPunishedUsers(punishedUsers []*PunishedUsers) {
+func (g *GuildInfo) SetPunishedUsers(punishedUsers []PunishedUsers) {
 	g.Lock()
 	g.PunishedUsers = punishedUsers
 	g.Unlock()
 }
 
-func (g *GuildInfo) GetPunishedUsers() []*PunishedUsers {
+func (g *GuildInfo) GetPunishedUsers() []PunishedUsers {
 	g.RLock()
 	defer g.RUnlock()
 	if g == nil {
@@ -101,29 +103,31 @@ func (g *GuildInfo) GetPunishedUsers() []*PunishedUsers {
 	return g.PunishedUsers
 }
 
+func (g *GuildInfo) AssignToFilters(index int, filter Filter) {
+	g.Lock()
+	g.Filters[index] = filter
+	g.Unlock()
+}
+
 func (g *GuildInfo) AppendToFilters(filter Filter) {
 	g.Lock()
-	g.Filters = append(g.Filters, &filter)
+	g.Filters = append(g.Filters, filter)
 	g.Unlock()
 }
 
 func (g *GuildInfo) RemoveFromFilters(index int) {
 	g.Lock()
-	if index < len(g.Filters)-1 {
-		copy(g.Filters[index:], g.Filters[index+1:])
-	}
-	g.Filters[len(g.Filters)-1] = nil
-	g.Filters = g.Filters[:len(g.Filters)-1]
+	g.Filters = append(g.Filters[:index], g.Filters[index+1:]...)
 	g.Unlock()
 }
 
-func (g *GuildInfo) SetFilters(filters []*Filter) {
+func (g *GuildInfo) SetFilters(filters []Filter) {
 	g.Lock()
 	g.Filters = filters
 	g.Unlock()
 }
 
-func (g *GuildInfo) GetFilters() []*Filter {
+func (g *GuildInfo) GetFilters() []Filter {
 	g.RLock()
 	defer g.RUnlock()
 	if g == nil {
@@ -132,29 +136,31 @@ func (g *GuildInfo) GetFilters() []*Filter {
 	return g.Filters
 }
 
+func (g *GuildInfo) AssignToMessageRequirements(index int, messageRequirement MessRequirement) {
+	g.Lock()
+	g.MessageRequirements[index] = messageRequirement
+	g.Unlock()
+}
+
 func (g *GuildInfo) AppendToMessageRequirements(messageRequirement MessRequirement) {
 	g.Lock()
-	g.MessageRequirements = append(g.MessageRequirements, &messageRequirement)
+	g.MessageRequirements = append(g.MessageRequirements, messageRequirement)
 	g.Unlock()
 }
 
 func (g *GuildInfo) RemoveFromMessageRequirements(index int) {
 	g.Lock()
-	if index < len(g.MessageRequirements)-1 {
-		copy(g.MessageRequirements[index:], g.MessageRequirements[index+1:])
-	}
-	g.MessageRequirements[len(g.MessageRequirements)-1] = nil
-	g.MessageRequirements = g.MessageRequirements[:len(g.MessageRequirements)-1]
+	g.MessageRequirements = append(g.MessageRequirements[:index], g.MessageRequirements[index+1:]...)
 	g.Unlock()
 }
 
-func (g *GuildInfo) SetMessageRequirements(messageRequirements []*MessRequirement) {
+func (g *GuildInfo) SetMessageRequirements(messageRequirements []MessRequirement) {
 	g.Lock()
 	g.MessageRequirements = messageRequirements
 	g.Unlock()
 }
 
-func (g *GuildInfo) GetMessageRequirements() []*MessRequirement {
+func (g *GuildInfo) GetMessageRequirements() []MessRequirement {
 	g.RLock()
 	defer g.RUnlock()
 	if g == nil {
@@ -194,29 +200,31 @@ func (g *GuildInfo) GetSpoilerRoles() []*discordgo.Role {
 	return g.SpoilerRoles
 }
 
+func (g *GuildInfo) AssignToFeeds(index int, feed Feed) {
+	g.Lock()
+	g.Feeds[index] = feed
+	g.Unlock()
+}
+
 func (g *GuildInfo) AppendToFeeds(feed Feed) {
 	g.Lock()
-	g.Feeds = append(g.Feeds, &feed)
+	g.Feeds = append(g.Feeds, feed)
 	g.Unlock()
 }
 
 func (g *GuildInfo) RemoveFromFeeds(index int) {
 	g.Lock()
-	if index < len(g.Feeds)-1 {
-		copy(g.Feeds[index:], g.Feeds[index+1:])
-	}
-	g.Feeds[len(g.Feeds)-1] = nil
-	g.Feeds = g.Feeds[:len(g.Feeds)-1]
+	g.Feeds = append(g.Feeds[:index], g.Feeds[index+1:]...)
 	g.Unlock()
 }
 
-func (g *GuildInfo) SetFeeds(feeds []*Feed) {
+func (g *GuildInfo) SetFeeds(feeds []Feed) {
 	g.Lock()
 	g.Feeds = feeds
 	g.Unlock()
 }
 
-func (g *GuildInfo) GetFeeds() []*Feed {
+func (g *GuildInfo) GetFeeds() []Feed {
 	g.RLock()
 	defer g.RUnlock()
 	if g == nil {
@@ -225,29 +233,31 @@ func (g *GuildInfo) GetFeeds() []*Feed {
 	return g.Feeds
 }
 
+func (g *GuildInfo) AssignToFeedChecks(index int, feedCheck FeedCheck) {
+	g.Lock()
+	g.FeedChecks[index] = feedCheck
+	g.Unlock()
+}
+
 func (g *GuildInfo) AppendToFeedChecks(feedCheck FeedCheck) {
 	g.Lock()
-	g.FeedChecks = append(g.FeedChecks, &feedCheck)
+	g.FeedChecks = append(g.FeedChecks, feedCheck)
 	g.Unlock()
 }
 
 func (g *GuildInfo) RemoveFromFeedChecks(index int) {
 	g.Lock()
-	if index < len(g.FeedChecks)-1 {
-		copy(g.FeedChecks[index:], g.FeedChecks[index+1:])
-	}
-	g.FeedChecks[len(g.FeedChecks)-1] = nil
-	g.FeedChecks = g.FeedChecks[:len(g.FeedChecks)-1]
+	g.FeedChecks = append(g.FeedChecks[:index], g.FeedChecks[index+1:]...)
 	g.Unlock()
 }
 
-func (g *GuildInfo) SetFeedChecks(feedChecks []*FeedCheck) {
+func (g *GuildInfo) SetFeedChecks(feedChecks []FeedCheck) {
 	g.Lock()
 	g.FeedChecks = feedChecks
 	g.Unlock()
 }
 
-func (g *GuildInfo) GetFeedChecks() []*FeedCheck {
+func (g *GuildInfo) GetFeedChecks() []FeedCheck {
 	g.RLock()
 	defer g.RUnlock()
 	if g == nil {
@@ -349,13 +359,25 @@ func (g *GuildInfo) GetWaifuTrades() []*WaifuTrade {
 	return g.WaifuTrades
 }
 
-func (g *GuildInfo) SetMemberInfoMap(memberInfo map[string]*UserInfo) {
+func (g *GuildInfo) AssignToMemberInfoMap(key string, user UserInfo) {
+	g.Lock()
+	g.MemberInfoMap[key] = user
+	g.Unlock()
+}
+
+func (g *GuildInfo) RemoveFromMemberInfoMap(key string) {
+	g.Lock()
+	delete(g.MemberInfoMap, key)
+	g.Unlock()
+}
+
+func (g *GuildInfo) SetMemberInfoMap(memberInfo map[string]UserInfo) {
 	g.Lock()
 	g.MemberInfoMap = memberInfo
 	g.Unlock()
 }
 
-func (g *GuildInfo) GetMemberInfoMap() map[string]*UserInfo {
+func (g *GuildInfo) GetMemberInfoMap() map[string]UserInfo {
 	g.RLock()
 	defer g.RUnlock()
 	if g == nil {
@@ -379,13 +401,25 @@ func (g *GuildInfo) GetSpoilerMap() map[string]*discordgo.Role {
 	return g.SpoilerMap
 }
 
-func (g *GuildInfo) SetEmojiStats(emojiStats map[string]*Emoji) {
+func (g *GuildInfo) AssignToEmojiStats(key string, emoji Emoji) {
+	g.Lock()
+	g.EmojiStats[key] = emoji
+	g.Unlock()
+}
+
+func (g *GuildInfo) RemoveFromEmojiStats(key string) {
+	g.Lock()
+	delete(g.EmojiStats, key)
+	g.Unlock()
+}
+
+func (g *GuildInfo) SetEmojiStats(emojiStats map[string]Emoji) {
 	g.Lock()
 	g.EmojiStats = emojiStats
 	g.Unlock()
 }
 
-func (g *GuildInfo) GetEmojiStats() map[string]*Emoji {
+func (g *GuildInfo) GetEmojiStats() map[string]Emoji {
 	g.RLock()
 	defer g.RUnlock()
 	if g == nil {
@@ -394,19 +428,49 @@ func (g *GuildInfo) GetEmojiStats() map[string]*Emoji {
 	return g.EmojiStats
 }
 
-func (g *GuildInfo) SetChannelStats(channelStats map[string]*Channel) {
+func (g *GuildInfo) AssignToChannelStats(key string, channel Channel) {
+	g.Lock()
+	g.ChannelStats[key] = channel
+	g.Unlock()
+}
+
+func (g *GuildInfo) RemoveFromChannelStats(key string) {
+	g.Lock()
+	delete(g.ChannelStats, key)
+	g.Unlock()
+}
+
+func (g *GuildInfo) SetChannelStats(channelStats map[string]Channel) {
 	g.Lock()
 	g.ChannelStats = channelStats
 	g.Unlock()
 }
 
-func (g *GuildInfo) GetChannelStats() map[string]*Channel {
+func (g *GuildInfo) GetChannelStats() map[string]Channel {
 	g.RLock()
 	defer g.RUnlock()
 	if g == nil {
 		return nil
 	}
 	return g.ChannelStats
+}
+
+func (g *GuildInfo) AssignToUserChangeStats(key string, amount int) {
+	g.Lock()
+	g.UserChangeStats[key] = amount
+	g.Unlock()
+}
+
+func (g *GuildInfo) AddToUserChangeStats(key string, amount int) {
+	g.Lock()
+	g.UserChangeStats[key] += amount
+	g.Unlock()
+}
+
+func (g *GuildInfo) RemoveFromUserChangeStats(key string) {
+	g.Lock()
+	delete(g.UserChangeStats, key)
+	g.Unlock()
 }
 
 func (g *GuildInfo) SetUserChangeStats(userChangeStats map[string]int) {
@@ -422,6 +486,24 @@ func (g *GuildInfo) GetUserChangeStats() map[string]int {
 		return nil
 	}
 	return g.UserChangeStats
+}
+
+func (g *GuildInfo) AssignToVerifiedStats(key string, amount int) {
+	g.Lock()
+	g.VerifiedStats[key] = amount
+	g.Unlock()
+}
+
+func (g *GuildInfo) AddToVerifiedStats(key string, amount int) {
+	g.Lock()
+	g.VerifiedStats[key] += amount
+	g.Unlock()
+}
+
+func (g *GuildInfo) RemoveFromVerifiedStats(key string) {
+	g.Lock()
+	delete(g.VerifiedStats, key)
+	g.Unlock()
 }
 
 func (g *GuildInfo) SetVerifiedStats(verifiedStats map[string]int) {
@@ -469,6 +551,18 @@ func (g *GuildInfo) GetTempChaMap() map[string]*TempChaInfo {
 	return g.TempChaMap
 }
 
+func (g *GuildInfo) AssignToReactJoinMap(key string, reactJoin *ReactJoin) {
+	g.Lock()
+	g.ReactJoinMap[key] = reactJoin
+	g.Unlock()
+}
+
+func (g *GuildInfo) RemoveFromReactJoinMap(key string) {
+	g.Lock()
+	delete(g.ReactJoinMap, key)
+	g.Unlock()
+}
+
 func (g *GuildInfo) SetReactJoinMap(reactJoinMap map[string]*ReactJoin) {
 	g.Lock()
 	g.ReactJoinMap = reactJoinMap
@@ -499,13 +593,25 @@ func (g *GuildInfo) GetExtensionList() map[string]string {
 	return g.ExtensionList
 }
 
-func (g *GuildInfo) SetAutoposts(autoposts map[string]*Cha) {
+func (g *GuildInfo) AssignToAutoposts(key string, autopost Cha) {
+	g.Lock()
+	g.Autoposts[key] = autopost
+	g.Unlock()
+}
+
+func (g *GuildInfo) RemoveFromAutoposts(key string) {
+	g.Lock()
+	delete(g.Autoposts, key)
+	g.Unlock()
+}
+
+func (g *GuildInfo) SetAutoposts(autoposts map[string]Cha) {
 	g.Lock()
 	g.Autoposts = autoposts
 	g.Unlock()
 }
 
-func (g *GuildInfo) GetAutoposts() map[string]*Cha {
+func (g *GuildInfo) GetAutoposts() map[string]Cha {
 	g.RLock()
 	defer g.RUnlock()
 	if g == nil {

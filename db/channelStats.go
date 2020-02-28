@@ -5,7 +5,7 @@ import (
 )
 
 // GetGuildChannelStats returns the channel stats from in-memory
-func GetGuildChannelStats(guildID string) map[string]*entities.Channel {
+func GetGuildChannelStats(guildID string) map[string]entities.Channel {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.RLock()
@@ -15,7 +15,7 @@ func GetGuildChannelStats(guildID string) map[string]*entities.Channel {
 }
 
 // SetGuildChannelStats sets a target guild's channel stats in-memory
-func SetGuildChannelStats(guildID string, channelStats map[string]*entities.Channel) {
+func SetGuildChannelStats(guildID string, channelStats map[string]entities.Channel) {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
@@ -33,7 +33,7 @@ func GetGuildChannelStat(guildID, channelID string) entities.Channel {
 	defer entities.Guilds.RUnlock()
 
 	if stat, ok := entities.Guilds.DB[guildID].GetChannelStats()[channelID]; !ok {
-		return *stat
+		return stat
 	}
 
 	return entities.Channel{}
@@ -44,7 +44,7 @@ func SetGuildChannelStat(guildID string, channel entities.Channel) {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
-	entities.Guilds.DB[guildID].GetChannelStats()[channel.GetChannelID()] = &channel
+	entities.Guilds.DB[guildID].AssignToChannelStats(channel.GetChannelID(), channel)
 	entities.Guilds.Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("channelStats", entities.Guilds.DB[guildID].GetChannelStats())

@@ -81,7 +81,7 @@ type ChannelStats struct {
 }
 
 type ChannelPick struct {
-	ChannelStats map[string]*entities.Channel
+	ChannelStats map[string]entities.Channel
 	Flag         bool
 	Stats        ChannelStats
 	Error        bool
@@ -165,7 +165,7 @@ func ChannelStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 	// Checks for nil entry assignment error and saves from that (could be abused to stop bot)
 	if id != "" {
 		channelStats := db.GetGuildChannelStats(config.ServerID)
-		if channelStats[id] == nil {
+		if channelStats[id].ChannelID == "" {
 			pick.Error = false
 			// Loads the html & css stats files
 			t, err := template.ParseFiles("./web/assets/channelstats.html")
@@ -180,7 +180,6 @@ func ChannelStatsPageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if id == "" {
-		pick.ChannelStats = make(map[string]*entities.Channel)
 		pick.ChannelStats = db.GetGuildChannelStats(config.ServerID)
 		// Loads the html & css stats files
 		t, err := template.ParseFiles("./web/assets/channelstats.html")
@@ -579,8 +578,8 @@ func getRedditUsername(code string) (string, float64, error) {
 	if err != nil {
 		return "", 0, err
 	}
-
 	defer resp.Body.Close()
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", 0, err
@@ -610,6 +609,7 @@ func getRedditUsername(code string) (string, float64, error) {
 	if err != nil {
 		return "", 0, err
 	}
+	defer respAPI.Body.Close()
 
 	// Reads the byte respAPI body into bodyAPI
 	bodyAPI, err := ioutil.ReadAll(respAPI.Body)
@@ -641,6 +641,7 @@ func getRedditUsername(code string) (string, float64, error) {
 	if err != nil {
 		return "", 0, err
 	}
+	defer respAPIBan.Body.Close()
 
 	// Reads the byte respAPIBan body into bodyAPIBan
 	bodyAPIBan, err := ioutil.ReadAll(respAPIBan.Body)
@@ -705,6 +706,7 @@ func getDiscordUsernameDiscrim(code string) (string, string, string, error) {
 	if err != nil {
 		return "", "", "", err
 	}
+	defer res.Body.Close()
 
 	// Reads the byte respAPI body into bodyAPI
 	bodyAPI, err := ioutil.ReadAll(res.Body)
@@ -764,10 +766,10 @@ func Verify(cookieValue *http.Cookie, _ *http.Request) error {
 	joinDate := t.Format("2006-01-02 15:04:05") + " " + z
 
 	// Assigns needed values to temp
-	temp = *memberInfoMap[userID]
+	temp = memberInfoMap[userID]
 	temp = temp.SetRedditUsername(SafeCookieMap.userCookieMap[cookieValue.Value].RedditName)
 	temp = temp.SetVerifiedDate(joinDate)
-	memberInfoMap[userID] = &temp
+	memberInfoMap[userID] = temp
 
 	// Saves the userID for verified timer
 	verifyMap[userID] = userID
@@ -781,7 +783,7 @@ func Verify(cookieValue *http.Cookie, _ *http.Request) error {
 	db.SetGuildMemberInfo(config.ServerID, memberInfoMap)
 
 	// Adds to verified stats
-	db.SetGuildVerifiedStat(userID, t.Format(common.ShortDateFormat), 1)
+	db.AddGuildVerifiedStat(userID, t.Format(common.ShortDateFormat), 1)
 
 	return nil
 }
@@ -818,12 +820,8 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 
 				if mem.GetSuspectedSpambot() {
 					for _, banUser := range punishedUsers {
-						if banUser == nil {
-							continue
-						}
-
 						if banUser.GetID() == userID {
-							_ = db.SetGuildPunishedUser(config.ServerID, *banUser, true)
+							_ = db.SetGuildPunishedUser(config.ServerID, banUser, true)
 							break
 						}
 					}
@@ -977,10 +975,6 @@ func CheckAltAccount(s *discordgo.Session, id string) bool {
 
 	// Iterates through all users in memberInfo.json
 	for _, userOne := range guildMemberInfo {
-		if userOne == nil {
-			continue
-		}
-
 		// Checks if the current user has the same reddit username as userCookieMap user
 		if userOne.GetRedditUsername() == mem.GetRedditUsername() {
 			alts = append(alts, userOne.GetID())

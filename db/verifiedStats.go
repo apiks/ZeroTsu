@@ -44,7 +44,18 @@ func SetGuildVerifiedStat(guildID string, date string, amount int) {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
-	entities.Guilds.DB[guildID].GetVerifiedStats()[date] += amount
+	entities.Guilds.DB[guildID].AssignToVerifiedStats(date, amount)
+	entities.Guilds.Unlock()
+
+	entities.Guilds.DB[guildID].WriteData("verifiedStats", entities.Guilds.DB[guildID].GetVerifiedStats())
+}
+
+// AddGuildVerifiedStat adds to a guild's amount of verified stat at date in-memory
+func AddGuildVerifiedStat(guildID string, date string, amount int) {
+	entities.HandleNewGuild(guildID)
+
+	entities.Guilds.Lock()
+	entities.Guilds.DB[guildID].AddToVerifiedStats(date, amount)
 	entities.Guilds.Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("verifiedStats", entities.Guilds.DB[guildID].GetVerifiedStats())

@@ -77,15 +77,15 @@ func OnMessageChannel(s *discordgo.Session, m *discordgo.MessageCreate) {
 		channelStatsVar = channelStatsVar.SetMessagesMap(make(map[string]int))
 		channelStatsVar = channelStatsVar.SetExists(true)
 
-		guildChannelStats[m.ChannelID] = &channelStatsVar
+		guildChannelStats[m.ChannelID] = channelStatsVar
 	}
 	if guildChannelStats[m.ChannelID].GetChannelID() == "" {
 		channelStats := guildChannelStats[m.ChannelID].SetChannelID(m.ChannelID)
-		guildChannelStats[m.ChannelID] = &channelStats
+		guildChannelStats[m.ChannelID] = channelStats
 	}
 
 	channelMessages := guildChannelStats[m.ChannelID].AddMessages(t.Format(common.ShortDateFormat), 1)
-	guildChannelStats[m.ChannelID] = &channelMessages
+	guildChannelStats[m.ChannelID] = channelMessages
 }
 
 // Prints all channel stats
@@ -96,7 +96,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		normalChannelTotal int
 		optinChannelTotal  int
 		flag               bool
-		channels           []*entities.Channel
+		channels           []entities.Channel
 		t                  time.Time
 	)
 
@@ -112,13 +112,8 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 
 	// Fixes channels without ID param
 	for id, channel := range guildChannelStats {
-		if channel == nil {
-			continue
-		}
-
 		if channel.GetChannelID() == "" {
-			newChannel := channel.SetChannelID(id)
-			channel = &newChannel
+			channel = channel.SetChannelID(id)
 			flag = true
 		}
 	}
@@ -189,7 +184,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	for _, channel := range channels {
 
 		// Checks if channel exists and sets optin status
-		channel, ok := isChannelUsable(*channel, guild, guildSettings)
+		channel, ok := isChannelUsable(channel, guild, guildSettings)
 		if !ok {
 			continue
 		}
@@ -207,7 +202,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	for _, channel := range channels {
 
 		// Checks if channel exists and sets optin status
-		channel, ok := isChannelUsable(*channel, guild, guildSettings)
+		channel, ok := isChannelUsable(channel, guild, guildSettings)
 		if !ok {
 			continue
 		}
@@ -247,7 +242,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 }
 
 // Sort functions for channels by message use
-type byFrequencyChannel []*entities.Channel
+type byFrequencyChannel []entities.Channel
 
 func (e byFrequencyChannel) Len() int {
 	return len(e)
@@ -270,7 +265,7 @@ func (e byFrequencyChannel) Less(i, j int) bool {
 }
 
 // Formats the line space length for the above to keep level spacing
-func lineSpaceFormatChannel(id string, optin bool, t time.Time, guildChannelStats map[string]*entities.Channel) string {
+func lineSpaceFormatChannel(id string, optin bool, t time.Time, guildChannelStats map[string]entities.Channel) string {
 
 	var totalMessages int
 
@@ -317,7 +312,7 @@ func OnMemberJoin(_ *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 	t := time.Now()
 
-	db.SetGuildUserChangeStat(u.GuildID, t.Format(common.ShortDateFormat), 1)
+	db.AddGuildUserChangeStat(u.GuildID, t.Format(common.ShortDateFormat), 1)
 }
 
 // Removes 1 from Username Change on member removal
@@ -338,7 +333,7 @@ func OnMemberRemoval(_ *discordgo.Session, u *discordgo.GuildMemberRemove) {
 
 	t := time.Now()
 
-	db.SetGuildUserChangeStat(u.GuildID, t.Format(common.ShortDateFormat), -1)
+	db.AddGuildUserChangeStat(u.GuildID, t.Format(common.ShortDateFormat), -1)
 }
 
 // Checks if specific channel stat should be printed
@@ -385,7 +380,6 @@ func splitStatMessages(msgs []string, message string) ([]string, string) {
 
 // Posts daily stats and update schedule command
 func dailyStats(s *discordgo.Session) {
-
 	var (
 		message discordgo.Message
 		author  discordgo.User

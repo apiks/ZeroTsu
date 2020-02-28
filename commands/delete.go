@@ -55,17 +55,9 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 	for rssLoopFlag {
 		if rssTimerFlag {
 			for _, feedCheck := range guildFeedChecks {
-				if feedCheck == nil {
-					continue
-				}
-
 				if feedCheck.GetFeed().GetChannelID() == channelID {
 					rssTimerFlag = true
-					err := db.SetGuildFeedCheck(m.GuildID, *feedCheck, true)
-					if err != nil {
-						common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-						return
-					}
+					db.SetGuildFeedCheck(m.GuildID, feedCheck, true)
 					break
 				} else {
 					rssTimerFlag = false
@@ -77,13 +69,9 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		for _, feed := range guildFeeds {
-			if feed == nil {
-				return
-			}
-
 			if feed.GetChannelID() == channelID {
 				rssLoopFlag = true
-				err := db.SetGuildFeed(m.GuildID, *feed, true)
+				err := db.SetGuildFeed(m.GuildID, feed, true)
 				if err != nil {
 					common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 					return
@@ -118,10 +106,6 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 	// Deletes all set reacts that link to the role ID if not using Kaguya
 	reactJoins := db.GetGuildReactJoin(m.GuildID)
 	for messageID, roleMapMap := range reactJoins {
-		if roleMapMap == nil {
-			continue
-		}
-
 		for _, roleEmojiMap := range roleMapMap.GetRoleEmojiMap() {
 			if roleEmojiMap == nil {
 				continue
@@ -307,10 +291,6 @@ func deleteChannelReacts(s *discordgo.Session, m *discordgo.Message) {
 	// Deletes all set reacts that link to the role ID if not using Kaguya
 	reactJoins := db.GetGuildReactJoin(m.GuildID)
 	for messageID, roleMapMap := range reactJoins {
-		if roleMapMap == nil {
-			continue
-		}
-
 		for _, roleEmojiMap := range roleMapMap.GetRoleEmojiMap() {
 			if roleEmojiMap == nil {
 				continue

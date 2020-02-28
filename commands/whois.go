@@ -304,10 +304,6 @@ func CheckAltAccountWhois(guildID string, user entities.UserInfo) []string {
 	}
 
 	for _, memberInfoUser := range memberInfo {
-		if memberInfoUser == nil {
-			continue
-		}
-
 		// Skips iteration if iteration reddit username is nil
 		if user.GetRedditUsername() == "" {
 			continue

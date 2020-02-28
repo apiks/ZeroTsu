@@ -30,7 +30,7 @@ func SetGuildReactJoinEmoji(guildID, messageID string, reactJoinEmoji *entities.
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
-	entities.Guilds.DB[guildID].ReactJoinMap[messageID] = reactJoinEmoji
+	entities.Guilds.DB[guildID].AssignToReactJoinMap(messageID, reactJoinEmoji)
 	entities.Guilds.Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("reactJoin", entities.Guilds.DB[guildID].GetReactJoinMap())

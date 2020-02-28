@@ -113,6 +113,8 @@ func CommonEvents(s *discordgo.Session, _ *discordgo.Ready) {
 		}
 
 		for _, guildID := range guildIds {
+			db.SetGuildMemberInfo(guildID, entities.Guilds.DB[guildID].GetMemberInfoMap())
+
 			// Handles Unbans and Unmutes
 			punishmentHandler(s, guildID)
 
@@ -125,11 +127,12 @@ func CommonEvents(s *discordgo.Session, _ *discordgo.Ready) {
 		if err != nil {
 			log.Println(err)
 		}
+
+		//runtime.GC()
 	}
 }
 
 func punishmentHandler(s *discordgo.Session, guildID string) {
-
 	// Fetches all server bans so it can check if the memberInfo Username is banned there (whether he's been manually unbanned for example)
 	bans, err := s.GuildBans(guildID)
 	if err != nil {
@@ -149,11 +152,7 @@ func punishmentHandler(s *discordgo.Session, guildID string) {
 	// Unbans/Unmutes users
 	wg.Add(punishedUsersLen)
 	for _, user := range punishedUsers {
-		if user == nil {
-			continue
-		}
-
-		go func(user *entities.PunishedUsers) {
+		go func(user entities.PunishedUsers) {
 			defer wg.Done()
 
 			fieldRemoved := unbanHandler(s, guildID, user, bans, &t)
@@ -166,7 +165,7 @@ func punishmentHandler(s *discordgo.Session, guildID string) {
 	wg.Wait()
 }
 
-func unbanHandler(s *discordgo.Session, guildID string, user *entities.PunishedUsers, bans []*discordgo.GuildBan, t *time.Time) bool {
+func unbanHandler(s *discordgo.Session, guildID string, user entities.PunishedUsers, bans []*discordgo.GuildBan, t *time.Time) bool {
 	if user.GetUnbanDate() == (time.Time{}) {
 		return false
 	}
@@ -197,7 +196,7 @@ func unbanHandler(s *discordgo.Session, guildID string, user *entities.PunishedU
 
 	// Removes the unbanDate or the entire object
 	if user.GetUnmuteDate() != (time.Time{}) {
-		*user = entities.NewPunishedUsers(user.GetID(), user.GetUsername(), time.Time{}, user.GetUnmuteDate())
+		user = entities.NewPunishedUsers(user.GetID(), user.GetUsername(), time.Time{}, user.GetUnmuteDate())
 	} else {
 		_ = db.SetGuildPunishedUser(guildID, entities.NewPunishedUsers("", "", time.Time{}, time.Time{}))
 	}
@@ -214,12 +213,12 @@ func unbanHandler(s *discordgo.Session, guildID string, user *entities.PunishedU
 		db.SetGuildMember(guildID, mem)
 	}
 
-	_ = db.SetGuildPunishedUser(guildID, *user)
+	_ = db.SetGuildPunishedUser(guildID, user)
 
 	return true
 }
 
-func unmuteHandler(s *discordgo.Session, guildID string, user *entities.PunishedUsers, t *time.Time) {
+func unmuteHandler(s *discordgo.Session, guildID string, user entities.PunishedUsers, t *time.Time) {
 	if user.GetUnmuteDate() == (time.Time{}) {
 		return
 	}
@@ -272,7 +271,7 @@ func unmuteHandler(s *discordgo.Session, guildID string, user *entities.Punished
 
 	// Removes the unmuteDate or the entire object
 	if user.GetUnbanDate() != (time.Time{}) {
-		*user = entities.NewPunishedUsers(user.GetID(), user.GetUsername(), user.GetUnbanDate(), time.Time{})
+		user = entities.NewPunishedUsers(user.GetID(), user.GetUsername(), user.GetUnbanDate(), time.Time{})
 	} else {
 		_ = db.SetGuildPunishedUser(guildID, entities.NewPunishedUsers("", "", time.Time{}, time.Time{}))
 	}
@@ -293,7 +292,7 @@ func unmuteHandler(s *discordgo.Session, guildID string, user *entities.Punished
 		}
 	}
 
-	_ = db.SetGuildPunishedUser(guildID, *user)
+	_ = db.SetGuildPunishedUser(guildID, user)
 }
 
 // remindMeHandler handles sending remindMe messages when called if it's time.
@@ -437,20 +436,12 @@ func guildFeedsHandler(guildID string) (map[entities.Feed][]*gofeed.Item, error)
 
 	// Removes a check if more than its allowed lifespan hours have passed
 	for _, feedCheck := range guildFeedChecks {
-		if feedCheck == nil {
-			continue
-		}
-
 		dateRemoval := feedCheck.GetDate().Add(feedCheckLifespanHours)
 		if t.Sub(dateRemoval) > 0 {
 			continue
 		}
 
-		err := db.SetGuildFeedCheck(guildID, *feedCheck, true)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
+		db.SetGuildFeedCheck(guildID, feedCheck, true)
 		removedCheck = true
 	}
 	if removedCheck {
@@ -463,10 +454,6 @@ func guildFeedsHandler(guildID string) (map[entities.Feed][]*gofeed.Item, error)
 
 	// Save all feed subreddits and their feedParsers early as an optimization
 	for _, feed := range guildFeeds {
-		if feed == nil {
-			continue
-		}
-
 		if _, ok := subMap[fmt.Sprintf("%s:%s", feed.GetSubreddit(), feed.GetPostType())]; ok {
 			continue
 		}
@@ -487,10 +474,6 @@ func guildFeedsHandler(guildID string) (map[entities.Feed][]*gofeed.Item, error)
 	t = time.Now()
 
 	for _, feed := range guildFeeds {
-		if feed == nil {
-			continue
-		}
-
 		// Get the necessary feed parser from the subMap
 		feedParser, ok := subMap[fmt.Sprintf("%s:%s", feed.GetSubreddit(), feed.GetPostType())]
 		if !ok {
@@ -502,10 +485,6 @@ func guildFeedsHandler(guildID string) (map[entities.Feed][]*gofeed.Item, error)
 			var skip bool
 
 			for _, feedCheck := range guildFeedChecks {
-				if feedCheck == nil {
-					continue
-				}
-
 				if feedCheck.GetGUID() == item.GUID &&
 					feedCheck.GetFeed().GetChannelID() == feed.GetChannelID() {
 					skip = true
@@ -527,7 +506,7 @@ func guildFeedsHandler(guildID string) (map[entities.Feed][]*gofeed.Item, error)
 			}
 
 			// Adds the feed to the send map
-			feedsToPost[*feed] = append(feedsToPost[*feed], item)
+			feedsToPost[feed] = append(feedsToPost[feed], item)
 		}
 	}
 
@@ -558,76 +537,79 @@ func feedPostHandler(s *discordgo.Session, guildID string, feedsToPost map[entit
 	t := time.Now()
 
 	for feed, items := range feedsToPost {
-		var pinnedItems = make(map[*gofeed.Item]bool)
+		postFeedItems(s, feed, items, t, guildID)
+	}
 
-		for _, item := range items {
-			var ok bool
+	db.SetGuildFeedChecks(guildID, entities.Guilds.DB[guildID].GetFeedChecks())
+}
 
-			// Wait five seconds so it doesn't hit the rate limit easily
-			time.Sleep(time.Second * 5)
+func postFeedItems(s *discordgo.Session, feed entities.Feed, items []*gofeed.Item, t time.Time, guildID string) {
+	var pinnedItems = make(map[*gofeed.Item]bool)
 
-			// Stops the iteration if the feed doesn't exist anymore
-			guildFeeds := db.GetGuildFeeds(guildID)
-			for _, guildFeed := range guildFeeds {
-				if guildFeed == nil {
-					continue
-				}
+	for _, item := range items {
 
-				if guildFeed.GetSubreddit() == feed.GetSubreddit() &&
-					guildFeed.GetChannelID() == feed.GetChannelID() {
-					ok = true
-					break
-				}
-			}
-			if !ok {
+		var ok bool
+
+		// Wait five seconds so it doesn't hit the rate limit easily
+		time.Sleep(time.Second * 5)
+
+		// Stops the iteration if the feed doesn't exist anymore
+		guildFeeds := db.GetGuildFeeds(guildID)
+		for _, guildFeed := range guildFeeds {
+			if guildFeed.GetSubreddit() == feed.GetSubreddit() &&
+				guildFeed.GetChannelID() == feed.GetChannelID() {
+				ok = true
 				break
 			}
-
-			// Sends the feed item
-			message, err := embeds.Feed(s, &feed, item)
-			if err != nil {
-				continue
-			}
-
-			// Writes that feed has been posted
-			err = db.SetGuildFeedCheck(guildID, entities.NewFeedCheck(feed, t, item.GUID))
-
-			// Pins/unpins the feed items if necessary
-			if !feed.GetPin() {
-				continue
-			}
-			if _, ok := pinnedItems[item]; ok {
-				continue
-			}
-
-			pins, err := s.ChannelMessagesPinned(message.ChannelID)
-			if err != nil {
-				continue
-			}
-
-			// Unpins if necessary
-			for _, pin := range pins {
-
-				// Checks for whether the pin is one that should be unpinned
-				if pin.Author.ID != s.State.User.ID {
-					continue
-				}
-				if len(pin.Embeds) == 0 {
-					continue
-				}
-				if pin.Embeds[0].Author == nil {
-					continue
-				}
-				if !strings.HasPrefix(strings.ToLower(pin.Embeds[0].Author.URL), fmt.Sprintf("https://www.reddit.com/r/%s/comments/", feed.GetSubreddit())) {
-					continue
-				}
-
-				_ = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
-			}
-
-			// Pins
-			_ = s.ChannelMessagePin(message.ChannelID, message.ID)
-			pinnedItems[item] = true
 		}
+		if !ok {
+			break
+		}
+
+		// Sends the feed item
+		message, err := embeds.Feed(s, &feed, item)
+		if err != nil {
+			continue
+		}
+
+		// Adds to memory that the feed has been posted
+		db.AddGuildFeedCheck(guildID, entities.NewFeedCheck(feed, t, item.GUID))
+
+		// Pins/unpins the feed items if necessary
+		if !feed.GetPin() {
+			continue
+		}
+		if _, ok := pinnedItems[item]; ok {
+			continue
+		}
+
+		pins, err := s.ChannelMessagesPinned(message.ChannelID)
+		if err != nil {
+			continue
+		}
+
+		// Unpins if necessary
+		for _, pin := range pins {
+
+			// Checks for whether the pin is one that should be unpinned
+			if pin.Author.ID != s.State.User.ID {
+				continue
+			}
+			if len(pin.Embeds) == 0 {
+				continue
+			}
+			if pin.Embeds[0].Author == nil {
+				continue
+			}
+			if !strings.HasPrefix(strings.ToLower(pin.Embeds[0].Author.URL), fmt.Sprintf("https://www.reddit.com/r/%s/comments/", feed.GetSubreddit())) {
+				continue
+			}
+
+			_ = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
+		}
+
+		// Pins
+		_ = s.ChannelMessagePin(message.ChannelID, message.ID)
+		pinnedItems[item] = true
 	}
 }

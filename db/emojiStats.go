@@ -5,7 +5,7 @@ import (
 )
 
 // GetGuildEmojiStats returns the emoji stats from in-memory
-func GetGuildEmojiStats(guildID string) map[string]*entities.Emoji {
+func GetGuildEmojiStats(guildID string) map[string]entities.Emoji {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.RLock()
@@ -15,7 +15,7 @@ func GetGuildEmojiStats(guildID string) map[string]*entities.Emoji {
 }
 
 // SetGuildEmojiStats sets a target guild's emoji stats in-memory
-func SetGuildEmojiStats(guildID string, emojiStats map[string]*entities.Emoji) {
+func SetGuildEmojiStats(guildID string, emojiStats map[string]entities.Emoji) {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
@@ -34,7 +34,7 @@ func GetGuildEmojiStat(guildID, emojiID string) entities.Emoji {
 	defer entities.Guilds.RUnlock()
 
 	if stat, ok := entities.Guilds.DB[guildID].GetEmojiStats()[emojiID]; !ok {
-		return *stat
+		return stat
 	}
 
 	return entities.Emoji{}
@@ -45,7 +45,7 @@ func SetGuildEmojiStat(guildID string, emoji entities.Emoji) {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
-	entities.Guilds.DB[guildID].GetEmojiStats()[emoji.GetID()] = &emoji
+	entities.Guilds.DB[guildID].AssignToEmojiStats(emoji.GetID(), emoji)
 	entities.Guilds.Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("emojiStats", entities.Guilds.DB[guildID].GetEmojiStats())

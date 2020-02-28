@@ -23,8 +23,6 @@ import (
 
 // Handles filter in an onMessage basis
 func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-
-	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Println(rec)
@@ -95,8 +93,6 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 // Handles filter in an onEdit basis
 func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
-
-	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Println(rec)
@@ -162,7 +158,6 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 
 // Filters reactions that contain a filtered phrase
 func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
-	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Println(rec)
@@ -273,10 +268,6 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 	// Iterates through all the filters to see if the message contained a filtered phrase
 	guildFilters := db.GetGuildFilters(m.GuildID)
 	for _, filter := range guildFilters {
-		if filter == nil {
-			continue
-		}
-
 		// Regex check the filter phrase in the message
 		re := regexp.MustCompile(filter.GetFilter())
 		badPhraseCheck = re.FindAllString(mLowercase, -1)
@@ -304,7 +295,7 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 	// Iterates through all of the message requirements to see if the message follows a set requirement
 	messageRequirements := db.GetGuildMessageRequirements(m.GuildID)
 	for _, requirement := range messageRequirements {
-		if requirement == nil || requirement.GetChannelID() != "" || requirement.GetChannelID() != m.ChannelID {
+		if requirement.GetChannelID() != "" || requirement.GetChannelID() != m.ChannelID {
 			continue
 		}
 
@@ -315,15 +306,13 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 
 		// If a required phrase exists in the message or mentions, check if it should be removed
 		if messRequireCheck != nil {
-			newRequirement := requirement.SetLastUserID(m.Author.ID)
-			requirement = &newRequirement
-			_ = db.SetGuildMessageRequirement(m.GuildID, *requirement)
+			requirement = requirement.SetLastUserID(m.Author.ID)
+			_ = db.SetGuildMessageRequirement(m.GuildID, requirement)
 			continue
 		}
 		if messRequireCheckMentions != nil {
-			newRequirement := requirement.SetLastUserID(m.Author.ID)
-			requirement = &newRequirement
-			_ = db.SetGuildMessageRequirement(m.GuildID, *requirement)
+			requirement = requirement.SetLastUserID(m.Author.ID)
+			_ = db.SetGuildMessageRequirement(m.GuildID, requirement)
 			continue
 		}
 
@@ -348,10 +337,6 @@ func isFilteredReact(r *discordgo.MessageReactionAdd) bool {
 
 	// Iterates through all the filters to see if the react contained a filtered phrase
 	for _, filter := range guildFilters {
-		if filter == nil {
-			continue
-		}
-
 		// Assigns the filter to a string that can be changed to the normal API mode name later
 		reactName = filter.GetFilter()
 
@@ -471,10 +456,6 @@ func viewFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Iterates through all the filters in memory and adds them to the filters string
 	for _, filter := range guildFilters {
-		if filter == nil {
-			continue
-		}
-
 		filters += fmt.Sprintf("**%s**\n", filter.GetFilter())
 	}
 	filters = strings.TrimSuffix(filters, "\n")
@@ -654,13 +635,8 @@ func viewMessRequirementCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Iterates through all the message requirements in memory and adds them to the mRequirements string
 	for _, requirement := range guildMessageRequirements {
-		if requirement == nil {
-			continue
-		}
-
 		if requirement.GetChannelID() == "" {
-			newRequirement := requirement.SetChannelID("All channels")
-			requirement = &newRequirement
+			requirement = requirement.SetChannelID("All channels")
 		}
 		mRequirements += fmt.Sprintf("**%s** - **%s** - **%s**\n", requirement.GetPhrase(), requirement.GetChannelID(), requirement.GetRequirementType())
 	}

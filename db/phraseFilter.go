@@ -7,7 +7,7 @@ import (
 )
 
 // GetGuildFilters returns the guild's in-memory filters
-func GetGuildFilters(guildID string) []*entities.Filter {
+func GetGuildFilters(guildID string) []entities.Filter {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.RLock()
@@ -35,10 +35,6 @@ func SetGuildFilter(guildID string, filter entities.Filter, delete ...bool) erro
 	if len(delete) == 0 {
 		var exists bool
 		for _, guildFilter := range entities.Guilds.DB[guildID].GetFilters() {
-			if guildFilter == nil {
-				continue
-			}
-
 			if strings.ToLower(guildFilter.GetFilter()) == filter.GetFilter() {
 				exists = true
 				break
@@ -71,10 +67,6 @@ func deleteGuildFilter(guildID string, filter entities.Filter) error {
 	var exists bool
 
 	for i, guildFilter := range entities.Guilds.DB[guildID].GetFilters() {
-		if guildFilter == nil {
-			continue
-		}
-
 		if strings.ToLower(guildFilter.Filter) == filter.Filter {
 			entities.Guilds.DB[guildID].RemoveFromFilters(i)
 			exists = true

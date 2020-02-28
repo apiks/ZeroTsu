@@ -44,7 +44,19 @@ func SetGuildUserChangeStat(guildID, date string, amount int) {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
+	entities.Guilds.DB[guildID].AssignToUserChangeStats(date, amount)
 	entities.Guilds.DB[guildID].GetUserChangeStats()[date] += amount
+	entities.Guilds.Unlock()
+
+	entities.Guilds.DB[guildID].WriteData("userChangeStats", entities.Guilds.DB[guildID].GetUserChangeStats())
+}
+
+// AddGuildUserChangeStat adds to a guild's user change stat in-memory
+func AddGuildUserChangeStat(guildID, date string, amount int) {
+	entities.HandleNewGuild(guildID)
+
+	entities.Guilds.Lock()
+	entities.Guilds.DB[guildID].AddToUserChangeStats(date, amount)
 	entities.Guilds.Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("userChangeStats", entities.Guilds.DB[guildID].GetUserChangeStats())

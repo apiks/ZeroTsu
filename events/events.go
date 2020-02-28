@@ -490,10 +490,6 @@ func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 	// Adds the spambot ban to PunishedUsers so it doesn't Trigger the OnGuildBan func
 	temp := entities.NewPunishedUsers(u.User.ID, u.User.Username, time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local), time.Time{})
 	for _, punishedUser := range guildPunishedUsers {
-		if punishedUser == nil {
-			continue
-		}
-
 		if punishedUser.GetID() == u.User.ID {
 			_ = db.SetGuildPunishedUser(u.GuildID, temp, true)
 		}
