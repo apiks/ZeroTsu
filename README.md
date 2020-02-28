@@ -75,4 +75,4 @@ How to install:
 
 If you have discovered any bugs or have questions, please message Apiks or raise an issue.
 
-If you use the BOT successfuly, please also let Apiks know
+If you use the BOT successfuly, please also let Apiks know.
