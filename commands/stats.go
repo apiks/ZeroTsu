@@ -161,7 +161,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		guild, err = s.Guild(m.GuildID)
 		if err != nil {
-			common.LogError(s, guildSettings.BotLog, err)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
 	}
@@ -237,7 +237,10 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	for j := 0; j < len(msgs); j++ {
-		_, _ = s.ChannelMessageSend(m.ChannelID, msgs[j])
+		_, err = s.ChannelMessageSend(m.ChannelID, msgs[j])
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }
 
