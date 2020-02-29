@@ -567,6 +567,51 @@ func Uptime() time.Duration {
 	return time.Since(StartTime)
 }
 
+// c checks whether optin roles exist
+func OptInsExist(s *discordgo.Session, guildID string) bool {
+	var (
+		optInUnderExists bool
+		optInAboveExists bool
+	)
+
+	guildSettings := db.GetGuildSettings(guildID)
+
+	// Saves guild roles
+	roles, err := s.GuildRoles(guildID)
+	if err != nil {
+		return false
+	}
+
+	// Checks if optins exist
+	if guildSettings.GetOptInUnder() != (entities.Role{}) {
+		if guildSettings.GetOptInUnder().GetID() != "" {
+			for _, role := range roles {
+				if role.ID == guildSettings.GetOptInUnder().GetID() {
+					optInUnderExists = true
+					break
+				}
+			}
+		}
+	}
+
+	if guildSettings.GetOptInAbove() != (entities.Role{}) {
+		if guildSettings.GetOptInAbove().GetID() != "" {
+			for _, role := range roles {
+				if role.ID == guildSettings.GetOptInAbove().GetID() {
+					optInAboveExists = true
+					break
+				}
+			}
+		}
+	}
+
+	if optInUnderExists && optInAboveExists {
+		return true
+	}
+
+	return false
+}
+
 // Checks if optins exist and creates them if they don't
 func OptInsHandler(s *discordgo.Session, channelID, guildID string) error {
 	var (

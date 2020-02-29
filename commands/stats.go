@@ -150,11 +150,12 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Confirms whether optins exist
-	err = common.OptInsHandler(s, m.ChannelID, m.GuildID)
-	if err != nil {
-		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
-	}
+	optInExist := common.OptInsExist(s, m.GuildID)
+	//err = common.OptInsHandler(s, m.ChannelID, m.GuildID)
+	//if err != nil {
+	//	common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+	//	return
+	//}
 
 	// Fetches all guild info
 	guild, err := s.State.Guild(m.GuildID)
@@ -167,15 +168,17 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Updates opt-in-under and opt-in-above position for use later in isChannelUsable func
-	for i := 0; i < len(deb); i++ {
-		if deb[i].ID == guildSettings.GetOptInUnder().GetID() {
-			optInUnder := guildSettings.GetOptInUnder()
-			optInUnder = optInUnder.SetPosition(deb[i].Position)
-			guildSettings = guildSettings.SetOptInUnder(optInUnder)
-		} else if deb[i].ID == guildSettings.GetOptInAbove().GetID() {
-			optInAbove := guildSettings.GetOptInAbove()
-			optInAbove = optInAbove.SetPosition(deb[i].Position)
-			guildSettings = guildSettings.SetOptInUnder(optInAbove)
+	if optInExist {
+		for i := 0; i < len(deb); i++ {
+			if deb[i].ID == guildSettings.GetOptInUnder().GetID() {
+				optInUnder := guildSettings.GetOptInUnder()
+				optInUnder = optInUnder.SetPosition(deb[i].Position)
+				guildSettings = guildSettings.SetOptInUnder(optInUnder)
+			} else if deb[i].ID == guildSettings.GetOptInAbove().GetID() {
+				optInAbove := guildSettings.GetOptInAbove()
+				optInAbove = optInAbove.SetPosition(deb[i].Position)
+				guildSettings = guildSettings.SetOptInUnder(optInAbove)
+			}
 		}
 	}
 
@@ -184,7 +187,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	for _, channel := range channels {
 
 		// Checks if channel exists and sets optin status
-		channel, ok := isChannelUsable(channel, guild, guildSettings)
+		channel, ok := isChannelUsable(channel, guild, guildSettings, optInExist)
 		if !ok {
 			continue
 		}
@@ -197,18 +200,19 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	message += fmt.Sprintf("\nNormal Total: %d\n\n------", normalChannelTotal)
-	message += "\n\nOpt-in Name:                     ([Daily Messages] | [Total Messages] | [Role Members]) \n\n"
+	if optInExist {
+		message += "\n\nOpt-in Name:                     ([Daily Messages] | [Total Messages] | [Role Members]) \n\n"
+	}
 
 	for _, channel := range channels {
 
 		// Checks if channel exists and sets optin status
-		channel, ok := isChannelUsable(channel, guild, guildSettings)
+		channel, ok := isChannelUsable(channel, guild, guildSettings, optInExist)
 		if !ok {
 			continue
 		}
 
 		if channel.GetOptin() {
-
 			// Formats  and splits message
 			message += lineSpaceFormatChannel(channel.GetChannelID(), true, t, guildChannelStats)
 			msgs, message = splitStatMessages(msgs, message)
@@ -218,7 +222,9 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	userChangeStat := db.GetGuildUserChangeStat(m.GuildID, t.Format(common.ShortDateFormat))
 	verifiedStats := db.GetGuildVerifiedStats(m.GuildID)
 
-	message += fmt.Sprintf("\nOpt-in Total: %d\n\n------\n", optinChannelTotal)
+	if optInExist {
+		message += fmt.Sprintf("\nOpt-in Total: %d\n\n------\n", optinChannelTotal)
+	}
 	message += fmt.Sprintf("\nGrand Total Messages: %d\n\n", optinChannelTotal+normalChannelTotal)
 	message += fmt.Sprintf("\nDaily Username Change: %d\n\n", userChangeStat)
 	if len(verifiedStats) != 0 && config.Website != "" {
@@ -340,18 +346,20 @@ func OnMemberRemoval(_ *discordgo.Session, u *discordgo.GuildMemberRemove) {
 }
 
 // Checks if specific channel stat should be printed
-func isChannelUsable(channel entities.Channel, guild *discordgo.Guild, guildSettings entities.GuildSettings) (*entities.Channel, bool) {
+func isChannelUsable(channel entities.Channel, guild *discordgo.Guild, guildSettings entities.GuildSettings, optInExist bool) (*entities.Channel, bool) {
 
 	// Checks if channel exists and if it's optin
 	for guildIndex := range guild.Channels {
-		for roleIndex := range guild.Roles {
-			if guild.Roles[roleIndex].Position < guildSettings.GetOptInUnder().GetPosition() &&
-				guild.Roles[roleIndex].Position > guildSettings.GetOptInAbove().GetPosition() &&
-				guild.Channels[guildIndex].Name == guild.Roles[roleIndex].Name {
-				channel = channel.SetOptin(true)
-				break
-			} else {
-				channel = channel.SetOptin(false)
+		if optInExist {
+			for roleIndex := range guild.Roles {
+				if guild.Roles[roleIndex].Position < guildSettings.GetOptInUnder().GetPosition() &&
+					guild.Roles[roleIndex].Position > guildSettings.GetOptInAbove().GetPosition() &&
+					guild.Channels[guildIndex].Name == guild.Roles[roleIndex].Name {
+					channel = channel.SetOptin(true)
+					break
+				} else {
+					channel = channel.SetOptin(false)
+				}
 			}
 		}
 		if guild.Channels[guildIndex].Name == channel.GetName() &&
