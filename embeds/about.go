@@ -14,7 +14,7 @@ func About(s *discordgo.Session, m *discordgo.Message) error {
 			Name: "**Features:**",
 			Value: "**-** Moderation Toolset & Member System\n" +
 				"**-** Autopost Anime Episodes, Anime Schedule (_subbed_)\n" +
-				"**-** Autopost Reddit Feed\n**-** React-based Auto Role\n" +
+				"**-** Autopost Reddit Feed\n**-** React-based AutoRole\n" +
 				"**-** Channel & Emoji stats\n**-** Raffles\n**-** and more!" +
 				"\n[Invite Link](https://discordapp.com/api/oauth2/authorize?client_id=614495694769618944&permissions=401960278&scope=bot)"}},
 	}
