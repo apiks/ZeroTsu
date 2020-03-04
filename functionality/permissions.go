@@ -42,6 +42,14 @@ func HasElevatedPermissions(s *discordgo.Session, userID string, guildID string)
 
 // Checks if member has admin permissions
 func MemberIsAdmin(s *discordgo.Session, guildID string, mem *discordgo.Member, permission int) (bool, error) {
+	guild, err := s.Guild(guildID)
+	if err != nil {
+		return false, nil
+	}
+	if mem.User.ID == guild.OwnerID {
+		return true, nil
+	}
+
 	// Iterate through the role IDs stored in member.Roles
 	// to check permissions
 	for _, roleID := range mem.Roles {
