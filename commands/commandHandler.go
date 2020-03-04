@@ -145,7 +145,7 @@ func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	if len(m.MentionRoles) != 0 {
 		for _, roleID := range m.MentionRoles {
-			m.Content = strings.ReplaceAll(m.Content, fmt.Sprintf("<@&%s>", roleID), fmt.Sprintf("\\<@&%s>", roleID))
+			m.Content = strings.ReplaceAll(m.Content, fmt.Sprintf("<@\u200B&%s>", roleID), fmt.Sprintf("<@\u200B&%s>", roleID))
 		}
 	}
 
