@@ -12,7 +12,7 @@ func NewFilter(filter string) Filter {
 	return Filter{Filter: filter}
 }
 
-func (f Filter) SetFilter(filter string) Filter{
+func (f Filter) SetFilter(filter string) Filter {
 	f.Filter = filter
 	return f
 }

@@ -41,7 +41,7 @@ func (f Feed) GetTitle() string {
 	return f.Title
 }
 
-func (f Feed) SetAuthor(author string) Feed{
+func (f Feed) SetAuthor(author string) Feed {
 	f.Author = author
 	return f
 }
@@ -53,7 +53,7 @@ func (f Feed) GetAuthor() string {
 	return f.Author
 }
 
-func (f Feed) SetPin(pin bool) Feed{
+func (f Feed) SetPin(pin bool) Feed {
 	f.Pin = pin
 	return f
 }

@@ -19,15 +19,15 @@ import (
 func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
-		pastUsernames string
-		pastNicknames string
-		warnings      []string
-		mutes         []string
-		kicks         []string
-		bans          []string
-		splitMessage  []string
-		isInsideGuild = true
-		creationDate  time.Time
+		pastUsernames  string
+		pastNicknames  string
+		warnings       []string
+		mutes          []string
+		kicks          []string
+		bans           []string
+		splitMessage   []string
+		isInsideGuild  = true
+		creationDate   time.Time
 		messageBuilder strings.Builder
 	)
 

@@ -8,7 +8,7 @@ import (
 type FeedCheck struct {
 	sync.RWMutex
 
-	Feed Feed     `json:"Thread"`
+	Feed Feed      `json:"Thread"`
 	Date time.Time `json:"Date"`
 	GUID string    `json:"GUID"`
 }
@@ -17,7 +17,7 @@ func NewFeedCheck(feed Feed, date time.Time, GUID string) FeedCheck {
 	return FeedCheck{Feed: feed, Date: date, GUID: GUID}
 }
 
-func (f FeedCheck) SetFeed(feed Feed) FeedCheck{
+func (f FeedCheck) SetFeed(feed Feed) FeedCheck {
 	f.Feed = feed
 	return f
 }

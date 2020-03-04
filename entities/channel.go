@@ -13,7 +13,7 @@ type Channel struct {
 	Exists    bool
 }
 
-func (c Channel) SetChannelID(channelID string) Channel{
+func (c Channel) SetChannelID(channelID string) Channel {
 	c.ChannelID = channelID
 	return c
 }
@@ -111,7 +111,7 @@ func (c Channel) GetOptin() bool {
 	return c.Optin
 }
 
-func (c Channel) SetExists(exists bool) Channel{
+func (c Channel) SetExists(exists bool) Channel {
 	c.Exists = exists
 	return c
 }

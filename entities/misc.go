@@ -17,7 +17,7 @@ import (
 var (
 	Mutex sync.RWMutex
 
-	SharedInfo     *sharedInfo
+	SharedInfo *sharedInfo
 
 	sharedFileNames = [...]string{"remindMes.json", "animeSubs.json"}
 	AnimeSchedule   = make(map[int][]*ShowAirTime)

@@ -42,7 +42,7 @@ func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 			_ = s.UpdateStatus(0, randomPlayingMsg)
 		}
 
-		var  guildIds []string
+		var guildIds []string
 		for _, guild := range s.State.Guilds {
 			guildIds = append(guildIds, guild.ID)
 		}
@@ -496,7 +496,7 @@ func guildFeedsHandler(guildID string) (map[entities.Feed][]*gofeed.Item, error)
 			}
 
 			// Check if author is same and skip if not true
-			if feed.GetAuthor() != "" && item.Author != nil && strings.ToLower(item.Author.Name) != fmt.Sprintf("/u/%s", feed.GetAuthor()){
+			if feed.GetAuthor() != "" && item.Author != nil && strings.ToLower(item.Author.Name) != fmt.Sprintf("/u/%s", feed.GetAuthor()) {
 				continue
 			}
 

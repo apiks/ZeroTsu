@@ -8,21 +8,21 @@ import (
 type UserInfo struct {
 	sync.RWMutex
 
-	ID               string        `json:"id"`
-	Discrim          string        `json:"discrim"`
-	Username         string        `json:"username"`
-	Nickname         string        `json:"nickname,omitempty"`
-	PastUsernames    []string      `json:"pastUsernames,omitempty"`
-	PastNicknames    []string      `json:"pastNicknames,omitempty"`
-	Warnings         []string      `json:"warnings,omitempty"`
-	Mutes            []string      `json:"mutes,omitempty"`
-	Kicks            []string      `json:"kicks,omitempty"`
-	Bans             []string      `json:"bans,omitempty"`
-	JoinDate         string        `json:"joinDate"`
-	RedditUsername   string        `json:"redditUser,omitempty"`
-	VerifiedDate     string        `json:"verifiedDate,omitempty"`
-	UnmuteDate       string        `json:"unmuteDate,omitempty"`
-	UnbanDate        string        `json:"unbanDate,omitempty"`
+	ID               string       `json:"id"`
+	Discrim          string       `json:"discrim"`
+	Username         string       `json:"username"`
+	Nickname         string       `json:"nickname,omitempty"`
+	PastUsernames    []string     `json:"pastUsernames,omitempty"`
+	PastNicknames    []string     `json:"pastNicknames,omitempty"`
+	Warnings         []string     `json:"warnings,omitempty"`
+	Mutes            []string     `json:"mutes,omitempty"`
+	Kicks            []string     `json:"kicks,omitempty"`
+	Bans             []string     `json:"bans,omitempty"`
+	JoinDate         string       `json:"joinDate"`
+	RedditUsername   string       `json:"redditUser,omitempty"`
+	VerifiedDate     string       `json:"verifiedDate,omitempty"`
+	UnmuteDate       string       `json:"unmuteDate,omitempty"`
+	UnbanDate        string       `json:"unbanDate,omitempty"`
 	Timestamps       []Punishment `json:"timestamps,omitempty"`
 	Waifu            Waifu        `json:"waifu,omitempty"`
 	SuspectedSpambot bool
@@ -108,7 +108,7 @@ func (u UserInfo) SetPastNicknames(pastNicknames []string) UserInfo {
 }
 
 func (u UserInfo) GetPastNicknames() []string {
-	if u.PastNicknames== nil {
+	if u.PastNicknames == nil {
 		return nil
 	}
 	return u.PastNicknames
@@ -158,7 +158,7 @@ func (u UserInfo) GetMutes() []string {
 	return u.Mutes
 }
 
-func (u UserInfo) AppendToKicks(kick string) UserInfo{
+func (u UserInfo) AppendToKicks(kick string) UserInfo {
 	u.Kicks = append(u.Kicks, kick)
 	return u
 }
@@ -190,7 +190,7 @@ func (u UserInfo) RemoveFromBans(index int) UserInfo {
 	return u
 }
 
-func (u UserInfo) SetBans(bans []string) UserInfo{
+func (u UserInfo) SetBans(bans []string) UserInfo {
 	u.Bans = bans
 	return u
 }

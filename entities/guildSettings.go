@@ -6,21 +6,21 @@ import "sync"
 type GuildSettings struct {
 	sync.RWMutex
 
-	Prefix              string      `json:"Prefix"`
+	Prefix              string     `json:"Prefix"`
 	BotLog              Cha        `json:"BotLogID"`
 	CommandRoles        []Role     `json:"CommandRoles"`
 	OptInUnder          Role       `json:"OptInUnder"`
 	OptInAbove          Role       `json:"OptInAbove"`
 	MutedRole           Role       `json:"MutedRole"`
 	VoiceChas           []VoiceCha `json:"VoiceChas"`
-	VoteModule          bool        `json:"VoteModule"`
-	ModOnly             bool        `json:"ModOnly"`
+	VoteModule          bool       `json:"VoteModule"`
+	ModOnly             bool       `json:"ModOnly"`
 	VoteChannelCategory Cha        `json:"VoteChannelCategory"`
-	WaifuModule         bool        `json:"WaifuModule"`
-	WhitelistFileFilter bool        `json:"WhitelistFileFilter"`
-	ReactsModule        bool        `json:"ReactsModule"`
-	PingMessage         string      `json:"PingMessage"`
-	Premium             bool        `json:"Premium"`
+	WaifuModule         bool       `json:"WaifuModule"`
+	WhitelistFileFilter bool       `json:"WhitelistFileFilter"`
+	ReactsModule        bool       `json:"ReactsModule"`
+	PingMessage         string     `json:"PingMessage"`
+	Premium             bool       `json:"Premium"`
 }
 
 func (g GuildSettings) SetPrefix(prefix string) GuildSettings {

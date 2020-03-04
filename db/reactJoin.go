@@ -11,7 +11,7 @@ func GetGuildReactJoin(guildID string) map[string]*entities.ReactJoin {
 	entities.Guilds.RLock()
 	defer entities.Guilds.RUnlock()
 
-	return  entities.Guilds.DB[guildID].GetReactJoinMap()
+	return entities.Guilds.DB[guildID].GetReactJoinMap()
 }
 
 // SetGuildReactJoin sets a guild's react join map in-memory

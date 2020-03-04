@@ -60,9 +60,9 @@ func (g *GuildMap) Init(guildID string) {
 	g.DB[guildID] = &GuildInfo{
 		ID: guildID,
 		GuildSettings: GuildSettings{
-			Prefix:              ".",
-			ReactsModule:        true,
-			PingMessage:         "Hmmm~ So this is what you do all day long?",
+			Prefix:       ".",
+			ReactsModule: true,
+			PingMessage:  "Hmmm~ So this is what you do all day long?",
 		},
 		MemberInfoMap:   make(map[string]UserInfo),
 		SpoilerMap:      make(map[string]*discordgo.Role),

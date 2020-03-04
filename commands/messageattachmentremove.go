@@ -24,7 +24,7 @@ func MessageAttachmentsHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		}
 	}()
 
-	if m.GuildID == "" || len(m.Attachments) == 0 || m.Author.ID == s.State.User.ID{
+	if m.GuildID == "" || len(m.Attachments) == 0 || m.Author.ID == s.State.User.ID {
 		return
 	}
 

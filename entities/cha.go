@@ -38,4 +38,3 @@ func (c Cha) GetID() string {
 	}
 	return c.ID
 }
-

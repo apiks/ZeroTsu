@@ -30,7 +30,7 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}()
 
-	if m.GuildID == "" || m.Author == nil || m.Author.ID == s.State.User.ID{
+	if m.GuildID == "" || m.Author == nil || m.Author.ID == s.State.User.ID {
 		return
 	}
 

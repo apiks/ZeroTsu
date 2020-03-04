@@ -136,7 +136,7 @@ func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 	}
-	
+
 	// Sanitize mentions
 	m.Content = strings.ReplaceAll(m.Content, "@here", "@\u200Bhere")
 	if m.MentionEveryone {
@@ -147,7 +147,7 @@ func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 			m.Content = strings.ReplaceAll(m.Content, fmt.Sprintf("<@&%s>", roleID), fmt.Sprintf("\\<@&%s>", roleID))
 		}
 	}
-	
+
 	cmd.Execute(s, m.Message)
 	if cmd.DeleteAfter {
 		err := s.ChannelMessageDelete(m.ChannelID, m.ID)

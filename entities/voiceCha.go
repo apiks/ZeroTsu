@@ -5,8 +5,8 @@ import "sync"
 type VoiceCha struct {
 	sync.RWMutex
 
-	Name  string  `json:"Name"`
-	ID    string  `json:"ID"`
+	Name  string `json:"Name"`
+	ID    string `json:"ID"`
 	Roles []Role `json:"Roles"`
 }
 

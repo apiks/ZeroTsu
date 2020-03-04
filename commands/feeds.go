@@ -187,7 +187,7 @@ func removeRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Fetches the target feed ID
 	for _, feed := range guildFeeds {
-		if feed.GetSubreddit() == subreddit  {
+		if feed.GetSubreddit() == subreddit {
 			if title != "" && feed.GetTitle() != title {
 				continue
 			}
