@@ -31,4 +31,6 @@ ZeroTsu
 
 # Configs of dev branch
 configsecrets.json
+configDev.json
 config.json
+configranime.json
