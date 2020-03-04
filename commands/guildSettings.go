@@ -186,11 +186,18 @@ func viewCommandRoles(s *discordgo.Session, m *discordgo.Message) {
 // Handles prefix view or change
 func prefixCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := db.GetGuildSettings(m.GuildID)
-	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
+	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", -1)
 
 	// Displays current prefix
 	if len(commandStrings) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current prefix is: `%s` \n\n To change prefix please use `%sprefix [new prefix]`", guildSettings.GetPrefix(), guildSettings.GetPrefix()))
+		if err != nil {
+			common.LogError(s, guildSettings.BotLog, err)
+			return
+		}
+		return
+	} else if len(commandStrings) > 2 {
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: You cannot do multi-word prefixes due to technical reasons. Please try a single word prefix."))
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
 			return
