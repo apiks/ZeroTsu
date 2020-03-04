@@ -29,6 +29,14 @@ func HasElevatedPermissions(s *discordgo.Session, userID string, guildID string)
 		return true
 	}
 
+	guild, err := s.Guild(guildID)
+	if err != nil {
+		return false
+	}
+	if userID == guild.OwnerID {
+		return true
+	}
+
 	return HasPrivilegedPermissions(mem)
 }
 
