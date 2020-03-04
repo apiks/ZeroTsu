@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/entities"
 	"github.com/r-anime/ZeroTsu/functionality"
