@@ -136,6 +136,18 @@ func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 	}
+	
+	// Sanitize mentions
+	m.Content = strings.ReplaceAll(m.Content, "@here", "@\u200Bhere")
+	if m.MentionEveryone {
+		m.Content = strings.ReplaceAll(m.Content, "@everyone", "@\u200Beveryone")
+	}
+	if len(m.MentionRoles) != 0 {
+		for _, roleID := range m.MentionRoles {
+			m.Content = strings.ReplaceAll(m.Content, fmt.Sprintf("<@&%s>", roleID), fmt.Sprintf("\\<@&%s>", roleID))
+		}
+	}
+	
 	cmd.Execute(s, m.Message)
 	if cmd.DeleteAfter {
 		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
