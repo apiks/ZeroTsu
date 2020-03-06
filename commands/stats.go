@@ -226,7 +226,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		message += fmt.Sprintf("\nOpt-in Total: %d\n\n------\n", optinChannelTotal)
 	}
 	message += fmt.Sprintf("\nGrand Total Messages: %d\n\n", optinChannelTotal+normalChannelTotal)
-	message += fmt.Sprintf("\nDaily Username Change: %d\n\n", userChangeStat)
+	message += fmt.Sprintf("\nDaily User Change: %d\n\n", userChangeStat)
 	if len(verifiedStats) != 0 && config.Website != "" {
 		verifiedStat := db.GetGuildVerifiedStat(m.GuildID, t.Format(common.ShortDateFormat))
 		message += fmt.Sprintf("\nDaily Verified Change: %d\n\n", verifiedStat)
