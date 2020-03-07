@@ -114,10 +114,7 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo and fetches them
 	mem := db.GetGuildMember(m.GuildID, userID)
-	if err != nil {
-		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
-	} else if mem.GetID() == "" {
+	if mem.GetID() == "" {
 		var user *discordgo.User
 
 		if userMem != nil {

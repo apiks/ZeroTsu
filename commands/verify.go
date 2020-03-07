@@ -62,10 +62,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo and fetches them
 	mem := db.GetGuildMember(m.GuildID, userID)
-	if err != nil {
-		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
-	} else if mem.GetID() == "" {
+	if mem.GetID() == "" {
 		var user *discordgo.User
 
 		if userMem != nil {
@@ -176,10 +173,7 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if user is in memberInfo and fetches them
 	mem := db.GetGuildMember(m.GuildID, userID)
-	if err != nil {
-		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
-	} else if mem.GetID() == "" {
+	if mem.GetID() == "" {
 		if userMem == nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, "Error: User not found in the server and internal database. Cannot unverify until user joins the server.")
 			if err != nil {

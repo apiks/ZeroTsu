@@ -371,10 +371,8 @@ func showTimestampsCommand(s *discordgo.Session, m *discordgo.Message) {
 		functionality.InitializeUser(user, m.GuildID)
 
 		mem = db.GetGuildMember(m.GuildID, userID)
-		if err != nil || mem.GetID() == "" {
-			if mem.GetID() == "" && err == nil {
-				err = fmt.Errorf("error: member object is empty")
-			}
+		if mem.GetID() == "" {
+			err = fmt.Errorf("error: member object is empty")
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}

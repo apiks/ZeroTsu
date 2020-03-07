@@ -265,7 +265,7 @@ func unmuteHandler(s *discordgo.Session, guildID string, user entities.PunishedU
 
 	// Removes unmute date entirely
 	mem := db.GetGuildMember(guildID, user.GetID())
-	if err == nil && mem.GetID() != "" {
+	if mem.GetID() != "" {
 		mem.SetUnmuteDate("")
 	}
 
