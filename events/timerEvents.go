@@ -286,10 +286,6 @@ func unmuteHandler(s *discordgo.Session, guildID string, user entities.PunishedU
 
 	if mem.GetID() != "" {
 		db.SetGuildMember(guildID, mem)
-		if err != nil {
-			guildSettings := db.GetGuildSettings(guildID)
-			common.LogError(s, guildSettings.BotLog, err)
-		}
 	}
 
 	_ = db.SetGuildPunishedUser(guildID, user)
