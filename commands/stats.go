@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -98,6 +99,7 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		flag               bool
 		channels           []entities.Channel
 		t                  time.Time
+		roles []*discordgo.Role
 	)
 
 	// Print either Today or yesterday based on whether it's the bot that called the func
@@ -142,21 +144,6 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
-	// Fetches info on server roles from the server and puts it in deb
-	deb, err := s.GuildRoles(m.GuildID)
-	if err != nil {
-		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
-	}
-
-	// Confirms whether optins exist
-	optInExist := common.OptInsExist(s, m.GuildID)
-	//err = common.OptInsHandler(s, m.ChannelID, m.GuildID)
-	//if err != nil {
-	//	common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-	//	return
-	//}
-
 	// Fetches all guild info
 	guild, err := s.State.Guild(m.GuildID)
 	if err != nil {
@@ -167,17 +154,27 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
+	// Confirms whether optins exist
+	optInExist := common.OptInsExist(s, m.GuildID)
+
+	// Fetches all roles
+	roles, err = s.GuildRoles(m.GuildID)
+	if err != nil {
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		return
+	}
+
 	// Updates opt-in-under and opt-in-above position for use later in isChannelUsable func
 	if optInExist {
-		for i := 0; i < len(deb); i++ {
-			if deb[i].ID == guildSettings.GetOptInUnder().GetID() {
+		for i := 0; i < len(roles); i++ {
+			if roles[i].ID == guildSettings.GetOptInUnder().GetID() {
 				optInUnder := guildSettings.GetOptInUnder()
-				optInUnder = optInUnder.SetPosition(deb[i].Position)
+				optInUnder = optInUnder.SetPosition(roles[i].Position)
 				guildSettings = guildSettings.SetOptInUnder(optInUnder)
-			} else if deb[i].ID == guildSettings.GetOptInAbove().GetID() {
+			} else if roles[i].ID == guildSettings.GetOptInAbove().GetID() {
 				optInAbove := guildSettings.GetOptInAbove()
-				optInAbove = optInAbove.SetPosition(deb[i].Position)
-				guildSettings = guildSettings.SetOptInUnder(optInAbove)
+				optInAbove = optInAbove.SetPosition(roles[i].Position)
+				guildSettings = guildSettings.SetOptInAbove(optInAbove)
 			}
 		}
 	}
@@ -346,7 +343,7 @@ func OnMemberRemoval(_ *discordgo.Session, u *discordgo.GuildMemberRemove) {
 }
 
 // Checks if specific channel stat should be printed
-func isChannelUsable(channel entities.Channel, guild *discordgo.Guild, guildSettings entities.GuildSettings, optInExist bool) (*entities.Channel, bool) {
+func isChannelUsable(channel entities.Channel, guild *discordgo.Guild, guildSettings entities.GuildSettings, optInExist bool) (entities.Channel, bool) {
 
 	// Checks if channel exists and if it's optin
 	for guildIndex := range guild.Channels {
@@ -354,7 +351,7 @@ func isChannelUsable(channel entities.Channel, guild *discordgo.Guild, guildSett
 			for roleIndex := range guild.Roles {
 				if guild.Roles[roleIndex].Position < guildSettings.GetOptInUnder().GetPosition() &&
 					guild.Roles[roleIndex].Position > guildSettings.GetOptInAbove().GetPosition() &&
-					guild.Channels[guildIndex].Name == guild.Roles[roleIndex].Name {
+					strings.ToLower(guild.Channels[guildIndex].Name) == strings.ToLower(guild.Roles[roleIndex].Name) {
 					channel = channel.SetOptin(true)
 					break
 				} else {
@@ -362,7 +359,7 @@ func isChannelUsable(channel entities.Channel, guild *discordgo.Guild, guildSett
 				}
 			}
 		}
-		if guild.Channels[guildIndex].Name == channel.GetName() &&
+		if strings.ToLower(guild.Channels[guildIndex].Name) == strings.ToLower(channel.GetName()) &&
 			guild.Channels[guildIndex].ID == channel.GetChannelID() {
 			channel = channel.SetExists(true)
 			break
@@ -374,9 +371,9 @@ func isChannelUsable(channel entities.Channel, guild *discordgo.Guild, guildSett
 	db.SetGuildChannelStat(guild.ID, channel)
 
 	if channel.GetExists() {
-		return &channel, true
+		return channel, true
 	}
-	return &channel, false
+	return channel, false
 }
 
 // Splits the stat messages into blocks

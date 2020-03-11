@@ -263,7 +263,7 @@ func botLogCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 			return
 		}
-		guildBotLog = entities.NewCha(channelID, channelName)
+		guildBotLog = entities.NewCha(channelName, channelID)
 	}
 
 	// Changes and writes new bot log to storage
@@ -327,7 +327,7 @@ func optInUnderCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings = guildSettings.SetOptInUnder(entities.NewRole(roleName, roleID, 0))
 	db.SetGuildSettings(m.GuildID, guildSettings)
 
-	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! 'Opt In Under' role is: `%v - %v`", roleName, roleID))
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! 'Opt In Under' role is: `%s - %s`", roleName, roleID))
 	if err != nil {
 		common.LogError(s, guildSettings.BotLog, err)
 	}

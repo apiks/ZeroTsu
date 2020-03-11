@@ -77,7 +77,7 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 		if deb[i].ID == guildSettings.GetOptInAbove().GetID() {
 			optInAbove := guildSettings.GetOptInAbove()
 			optInAbove = optInAbove.SetPosition(deb[i].Position)
-			guildSettings = guildSettings.SetOptInUnder(optInAbove)
+			guildSettings = guildSettings.SetOptInAbove(optInAbove)
 
 			db.SetGuildSettings(m.GuildID, guildSettings)
 			break
@@ -148,7 +148,7 @@ func sortRolesCommand(s *discordgo.Session, m *discordgo.Message) {
 			if deb[i].ID == guildSettings.GetOptInAbove().GetID() {
 				optInAbove := guildSettings.GetOptInAbove()
 				optInAbove = optInAbove.SetPosition(deb[i].Position)
-				guildSettings = guildSettings.SetOptInUnder(optInAbove)
+				guildSettings = guildSettings.SetOptInAbove(optInAbove)
 
 				db.SetGuildSettings(m.GuildID, guildSettings)
 				break

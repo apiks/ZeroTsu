@@ -84,17 +84,14 @@ func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 			db.SetGuildChannelStats(guildID, guildChannelStats)
 
 			// Writes emoji stats to disk
-			guildEmojiStats := db.GetGuildEmojiStats(guildID)
-			db.SetGuildEmojiStats(guildID, guildEmojiStats)
+			db.SetGuildEmojiStats(guildID, db.GetGuildEmojiStats(guildID))
 
 			// Writes user gain stats to disk
-			guildUserChangeStats := db.GetGuildUserChangeStats(guildID)
-			db.SetGuildUserChangeStats(guildID, guildUserChangeStats)
+			db.SetGuildUserChangeStats(guildID, db.GetGuildUserChangeStats(guildID))
 
 			// Writes verified stats to disk
 			if config.Website != "" {
-				guildVerifiedStats := db.GetGuildVerifiedStats(guildID)
-				db.SetGuildVerifiedStats(guildID, guildVerifiedStats)
+				db.SetGuildVerifiedStats(guildID, db.GetGuildVerifiedStats(guildID))
 			}
 		}
 

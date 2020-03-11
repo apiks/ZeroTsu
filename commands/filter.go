@@ -55,9 +55,12 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Deletes the message first
+	// Deletes the message after making a copy of it
+	mess := m
 	err := s.ChannelMessageDelete(m.ChannelID, m.ID)
 	if err != nil {
+		guildSettings := db.GetGuildSettings(m.GuildID)
+		common.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 
@@ -76,19 +79,19 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Sends embed mod message
-	err = embeds.Filter(s, m.Message, removals, m.ChannelID)
+	err = embeds.Filter(s, mess.Message, removals, mess.ChannelID)
 	if err != nil {
-		guildSettings := db.GetGuildSettings(m.GuildID)
+		guildSettings := db.GetGuildSettings(mess.GuildID)
 		common.LogError(s, guildSettings.BotLog, err)
 		return
 	}
 
 	// Sends message to user's DMs if possible
-	dm, err := s.UserChannelCreate(m.Author.ID)
+	dm, err := s.UserChannelCreate(mess.Author.ID)
 	if err != nil {
 		return
 	}
-	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message `%s` was removed for using: _%s_ \n\n", strings.ToLower(m.Content), strings.Join(removals, ", ")))
+	_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("Your message `%s` was removed for using: _%s_ \n\n", strings.ToLower(mess.Content), strings.Join(removals, ", ")))
 }
 
 // Handles filter in an onEdit basis

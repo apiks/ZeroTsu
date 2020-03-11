@@ -271,7 +271,7 @@ func LogError(s *discordgo.Session, botLog entities.Cha, err error) {
 		return
 	}
 
-	// Don't log Discord Internal Server Errors
+
 	if restErr, ok := err.(*discordgo.RESTError); ok {
 		if restErr.Message.Message == "500: Internal Server Error" {
 			return
@@ -522,6 +522,13 @@ func RoleParser(s *discordgo.Session, role string, guildID string) (string, stri
 		roleID = role
 	}
 
+	// Get role if its a tag
+	if strings.HasPrefix(role, "<@") {
+		roleID = strings.TrimPrefix(role, "<@&")
+		roleID = strings.TrimPrefix(roleID, "<@\u200B&")
+		roleID = strings.TrimSuffix(roleID,">")
+	}
+
 	// Find the roleID if it doesn't exists via role name, else find the role name
 	roles, err := s.GuildRoles(guildID)
 	if err != nil {
@@ -567,7 +574,7 @@ func Uptime() time.Duration {
 	return time.Since(StartTime)
 }
 
-// c checks whether optin roles exist
+// OptInsExist checks whether optin roles exist
 func OptInsExist(s *discordgo.Session, guildID string) bool {
 	var (
 		optInUnderExists bool
