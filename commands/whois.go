@@ -289,7 +289,6 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 
 // Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Whois version
 func CheckAltAccountWhois(guildID string, user entities.UserInfo) []string {
-
 	var alts []string
 
 	// Stops func if target reddit username is nil
@@ -305,12 +304,12 @@ func CheckAltAccountWhois(guildID string, user entities.UserInfo) []string {
 
 	for _, memberInfoUser := range memberInfo {
 		// Skips iteration if iteration reddit username is nil
-		if user.GetRedditUsername() == "" {
+		if memberInfoUser.GetRedditUsername() == "" {
 			continue
 		}
 		// Checks if the current user has the same reddit username as the entry parameter and adds to alts string slice if so
 		if user.GetRedditUsername() == memberInfoUser.GetRedditUsername() {
-			alts = append(alts, user.GetID())
+			alts = append(alts, memberInfoUser.GetID())
 		}
 	}
 	if len(alts) > 1 {
