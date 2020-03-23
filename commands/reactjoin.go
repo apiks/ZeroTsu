@@ -578,7 +578,6 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	if len(commandStrings) == 1 {
@@ -697,7 +696,7 @@ func joinCommand(s *discordgo.Session, m *discordgo.Message) {
 		} else if deb[i].ID == guildSettings.GetOptInAbove().GetID() {
 			optInAbove := guildSettings.GetOptInAbove()
 			optInAbove = optInAbove.SetPosition(deb[i].Position)
-			guildSettings = guildSettings.SetOptInUnder(optInAbove)
+			guildSettings = guildSettings.SetOptInAbove(optInAbove)
 
 			db.SetGuildSettings(m.GuildID, guildSettings)
 		}
@@ -889,7 +888,7 @@ func leaveCommand(s *discordgo.Session, m *discordgo.Message) {
 		} else if deb[i].ID == guildSettings.GetOptInAbove().GetID() {
 			optInAbove := guildSettings.GetOptInAbove()
 			optInAbove = optInAbove.SetPosition(deb[i].Position)
-			guildSettings = guildSettings.SetOptInUnder(optInAbove)
+			guildSettings = guildSettings.SetOptInAbove(optInAbove)
 
 			db.SetGuildSettings(m.GuildID, guildSettings)
 		}
