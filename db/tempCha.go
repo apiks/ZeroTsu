@@ -40,9 +40,10 @@ func SetGuildTempChannel(guildID, roleID string, tempCha *entities.TempChaInfo, 
 		return fmt.Errorf("Error: You have reached the temporary channel limit (50) for this server. Please wait for some to be removed or increase them to 200 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
 
+	tempChaMap := entities.Guilds.DB[guildID].GetTempChaMap()
 	if len(deleteSlice) == 0 {
 		var exists bool
-		for _, guildTempCha := range entities.Guilds.DB[guildID].GetTempChaMap() {
+		for _, guildTempCha := range tempChaMap {
 			if guildTempCha == nil {
 				continue
 			}
@@ -57,20 +58,18 @@ func SetGuildTempChannel(guildID, roleID string, tempCha *entities.TempChaInfo, 
 		}
 
 		if !exists {
-			entities.Guilds.DB[guildID].GetTempChaMap()[roleID] = tempCha
+			tempChaMap[roleID] = tempCha
 		}
 	} else {
-		if _, ok := entities.Guilds.DB[guildID].GetTempChaMap()[roleID]; ok {
-			delete(entities.Guilds.DB[guildID].GetTempChaMap(), roleID)
+		if _, ok := tempChaMap[roleID]; ok {
+			delete(tempChaMap, roleID)
 		} else {
 			entities.Guilds.Unlock()
 			return fmt.Errorf("Error: That temporary channel doesn't exist.")
 		}
 	}
-
 	entities.Guilds.Unlock()
 
-	entities.Guilds.DB[guildID].WriteData("tempCha", entities.Guilds.DB[guildID].GetTempChaMap())
-
+	SetGuildTempChannels(guildID, tempChaMap)
 	return nil
 }

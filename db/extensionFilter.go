@@ -16,6 +16,17 @@ func GetGuildExtensions(guildID string) map[string]string {
 	return entities.Guilds.DB[guildID].GetExtensionList()
 }
 
+// SetGuildExtensions sets a guild's extension filters in-memory
+func SetGuildExtensions(guildID string, extensionList map[string]string) {
+	entities.HandleNewGuild(guildID)
+
+	entities.Guilds.Lock()
+	entities.Guilds.DB[guildID].SetExtensionList(extensionList)
+	entities.Guilds.Unlock()
+
+	entities.Guilds.DB[guildID].WriteData("extensionList", entities.Guilds.DB[guildID].GetExtensionList())
+}
+
 // SetGuildExtension sets a target guild's extensions filters in-memory
 func SetGuildExtension(guildID, extension string, deleteSlice ...bool) error {
 	entities.HandleNewGuild(guildID)
@@ -31,10 +42,11 @@ func SetGuildExtension(guildID, extension string, deleteSlice ...bool) error {
 	}
 
 	extension = strings.ToLower(extension)
+	extensionList := entities.Guilds.DB[guildID].GetExtensionList()
 
 	if len(deleteSlice) == 0 {
 		var exists bool
-		for guildExtension := range entities.Guilds.DB[guildID].GetExtensionList() {
+		for guildExtension := range extensionList {
 			if guildExtension == "" {
 				continue
 			}
@@ -47,26 +59,24 @@ func SetGuildExtension(guildID, extension string, deleteSlice ...bool) error {
 
 		if !exists {
 			if entities.Guilds.DB[guildID].GetGuildSettings().GetWhitelistFileFilter() {
-				entities.Guilds.DB[guildID].GetExtensionList()[strings.ToLower(extension)] = "whitelist"
+				extensionList[strings.ToLower(extension)] = "whitelist"
 			} else {
-				entities.Guilds.DB[guildID].GetExtensionList()[strings.ToLower(extension)] = "blacklist"
+				extensionList[strings.ToLower(extension)] = "blacklist"
 			}
 		} else {
 			entities.Guilds.Unlock()
 			return fmt.Errorf("Error: That extension filter already exists.")
 		}
 	} else {
-		if _, ok := entities.Guilds.DB[guildID].GetExtensionList()[extension]; ok {
-			delete(entities.Guilds.DB[guildID].GetExtensionList(), extension)
+		if _, ok := extensionList[extension]; ok {
+			delete(extensionList, extension)
 		} else {
 			entities.Guilds.Unlock()
 			return fmt.Errorf("Error: No such extension filter exists.")
 		}
 	}
-
 	entities.Guilds.Unlock()
 
-	entities.Guilds.DB[guildID].WriteData("extensionList", entities.Guilds.DB[guildID].GetExtensionList())
-
+	SetGuildExtensions(guildID, extensionList)
 	return nil
 }

@@ -273,8 +273,10 @@ func LogError(s *discordgo.Session, botLog entities.Cha, err error) {
 
 
 	if restErr, ok := err.(*discordgo.RESTError); ok {
-		if restErr.Message.Message == "500: Internal Server Error" {
-			return
+		if restErr != nil && restErr.Message != nil {
+			if restErr.Message.Message == "500: Internal Server Error" {
+				return
+			}
 		}
 	}
 

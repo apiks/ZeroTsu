@@ -29,7 +29,6 @@ func SetGuildSpoilerMap(guildID string, spoilerMap map[string]*discordgo.Role) {
 		if role == nil {
 			continue
 		}
-
 		spoilerRoles = append(spoilerRoles, role)
 	}
 
@@ -38,15 +37,14 @@ func SetGuildSpoilerMap(guildID string, spoilerMap map[string]*discordgo.Role) {
 
 // SetGuildSpoilerRole sets a guild's spoiler map role in-memory
 func SetGuildSpoilerRole(guildID string, role *discordgo.Role, deleteSlice ...bool) {
-	var spoilerRoles []*discordgo.Role
-
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
 
+	spoilerMap := entities.Guilds.DB[guildID].GetSpoilerMap()
 	if len(deleteSlice) == 0 {
 		var exists bool
-		for _, guildSpoilerRole := range entities.Guilds.DB[guildID].GetSpoilerMap() {
+		for _, guildSpoilerRole := range spoilerMap {
 			if guildSpoilerRole == nil {
 				continue
 			}
@@ -59,21 +57,13 @@ func SetGuildSpoilerRole(guildID string, role *discordgo.Role, deleteSlice ...bo
 		}
 
 		if !exists {
-			entities.Guilds.DB[guildID].GetSpoilerMap()[role.ID] = role
+			spoilerMap[role.ID] = role
 		}
 	} else {
-		delete(entities.Guilds.DB[guildID].GetSpoilerMap(), role.ID)
-	}
-
-	for _, guildSpoilerRole := range entities.Guilds.DB[guildID].GetSpoilerMap() {
-		if guildSpoilerRole == nil {
-			continue
-		}
-
-		spoilerRoles = append(spoilerRoles, guildSpoilerRole)
+		delete(spoilerMap, role.ID)
 	}
 
 	entities.Guilds.Unlock()
 
-	entities.Guilds.DB[guildID].WriteData("spoilerRoles", spoilerRoles)
+	SetGuildSpoilerMap(guildID, spoilerMap)
 }

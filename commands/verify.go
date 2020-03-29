@@ -220,7 +220,7 @@ func unverifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	// Stores time of verification and removes from verification stats
+	// Removes from verification stats
 	t := time.Now()
 	db.AddGuildVerifiedStat(m.GuildID, t.Format(common.ShortDateFormat), -1)
 
