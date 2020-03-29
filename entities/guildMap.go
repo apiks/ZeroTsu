@@ -64,17 +64,17 @@ func (g *GuildMap) Init(guildID string) {
 			ReactsModule: true,
 			PingMessage:  "Hmmm~ So this is what you do all day long?",
 		},
-		MemberInfoMap:   memberInfoMapSafe{memberInfo: make(map[string]UserInfo)},
-		SpoilerMap:      spoilerMapSafe{spoilerMap: make(map[string]*discordgo.Role)},
-		EmojiStats:      emojiStatsSafe{emojiStats: make(map[string]Emoji)},
-		ChannelStats:    channelStatsSafe{channelStats: make(map[string]Channel)},
-		UserChangeStats: stringIntMapSafe{stringIntMap: make(map[string]int)},
-		VerifiedStats:   stringIntMapSafe{stringIntMap: make(map[string]int)},
-		VoteInfoMap:     voteInfoMapSafe{voteInfo: make(map[string]*VoteInfo)},
-		TempChaMap:      tempChaMapSafe{tempCha: make(map[string]*TempChaInfo)},
-		ReactJoinMap:    reactJoinMapSafe{reactJoin: make(map[string]*ReactJoin)},
-		ExtensionList:   stringStringMapSafe{stringStringMap: make(map[string]string)},
-		Autoposts:       autopostsMapSafe{autoposts: make(map[string]Cha)},
+		MemberInfoMap:   make(map[string]UserInfo),
+		SpoilerMap:      make(map[string]*discordgo.Role),
+		EmojiStats:      make(map[string]Emoji),
+		ChannelStats:    make(map[string]Channel),
+		UserChangeStats: make(map[string]int),
+		VerifiedStats:   make(map[string]int),
+		VoteInfoMap:     make(map[string]*VoteInfo),
+		TempChaMap:      make(map[string]*TempChaInfo),
+		ReactJoinMap:    make(map[string]*ReactJoin),
+		ExtensionList:   make(map[string]string),
+		Autoposts:       make(map[string]Cha),
 	}
 }
 
@@ -109,13 +109,11 @@ func (g *GuildMap) Load(guildID string) error {
 	}
 
 	// Init default settings
-	g.DB[guildID].Autoposts.Lock()
-	if _, ok := g.DB[guildID].Autoposts.autoposts["newepisodes"]; ok {
+	if _, ok := g.DB[guildID].Autoposts["newepisodes"]; ok {
 		Mutex.Lock()
 		SetupGuildSub(guildID)
 		Mutex.Unlock()
 	}
-	g.DB[guildID].Autoposts.Unlock()
 
 	g.Lock()
 	*g.DB[guildID] = *guild

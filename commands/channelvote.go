@@ -6,7 +6,6 @@ import (
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/entities"
 	"log"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -226,12 +225,6 @@ func startVoteCommand(s *discordgo.Session, m *discordgo.Message) {
 	// Fixes role name bug
 	role := strings.Replace(strings.TrimSpace(voteChannel.Name), " ", "-", -1)
 	role = strings.Replace(role, "--", "-", -1)
-	reg, err := regexp.Compile("[^a-zA-Z0-9-]+")
-	if err != nil {
-		common.LogError(s, guildSettings.BotLog, err)
-		return
-	}
-	role = reg.ReplaceAllString(role, "")
 	voteChannel.Name = role
 
 	peopleNum = peopleNum + 1
@@ -333,12 +326,6 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					// Fixes role name bugs
 					role := strings.Replace(strings.TrimSpace(vote.GetChannel()), " ", "-", -1)
 					role = strings.Replace(role, "--", "-", -1)
-					reg, err := regexp.Compile("[^a-zA-Z0-9-]+")
-					if err != nil {
-						common.LogError(s, guildSettings.BotLog, err)
-						continue
-					}
-					role = reg.ReplaceAllString(role, "")
 
 					_, err = s.ChannelMessageSend(messageReact.ChannelID, fmt.Sprintf("Channel vote has ended. %s has failed to gather the necessary %d votes.", vote.GetChannel(), vote.GetVotesReq()))
 					if err != nil {
@@ -379,12 +366,6 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				// Fixes role name bugs
 				role := strings.Replace(strings.TrimSpace(vote.GetChannel()), " ", "-", -1)
 				role = strings.Replace(role, "--", "-", -1)
-				reg, err := regexp.Compile("[^a-zA-Z0-9-]+")
-				if err != nil {
-					common.LogError(s, guildSettings.BotLog, err)
-					continue
-				}
-				role = reg.ReplaceAllString(role, "")
 
 				// Removes all hyphen prefixes and suffixes because discord cannot handle them
 				for strings.HasPrefix(role, "-") || strings.HasSuffix(role, "-") {

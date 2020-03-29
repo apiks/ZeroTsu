@@ -40,10 +40,9 @@ func SetGuildVoteInfoChannel(guildID, messageID string, vote *entities.VoteInfo,
 		return fmt.Errorf("Error: You have reached the vote limit (50) for this server. Please wait for some to be removed or increase them to 200 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
 
-	voteInfoMap := entities.Guilds.DB[guildID].GetVoteInfoMap()
 	if len(deleteSlice) == 0 {
 		var exists bool
-		for _, guildVote := range voteInfoMap {
+		for _, guildVote := range entities.Guilds.DB[guildID].GetVoteInfoMap() {
 			if guildVote == nil {
 				continue
 			}
@@ -58,13 +57,15 @@ func SetGuildVoteInfoChannel(guildID, messageID string, vote *entities.VoteInfo,
 		}
 
 		if !exists {
-			voteInfoMap[messageID] = vote
+			entities.Guilds.DB[guildID].GetVoteInfoMap()[messageID] = vote
 		}
 	} else {
-		delete(voteInfoMap, messageID)
+		delete(entities.Guilds.DB[guildID].GetVoteInfoMap(), messageID)
 	}
+
 	entities.Guilds.Unlock()
 
-	SetGuildVoteInfo(guildID, voteInfoMap)
+	entities.Guilds.DB[guildID].WriteData("voteInfo", entities.Guilds.DB[guildID].GetVoteInfoMap())
+
 	return nil
 }

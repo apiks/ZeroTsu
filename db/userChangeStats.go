@@ -45,6 +45,7 @@ func SetGuildUserChangeStat(guildID, date string, amount int) {
 
 	entities.Guilds.Lock()
 	entities.Guilds.DB[guildID].AssignToUserChangeStats(date, amount)
+	entities.Guilds.DB[guildID].GetUserChangeStats()[date] += amount
 	entities.Guilds.Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("userChangeStats", entities.Guilds.DB[guildID].GetUserChangeStats())

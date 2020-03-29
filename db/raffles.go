@@ -115,11 +115,10 @@ func SetGuildRaffleParticipant(guildID, userID string, raffle *entities.Raffle, 
 	entities.Guilds.Lock()
 
 	raffle.SetName(strings.ToLower(raffle.GetName()))
-	raffles := entities.Guilds.DB[guildID].GetRaffles()
 
 	if len(delete) == 0 {
 		raffle.AppendToParticipantIDs(userID)
-		for _, guildRaffle := range raffles {
+		for _, guildRaffle := range entities.Guilds.DB[guildID].GetRaffles() {
 			if guildRaffle == nil {
 				continue
 			}
@@ -135,7 +134,8 @@ func SetGuildRaffleParticipant(guildID, userID string, raffle *entities.Raffle, 
 
 	entities.Guilds.Unlock()
 
-	_ = SetGuildRaffles(guildID, raffles)
+	entities.Guilds.DB[guildID].WriteData("raffles", entities.Guilds.DB[guildID].GetRaffles())
+
 	return
 }
 

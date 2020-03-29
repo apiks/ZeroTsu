@@ -7,7 +7,7 @@ func About(s *discordgo.Session, m *discordgo.Message) error {
 	var embed = &discordgo.MessageEmbed{
 		URL:         "https://discordbots.org/bot/614495694769618944",
 		Title:       s.State.User.Username,
-		Description: "Written in **Go** by _Apiks#8969_ with a focus on Moderation tools",
+		Description: "Written in **Go** by _Apiks#8969_ with a focus on Moderation tools.",
 		Color:       purpleColor,
 		Thumbnail:   &discordgo.MessageEmbedThumbnail{URL: s.State.User.AvatarURL("256")},
 		Fields: []*discordgo.MessageEmbedField{{
