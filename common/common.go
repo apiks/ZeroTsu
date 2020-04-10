@@ -271,7 +271,6 @@ func LogError(s *discordgo.Session, botLog entities.Cha, err error) {
 		return
 	}
 
-
 	if restErr, ok := err.(*discordgo.RESTError); ok {
 		if restErr.Message.Message == "500: Internal Server Error" {
 			return
@@ -526,7 +525,7 @@ func RoleParser(s *discordgo.Session, role string, guildID string) (string, stri
 	if strings.HasPrefix(role, "<@") {
 		roleID = strings.TrimPrefix(role, "<@&")
 		roleID = strings.TrimPrefix(roleID, "<@\u200B&")
-		roleID = strings.TrimSuffix(roleID,">")
+		roleID = strings.TrimSuffix(roleID, ">")
 	}
 
 	// Find the roleID if it doesn't exists via role name, else find the role name

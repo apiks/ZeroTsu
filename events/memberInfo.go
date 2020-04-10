@@ -14,7 +14,7 @@ import (
 
 var Key = []byte("VfBhgLzmD4QH3W94pjgdbH8Tyv2HPRzq")
 
-// Checks if user exists in memberInfo on joining server and adds him if he doesn't
+// Checks if user exists in memberInfo on joining server
 // Also updates usernames and/or nicknames
 // Also updates discriminator
 // Also verifies them if they're already verified in memberinfo
@@ -32,6 +32,10 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	}
 
 	entities.HandleNewGuild(e.GuildID)
+
+	if e.GuildID != "267799767843602452" {
+		return
+	}
 
 	// Initializes and handles user if he's new
 	mem := db.GetGuildMember(e.GuildID, e.User.ID)
@@ -101,6 +105,8 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 	if e.User.Discriminator != mem.GetDiscrim() && e.User.Discriminator != "" {
 		mem = mem.SetDiscrim(e.User.Discriminator)
 	}
+
+	db.SetGuildMember(e.GuildID, mem)
 }
 
 // OnMemberUpdate listens for member updates to compare usernames, nicknames and discrim
@@ -163,6 +169,8 @@ func OnMemberUpdate(_ *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	if mem.GetDiscrim() != e.User.Discriminator && e.User.Discriminator != "" {
 		mem = mem.SetDiscrim(e.User.Discriminator)
 	}
+
+	db.SetGuildMember(e.GuildID, mem)
 }
 
 // OnPresenceUpdate listens for user updates to compare usernames and discrim
@@ -225,4 +233,6 @@ func OnPresenceUpdate(_ *discordgo.Session, e *discordgo.PresenceUpdate) {
 	if mem.GetDiscrim() != e.User.Discriminator && e.User.Discriminator != "" {
 		mem = mem.SetDiscrim(e.User.Discriminator)
 	}
+
+	db.SetGuildMember(e.GuildID, mem)
 }

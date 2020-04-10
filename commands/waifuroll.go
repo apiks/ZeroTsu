@@ -162,7 +162,7 @@ func rollWaifu(s *discordgo.Session, m *discordgo.Message) {
 	}
 	memberInfoUser = db.GetGuildMember(m.GuildID, m.Author.ID)
 
-	if memberInfoUser.GetWaifu().GetName() == "" {
+	if memberInfoUser.GetWaifu().GetName() != "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: More than one waifu will ruin your laifu.")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)

@@ -728,11 +728,7 @@ func getDiscordUsernameDiscrim(code string) (string, string, string, error) {
 
 // Verifies user by assigning the necessary values
 func Verify(cookieValue *http.Cookie, _ *http.Request) error {
-
-	var (
-		temp   entities.UserInfo
-		userID string
-	)
+	var userID string
 
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
@@ -765,11 +761,9 @@ func Verify(cookieValue *http.Cookie, _ *http.Request) error {
 	z, _ := t.Zone()
 	joinDate := t.Format("2006-01-02 15:04:05") + " " + z
 
-	// Assigns needed values to temp
-	temp = memberInfoMap[userID]
-	temp = temp.SetRedditUsername(SafeCookieMap.userCookieMap[cookieValue.Value].RedditName)
-	temp = temp.SetVerifiedDate(joinDate)
-	memberInfoMap[userID] = temp
+	// Assigns needed values
+	memberInfoMap[userID] = memberInfoMap[userID].SetRedditUsername(SafeCookieMap.userCookieMap[cookieValue.Value].RedditName)
+	memberInfoMap[userID] = memberInfoMap[userID].SetVerifiedDate(joinDate)
 
 	// Saves the userID for verified timer
 	verifyMap[userID] = userID
@@ -789,11 +783,27 @@ func Verify(cookieValue *http.Cookie, _ *http.Request) error {
 }
 
 // Checks if a user in the verify map has the role and if they're verified it gives it to them
-func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
+func VerifiedRoleAdd(s *discordgo.Session, _ *discordgo.Ready) {
 
 	var (
 		roleID      string
 		userInGuild bool
+
+		punishedUsers []entities.PunishedUsers
+		banUser entities.PunishedUsers
+
+		userID string
+		mem entities.UserInfo
+		roles []*discordgo.Role
+		member *discordgo.Member
+
+		i int
+		now time.Time
+		check bool
+		key string
+		cookie *User
+
+		err error
 	)
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -806,29 +816,28 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 
 	// Checks every 10 seconds if a user in the verifyMap needs to be given the role, also clears UserCookieMap if expiry date has passed
 	for range time.NewTicker(10 * time.Second).C {
-
-		punishedUsers := db.GetGuildPunishedUsers(config.ServerID)
+		punishedUsers = db.GetGuildPunishedUsers(config.ServerID)
 
 		if len(verifyMap) != 0 {
-			for userID := range verifyMap {
+			for userID = range verifyMap {
 
 				// Checks if banned suspected spambot accounts verified
-				mem := db.GetGuildMember(config.ServerID, userID)
+				mem = db.GetGuildMember(config.ServerID, userID)
 				if mem.GetID() == "" {
 					continue
 				}
 
 				if mem.GetSuspectedSpambot() {
-					for _, banUser := range punishedUsers {
+					for _, banUser = range punishedUsers {
 						if banUser.GetID() == userID {
 							_ = db.SetGuildPunishedUser(config.ServerID, banUser, true)
 							break
 						}
 					}
 					// Removes the ban
-					err := s.GuildBanDelete(config.ServerID, userID)
+					err = s.GuildBanDelete(config.ServerID, userID)
 					if err != nil {
-						_, err := s.ChannelMessageSend(config.BotLogID, err.Error())
+						_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
 						if err != nil {
 							continue
 						}
@@ -845,14 +854,14 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 				}
 
 				// Puts all server roles in roles
-				roles, err := s.GuildRoles(config.ServerID)
+				roles, err = s.GuildRoles(config.ServerID)
 				if err != nil {
 					common.LogError(s, entities.NewCha("", config.BotID), err)
 					continue
 				}
 
 				// Fetches ID of Verified role
-				for i := 0; i < len(roles); i++ {
+				for i = 0; i < len(roles); i++ {
 					if roles[i].Name == "Verified" {
 						roleID = roles[i].ID
 						break
@@ -867,9 +876,9 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 				}
 
 				// Alt check
-				check := CheckAltAccount(s, userID)
+				check = CheckAltAccount(s, userID)
 				if !check {
-					member, err := s.GuildMember(config.ServerID, userID)
+					member, err = s.GuildMember(config.ServerID, userID)
 					if err != nil {
 						common.LogError(s, entities.NewCha("", config.BotID), err)
 						delete(verifyMap, userID)
@@ -885,8 +894,8 @@ func VerifiedRoleAdd(s *discordgo.Session, e *discordgo.Ready) {
 		if len(SafeCookieMap.userCookieMap) != 0 {
 			continue
 		}
-		now := time.Now()
-		for key, cookie := range SafeCookieMap.userCookieMap {
+		now = time.Now()
+		for key, cookie = range SafeCookieMap.userCookieMap {
 			if now.Sub(cookie.Expiry) > 0 {
 				delete(SafeCookieMap.userCookieMap, key)
 				break

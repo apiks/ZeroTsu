@@ -278,6 +278,37 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 	var (
 		timestamp time.Time
+		t time.Time
+
+		guild *discordgo.Guild
+
+		guildSettings entities.GuildSettings
+		guildVoteInfoMap map[string]*entities.VoteInfo
+
+		messID string
+		vote *entities.VoteInfo
+
+		messageReact *discordgo.Message
+		difference time.Duration
+
+		role string
+
+		message discordgo.Message
+		author  discordgo.User
+
+		roles []*discordgo.Role
+		users []*discordgo.User
+
+		cha []*discordgo.Channel
+		guildTempCha map[string]*entities.TempChaInfo
+
+		mess []*discordgo.Message
+
+		k string
+		v *entities.TempChaInfo
+		i int
+
+		err error
 	)
 
 	// Saves program from panic and continues running normally without executing the command if it happens
@@ -289,23 +320,23 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 	}()
 
 	for range time.NewTicker(30 * time.Second).C {
-		for _, guild := range e.Guilds {
+		for _, guild = range e.Guilds {
 			entities.HandleNewGuild(guild.ID)
 
-			guildSettings := db.GetGuildSettings(guild.ID)
+			guildSettings = db.GetGuildSettings(guild.ID)
 			if !guildSettings.GetVoteModule() {
 				continue
 			}
-			t := time.Now()
-			guildVoteInfoMap := db.GetGuildVoteInfo(guild.ID)
+			t = time.Now()
+			guildVoteInfoMap = db.GetGuildVoteInfo(guild.ID)
 
-			for messID, vote := range guildVoteInfoMap {
+			for messID, vote = range guildVoteInfoMap {
 				if vote == nil {
 					continue
 				}
 
 				// Updates message
-				messageReact, err := s.ChannelMessage(vote.GetMessageReact().ChannelID, vote.GetMessageReact().ID)
+				messageReact, err = s.ChannelMessage(vote.GetMessageReact().ChannelID, vote.GetMessageReact().ID)
 				if err != nil {
 					// If message doesn't exist (was deleted or otherwise not found)
 					// Deletes the vote from memory
@@ -317,14 +348,14 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				}
 
 				// Calculates if it's time to remove
-				difference := t.Sub(vote.GetDate())
+				difference = t.Sub(vote.GetDate())
 				if difference > 0 {
 					if messageReact == nil {
 						continue
 					}
 
 					// Fixes role name bugs
-					role := strings.Replace(strings.TrimSpace(vote.GetChannel()), " ", "-", -1)
+					role = strings.Replace(strings.TrimSpace(vote.GetChannel()), " ", "-", -1)
 					role = strings.Replace(role, "--", "-", -1)
 
 					_, err = s.ChannelMessageSend(messageReact.ChannelID, fmt.Sprintf("Channel vote has ended. %s has failed to gather the necessary %d votes.", vote.GetChannel(), vote.GetVotesReq()))
@@ -358,13 +389,8 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				inChanCreation = true
 				entities.Mutex.Unlock()
 
-				var (
-					message discordgo.Message
-					author  discordgo.User
-				)
-
 				// Fixes role name bugs
-				role := strings.Replace(strings.TrimSpace(vote.GetChannel()), " ", "-", -1)
+				role = strings.Replace(strings.TrimSpace(vote.GetChannel()), " ", "-", -1)
 				role = strings.Replace(role, "--", "-", -1)
 
 				// Removes all hyphen prefixes and suffixes because discord cannot handle them
@@ -433,7 +459,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				time.Sleep(200 * time.Millisecond)
 
 				if vote.GetChannelType() != "general" {
-					roles, err := s.GuildRoles(guild.ID)
+					roles, err = s.GuildRoles(guild.ID)
 					if err != nil {
 						common.LogError(s, guildSettings.BotLog, err)
 						entities.Mutex.Lock()
@@ -441,7 +467,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 						entities.Mutex.Unlock()
 						continue
 					}
-					for i := 0; i < len(roles); i++ {
+					for i = 0; i < len(roles); i++ {
 						if roles[i].Name == role {
 							role = roles[i].ID
 							break
@@ -449,7 +475,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					}
 
 					// Gets the users who voted and gives them the role
-					users, err := s.MessageReactions(vote.GetMessageReact().ChannelID, vote.GetMessageReact().ID, "👍", 100)
+					users, err = s.MessageReactions(vote.GetMessageReact().ChannelID, vote.GetMessageReact().ID, "👍", 100)
 					if err != nil {
 						common.LogError(s, guildSettings.BotLog, err)
 						entities.Mutex.Lock()
@@ -458,12 +484,12 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 						continue
 					}
 
-					for i := 0; i < len(users); i++ {
+					for i = 0; i < len(users); i++ {
 						if users[i].ID == s.State.User.ID {
 							continue
 						}
 
-						err := s.GuildMemberRoleAdd(guild.ID, users[i].ID, role)
+						err = s.GuildMemberRoleAdd(guild.ID, users[i].ID, role)
 						if err != nil {
 							common.LogError(s, guildSettings.BotLog, err)
 							continue
@@ -491,21 +517,21 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 				}
 			}
 
-			cha, err := s.GuildChannels(guild.ID)
+			cha, err = s.GuildChannels(guild.ID)
 			if err != nil {
 				continue
 			}
 
-			guildTempCha := db.GetGuildTempChannels(guild.ID)
+			guildTempCha = db.GetGuildTempChannels(guild.ID)
 
-			for k, v := range guildTempCha {
+			for k, v = range guildTempCha {
 				if v == nil {
 					continue
 				}
 
-				for i := 0; i < len(cha); i++ {
+				for i = 0; i < len(cha); i++ {
 					if cha[i].Name == v.GetRoleName() {
-						mess, err := s.ChannelMessages(cha[i].ID, 1, "", "", "")
+						mess, err = s.ChannelMessages(cha[i].ID, 1, "", "", "")
 						if err != nil {
 							common.LogError(s, guildSettings.BotLog, err)
 							continue
@@ -524,10 +550,10 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 
 						// Adds how long before last message for channel to be deletes
 						timestamp = timestamp.Add(time.Hour * 3)
-						t := time.Now()
+						t = time.Now()
 
 						// Calculates if it's time to remove
-						difference := t.Sub(timestamp)
+						difference = t.Sub(timestamp)
 						if difference > 0 {
 
 							if guildSettings.BotLog != (entities.Cha{}) {
@@ -541,7 +567,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 							}
 
 							// Deletes channel and role
-							_, err := s.ChannelDelete(cha[i].ID)
+							_, err = s.ChannelDelete(cha[i].ID)
 							if err != nil {
 								common.LogError(s, guildSettings.BotLog, err)
 								continue

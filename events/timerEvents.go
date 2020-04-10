@@ -27,9 +27,30 @@ var redditFeedBlock bool
 
 // Write Events
 func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
+	var (
+		t time.Time
+		randomPlayingMsg string
+
+		guild *discordgo.Guild
+		roles []*discordgo.Role
+
+		guildIds []string
+		guildID string
+
+		guildChannelStats map[string]entities.Channel
+		stat entities.Channel
+		roleUserAmount int
+		emptyStatMap = make(map[string]int)
+
+		emojiStats map[string]entities.Emoji
+		userChangeStats map[string]int
+		verifiedStats map[string]int
+
+		err error
+		)
+
 	for range time.NewTicker(30 * time.Minute).C {
-		var randomPlayingMsg string
-		t := time.Now()
+		t = time.Now()
 		rand.Seed(t.UnixNano())
 
 		// Updates playing status
@@ -42,40 +63,43 @@ func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 			_ = s.UpdateStatus(0, randomPlayingMsg)
 		}
 
-		var guildIds []string
-		for _, guild := range s.State.Guilds {
+		for _, guild = range s.State.Guilds {
+			if guild == nil {
+				continue
+			}
 			guildIds = append(guildIds, guild.ID)
 		}
 
-		for _, guildID := range guildIds {
+		for _, guildID = range guildIds {
 			entities.HandleNewGuild(guildID)
 
 			// Updates BOT nickname
 			DynamicNicknameChange(s, guildID)
 
 			// Clears up spoilerRoles.json
-			err := cleanSpoilerRoles(s, guildID)
+			err = cleanSpoilerRoles(s, guildID)
 			if err != nil {
 				log.Println(err)
 			}
 
 			// Fetches all server roles
-			roles, err := s.GuildRoles(guildID)
+			roles, err = s.GuildRoles(guildID)
 			if err != nil {
 				log.Println(err)
 			}
 
 			// Updates optin role stat
-			guildChannelStats := db.GetGuildChannelStats(guildID)
+			guildChannelStats = db.GetGuildChannelStats(guildID)
 			if roles != nil {
-				guild, err := s.Guild(guildID)
+				guild, err = s.Guild(guildID)
 				if err == nil {
-					for _, stat := range guildChannelStats {
+					for _, stat = range guildChannelStats {
 						if stat.GetRoleCountMap() == nil {
-							stat.SetRoleCountMap(make(map[string]int))
+							stat.SetRoleCountMap(emptyStatMap)
 						}
 						if stat.GetOptin() {
-							stat.SetRoleCount(t.Format(common.ShortDateFormat), common.GetRoleUserAmount(guild, roles, stat.GetName()))
+							roleUserAmount = common.GetRoleUserAmount(guild, roles, stat.GetName())
+							stat.SetRoleCount(t.Format(common.ShortDateFormat), roleUserAmount)
 						}
 					}
 				}
@@ -84,14 +108,17 @@ func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 			db.SetGuildChannelStats(guildID, guildChannelStats)
 
 			// Writes emoji stats to disk
-			db.SetGuildEmojiStats(guildID, db.GetGuildEmojiStats(guildID))
+			emojiStats = db.GetGuildEmojiStats(guildID)
+			db.SetGuildEmojiStats(guildID, emojiStats)
 
 			// Writes user gain stats to disk
-			db.SetGuildUserChangeStats(guildID, db.GetGuildUserChangeStats(guildID))
+			userChangeStats = db.GetGuildUserChangeStats(guildID)
+			db.SetGuildUserChangeStats(guildID, userChangeStats)
 
 			// Writes verified stats to disk
 			if config.Website != "" {
-				db.SetGuildVerifiedStats(guildID, db.GetGuildVerifiedStats(guildID))
+				verifiedStats = db.GetGuildVerifiedStats(guildID)
+				db.SetGuildVerifiedStats(guildID, verifiedStats)
 			}
 		}
 
@@ -102,15 +129,24 @@ func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 
 // Common Timer Events
 func CommonEvents(s *discordgo.Session, _ *discordgo.Ready) {
-	for range time.NewTicker(1 * time.Minute).C {
-		var guildIds []string
+	var (
+		guildIds []string
+		guildID string
+		guild *discordgo.Guild
 
-		for _, guild := range s.State.Guilds {
+		memberInfo map[string]entities.UserInfo
+
+		err error
+	)
+
+	for range time.NewTicker(1 * time.Minute).C {
+		for _, guild = range s.State.Guilds {
 			guildIds = append(guildIds, guild.ID)
 		}
 
-		for _, guildID := range guildIds {
-			db.SetGuildMemberInfo(guildID, entities.Guilds.DB[guildID].GetMemberInfoMap())
+		for _, guildID = range guildIds {
+			memberInfo = entities.Guilds.DB[guildID].GetMemberInfoMap()
+			db.SetGuildMemberInfo(guildID, memberInfo)
 
 			// Handles Unbans and Unmutes
 			punishmentHandler(s, guildID)
@@ -120,12 +156,10 @@ func CommonEvents(s *discordgo.Session, _ *discordgo.Ready) {
 		}
 
 		// Handles Reddit Feeds
-		err := feedHandler(s, guildIds)
+		err = feedHandler(s, guildIds)
 		if err != nil {
 			log.Println(err)
 		}
-
-		//runtime.GC()
 	}
 }
 

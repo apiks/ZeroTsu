@@ -39,6 +39,7 @@ func main() {
 	entities.Mutex.Unlock()
 	entities.Guilds.LoadAll()
 	commands.ResetSubscriptions()
+	//commands.CleanGuild()
 
 	Start()
 
