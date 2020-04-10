@@ -66,6 +66,7 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	mem := db.GetGuildMember(m.GuildID, userID)
 	if mem.GetID() == "" {
 		var user *discordgo.User
+		log.Println("1.1")
 
 		if userMem != nil {
 			user = userMem.User
@@ -84,11 +85,14 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		// Initializes user if he doesn't exist in memberInfo but is in server
 		functionality.InitializeUser(user, m.GuildID)
 
+		log.Println("1.2")
+
 		mem = db.GetGuildMember(m.GuildID, userID)
 		if mem.GetID() == "" {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, fmt.Errorf("error: member object is empty"))
 			return
 		}
+		log.Println("1.3")
 	}
 
 
