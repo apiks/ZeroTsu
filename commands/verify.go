@@ -5,6 +5,7 @@ import (
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/embeds"
+	"log"
 	"strings"
 	"time"
 
@@ -23,7 +24,6 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	var roleID string
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	// Checks if there's enough parameters (command, user and reddit username.)
@@ -60,6 +60,8 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		redditUsername = strings.TrimPrefix(redditUsername, "u/")
 	}
 
+	log.Println("1")
+
 	// Checks if user is in memberInfo and fetches them
 	mem := db.GetGuildMember(m.GuildID, userID)
 	if mem.GetID() == "" {
@@ -89,6 +91,9 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
+
+	log.Println("2")
+
 	// Stores time of verification and adds reddit username
 	t := time.Now()
 	z, _ := t.Zone()
@@ -96,8 +101,12 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	mem = mem.SetRedditUsername(redditUsername)
 	mem = mem.SetVerifiedDate(ver)
 
+	log.Println("3")
+
 	// Write
 	db.SetGuildMember(m.GuildID, mem)
+
+	log.Println("4")
 
 	// Puts all server roles in roles
 	roles, err := s.GuildRoles(m.GuildID)
@@ -113,6 +122,8 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 
+	log.Println("5")
+
 	// Assigns verified role to user
 	err = s.GuildMemberRoleAdd(m.GuildID, userID, roleID)
 	if err != nil {
@@ -120,13 +131,19 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
+	log.Println("6")
+
 	// Stores time of verification and adds to verification stats
 	db.AddGuildVerifiedStat(m.GuildID, t.Format(common.ShortDateFormat), 1)
+
+	log.Println("7")
 
 	// Sends warning embed message to channel
 	if userMem == nil {
 		userMem = &discordgo.Member{GuildID: m.GuildID, User: &discordgo.User{ID: mem.GetID(), Username: mem.GetUsername(), Discriminator: mem.GetDiscrim()}}
 	}
+
+	log.Println("8")
 
 	err = embeds.Verification(s, m, userMem, redditUsername)
 	if err != nil {
