@@ -122,8 +122,9 @@ func OnMemberUpdate(_ *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 	if e.GuildID == "" {
 		return
 	}
-
 	entities.HandleNewGuild(e.GuildID)
+
+	var writeFlag bool
 
 	// Fetches user from memberInfo if possible
 	mem := db.GetGuildMember(e.GuildID, e.User.ID)
@@ -146,6 +147,7 @@ func OnMemberUpdate(_ *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 			mem = mem.AppendToPastUsernames(e.User.Username)
 		}
 		mem = mem.SetUsername(e.User.Username)
+		writeFlag = true
 	}
 
 	// Checks nicknames and updates if needed
@@ -163,11 +165,17 @@ func OnMemberUpdate(_ *discordgo.Session, e *discordgo.GuildMemberUpdate) {
 			mem = mem.AppendToPastNicknames(e.Nick)
 		}
 		mem = mem.SetNickname(e.Nick)
+		writeFlag = true
 	}
 
 	// Checks if the discrim in database is the same as the discrim used by the memberInfoUser. If not it changes it
 	if mem.GetDiscrim() != e.User.Discriminator && e.User.Discriminator != "" {
 		mem = mem.SetDiscrim(e.User.Discriminator)
+		writeFlag = true
+	}
+
+	if !writeFlag {
+		return
 	}
 
 	db.SetGuildMember(e.GuildID, mem)
@@ -186,8 +194,9 @@ func OnPresenceUpdate(_ *discordgo.Session, e *discordgo.PresenceUpdate) {
 	if e.GuildID == "" {
 		return
 	}
-
 	entities.HandleNewGuild(e.GuildID)
+
+	var writeFlag bool
 
 	// Fetches user from memberInfo if possible
 	mem := db.GetGuildMember(e.GuildID, e.User.ID)
@@ -210,6 +219,7 @@ func OnPresenceUpdate(_ *discordgo.Session, e *discordgo.PresenceUpdate) {
 			mem = mem.AppendToPastUsernames(e.User.Username)
 		}
 		mem = mem.SetUsername(e.User.Username)
+		writeFlag = true
 	}
 
 	// Checks nicknames and updates if needed
@@ -227,11 +237,17 @@ func OnPresenceUpdate(_ *discordgo.Session, e *discordgo.PresenceUpdate) {
 			mem = mem.AppendToPastNicknames(e.Nick)
 		}
 		mem = mem.SetNickname(e.Nick)
+		writeFlag = true
 	}
 
 	// Checks if the discrim in database is the same as the discrim used by the memberInfoUser. If not it changes it
 	if mem.GetDiscrim() != e.User.Discriminator && e.User.Discriminator != "" {
 		mem = mem.SetDiscrim(e.User.Discriminator)
+		writeFlag = true
+	}
+
+	if !writeFlag {
+		return
 	}
 
 	db.SetGuildMember(e.GuildID, mem)
