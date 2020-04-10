@@ -49,8 +49,7 @@ func SetGuildMember(guildID string, member entities.UserInfo, deleteSlice ...boo
 	if member.GetID() == "692715248410558595" {
 		log.Println("1.1")
 	}
-
-	entities.Guilds.Lock()
+	
 	if len(deleteSlice) == 0 {
 		if member.GetID() == "692715248410558595" {
 			log.Println("1.2")
@@ -62,7 +61,6 @@ func SetGuildMember(guildID string, member entities.UserInfo, deleteSlice ...boo
 	} else {
 		entities.Guilds.DB[guildID].RemoveFromMemberInfoMap(member.GetID())
 	}
-	entities.Guilds.Unlock()
 
 	if member.GetID() == "692715248410558595" {
 		log.Println("1.4")
