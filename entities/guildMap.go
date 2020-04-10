@@ -161,15 +161,11 @@ func (g *GuildMap) LoadAll() {
 
 // HandleNewGuild initializes a guild if it's not in memory
 func HandleNewGuild(guildID string) {
-	log.Println("What")
 	Guilds.RLock()
 	if _, ok := Guilds.DB[guildID]; !ok {
-		log.Println("the")
 		Guilds.RUnlock()
 		Guilds.Init(guildID)
-		log.Println("argh")
 		return
 	}
 	Guilds.RUnlock()
-	log.Println("fuck")
 }
