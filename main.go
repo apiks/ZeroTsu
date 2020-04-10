@@ -110,8 +110,8 @@ func Start() {
 
 	// MemberInfo
 	goBot.AddHandler(events.OnMemberJoinGuild)
-	goBot.AddHandler(events.OnMemberUpdate)
-	goBot.AddHandler(events.OnPresenceUpdate)
+	//goBot.AddHandler(events.OnMemberUpdate)
+	//goBot.AddHandler(events.OnPresenceUpdate)
 
 	// Verified Role and Cookie Map Expiry Deletion Handler
 	if config.Website != "" {
