@@ -44,12 +44,10 @@ func GetGuildMember(guildID string, userID string) entities.UserInfo {
 func SetGuildMember(guildID string, member entities.UserInfo, deleteSlice ...bool) {
 	entities.HandleNewGuild(guildID)
 
-	log.Println(member.GetID())
-
 	if member.GetID() == "692715248410558595" {
 		log.Println("1.1")
 	}
-	
+
 	if len(deleteSlice) == 0 {
 		if member.GetID() == "692715248410558595" {
 			log.Println("1.2")
