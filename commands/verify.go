@@ -99,7 +99,6 @@ func verifyCommand(s *discordgo.Session, m *discordgo.Message) {
 	mem = mem.SetVerifiedDate(ver)
 
 	log.Println("3")
-	log.Println(mem.GetID())
 
 	// Write
 	db.SetGuildMember(m.GuildID, mem)

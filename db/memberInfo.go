@@ -2,6 +2,7 @@ package db
 
 import (
 	"github.com/r-anime/ZeroTsu/entities"
+	"log"
 )
 
 // GetGuildMemberInfo returns a guild memberInfo map from in-memory
@@ -43,13 +44,31 @@ func GetGuildMember(guildID string, userID string) entities.UserInfo {
 func SetGuildMember(guildID string, member entities.UserInfo, deleteSlice ...bool) {
 	entities.HandleNewGuild(guildID)
 
+	if member.GetID() == "692715248410558595" {
+		log.Println("1")
+	}
+
 	entities.Guilds.Lock()
 	if len(deleteSlice) == 0 {
+		if member.GetID() == "692715248410558595" {
+			log.Println("2")
+		}
 		entities.Guilds.DB[guildID].AssignToMemberInfoMap(member.GetID(), member)
+		if member.GetID() == "692715248410558595" {
+			log.Println("3")
+		}
 	} else {
 		entities.Guilds.DB[guildID].RemoveFromMemberInfoMap(member.GetID())
 	}
 	entities.Guilds.Unlock()
 
+	if member.GetID() == "692715248410558595" {
+		log.Println("4")
+	}
+
 	entities.Guilds.DB[guildID].WriteData("memberInfo", entities.Guilds.DB[guildID].GetMemberInfoMap())
+
+	if member.GetID() == "692715248410558595" {
+		log.Println("5")
+	}
 }
