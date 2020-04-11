@@ -170,7 +170,6 @@ func punishmentHandler(s *discordgo.Session, guildID string) {
 		return
 	}
 
-	var wg sync.WaitGroup
 	t := time.Now()
 
 	// Checks if there are punishedUsers in this guild
@@ -181,11 +180,8 @@ func punishmentHandler(s *discordgo.Session, guildID string) {
 	}
 
 	// Unbans/Unmutes users
-	wg.Add(punishedUsersLen)
 	for _, user := range punishedUsers {
 		go func(user entities.PunishedUsers) {
-			defer wg.Done()
-
 			fieldRemoved := unbanHandler(s, guildID, user, bans, &t)
 			if fieldRemoved {
 				return
@@ -193,7 +189,6 @@ func punishmentHandler(s *discordgo.Session, guildID string) {
 			unmuteHandler(s, guildID, user, &t)
 		}(user)
 	}
-	wg.Wait()
 }
 
 func unbanHandler(s *discordgo.Session, guildID string, user entities.PunishedUsers, bans []*discordgo.GuildBan, t *time.Time) bool {

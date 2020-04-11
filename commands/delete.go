@@ -26,7 +26,6 @@ func deleteChannel(s *discordgo.Session, m *discordgo.Message) {
 	)
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) != 2 {
