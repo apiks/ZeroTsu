@@ -181,13 +181,11 @@ func punishmentHandler(s *discordgo.Session, guildID string) {
 
 	// Unbans/Unmutes users
 	for _, user := range punishedUsers {
-		go func(user entities.PunishedUsers) {
-			fieldRemoved := unbanHandler(s, guildID, user, bans, &t)
-			if fieldRemoved {
-				return
-			}
-			unmuteHandler(s, guildID, user, &t)
-		}(user)
+		fieldRemoved := unbanHandler(s, guildID, user, bans, &t)
+		if fieldRemoved {
+			return
+		}
+		unmuteHandler(s, guildID, user, &t)
 	}
 }
 
@@ -574,6 +572,18 @@ func postFeedItems(s *discordgo.Session, feed entities.Feed, items []*gofeed.Ite
 		}
 		if !ok {
 			break
+		}
+
+		// Checks if the item has already been posted
+		feedChecks := db.GetGuildFeedChecks(guildID)
+		for _, feedCheck := range feedChecks {
+			if feedCheck.GetGUID() == item.GUID {
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			continue
 		}
 
 		// Sends the feed item
