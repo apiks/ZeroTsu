@@ -538,16 +538,24 @@ func guildFeedsHandler(guildID string) (map[entities.Feed][]*gofeed.Item, error)
 
 // Sends feed posts in all guilds
 func feedPoster(s *discordgo.Session, feedsToPost map[string]map[entities.Feed][]*gofeed.Item, guildIds []string) {
+	var wg sync.WaitGroup
+	wg.Add(len(guildIds))
+
 	for _, guildID := range guildIds {
 		if _, ok := feedsToPost[guildID]; !ok || feedsToPost[guildID] == nil || len(feedsToPost[guildID]) == 0 {
+			wg.Done()
 			continue
 		}
-		feedPostHandler(s, guildID, feedsToPost[guildID])
+		go feedPostHandler(s, guildID, feedsToPost[guildID], &wg)
 	}
+
+	wg.Wait()
 }
 
 // Sends feed posts in a guild
-func feedPostHandler(s *discordgo.Session, guildID string, feedsToPost map[entities.Feed][]*gofeed.Item) {
+func feedPostHandler(s *discordgo.Session, guildID string, feedsToPost map[entities.Feed][]*gofeed.Item, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	// Stores current time
 	t := time.Now()
 
@@ -562,6 +570,7 @@ func postFeedItems(s *discordgo.Session, feed entities.Feed, items []*gofeed.Ite
 	var pinnedItems = make(map[*gofeed.Item]bool)
 
 	for _, item := range items {
+
 		var ok bool
 
 		// Wait five seconds so it doesn't hit the rate limit easily
