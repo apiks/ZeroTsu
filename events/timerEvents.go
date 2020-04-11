@@ -124,6 +124,8 @@ func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 
 		// Sends server count to bot list sites if it's the public ZeroTsu
 		functionality.SendServers(s)
+
+		guildIds = []string{}
 	}
 }
 
@@ -160,6 +162,8 @@ func CommonEvents(s *discordgo.Session, _ *discordgo.Ready) {
 		if err != nil {
 			log.Println(err)
 		}
+
+		guildIds = []string{}
 	}
 }
 
@@ -592,7 +596,7 @@ func postFeedItems(s *discordgo.Session, feed entities.Feed, items []*gofeed.Ite
 			continue
 		}
 
-		// Adds to memory that the feed has been posted
+		// Adds that the feed has been posted
 		db.AddGuildFeedCheck(guildID, entities.NewFeedCheck(feed, t, item.GUID))
 
 		// Pins/unpins the feed items if necessary
