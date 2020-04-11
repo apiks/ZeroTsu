@@ -414,14 +414,11 @@ func feedHandler(s *discordgo.Session, guildIds []string) error {
 	}()
 
 	// Blocks handling of new feeds if there are some currently being sent
-	entities.Mutex.RLock()
+	entities.Mutex.Lock()
 	if redditFeedBlock {
-		entities.Mutex.RUnlock()
+		entities.Mutex.Unlock()
 		return nil
 	}
-	entities.Mutex.RUnlock()
-
-	entities.Mutex.Lock()
 	redditFeedBlock = true
 	entities.Mutex.Unlock()
 
