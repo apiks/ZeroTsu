@@ -30,7 +30,6 @@ func AddGuildFeedCheck(guildID string, feedCheck entities.FeedCheck, delete ...b
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
-
 	if len(delete) == 0 {
 		var exists bool
 		for i, guildFeedCheck := range entities.Guilds.DB[guildID].GetFeedChecks() {
@@ -47,8 +46,9 @@ func AddGuildFeedCheck(guildID string, feedCheck entities.FeedCheck, delete ...b
 	} else {
 		deleteGuildFeedCheck(guildID, feedCheck)
 	}
-
 	entities.Guilds.Unlock()
+
+	entities.Guilds.DB[guildID].WriteData("rssThreadCheck", entities.Guilds.DB[guildID].GetFeedChecks())
 }
 
 // SetGuildFeedCheck sets a target guild's feed check in-memory
@@ -56,7 +56,6 @@ func SetGuildFeedCheck(guildID string, feedCheck entities.FeedCheck, delete ...b
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
-
 	if len(delete) == 0 {
 		var exists bool
 		for i, guildFeedCheck := range entities.Guilds.DB[guildID].GetFeedChecks() {
@@ -73,7 +72,6 @@ func SetGuildFeedCheck(guildID string, feedCheck entities.FeedCheck, delete ...b
 	} else {
 		deleteGuildFeedCheck(guildID, feedCheck)
 	}
-
 	entities.Guilds.Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("rssThreadCheck", entities.Guilds.DB[guildID].GetFeedChecks())

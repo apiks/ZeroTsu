@@ -562,7 +562,6 @@ func postFeedItems(s *discordgo.Session, feed entities.Feed, items []*gofeed.Ite
 	var pinnedItems = make(map[*gofeed.Item]bool)
 
 	for _, item := range items {
-
 		var ok bool
 
 		// Wait five seconds so it doesn't hit the rate limit easily

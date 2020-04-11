@@ -41,7 +41,6 @@ func SetGuildFeeds(guildID string, feeds []entities.Feed) error {
 	entities.Guilds.DB[guildID].Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("rssThreads", entities.Guilds.DB[guildID].GetFeeds())
-
 	return nil
 }
 
@@ -68,7 +67,6 @@ func SetGuildFeed(guildID string, feed entities.Feed, delete ...bool) error {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
-
 	if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetFeeds()) > 399 {
 		entities.Guilds.Unlock()
 		return fmt.Errorf("Error: You have reached the reddit feed autopost limit (400) for this server.")
@@ -102,11 +100,9 @@ func SetGuildFeed(guildID string, feed entities.Feed, delete ...bool) error {
 			return err
 		}
 	}
-
 	entities.Guilds.Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("rssThreads", entities.Guilds.DB[guildID].GetFeeds())
-
 	return nil
 }
 
