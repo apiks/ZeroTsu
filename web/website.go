@@ -738,12 +738,6 @@ func Verify(cookieValue *http.Cookie, _ *http.Request) error {
 		}
 	}()
 
-	memberInfoMap := db.GetGuildMemberInfo(config.ServerID)
-
-	// Confirms that the map is not empty
-	if len(memberInfoMap) == 0 {
-		return fmt.Errorf("Critical Error: MemberInfo is empty. Please notify a mod.")
-	}
 	// Checks if cookie has expired while doing this
 	if cookieValue == nil {
 		return fmt.Errorf("Minor Error: Cookie has expired. Please refresh and try again.")
@@ -751,9 +745,11 @@ func Verify(cookieValue *http.Cookie, _ *http.Request) error {
 	if _, ok := SafeCookieMap.userCookieMap[cookieValue.Value]; !ok {
 		return fmt.Errorf("Rare Error: CookieValue is not in UserCookieMap. Please notify a mod.")
 	}
+
 	userID = SafeCookieMap.userCookieMap[cookieValue.Value].ID
-	if _, ok := memberInfoMap[userID]; !ok {
-		return fmt.Errorf("Critical Error: Either user does not exist in MemberInfo or the user ID does not exist. Please notify a mod.")
+	mem := db.GetGuildMember(config.ServerID, userID)
+	if mem.GetID() == "" {
+		return fmt.Errorf("Critical Error: Either user does not exist in DB or the user ID does not exist. Please notify a mod.")
 	}
 
 	// Stores time of verification
@@ -762,8 +758,8 @@ func Verify(cookieValue *http.Cookie, _ *http.Request) error {
 	joinDate := t.Format("2006-01-02 15:04:05") + " " + z
 
 	// Assigns needed values
-	memberInfoMap[userID] = memberInfoMap[userID].SetRedditUsername(SafeCookieMap.userCookieMap[cookieValue.Value].RedditName)
-	memberInfoMap[userID] = memberInfoMap[userID].SetVerifiedDate(joinDate)
+	mem = mem.SetRedditUsername(SafeCookieMap.userCookieMap[cookieValue.Value].RedditName)
+	mem = mem.SetVerifiedDate(joinDate)
 
 	// Saves the userID for verified timer
 	verifyMap[userID] = userID
@@ -773,8 +769,8 @@ func Verify(cookieValue *http.Cookie, _ *http.Request) error {
 		return fmt.Errorf("Critical Error: Username is not in verifyMap. Please notify a mod.")
 	}
 
-	// Writes the username to memberInfo.json
-	db.SetGuildMemberInfo(config.ServerID, memberInfoMap)
+	// Writes the user to memberInfo.json
+	db.SetGuildMember(config.ServerID, mem)
 
 	// Adds to verified stats
 	db.AddGuildVerifiedStat(userID, t.Format(common.ShortDateFormat), 1)
@@ -826,7 +822,6 @@ func VerifiedRoleAdd(s *discordgo.Session, _ *discordgo.Ready) {
 				if mem.GetID() == "" {
 					continue
 				}
-
 				if mem.GetSuspectedSpambot() {
 					for _, banUser = range punishedUsers {
 						if banUser.GetID() == userID {
@@ -837,11 +832,7 @@ func VerifiedRoleAdd(s *discordgo.Session, _ *discordgo.Ready) {
 					// Removes the ban
 					err = s.GuildBanDelete(config.ServerID, userID)
 					if err != nil {
-						_, err = s.ChannelMessageSend(config.BotLogID, err.Error())
-						if err != nil {
-							continue
-						}
-						continue
+						_, _ = s.ChannelMessageSend(config.BotLogID, err.Error())
 					}
 					mem = mem.SetSuspectedSpambot(false)
 					db.SetGuildMember(config.ServerID, mem)
@@ -854,6 +845,7 @@ func VerifiedRoleAdd(s *discordgo.Session, _ *discordgo.Ready) {
 				}
 
 				// Puts all server roles in roles
+				roles = []*discordgo.Role{}
 				roles, err = s.GuildRoles(config.ServerID)
 				if err != nil {
 					common.LogError(s, entities.NewCha("", config.BotID), err)
@@ -861,6 +853,7 @@ func VerifiedRoleAdd(s *discordgo.Session, _ *discordgo.Ready) {
 				}
 
 				// Fetches ID of Verified role
+				roleID = ""
 				for i = 0; i < len(roles); i++ {
 					if roles[i].Name == "Verified" {
 						roleID = roles[i].ID
@@ -906,7 +899,6 @@ func VerifiedRoleAdd(s *discordgo.Session, _ *discordgo.Ready) {
 
 // Checks if a user is already verified when they join the server and if they are directly assigns them the verified role
 func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
-
 	var (
 		roleID string
 		userID string
@@ -964,7 +956,6 @@ func VerifiedAlready(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 
 // Function that iterates through memberInfo.json and checks for any alt accounts for that ID. Verification version
 func CheckAltAccount(s *discordgo.Session, id string) bool {
-
 	var alts []string
 
 	// Saves program from panic and continues running normally without executing the command if it happens
