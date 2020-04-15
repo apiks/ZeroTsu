@@ -137,8 +137,6 @@ func CommonEvents(s *discordgo.Session, _ *discordgo.Ready) {
 		guild *discordgo.Guild
 
 		memberInfo map[string]entities.UserInfo
-
-		err error
 	)
 
 	for range time.NewTicker(1 * time.Minute).C {
