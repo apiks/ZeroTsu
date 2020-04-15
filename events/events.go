@@ -52,10 +52,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	}
 
 	// Handles Reddit Feeds
-	err := feedHandler(s, guildIds)
-	if err != nil {
-		log.Println(err)
-	}
+	feedHandler(s, guildIds)
 
 	// Updates playing status
 	var randomPlayingMsg string

@@ -158,10 +158,7 @@ func CommonEvents(s *discordgo.Session, _ *discordgo.Ready) {
 		}
 
 		// Handles Reddit Feeds
-		err = feedHandler(s, guildIds)
-		if err != nil {
-			log.Println(err)
-		}
+		feedHandler(s, guildIds)
 
 		guildIds = []string{}
 	}
@@ -178,8 +175,7 @@ func punishmentHandler(s *discordgo.Session, guildID string) {
 
 	// Checks if there are punishedUsers in this guild
 	punishedUsers := db.GetGuildPunishedUsers(guildID)
-	punishedUsersLen := len(punishedUsers)
-	if punishedUsers == nil || punishedUsersLen == 0 {
+	if punishedUsers == nil || len(punishedUsers) == 0 {
 		return
 	}
 
@@ -187,7 +183,7 @@ func punishmentHandler(s *discordgo.Session, guildID string) {
 	for _, user := range punishedUsers {
 		fieldRemoved := unbanHandler(s, guildID, user, bans, &t)
 		if fieldRemoved {
-			return
+			continue
 		}
 		unmuteHandler(s, guildID, user, &t)
 	}
@@ -224,9 +220,9 @@ func unbanHandler(s *discordgo.Session, guildID string, user entities.PunishedUs
 
 	// Removes the unbanDate or the entire object
 	if user.GetUnmuteDate() != (time.Time{}) {
-		user = entities.NewPunishedUsers(user.GetID(), user.GetUsername(), time.Time{}, user.GetUnmuteDate())
+		_ = db.SetGuildPunishedUser(guildID, entities.NewPunishedUsers(user.GetID(), user.GetUsername(), time.Time{}, user.GetUnmuteDate()))
 	} else {
-		_ = db.SetGuildPunishedUser(guildID, entities.NewPunishedUsers("", "", time.Time{}, time.Time{}))
+		_ = db.SetGuildPunishedUser(guildID, entities.NewPunishedUsers("", "", time.Time{}, time.Time{}), true)
 	}
 
 	// Sends an embed message to bot-log
@@ -240,8 +236,6 @@ func unbanHandler(s *discordgo.Session, guildID string, user entities.PunishedUs
 	if mem.GetID() != "" {
 		db.SetGuildMember(guildID, mem)
 	}
-
-	_ = db.SetGuildPunishedUser(guildID, user)
 
 	return true
 }
@@ -299,9 +293,9 @@ func unmuteHandler(s *discordgo.Session, guildID string, user entities.PunishedU
 
 	// Removes the unmuteDate or the entire object
 	if user.GetUnbanDate() != (time.Time{}) {
-		user = entities.NewPunishedUsers(user.GetID(), user.GetUsername(), user.GetUnbanDate(), time.Time{})
+		_ = db.SetGuildPunishedUser(guildID, entities.NewPunishedUsers(user.GetID(), user.GetUsername(), user.GetUnbanDate(), time.Time{}))
 	} else {
-		_ = db.SetGuildPunishedUser(guildID, entities.NewPunishedUsers("", "", time.Time{}, time.Time{}))
+		_ = db.SetGuildPunishedUser(guildID, entities.NewPunishedUsers("", "", time.Time{}, time.Time{}), true)
 	}
 
 	// Sends an embed message to bot-log
@@ -315,8 +309,6 @@ func unmuteHandler(s *discordgo.Session, guildID string, user entities.PunishedU
 	if mem.GetID() != "" {
 		db.SetGuildMember(guildID, mem)
 	}
-
-	_ = db.SetGuildPunishedUser(guildID, user)
 }
 
 // remindMeHandler handles sending remindMe messages when called if it's time.
@@ -401,7 +393,7 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 }
 
 // Fetches reddit feeds and returns the feeds that need to posted for all guilds
-func feedHandler(s *discordgo.Session, guildIds []string) error {
+func feedHandler(s *discordgo.Session, guildIds []string) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Println(rec)
@@ -414,7 +406,7 @@ func feedHandler(s *discordgo.Session, guildIds []string) error {
 	entities.Mutex.Lock()
 	if redditFeedBlock {
 		entities.Mutex.Unlock()
-		return nil
+		return
 	}
 	redditFeedBlock = true
 	entities.Mutex.Unlock()
@@ -435,8 +427,6 @@ func feedHandler(s *discordgo.Session, guildIds []string) error {
 	entities.Mutex.Lock()
 	redditFeedBlock = false
 	entities.Mutex.Unlock()
-
-	return nil
 }
 
 // Handles guild feeds and returns a map of the feed items to send in discord
