@@ -220,7 +220,7 @@ func unbanHandler(s *discordgo.Session, guildID string, user entities.PunishedUs
 	if user.GetUnmuteDate() != (time.Time{}) {
 		_ = db.SetGuildPunishedUser(guildID, entities.NewPunishedUsers(user.GetID(), user.GetUsername(), time.Time{}, user.GetUnmuteDate()))
 	} else {
-		_ = db.SetGuildPunishedUser(guildID, entities.NewPunishedUsers("", "", time.Time{}, time.Time{}), true)
+		_ = db.SetGuildPunishedUser(guildID, entities.NewPunishedUsers(user.GetID(), user.GetUsername(), user.GetUnbanDate(), user.GetUnmuteDate()), true)
 	}
 
 	// Sends an embed message to bot-log
@@ -293,7 +293,7 @@ func unmuteHandler(s *discordgo.Session, guildID string, user entities.PunishedU
 	if user.GetUnbanDate() != (time.Time{}) {
 		_ = db.SetGuildPunishedUser(guildID, entities.NewPunishedUsers(user.GetID(), user.GetUsername(), user.GetUnbanDate(), time.Time{}))
 	} else {
-		_ = db.SetGuildPunishedUser(guildID, entities.NewPunishedUsers("", "", time.Time{}, time.Time{}), true)
+		_ = db.SetGuildPunishedUser(guildID, entities.NewPunishedUsers(user.GetID(), user.GetUsername(), user.GetUnbanDate(), user.GetUnmuteDate()), true)
 	}
 
 	// Sends an embed message to bot-log
