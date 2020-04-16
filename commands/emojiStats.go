@@ -199,13 +199,11 @@ func OnMessageEmojiUnreact(s *discordgo.Session, r *discordgo.MessageReactionRem
 
 // Display emoji stats
 func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
-
 	entities.HandleNewGuild(m.GuildID)
 
 	var msgs []string
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	printEmojiMap, err := mergeDuplicates(m.GuildID)
 	if err != nil {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
@@ -213,10 +211,10 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Sorts emojis by their message use from the above map
-	emojis := make([]*entities.Emoji, len(printEmojiMap))
+	emojis := make([]entities.Emoji, len(printEmojiMap))
 	for i := 0; i < len(printEmojiMap); i++ {
 		for _, emoji := range printEmojiMap {
-			emojis[i] = &emoji
+			emojis[i] = emoji
 			i++
 		}
 	}
@@ -235,19 +233,21 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 
 		// Checks if an emoji with that name exists on the server before adding to print
 		for _, guildEmoji := range guild.Emojis {
-			if guildEmoji.Name == emoji.GetName() {
-				guildFlag = true
-				break
+			if guildEmoji.Name != emoji.GetName() {
+				continue
 			}
+			guildFlag = true
+			break
 		}
 		if !guildFlag {
 			continue
 		}
-
-		if emoji.GetName() != "" {
-			message += lineSpaceFormatEmoji(emoji.GetName(), printEmojiMap)
-			msgs, message = splitStatMessages(msgs, message)
+		if emoji.GetName() == "" {
+			continue
 		}
+
+		message += lineSpaceFormatEmoji(emoji.GetName(), printEmojiMap)
+		msgs, message = splitStatMessages(msgs, message)
 	}
 
 	msgs, message = splitStatMessages(msgs, message)
@@ -285,14 +285,12 @@ func lineSpaceFormatEmoji(name string, printEmojiMap map[string]entities.Emoji) 
 	for i := 0; i < spacesRequired; i++ {
 		line += " "
 	}
-	line += fmt.Sprintf("| ([%d])\n", printEmojiMap[name].GetReactions())
 
-	return line
+	return line + fmt.Sprintf("| ([%d])\n", printEmojiMap[name].GetReactions())
 }
 
 // Merges duplicate emotes in EmojiStats
 func mergeDuplicates(guildID string) (map[string]entities.Emoji, error) {
-
 	var (
 		duplicateMap  = make(map[string]string)
 		uniqueTotal   int
@@ -378,7 +376,7 @@ func mergeDuplicates(guildID string) (map[string]entities.Emoji, error) {
 }
 
 // Sort functions for emoji use by message use
-type byEmojiFrequency []*entities.Emoji
+type byEmojiFrequency []entities.Emoji
 
 func (e byEmojiFrequency) Len() int {
 	return len(e)

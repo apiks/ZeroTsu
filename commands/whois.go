@@ -63,7 +63,6 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	mem := db.GetGuildMember(m.GuildID, userID)
 	if mem.GetID() == "" {
 		var user *discordgo.User
-
 		if userMem != nil {
 			user = userMem.User
 		} else {
