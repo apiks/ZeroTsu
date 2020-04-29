@@ -185,7 +185,7 @@ func processEachShow(_ int, element *goquery.Selection) {
 	key, exists := element.Find(".poster-link").Attr("href")
 	if exists == true {
 		show.SetKey(key)
-		show.SetKey(strings.ToLower(strings.TrimPrefix(show.GetKey(), "/shows/")))
+		show.SetKey(strings.ToLower(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(show.GetKey(), "/shows/"), "shows/"), "/shows")))
 	}
 
 	entities.AnimeSchedule[day] = append(entities.AnimeSchedule[day], &show)

@@ -6,8 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -1253,18 +1251,14 @@ func SetupGuildSub(guildID string) {
 				hasAiredToday = false
 
 				// Parse the air hour and minute
-				scheduleTime := strings.Split(show.GetAirTime(), ":")
-				scheduleHour, err := strconv.Atoi(scheduleTime[0])
+				t, err := time.Parse("3:04 PM", show.GetAirTime())
 				if err != nil {
-					continue
-				}
-				scheduleMinute, err := strconv.Atoi(scheduleTime[1])
-				if err != nil {
+					log.Println(err)
 					continue
 				}
 
 				// Form the air date for today
-				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), scheduleHour, scheduleMinute, now.Second(), now.Nanosecond(), now.Location())
+				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), now.Second(), now.Nanosecond(), now.Location())
 				scheduleDate = scheduleDate.UTC()
 
 				// Calculates whether the show has already aired today
@@ -1275,7 +1269,6 @@ func SetupGuildSub(guildID string) {
 			}
 
 			guildSub := NewShowSub(show.GetName(), false, true)
-			guildSub.SetGuild(true)
 			if hasAiredToday {
 				guildSub.SetNotified(true)
 			}
