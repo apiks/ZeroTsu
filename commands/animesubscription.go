@@ -7,7 +7,6 @@ import (
 	"github.com/r-anime/ZeroTsu/embeds"
 	"github.com/r-anime/ZeroTsu/entities"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 
@@ -18,7 +17,6 @@ import (
 
 // Add Notifications for anime episode releases SUBBED
 func subscribeCommand(s *discordgo.Session, m *discordgo.Message) {
-
 	var (
 		showName      string
 		hasAiredToday bool
@@ -34,7 +32,6 @@ func subscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
-
 		if config.ServerID == "267799767843602452" {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%ssub [anime]`\n\nAnime is the anime name from the schedule command", guildSettings.GetPrefix()))
 			if err != nil {
@@ -72,6 +69,7 @@ Loop:
 			}
 
 			if strings.ToLower(show.GetName()) == commandStrings[1] {
+				showName = show.GetName()
 
 				// Iterate over existing anime subscription users to see if he's already subbed to this show
 				for userID, subscriptions := range animeSubs {
@@ -108,18 +106,14 @@ Loop:
 					hasAiredToday = false
 
 					// Parse the air hour and minute
-					scheduleTime := strings.Split(show.GetAirTime(), ":")
-					scheduleHour, err := strconv.Atoi(scheduleTime[0])
+					t, err := time.Parse("3:04 PM", show.GetAirTime())
 					if err != nil {
-						continue
-					}
-					scheduleMinute, err := strconv.Atoi(scheduleTime[1])
-					if err != nil {
+						log.Println(err)
 						continue
 					}
 
 					// Form the air date for Today
-					scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), scheduleHour, scheduleMinute, now.Second(), now.Nanosecond(), now.Location())
+					scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), now.Second(), now.Nanosecond(), now.Location())
 
 					// Calculates whether the show has already aired Today
 					difference := now.Sub(scheduleDate)
@@ -136,7 +130,6 @@ Loop:
 					entities.SharedInfo.GetAnimeSubsMap()[m.Author.ID] = append(entities.SharedInfo.GetAnimeSubsMap()[m.Author.ID], entities.NewShowSub(show.GetName(), false, false))
 				}
 				entities.Mutex.Unlock()
-				showName = show.GetName()
 				break Loop
 			}
 		}
@@ -599,18 +592,14 @@ func ResetSubscriptions() {
 				}
 
 				// Parse the air hour and minute
-				scheduleTime := strings.Split(scheduleShow.GetAirTime(), ":")
-				scheduleHour, err := strconv.Atoi(scheduleTime[0])
+				t, err := time.Parse("3:04 PM", scheduleShow.GetAirTime())
 				if err != nil {
-					continue
-				}
-				scheduleMinute, err := strconv.Atoi(scheduleTime[1])
-				if err != nil {
+					log.Println(err)
 					continue
 				}
 
 				// Form the air date for Today
-				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), scheduleHour, scheduleMinute, nowUTC.Second(), nowUTC.Nanosecond(), nowUTC.Location())
+				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), nowUTC.Second(), nowUTC.Nanosecond(), nowUTC.Location())
 
 				// Calculates whether the show has already aired today
 				difference := now.Sub(scheduleDate)
