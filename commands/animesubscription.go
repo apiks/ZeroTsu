@@ -415,18 +415,14 @@ func animeSubsHandler(s *discordgo.Session) {
 				}
 
 				// Parse the air hour and minute
-				scheduleTime := strings.Split(scheduleShow.GetAirTime(), ":")
-				scheduleHour, err := strconv.Atoi(scheduleTime[0])
+				t, err := time.Parse("3:04 PM", scheduleShow.GetAirTime())
 				if err != nil {
-					continue
-				}
-				scheduleMinute, err := strconv.Atoi(scheduleTime[1])
-				if err != nil {
+					log.Println(err)
 					continue
 				}
 
 				// Form the air date for Today
-				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), scheduleHour, scheduleMinute, now.Second(), now.Nanosecond(), now.Location())
+				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), now.Second(), now.Nanosecond(), now.Location())
 
 				// Calculates whether the show has already aired today
 				difference := now.Sub(scheduleDate)

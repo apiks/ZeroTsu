@@ -110,7 +110,7 @@ func getDaySchedule(weekday int) string {
 			}
 
 			// Parses the time in a proper time object
-			t, err := time.Parse("15:04", show.GetAirTime())
+			t, err := time.Parse("3:04 PM", show.GetAirTime())
 			if err != nil {
 				log.Println(err)
 				continue
@@ -159,7 +159,7 @@ func processEachShow(_ int, element *goquery.Selection) {
 		show entities.ShowAirTime
 	)
 
-	switch strings.ToLower(element.Parent().Parent().Parent().SiblingsFiltered(".column-title").Text()) {
+	switch strings.ToLower(element.SiblingsFiltered(".timetable-column-day").Text()) {
 	case "sunday", "sundays", "sun":
 		day = 0
 	case "monday", "mondays", "mon":
@@ -176,13 +176,13 @@ func processEachShow(_ int, element *goquery.Selection) {
 		day = 6
 	}
 
-	show.SetName(element.Find(".show-name").Text())
-	show.SetEpisode("Ep " + element.Parent().Parent().Parent().Find(".episode-number").Text())
+	show.SetName(element.Find(".show-title-bar").Text())
+	show.SetEpisode(element.Find(".show-episode").Text())
 	show.SetEpisode(strings.Replace(show.GetEpisode(), "\n", "", -1))
-	show.SetAirTime(element.Find(".air-time").Text())
-	show.SetDelayed(strings.TrimPrefix(element.Parent().Parent().Parent().Find(".delay").Text(), " "))
+	show.SetAirTime( element.Find(".show-air-time").Text())
+	show.SetDelayed(strings.TrimPrefix(element.Find("show-delay-bar").Text(), " "))
 	show.SetDelayed(strings.Trim(show.GetDelayed(), "\n"))
-	key, exists := element.Parent().Parent().Parent().Find(".show-link").Attr("href")
+	key, exists := element.Find(".poster-link").Attr("href")
 	if exists == true {
 		show.SetKey(key)
 		show.SetKey(strings.ToLower(strings.TrimPrefix(show.GetKey(), "/shows/")))
@@ -227,7 +227,7 @@ func UpdateAnimeSchedule() {
 	for dayInt := range entities.AnimeSchedule {
 		delete(entities.AnimeSchedule, dayInt)
 	}
-	document.Find(".columns h3").Each(processEachShow)
+	document.Find(".timetable-column .timetable-column-show").Each(processEachShow)
 	entities.Mutex.Unlock()
 }
 
