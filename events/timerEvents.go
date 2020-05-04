@@ -526,7 +526,6 @@ func feedHandler(s *discordgo.Session, guildIds []string) {
 					break
 				}
 			}
-			guildPostsMap[guildID] = nil
 		}(guildID)
 	}
 	wg.Wait()
