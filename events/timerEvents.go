@@ -523,22 +523,36 @@ func guildFeedsHandler(guildID string) (map[entities.Feed][]*gofeed.Item, error)
 
 // Sends feed posts in all guilds
 func feedPoster(s *discordgo.Session, feedsToPost map[string]map[entities.Feed][]*gofeed.Item, guildIds []string) {
-	for _, guildID := range guildIds {
-		if _, ok := feedsToPost[guildID]; !ok || feedsToPost[guildID] == nil || len(feedsToPost[guildID]) == 0 {
-			continue
-		}
-		feedPostHandler(s, guildID, feedsToPost[guildID])
-	}
-}
+	var wg sync.WaitGroup
 
-// Sends feed posts in a guild
-func feedPostHandler(s *discordgo.Session, guildID string, feedsToPost map[entities.Feed][]*gofeed.Item) {
 	// Stores current time
 	t := time.Now()
 
-	for feed, items := range feedsToPost {
-		postFeedItems(s, feed, items, t, guildID)
+	wg.Add(len(guildIds))
+	for _, guildID := range guildIds {
+		go func(guildID string, t time.Time) {
+			defer wg.Done()
+			if _, ok := feedsToPost[guildID]; !ok || feedsToPost[guildID] == nil || len(feedsToPost[guildID]) == 0 {
+				return
+			}
+			feedPostHandler(s, guildID, feedsToPost[guildID], t)
+		}(guildID, t)
 	}
+	wg.Wait()
+}
+
+// Sends feed posts in a guild
+func feedPostHandler(s *discordgo.Session, guildID string, feedsToPost map[entities.Feed][]*gofeed.Item, t time.Time) {
+	var wg sync.WaitGroup
+
+	wg.Add(len(feedsToPost))
+	for feed, items := range feedsToPost {
+		go func(feed entities.Feed, items []*gofeed.Item) {
+			defer wg.Done()
+			postFeedItems(s, feed, items, t, guildID)
+		}(feed, items)
+	}
+	wg.Wait()
 
 	db.SetGuildFeedChecks(guildID, entities.Guilds.DB[guildID].GetFeedChecks())
 }
