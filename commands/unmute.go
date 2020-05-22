@@ -18,13 +18,30 @@ import (
 func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	var (
+		mutedRoleID string
+
 		muteFlag bool
 		tookRole bool
 	)
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
 	if guildSettings.GetMutedRole() == (entities.Role{}) || guildSettings.GetMutedRole().GetID() == "" {
-		return
+		// Pulls info on server roles
+		deb, err := s.GuildRoles(m.GuildID)
+		if err != nil {
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			return
+		}
+
+		// Checks by string for a muted role
+		for _, role := range deb {
+			if strings.ToLower(role.Name) == "muted" || strings.ToLower(role.Name) == "t-mute" {
+				mutedRoleID = role.ID
+				break
+			}
+		}
+	} else {
+		mutedRoleID = guildSettings.GetMutedRole().GetID()
 	}
 
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
@@ -94,9 +111,9 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Check if the user is muted using other means
 	if !muteFlag {
-		if guildSettings.GetMutedRole().GetID() != "" {
+		if mutedRoleID != "" {
 			for _, userRoleID := range userMem.Roles {
-				if userRoleID == guildSettings.GetMutedRole().GetID() {
+				if userRoleID == mutedRoleID {
 					muteFlag = true
 					break
 				}
@@ -113,7 +130,7 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 			for _, role := range deb {
 				if strings.ToLower(role.Name) == "muted" || strings.ToLower(role.Name) == "t-mute" {
 					for _, userRoleID := range userMem.Roles {
-						if userRoleID == guildSettings.GetMutedRole().GetID() {
+						if userRoleID == mutedRoleID {
 							muteFlag = true
 							break
 						}
@@ -134,8 +151,8 @@ func unmuteCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Removes the mute
-	if guildSettings.GetMutedRole().GetID() != "" {
-		_ = s.GuildMemberRoleRemove(m.GuildID, userID, guildSettings.GetMutedRole().GetID())
+	if mutedRoleID != "" {
+		_ = s.GuildMemberRoleRemove(m.GuildID, userID, mutedRoleID)
 		tookRole = true
 	} else {
 		// Pulls info on server roles
