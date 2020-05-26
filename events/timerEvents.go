@@ -94,6 +94,7 @@ func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 				guild, err = s.Guild(guildID)
 				if err == nil {
 					for _, stat = range guildChannelStats {
+						stat.Lock()
 						if stat.GetRoleCountMap() == nil {
 							stat.SetRoleCountMap(emptyStatMap)
 						}
@@ -101,6 +102,7 @@ func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 							roleUserAmount = common.GetRoleUserAmount(guild, roles, stat.GetName())
 							stat.SetRoleCount(t.Format(common.ShortDateFormat), roleUserAmount)
 						}
+						stat.Unlock()
 					}
 				}
 			}
