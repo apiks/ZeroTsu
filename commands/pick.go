@@ -37,6 +37,9 @@ func pickCommand(s *discordgo.Session, m *discordgo.Message) {
 	items := strings.Split(commandStrings[1], "|")
 	if len(items) == 1 {
 		items = strings.Split(commandStrings[1], ",")
+		if len(items) == 1 {
+			items = strings.Split(commandStrings[1], "‚")
+		}
 	}
 
 	// Trims trailing and leading whitespace from each item. Also removes items that are empty
