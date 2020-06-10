@@ -34,6 +34,7 @@ func Feed(s *discordgo.Session, feed *entities.Feed, item *gofeed.Item) (*discor
 		strings.HasSuffix(imageLink, ".gifv") ||
 		strings.HasSuffix(imageLink, ".gif") {
 		embedImage.URL = imageLink
+		embedImage.ProxyURL = imageLink
 	}
 
 	embed := &discordgo.MessageEmbed{
@@ -41,7 +42,6 @@ func Feed(s *discordgo.Session, feed *entities.Feed, item *gofeed.Item) (*discor
 			URL:          item.Link,
 			Name:         item.Title,
 			IconURL:      "https://images-eu.ssl-images-amazon.com/images/I/418PuxYS63L.png",
-			ProxyIconURL: "",
 		},
 		Description: item.Description,
 		Timestamp:   item.Published,
