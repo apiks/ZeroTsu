@@ -124,10 +124,7 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 			}
 
 			// Removes role
-			err := s.GuildMemberRoleRemove(v.GuildID, v.UserID, chaRole.GetID())
-			if err != nil {
-				return
-			}
+			_ = s.GuildMemberRoleRemove(v.GuildID, v.UserID, chaRole.GetID())
 		}
 	}
 }
