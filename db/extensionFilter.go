@@ -22,12 +22,14 @@ func SetGuildExtension(guildID, extension string, deleteSlice ...bool) error {
 
 	entities.Guilds.Lock()
 
-	if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetExtensionList()) > 199 {
-		entities.Guilds.Unlock()
-		return fmt.Errorf("Error: You have reached the file extension filter limit (200) for this premium server.")
-	} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetExtensionList()) > 49 {
-		entities.Guilds.Unlock()
-		return fmt.Errorf("Error: You have reached the file extension filter (50) for this server. Please remove some or increase them to 200 by upgrading to a premium server at <https://patreon.com/apiks>")
+	if len(deleteSlice) == 0 {
+		if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetExtensionList()) >= 200 {
+			entities.Guilds.Unlock()
+			return fmt.Errorf("Error: You have reached the file extension filter limit (200) for this premium server.")
+		} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetExtensionList()) >= 50 {
+			entities.Guilds.Unlock()
+			return fmt.Errorf("Error: You have reached the file extension filter (50) for this server. Please remove some or increase them to 200 by upgrading to a premium server at <https://patreon.com/apiks>")
+		}
 	}
 
 	extension = strings.ToLower(extension)

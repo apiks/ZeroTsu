@@ -22,10 +22,10 @@ func SetGuildRaffles(guildID string, raffles []*entities.Raffle) error {
 
 	entities.Guilds.Lock()
 
-	if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(raffles) > 199 {
+	if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(raffles) >= 200 {
 		entities.Guilds.Unlock()
 		return fmt.Errorf("Error: You have reached the raffle limit (200) for this premium server.")
-	} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(raffles) > 49 {
+	} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(raffles) >= 50 {
 		entities.Guilds.Unlock()
 		return fmt.Errorf("Error: You have reached the raffle limit (50) for this server. Please remove some or increase them to 200 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
@@ -45,12 +45,14 @@ func SetGuildRaffle(guildID string, raffle *entities.Raffle, delete ...bool) err
 
 	entities.Guilds.Lock()
 
-	if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetRaffles()) > 199 {
-		entities.Guilds.Unlock()
-		return fmt.Errorf("Error: You have reached the raffle limit (200) for this premium server.")
-	} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetRaffles()) > 49 {
-		entities.Guilds.Unlock()
-		return fmt.Errorf("Error: You have reached the raffle limit (50) for this server. Please remove some or increase them to 200 by upgrading to a premium server at <https://patreon.com/apiks>")
+	if len(delete) == 0 {
+		if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetRaffles()) >= 200 {
+			entities.Guilds.Unlock()
+			return fmt.Errorf("Error: You have reached the raffle limit (200) for this premium server.")
+		} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetRaffles()) >= 50 {
+			entities.Guilds.Unlock()
+			return fmt.Errorf("Error: You have reached the raffle limit (50) for this server. Please remove some or increase them to 200 by upgrading to a premium server at <https://patreon.com/apiks>")
+		}
 	}
 
 	raffle.SetName(strings.ToLower(raffle.GetName()))

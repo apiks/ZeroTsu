@@ -25,14 +25,14 @@ func SetGuildFeeds(guildID string, feeds []entities.Feed) error {
 	entities.Guilds.Lock()
 	entities.Guilds.DB[guildID].Lock()
 
-	if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(feeds) > 399 {
+	if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(feeds) >= 400 {
 		entities.Guilds.Unlock()
 		entities.Guilds.DB[guildID].Unlock()
 		return fmt.Errorf("Error: You have reached the reddit feed autopost limit (400) for this server.")
-	} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(feeds) > 49 {
+	} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(feeds) >= 50 {
 		entities.Guilds.Unlock()
 		entities.Guilds.DB[guildID].Unlock()
-		return fmt.Errorf("Error: You have reached the reddit feed autopost limit (100) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/apiks>")
+		return fmt.Errorf("Error: You have reached the reddit feed autopost limit (50) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
 
 	entities.Guilds.DB[guildID].SetFeeds(feeds)
@@ -67,12 +67,14 @@ func SetGuildFeed(guildID string, feed entities.Feed, delete ...bool) error {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
-	if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetFeeds()) > 399 {
-		entities.Guilds.Unlock()
-		return fmt.Errorf("Error: You have reached the reddit feed autopost limit (400) for this server.")
-	} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetFeeds()) > 49 {
-		entities.Guilds.Unlock()
-		return fmt.Errorf("Error: You have reached the reddit feed autopost limit (100) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/apiks>")
+	if len(delete) == 0 {
+		if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetFeeds()) >= 400 {
+			entities.Guilds.Unlock()
+			return fmt.Errorf("Error: You have reached the reddit feed autopost limit (400) for this server.")
+		} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetFeeds()) >= 50 {
+			entities.Guilds.Unlock()
+			return fmt.Errorf("Error: You have reached the reddit feed autopost limit (50) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/apiks>")
+		}
 	}
 
 	feed = feed.SetSubreddit(strings.ToLower(feed.GetSubreddit()))

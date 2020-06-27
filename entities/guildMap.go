@@ -94,6 +94,7 @@ func (g *GuildMap) Load(guildID string) error {
 	// Load guild settings first because some files check against bools in the settings
 	err = guild.Load("guildSettings.json", guildID)
 	if err != nil {
+		log.Println("1")
 		return err
 	}
 
@@ -104,6 +105,8 @@ func (g *GuildMap) Load(guildID string) error {
 		}
 		err = guild.Load(file, guildID)
 		if err != nil {
+			log.Println(guildID)
+			log.Println("2")
 			return err
 		}
 	}

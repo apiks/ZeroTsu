@@ -22,10 +22,10 @@ func SetGuildWaifus(guildID string, waifus []*entities.Waifu) error {
 
 	entities.Guilds.Lock()
 
-	if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(waifus) > 399 {
+	if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(waifus) >= 400 {
 		entities.Guilds.Unlock()
 		return fmt.Errorf("Error: You have reached the waifu limit (400) for this premium server.")
-	} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(waifus) > 49 {
+	} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(waifus) >= 50 {
 		entities.Guilds.Unlock()
 		return fmt.Errorf("Error: You have reached the waifu limit (50) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
@@ -45,12 +45,14 @@ func SetGuildWaifu(guildID string, waifu entities.Waifu, delete ...bool) error {
 
 	entities.Guilds.Lock()
 
-	if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetWaifus()) > 399 {
-		entities.Guilds.Unlock()
-		return fmt.Errorf("Error: You have reached the waifu limit (400) for this premium server.")
-	} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetWaifus()) > 49 {
-		entities.Guilds.Unlock()
-		return fmt.Errorf("Error: You have reached the waifu limit (50) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/apiks>")
+	if len(delete) == 0 {
+		if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetWaifus()) >= 400 {
+			entities.Guilds.Unlock()
+			return fmt.Errorf("Error: You have reached the waifu limit (400) for this premium server.")
+		} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetWaifus()) >= 50 {
+			entities.Guilds.Unlock()
+			return fmt.Errorf("Error: You have reached the waifu limit (50) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/apiks>")
+		}
 	}
 
 	if len(delete) == 0 {

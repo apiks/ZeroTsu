@@ -21,10 +21,10 @@ func SetGuildWaifuTrades(guildID string, waifuTrades []*entities.WaifuTrade) err
 
 	entities.Guilds.Lock()
 
-	if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(waifuTrades) > 799 {
+	if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(waifuTrades) >= 800 {
 		entities.Guilds.Unlock()
 		return fmt.Errorf("Error: This premium server has reached the waifu trade limit (800).")
-	} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(waifuTrades) > 399 {
+	} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(waifuTrades) >= 400 {
 		entities.Guilds.Unlock()
 		return fmt.Errorf("Error: This server has reached the waifu trade limit (400). Please contact the bot creator or increase the limit to 500 by upgrading to a premium server at <https://patreon.com/apiks>")
 	}
@@ -44,12 +44,14 @@ func SetGuildWaifuTrade(guildID string, waifuTrade *entities.WaifuTrade, delete 
 
 	entities.Guilds.Lock()
 
-	if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetWaifuTrades()) > 799 {
-		entities.Guilds.Unlock()
-		return fmt.Errorf("Error: This premium server has reached the waifu trade limit (800).")
-	} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetWaifuTrades()) > 399 {
-		entities.Guilds.Unlock()
-		return fmt.Errorf("Error: This server has reached the waifu trade limit (400). Please contact the bot creator or increase the limit to 500 by upgrading to a premium server at <https://patreon.com/apiks>")
+	if len(delete) == 0 {
+		if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetWaifuTrades()) >= 800 {
+			entities.Guilds.Unlock()
+			return fmt.Errorf("Error: This premium server has reached the waifu trade limit (800).")
+		} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetWaifuTrades()) >= 400 {
+			entities.Guilds.Unlock()
+			return fmt.Errorf("Error: This server has reached the waifu trade limit (400). Please contact the bot creator or increase the limit to 500 by upgrading to a premium server at <https://patreon.com/apiks>")
+		}
 	}
 
 	if len(delete) == 0 {
