@@ -209,7 +209,7 @@ func prefixCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings = guildSettings.SetPrefix(commandStrings[1])
 	db.SetGuildSettings(m.GuildID, guildSettings)
 
-	events.DynamicNicknameChange(s, m.GuildID, guildSettings.GetPrefix())
+	events.DynamicNicknameChange(s, m.GuildID)
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New prefix is: `%s`", guildSettings.GetPrefix()))
 	if err != nil {

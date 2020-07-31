@@ -73,9 +73,6 @@ func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 		for _, guildID = range guildIds {
 			entities.HandleNewGuild(guildID)
 
-			// Updates BOT nickname
-			DynamicNicknameChange(s, guildID)
-
 			// Clears up spoilerRoles.json
 			err = cleanSpoilerRoles(s, guildID)
 			if err != nil {

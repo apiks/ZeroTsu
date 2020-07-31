@@ -46,9 +46,6 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
 		// Reload null guild anime subs
 		fixGuildSubsCommand(guildID)
-
-		// Changes nickname dynamically based on prefix
-		DynamicNicknameChange(s, guildID)
 	}
 
 	// Handles Reddit Feeds
@@ -584,28 +581,23 @@ func GuildDelete(_ *discordgo.Session, g *discordgo.GuildDelete) {
 }
 
 // Changes the BOT's nickname dynamically to a `prefix username` format if there is no existing custom nickname
-func DynamicNicknameChange(s *discordgo.Session, guildID string, oldPrefix ...string) {
+func DynamicNicknameChange(s *discordgo.Session, guildID string) {
 	guildSettings := db.GetGuildSettings(guildID)
 
 	// Set custom nickname based on guild prefix if there is no existing nickname
-	me, err := s.State.Member(guildID, s.State.User.ID)
+	bot, err := s.State.Member(guildID, s.State.User.ID)
 	if err != nil {
-		me, err = s.GuildMember(guildID, s.State.User.ID)
+		bot, err = s.GuildMember(guildID, s.State.User.ID)
 		if err != nil {
 			return
 		}
 	}
 
-	if me.Nick != "" {
-		targetPrefix := guildSettings.GetPrefix()
-		if len(oldPrefix) > 0 {
-			if oldPrefix[0] != "" {
-				targetPrefix = oldPrefix[0]
-			}
-		}
-		if me.Nick != fmt.Sprintf("%s %s", targetPrefix, s.State.User.Username) && me.Nick != "" {
-			return
-		}
+	if bot.Nick != "" {
+		return
+	}
+	if bot.Nick != fmt.Sprintf("%s %s", guildSettings.GetPrefix(), s.State.User.Username) {
+		return
 	}
 
 	err = s.GuildMemberNickname(guildID, "@me", fmt.Sprintf("%s %s", guildSettings.GetPrefix(), s.State.User.Username))
