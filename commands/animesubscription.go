@@ -445,11 +445,7 @@ func animeSubsHandler(s *discordgo.Session) {
 				}
 
 				dm, _ := s.UserChannelCreate(userID)
-				if config.ServerID != "267799767843602452" {
-					_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("**%s __%s__** is out!\nSource: <https://animeschedule.net/shows/%s>", scheduleShow.GetName(), scheduleShow.GetEpisode(), scheduleShow.GetKey()))
-				} else {
-					_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("**%s __%s__** is out!", scheduleShow.GetName(), scheduleShow.GetEpisode()))
-				}
+				_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("**%s __%s__** is out!\nSource: <https://animeschedule.net/shows/%s>", scheduleShow.GetName(), scheduleShow.GetEpisode(), scheduleShow.GetKey()))
 
 				// Sets the show as notified for that user
 				entities.Mutex.Lock()
