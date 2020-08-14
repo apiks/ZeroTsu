@@ -18,7 +18,7 @@ func Subscription(s *discordgo.Session, show *entities.ShowAirTime, channelID st
 		Image: &discordgo.MessageEmbedImage{
 			Width:  30,
 			Height: 60,
-			URL:    fmt.Sprintf("https://animeschedule.net/img/shows/default/%s.jpg", show.GetKey()),
+			URL:    show.GetImageUrl(),
 		},
 	}
 

@@ -187,6 +187,10 @@ func processEachShow(_ int, element *goquery.Selection) {
 		show.SetKey(key)
 		show.SetKey(strings.ToLower(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(show.GetKey(), "/shows/"), "shows/"), "/shows")))
 	}
+	imageUrl, exists := element.Find(".show-poster").Attr("src")
+	if exists == true {
+		show.SetImageUrl(imageUrl)
+	}
 
 	entities.AnimeSchedule[day] = append(entities.AnimeSchedule[day], &show)
 }

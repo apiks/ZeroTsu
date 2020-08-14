@@ -10,6 +10,7 @@ type ShowAirTime struct {
 	Episode string
 	Delayed string
 	Key     string
+	ImageUrl string
 }
 
 func NewShowAirTime(name string, airTime string, episode string, delayed string, key string) *ShowAirTime {
@@ -89,4 +90,19 @@ func (s *ShowAirTime) GetKey() string {
 		return ""
 	}
 	return s.Key
+}
+
+func (s *ShowAirTime) SetImageUrl(imageUrl string) {
+	s.Lock()
+	s.ImageUrl = imageUrl
+	s.Unlock()
+}
+
+func (s *ShowAirTime) GetImageUrl() string {
+	s.RLock()
+	defer s.RUnlock()
+	if s == nil {
+		return ""
+	}
+	return s.ImageUrl
 }
