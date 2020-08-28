@@ -187,7 +187,7 @@ func processEachShow(_ int, element *goquery.Selection) {
 		show.SetKey(key)
 		show.SetKey(strings.ToLower(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(show.GetKey(), "/shows/"), "shows/"), "/shows")))
 	}
-	imageUrl, exists := element.Find(".show-poster").Attr("src")
+	imageUrl, exists := element.Find(".show-poster").Attr("data-src")
 	if exists == true {
 		show.SetImageUrl(imageUrl)
 	}
@@ -197,7 +197,6 @@ func processEachShow(_ int, element *goquery.Selection) {
 
 // Scrapes https://AnimeSchedule.net for air times subbed
 func UpdateAnimeSchedule() {
-
 	// Create HTTP client with timeout
 	client := &http.Client{
 		Timeout: 10 * time.Second,
@@ -228,11 +227,19 @@ func UpdateAnimeSchedule() {
 
 	// Find all airing shows and process them after resetting map
 	entities.Mutex.Lock()
+	defer entities.Mutex.Unlock()
 	for dayInt := range entities.AnimeSchedule {
+		for len(entities.AnimeSchedule[dayInt]) > 0 {
+			for i := range entities.AnimeSchedule[dayInt] {
+				copy(entities.AnimeSchedule[dayInt][i:], entities.AnimeSchedule[dayInt][i+1:])
+				entities.AnimeSchedule[dayInt][len(entities.AnimeSchedule[dayInt])-1] = nil
+				entities.AnimeSchedule[dayInt] = entities.AnimeSchedule[dayInt][:len(entities.AnimeSchedule[dayInt])-1]
+				break
+			}
+		}
 		delete(entities.AnimeSchedule, dayInt)
 	}
 	document.Find(".timetable-column .timetable-column-show").Each(processEachShow)
-	entities.Mutex.Unlock()
 }
 
 // isTimeDST returns true if time t occurs within daylight saving time

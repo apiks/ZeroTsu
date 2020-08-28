@@ -32,6 +32,7 @@ func main() {
 
 	// Load animeschedule data
 	commands.UpdateAnimeSchedule()
+	commands.UpdateAnimeSchedule()
 
 	// Load all guild and shared info
 	entities.Mutex.Lock()
