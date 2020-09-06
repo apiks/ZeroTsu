@@ -475,7 +475,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 					}
 
 					// Gets the users who voted and gives them the role
-					users, err = s.MessageReactions(vote.GetMessageReact().ChannelID, vote.GetMessageReact().ID, "👍", 100)
+					users, err = s.MessageReactions(vote.GetMessageReact().ChannelID, vote.GetMessageReact().ID, "👍", 100, "", "")
 					if err != nil {
 						common.LogError(s, guildSettings.BotLog, err)
 						entities.Mutex.Lock()

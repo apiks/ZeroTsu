@@ -329,7 +329,7 @@ func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
 	entities.HandleNewGuild(e.GuildID)
 
 	// Check if a bot did the banning
-	auditLog, err := s.GuildAuditLog(e.GuildID, e.User.ID, "", discordgo.AuditLogActionMemberBanAdd, 10)
+	auditLog, err := s.GuildAuditLog(e.GuildID, e.User.ID, "", int(discordgo.AuditLogActionMemberBanAdd), 10)
 	if err == nil {
 		for _, entry := range auditLog.AuditLogEntries {
 			if entry.TargetID == e.User.ID {
