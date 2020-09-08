@@ -1,10 +1,7 @@
 package events
 
 import (
-	"fmt"
 	"github.com/bwmarrin/discordgo"
-	"github.com/r-anime/ZeroTsu/common"
-	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/entities"
 	"github.com/r-anime/ZeroTsu/functionality"
@@ -33,10 +30,6 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 
 	entities.HandleNewGuild(e.GuildID)
 
-	if e.GuildID != "267799767843602452" {
-		return
-	}
-
 	// Initializes and handles user if he's new
 	mem := db.GetGuildMember(e.GuildID, e.User.ID)
 	if mem.GetID() == "" {
@@ -45,26 +38,6 @@ func OnMemberJoinGuild(s *discordgo.Session, e *discordgo.GuildMemberAdd) {
 		if mem.GetID() == "" {
 			return
 		}
-
-		// Encrypts id
-		ciphertext := common.Encrypt(Key, e.User.ID)
-
-		// Sends verification message to user in DMs if possible
-		if config.Website != "" && e.GuildID == "267799767843602452" {
-			dm, _ := s.UserChannelCreate(e.User.ID)
-			_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n"+
-				"Please verify your reddit account at http://%s/verification?reqvalue=%s", config.Website, ciphertext))
-		}
-	} else if mem.GetRedditUsername() == "" && config.Website != "" && e.GuildID == "267799767843602452" {
-		// If user is already in memberInfo and lacks a reddit username and site is enabled, tell user to verify
-
-		// Encrypts id
-		ciphertext := common.Encrypt(Key, e.User.ID)
-
-		// Sends verification message to user in DMs if possible
-		dm, _ := s.UserChannelCreate(e.User.ID)
-		_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("You have joined the /r/anime discord. We require a reddit account verification with an at least 1 week old account. \n"+
-			"Please verify your reddit account at http://%s/verification?reqvalue=%s", config.Website, ciphertext))
 	}
 
 	// Checks if the user's current username is the same as the one in the database. Otherwise updates

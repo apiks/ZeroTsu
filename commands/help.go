@@ -506,12 +506,6 @@ func helpModerationEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	}
 	sort.Strings(commands)
 	for i := 0; i < len(commands); i++ {
-		if config.Website == "" {
-			if CommandMap[commands[i]].Trigger == "verify" ||
-				CommandMap[commands[i]].Trigger == "unverify" {
-				continue
-			}
-		}
 		if CommandMap[commands[i]].Module == "moderation" {
 			commandsField.Value += fmt.Sprintf("`%s` - %s\n", commands[i], CommandMap[commands[i]].Desc)
 		}

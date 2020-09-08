@@ -44,7 +44,6 @@ func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 
 		emojiStats map[string]entities.Emoji
 		userChangeStats map[string]int
-		verifiedStats map[string]int
 
 		err error
 	)
@@ -113,12 +112,6 @@ func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 			// Writes user gain stats to disk
 			userChangeStats = db.GetGuildUserChangeStats(guildID)
 			db.SetGuildUserChangeStats(guildID, userChangeStats)
-
-			// Writes verified stats to disk
-			if config.Website != "" {
-				verifiedStats = db.GetGuildVerifiedStats(guildID)
-				db.SetGuildVerifiedStats(guildID, verifiedStats)
-			}
 		}
 
 		// Sends server count to bot list sites if it's the public ZeroTsu

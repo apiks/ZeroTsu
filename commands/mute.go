@@ -220,9 +220,7 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Assigns success mute print string for user
-	if perma && m.GuildID == "267799767843602452" {
-		success = fmt.Sprintf("You have been muted on **%s**:\n**\"**%s**\"**\n\nUntil: `Forever`\n\nIf you would like to appeal, use modmail at <https://reddit.com/r/anime>", guild.Name, reason)
-	} else if perma {
+	if perma {
 		success = fmt.Sprintf("You have been muted on **%s**:\n**\"**%s**\"**\n\nUntil: `Forever`", guild.Name, reason)
 	} else {
 		z, _ := time.Now().Zone()

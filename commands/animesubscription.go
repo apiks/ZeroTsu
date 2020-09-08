@@ -11,8 +11,6 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-
-	"github.com/r-anime/ZeroTsu/config"
 )
 
 // Add Notifications for anime episode releases SUBBED
@@ -32,15 +30,6 @@ func subscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
-		if config.ServerID == "267799767843602452" {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%ssub [anime]`\n\nAnime is the anime name from the schedule command", guildSettings.GetPrefix()))
-			if err != nil {
-				common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-				return
-			}
-			return
-		}
-
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%ssub [anime]`\n\nAnime is the anime name from <https://AnimeSchedule.net> or the schedule command", guildSettings.GetPrefix()))
 		if err != nil {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
@@ -178,15 +167,6 @@ func unsubscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
-		if config.ServerID == "267799767843602452" {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vunsub [anime]`\n\nAnime is the anime name from the schedule command", guildSettings.GetPrefix()))
-			if err != nil {
-				common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-				return
-			}
-			return
-		}
-
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vunsub [anime]`\n\nAnime is the anime name from <https://AnimeSchedule.net> or the schedule command", guildSettings.GetPrefix()))
 		if err != nil {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)

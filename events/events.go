@@ -8,7 +8,6 @@ import (
 	"github.com/r-anime/ZeroTsu/functionality"
 	"log"
 	"math/rand"
-	"regexp"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -397,125 +396,6 @@ func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
 			}
 		}
 	}
-
-	if u.GuildID != "267799767843602452" {
-		return
-	}
-
-	creationDate, err := common.CreationTime(u.User.ID)
-	if err != nil {
-		guildSettings := db.GetGuildSettings(u.GuildID)
-		common.LogError(s, guildSettings.BotLog, err)
-		return
-	}
-
-	// Sends user join message for r/anime discord server
-	if u.GuildID == "267799767843602452" {
-		_, _ = s.ChannelMessageSend("566233292026937345", fmt.Sprintf("Username joined the server: %v\nAccount age: %s", u.User.Mention(), creationDate.String()))
-	}
-}
-
-// Sends a message to suspected spambots to verify and bans them immediately after. Only does it for accounts younger than 3 days
-func SpambotJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
-	// Saves program from panic and continues running normally without executing the command if it happens
-	defer func() {
-		if rec := recover(); rec != nil {
-			log.Println(rec)
-			log.Println("Recovery in SpambotJoin")
-			log.Println("stacktrace from panic: \n" + string(debug.Stack()))
-		}
-	}()
-
-	if u.GuildID == "" {
-		return
-	}
-
-	var (
-		creationDate time.Time
-		now          time.Time
-
-		dmMessage string
-	)
-
-	entities.HandleNewGuild(u.GuildID)
-
-	guildSettings := db.GetGuildSettings(u.GuildID)
-	guildPunishedUsers := db.GetGuildPunishedUsers(u.GuildID)
-
-	// Fetches date of account creation and checks if it's younger than 14 days
-	creationDate, err := common.CreationTime(u.User.ID)
-	if err != nil {
-		common.LogError(s, guildSettings.BotLog, err)
-		return
-	}
-	now = time.Now()
-	difference := now.Sub(creationDate)
-	if difference.Hours() > 384 {
-		return
-	}
-
-	// Matches known spambot patterns with regex
-	regexCases := regexp.MustCompile(`(?im)(^[a-zA-Z]+\d{2,4}[a-zA-Z]+$)|(^[a-zA-Z]+\d{5}$)|(^[a-zA-Z]+\d{2,5}$)`)
-	spambotMatches := regexCases.FindAllString(u.User.Username, 1)
-	if len(spambotMatches) == 0 {
-		return
-	}
-
-	// Checks if they're using a default avatar
-	if u.User.Avatar != "" {
-		return
-	}
-
-	// Initializes user if he's not in memberInfo
-	memberInfoUser := db.GetGuildMember(u.GuildID, u.User.ID)
-	if memberInfoUser.GetID() == "" {
-		functionality.InitializeUser(u.User, u.GuildID)
-	}
-	memberInfoUser = db.GetGuildMember(u.GuildID, u.User.ID)
-
-	// Checks if the user is verified
-	if memberInfoUser.GetRedditUsername() != "" {
-		return
-	}
-
-	// Adds the spambot ban to PunishedUsers so it doesn't Trigger the OnGuildBan func
-	temp := entities.NewPunishedUsers(u.User.ID, u.User.Username, time.Date(9999, 9, 9, 9, 9, 9, 9, time.Local), time.Time{})
-	for _, punishedUser := range guildPunishedUsers {
-		if punishedUser.GetID() == u.User.ID {
-			_ = db.SetGuildPunishedUser(u.GuildID, temp, true)
-		}
-	}
-	err = db.SetGuildPunishedUser(u.GuildID, temp, true)
-	if err != nil {
-		common.LogError(s, guildSettings.BotLog, err)
-		return
-	}
-
-	// Adds a bool to memberInfo that it's a suspected spambot account in case they try to reverify
-	memberInfoUser = memberInfoUser.SetSuspectedSpambot(true)
-	db.SetGuildMember(u.GuildID, memberInfoUser)
-
-	// Sends a message to the user warning them in case it's a false positive
-	dmMessage = "You have been suspected of being a spambot and banned."
-	if u.GuildID == "267799767843602452" {
-		dmMessage += fmt.Sprintf("\nTo get unbanned please do our mandatory verification process at https://%s/verification and then rejoin the server.", config.Website)
-	}
-
-	dm, _ := s.UserChannelCreate(u.User.ID)
-	_, _ = s.ChannelMessageSend(dm.ID, dmMessage)
-
-	// Bans the suspected account
-	err = s.GuildBanCreateWithReason(u.GuildID, u.User.ID, "Autoban Suspected Spambot", 0)
-	if err != nil {
-		common.LogError(s, guildSettings.BotLog, err)
-		return
-	}
-
-	// Botlog message
-	if guildSettings.BotLog == (entities.Cha{}) || guildSettings.BotLog.GetID() == "" {
-		return
-	}
-	_, _ = s.ChannelMessageSend(guildSettings.BotLog.GetID(), fmt.Sprintf("Suspected spambot was banned. Username: <@!%s>", u.User.ID))
 }
 
 // Cleans spoilerRoles.json

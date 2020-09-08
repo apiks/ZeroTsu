@@ -11,7 +11,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/functionality"
 )
 
@@ -193,23 +192,8 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 	messageBuilder.WriteString(strings.Join(bans, ", "))
 	messageBuilder.WriteString("\n\n**Join Date:** ")
 	messageBuilder.WriteString(mem.GetJoinDate())
-	if config.Website != "" {
-		messageBuilder.WriteString("\n\n**Verification Date:** ")
-		messageBuilder.WriteString(mem.GetVerifiedDate())
-	}
 	messageBuilder.WriteString("\n\n**Account Creation Date:** ")
 	messageBuilder.WriteString(creationDate.String())
-
-	// Sets reddit Username if it exists
-	if config.Website != "" {
-		if mem.GetRedditUsername() != "" {
-			messageBuilder.WriteString("\n\n**Reddit Account:** <https://reddit.com/u/")
-			messageBuilder.WriteString(mem.GetRedditUsername())
-			messageBuilder.WriteString(">")
-		} else {
-			messageBuilder.WriteString("\n\n**Reddit Account:** None")
-		}
-	}
 
 	// Sets unban date if it exists
 	if mem.GetUnbanDate() != "" {
@@ -225,34 +209,6 @@ func whoisCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	if !isInsideGuild {
 		messageBuilder.WriteString("\n\n**_User is not in the server._**")
-	}
-
-	// Alt check
-	if config.Website != "" {
-		alts := CheckAltAccountWhois(m.GuildID, mem)
-
-		// If there's more than one account with the same reddit username add to whois message
-		if len(alts) > 1 {
-			var altsBuilder strings.Builder
-			// Forms the alts string
-			altsBuilder.WriteString("\n\n**Alts:**\n")
-			for _, altID := range alts {
-				alt := db.GetGuildMember(m.GuildID, altID)
-				if alt.GetID() == "" {
-					continue
-				}
-				altsBuilder.WriteString(alt.GetUsername())
-				altsBuilder.WriteString("#")
-				altsBuilder.WriteString(alt.GetDiscrim())
-				altsBuilder.WriteString(" | ")
-				altsBuilder.WriteString(altID)
-				altsBuilder.WriteString("\n")
-			}
-
-			// Adds the alts to the whois message
-			messageBuilder.WriteString(altsBuilder.String())
-			alts = nil
-		}
 	}
 
 	// Checks if the message contains a mention and finds the actual name instead of ID

@@ -181,46 +181,6 @@ func uptimeCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-//func flushCommand(s *discordgo.Session, m *discordgo.Message) {
-//	if m.Author.ID != config.OwnerID {
-//		return
-//	}
-//
-//	guilds := s.State.Guilds
-//	entities.Mutex.Lock()
-//	for _, guild := range guilds {
-//		_ = entities.WriteMemberInfo(entities.GuildMap[guild.ID].MemberInfoMap, guild.ID)
-//		_ = entities.EmojiStatsWrite(entities.GuildMap[guild.ID].EmojiStats, guild.ID)
-//		_, _ = entities.ChannelStatsWrite(entities.GuildMap[guild.ID].ChannelStats, guild.ID)
-//		_, _ = entities.UserChangeStatsWrite(entities.GuildMap[guild.ID].UserChangeStats, guild.ID)
-//		_ = entities.VerifiedStatsWrite(entities.GuildMap[guild.ID].VerifiedStats, guild.ID)
-//		_ = entities.VoteInfoWrite(entities.GuildMap[guild.ID].VoteInfoMap, guild.ID)
-//		_ = entities.TempChaWrite(entities.GuildMap[guild.ID].TempChaMap, guild.ID)
-//		_ = entities.ReactJoinWrite(entities.GuildMap[guild.ID].ReactJoinMap, guild.ID)
-//		_ = entities.RafflesWrite(entities.GuildMap[guild.ID].Raffles, guild.ID)
-//		_ = entities.WaifusWrite(entities.GuildMap[guild.ID].Waifus, guild.ID)
-//		_ = entities.WaifuTradesWrite(entities.GuildMap[guild.ID].WaifuTrades, guild.ID)
-//		_ = entities.AutopostsWrite(entities.GuildMap[guild.ID].Autoposts, guild.ID)
-//		_ = entities.PunishedUsersWrite(entities.GuildMap[guild.ID].PunishedUsers, guild.ID)
-//		_ = entities.GuildSettingsWrite(entities.GuildMap[guild.ID].GuildSettings, guild.ID)
-//	}
-//	entities.Mutex.Unlock()
-//
-//	_, err := s.ChannelMessageSend(m.ChannelID, "Flushed to storage successfuly!")
-//	if err != nil {
-//		if m.GuildID != "" {
-//			guildSettings, err := db.GetGuildSettings(m.GuildID)
-//			if err != nil {
-//				log.Println(err)
-//				return
-//			}
-//			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-//			return
-//		}
-//		return
-//	}
-//}
-
 func init() {
 	Add(&Command{
 		Execute:    playingMsgCommand,
@@ -251,11 +211,4 @@ func init() {
 		DMAble:     true,
 		Permission: functionality.Owner,
 	})
-	//Add(&Command{
-	//	Execute:    flushCommand,
-	//	Trigger:    "flush",
-	//	Desc:       "Write everything in memory to disk",
-	//	DMAble:     true,
-	//	Permission: functionality.Owner,
-	//})
 }

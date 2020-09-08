@@ -16,7 +16,7 @@ var (
 
 	guildFileNames = [...]string{"punishedUsers.json", "filters.json", "messReqs.json", "spoilerRoles.json", "rssThreads.json",
 		"rssThreadCheck.json", "raffles.json", "waifus.json", "waifuTrades.json", "memberInfo.json", "emojiStats.json",
-		"channelStats.json", "userChangeStats.json", "verifiedStats.json", "voteInfo.json", "tempCha.json",
+		"channelStats.json", "userChangeStats.json", "voteInfo.json", "tempCha.json",
 		"reactJoin.json", "guildSettings.json", "autoposts.json"}
 )
 
@@ -69,7 +69,6 @@ func (g *GuildMap) Init(guildID string) {
 		EmojiStats:      make(map[string]Emoji),
 		ChannelStats:    make(map[string]Channel),
 		UserChangeStats: make(map[string]int),
-		VerifiedStats:   make(map[string]int),
 		VoteInfoMap:     make(map[string]*VoteInfo),
 		TempChaMap:      make(map[string]*TempChaInfo),
 		ReactJoinMap:    make(map[string]*ReactJoin),
@@ -94,7 +93,7 @@ func (g *GuildMap) Load(guildID string) error {
 	// Load guild settings first because some files check against bools in the settings
 	err = guild.Load("guildSettings.json", guildID)
 	if err != nil {
-		log.Println("1")
+		log.Println("error in loading guild settings")
 		return err
 	}
 
@@ -105,8 +104,6 @@ func (g *GuildMap) Load(guildID string) error {
 		}
 		err = guild.Load(file, guildID)
 		if err != nil {
-			log.Println(guildID)
-			log.Println("2")
 			return err
 		}
 	}

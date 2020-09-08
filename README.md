@@ -13,8 +13,6 @@
 
 * Punishment system where you can issue warnings, mute, kick or ban people for a set period of time with the bot and log that using the member system, or remove those punishments and unban. Also shows timestamps for all of those. Automatically unbans for temp bans.
 
-* Website verification system for reddit account linking and confirmation before being able to use the server [r/anime only]
-
 * Automated channel creation with various parameters you can give it to make them hidden (opt-in), temporary (auto deletes after a set period of time) and other
 
 * Optional automated channel creation via non-mod started vote for a temp (auto deleted) channel with a minimum requirement of votes and hard cap of 3 at a time
@@ -43,33 +41,17 @@
 
 How to install:
 1. Download in a folder.
-2. Edit config.json with your own values. This is mostly if you're using the Website Verification which requires more setup
-
-       BotID is the ID of the BOT you are using the website. Needed if using Website, otherwise Optional
-
-       ServerID is the ID of the server the BOT is going to using the website on. Needed if using Website, otherwise Optional
-       
-       BotLogID is the ID of the server on which you're using website's bot log channel. Needed if using Website, otherwise Optional
-
-       Website is the address/ip+:port of the website. Optional
+2. Edit config.json with your own values if you want to.
 	   
 	   PlayingMsg are whatever "Playing" messages you want the BOT to display. Separate each quoted message with a comma. Owner can change it with the playingmsg command. Optional
 	   
 	   OwnerID is the user ID of the person with Owner level BOT permissions. Optional
 
-3. Make a file called configsecrets.json in the folder config.json is in and set this up the following way. It's for Website/Verification. Skip it if not using that, or use it if you receive an error about it missing
-```javascript
-{
-  "RedditName": "redditAppName",
-  "RedditSecret": "RedditAppSecret",
-  "DiscordSecret": "DiscordBOTSecret"
-}
-```
-4. Set your "ZeroTsuToken" environment variable to the BOT token (either hidden on the system env or in config.go ReadConfig func with os.Setenv("ZeroTsuToken", "TOKEN"))
-5. Compile in your favorite IDE or compiler with "go build" (or type "set GOOS=[Preferred OS]" to change OS first (like linux) and then "go build".)
-6. Invite BOT to server and give it an admin role or equivalent
-7. Start the BOT as admin and use
-8. Use the .hset command to set up the bot for your server
+3. Set your "ZeroTsuToken" environment variable to the BOT token (either hidden on the system env or in config.go ReadConfig func with os.Setenv("ZeroTsuToken", "TOKEN"))
+4. Compile in your favorite IDE or compiler with "go build" (or type "set GOOS=[Preferred OS]" to change OS first (like linux) and then "go build".)
+5. Invite BOT to server and give it an admin role or equivalent
+6. Start the BOT as admin and use
+7. Use the .hset command to set up the bot for your server
 
 <br/>
 

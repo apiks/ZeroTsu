@@ -11,17 +11,9 @@ import (
 
 var (
 	Token      string
-	BotID      string
-	ServerID   string
-	BotLogID   string
 	OwnerID    string
-	Website    string
 	PlayingMsg []string
 
-	RedditAppName   string
-	RedditAppSecret string
-
-	DiscordAppSecret    string
 	DiscordBotsSecret   string
 	DiscordBoatsSecret  string
 	BotsOnDiscordSecret string
@@ -36,7 +28,6 @@ type configStruct struct {
 	ServerID              string   `json:"ServerID"`
 	BotLogID              string   `json:"BotLogID"`
 	OwnerID               string   `json:"OwnerID"`
-	Website               string   `json:"Website"`
 	VoteChannelCategoryID string   `json:"VoteChannelCategoryID"`
 	Kaguya                string   `json:"Kaguya"`
 	MsgAttachRemoval      string   `json:"MsgAttachRemoval"`
@@ -44,8 +35,6 @@ type configStruct struct {
 }
 
 type configSecrets struct {
-	RedditAppName       string `json:"RedditName"`
-	RedditAppSecret     string `json:"RedditSecret"`
 	DiscordAppSecret    string `json:"DiscordSecret"`
 	DiscordBotsSecret   string `json:"DiscordBotsSecret"`
 	DiscordBoatsSecret  string `json:"DiscordBoatsSecret"`
@@ -69,11 +58,7 @@ func ReadConfig() error {
 		panic(err)
 	}
 
-	BotID = config.BotID
-	ServerID = config.ServerID
-	BotLogID = config.BotLogID
 	OwnerID = config.OwnerID
-	Website = config.Website
 	PlayingMsg = config.PlayingMsg
 
 	// Takes the bot token from the environment variable. Reason is to avoid pushing token to github
@@ -89,11 +74,8 @@ func ReadConfigSecrets() error {
 	fmt.Println("Reading from configsecrets file...")
 
 	file, err := ioutil.ReadFile("configsecrets.json")
-	if err != nil && config.Website == "" {
-		fmt.Println("configsecrets doesn't exist and website is disabled. Moving on. . .")
-		return nil
-	} else if err != nil {
-		panic(err)
+	if err != nil {
+		fmt.Println("configsecrets doesn't exist. Moving on. . .")
 	}
 
 	err = json.Unmarshal(file, &configsecrets)
@@ -101,9 +83,6 @@ func ReadConfigSecrets() error {
 		panic(err)
 	}
 
-	RedditAppName = configsecrets.RedditAppName
-	RedditAppSecret = configsecrets.RedditAppSecret
-	DiscordAppSecret = configsecrets.DiscordAppSecret
 	DiscordBotsSecret = configsecrets.DiscordBotsSecret
 	DiscordBoatsSecret = configsecrets.DiscordBoatsSecret
 	BotsOnDiscordSecret = configsecrets.BotsOnDiscordSecret
@@ -117,11 +96,7 @@ func ReadConfigSecrets() error {
 func WriteConfig() error {
 
 	// Updates all values
-	config.BotID = BotID
-	config.ServerID = ServerID
-	config.BotLogID = BotLogID
 	config.OwnerID = OwnerID
-	config.Website = Website
 	config.PlayingMsg = PlayingMsg
 
 	// Turns the config struct to bytes

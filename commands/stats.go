@@ -13,7 +13,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/functionality"
 )
 
@@ -217,17 +216,12 @@ func showStats(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	userChangeStat := db.GetGuildUserChangeStat(m.GuildID, t.Format(common.ShortDateFormat))
-	verifiedStats := db.GetGuildVerifiedStats(m.GuildID)
 
 	if optInExist {
 		message += fmt.Sprintf("\nOpt-in Total: %d\n\n------\n", optinChannelTotal)
 	}
 	message += fmt.Sprintf("\nGrand Total Messages: %d\n\n", optinChannelTotal+normalChannelTotal)
 	message += fmt.Sprintf("\nDaily User Change: %d\n\n", userChangeStat)
-	if len(verifiedStats) != 0 && config.Website != "" {
-		verifiedStat := db.GetGuildVerifiedStat(m.GuildID, t.Format(common.ShortDateFormat))
-		message += fmt.Sprintf("\nDaily Verified Change: %d\n\n", verifiedStat)
-	}
 
 	// Final message split for last block + formatting
 	msgs, message = splitStatMessages(msgs, message)

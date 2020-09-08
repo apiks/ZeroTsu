@@ -12,8 +12,6 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/bwmarrin/discordgo"
-
-	"github.com/r-anime/ZeroTsu/config"
 )
 
 // Shows todays airing anime times, fetched from AnimeSchedule.net
@@ -65,10 +63,7 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 		printMessage = getDaySchedule(day)
 	}
 
-	// Add AnimeSchedule.net if public ZeroTsu
-	if config.ServerID != "267799767843602452" {
-		printMessage += "\n\n**Full Week:** <https://AnimeSchedule.net>"
-	}
+	printMessage += "\n\n**Full Week:** <https://AnimeSchedule.net>"
 
 	// Print the daily schedule
 	_, _ = s.ChannelMessageSend(m.ChannelID, printMessage)

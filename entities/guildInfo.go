@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
-	"github.com/r-anime/ZeroTsu/config"
 	"io/ioutil"
 	"log"
 	"sync"
@@ -32,7 +31,6 @@ type GuildInfo struct {
 	EmojiStats      map[string]Emoji
 	ChannelStats    map[string]Channel
 	UserChangeStats map[string]int
-	VerifiedStats   map[string]int
 	VoteInfoMap     map[string]*VoteInfo
 	TempChaMap      map[string]*TempChaInfo
 	ReactJoinMap    map[string]*ReactJoin
@@ -488,39 +486,6 @@ func (g *GuildInfo) GetUserChangeStats() map[string]int {
 	return g.UserChangeStats
 }
 
-func (g *GuildInfo) AssignToVerifiedStats(key string, amount int) {
-	g.Lock()
-	g.VerifiedStats[key] = amount
-	g.Unlock()
-}
-
-func (g *GuildInfo) AddToVerifiedStats(key string, amount int) {
-	g.Lock()
-	g.VerifiedStats[key] += amount
-	g.Unlock()
-}
-
-func (g *GuildInfo) RemoveFromVerifiedStats(key string) {
-	g.Lock()
-	delete(g.VerifiedStats, key)
-	g.Unlock()
-}
-
-func (g *GuildInfo) SetVerifiedStats(verifiedStats map[string]int) {
-	g.Lock()
-	g.VerifiedStats = verifiedStats
-	g.Unlock()
-}
-
-func (g *GuildInfo) GetVerifiedStats() map[string]int {
-	g.RLock()
-	defer g.RUnlock()
-	if g == nil {
-		return nil
-	}
-	return g.VerifiedStats
-}
-
 func (g *GuildInfo) SetVoteInfoMap(voteInfo map[string]*VoteInfo) {
 	g.Lock()
 	g.VoteInfoMap = voteInfo
@@ -671,10 +636,6 @@ func (g *GuildInfo) Load(file, guildID string) error {
 		return json.Unmarshal(fileData, &g.ChannelStats)
 	case "userChangeStats.json":
 		return json.Unmarshal(fileData, &g.UserChangeStats)
-	case "verifiedStats.json":
-		if config.Website != "" {
-			return json.Unmarshal(fileData, &g.VerifiedStats)
-		}
 	case "voteInfo.json":
 		return json.Unmarshal(fileData, &g.VoteInfoMap)
 	case "tempCha.json":

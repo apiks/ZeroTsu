@@ -3,20 +3,17 @@ package main
 import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
-	"github.com/gorilla/mux"
 	"github.com/r-anime/ZeroTsu/commands"
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/entities"
 	"github.com/r-anime/ZeroTsu/events"
-	"github.com/r-anime/ZeroTsu/web"
 	"log"
-	"net/http"
 	"time"
 	//_ "net/http/pprof"
 )
 
-// Initializes and starts Bot and website
+// Initializes and starts Bot
 func main() {
 	//defer profile.Start(profile.MemProfile, profile.ProfilePath(".")).Stop()
 
@@ -42,24 +39,6 @@ func main() {
 	//commands.CleanGuild()
 
 	Start()
-
-	// Web Server
-	if config.Website != "" {
-		r := mux.NewRouter()
-		staticFileHandler := http.StripPrefix("/web/assets", http.FileServer(http.Dir("./web/assets")))
-		r.PathPrefix("/web/assets/").Handler(staticFileHandler)
-		r.HandleFunc("/", web.HomepageHandler)
-		r.HandleFunc("/verification", web.VerificationHandler)
-		r.HandleFunc("/verification/", web.VerificationHandler)
-		r.HandleFunc("/channelstats", web.ChannelStatsPageHandler)
-		r.HandleFunc("/channelstats/", web.ChannelStatsPageHandler)
-		r.HandleFunc("/userchangestats", web.UserChangeStatsPageHandler)
-		r.HandleFunc("/userchangestats/", web.UserChangeStatsPageHandler)
-		err := http.ListenAndServe(":8080", r)
-		if err != nil {
-			panic(err)
-		}
-	}
 
 	//go func() {
 	//	log.Println(http.ListenAndServe(":6969", nil))
@@ -113,12 +92,6 @@ func Start() {
 	goBot.AddHandler(events.OnMemberUpdate)
 	//goBot.AddHandler(events.OnPresenceUpdate)
 
-	// Verified Role and Cookie Map Expiry Deletion Handler
-	if config.Website != "" {
-		goBot.AddHandler(web.VerifiedRoleAdd)
-		goBot.AddHandler(web.VerifiedAlready)
-	}
-
 	// Emoji ChannelStats
 	goBot.AddHandler(commands.OnMessageEmoji)
 	goBot.AddHandler(commands.OnMessageEmojiReact)
@@ -155,13 +128,8 @@ func Start() {
 	goBot.AddHandler(commands.RaffleReactJoin)
 	goBot.AddHandler(commands.RaffleReactLeave)
 
-	// Auto spambot ban for r/anime
-	// Logs each user that joins the server
 	// Mute command
 	goBot.AddHandler(events.GuildJoin)
-	if config.ServerID == "267799767843602452" {
-		//goBot.AddHandler(functionality.SpambotJoin)
-	}
 
 	// Anime subscription handler
 	goBot.AddHandler(commands.AnimeSubsTimer)

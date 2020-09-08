@@ -24,6 +24,7 @@ func HasElevatedPermissions(s *discordgo.Session, userID string, guildID string)
 			return false
 		}
 	}
+	mem.GuildID = guildID
 
 	if isAdmin, _ := MemberIsAdmin(s, guildID, mem, discordgo.PermissionAdministrator); isAdmin {
 		return true
