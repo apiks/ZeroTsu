@@ -213,10 +213,13 @@ func muteCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Pulls the guild name
-	guild, err := s.Guild(m.GuildID)
+	guild, err := s.State.Guild(m.GuildID)
 	if err != nil {
-		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
+		guild, err = s.Guild(m.GuildID)
+		if err != nil {
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			return
+		}
 	}
 
 	// Assigns success mute print string for user

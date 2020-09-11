@@ -60,7 +60,6 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 			}
 			return
 		}
-		return
 	}
 
 	// Checks if user has a privileged role
@@ -113,10 +112,13 @@ func kickCommand(s *discordgo.Session, m *discordgo.Message) {
 	db.SetGuildMember(m.GuildID, mem)
 
 	// Fetches the guild for the Name
-	guild, err := s.Guild(m.GuildID)
+	guild, err := s.State.Guild(m.GuildID)
 	if err != nil {
-		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
+		guild, err = s.Guild(m.GuildID)
+		if err != nil {
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			return
+		}
 	}
 
 	// Sends message to user DMs if possible

@@ -50,10 +50,12 @@ func main() {
 
 // Starts BOT and its Handlers
 func Start() {
+	log.Println("Starting BOT...")
 	goBot, err := discordgo.New(fmt.Sprintf("Bot %s", config.Token))
 	if err != nil {
-		log.Println(err)
+		log.Fatal(err)
 	}
+	goBot.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAll)
 
 	// Guild join and leave listener
 	goBot.AddHandler(events.GuildCreate)

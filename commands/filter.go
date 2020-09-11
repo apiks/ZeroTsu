@@ -48,7 +48,12 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	)
 
 	// Checks if message should be filtered
-	badWordExists, badWordsSlice = isFiltered(s, m.Message)
+	badWordExists, badWordsSlice, err := isFiltered(s, m.Message)
+	if err != nil {
+		guildSettings := db.GetGuildSettings(m.GuildID)
+		common.LogError(s, guildSettings.BotLog, err)
+		return
+	}
 
 	// Exit func if no filtered phrase found
 	if !badWordExists {
@@ -57,7 +62,7 @@ func FilterHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Deletes the message after making a copy of it
 	mess := m
-	err := s.ChannelMessageDelete(m.ChannelID, m.ID)
+	err = s.ChannelMessageDelete(m.ChannelID, m.ID)
 	if err != nil {
 		guildSettings := db.GetGuildSettings(m.GuildID)
 		common.LogError(s, guildSettings.BotLog, err)
@@ -121,7 +126,12 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	)
 
 	// Checks if the message should be filtered
-	badWordExists, badWordsSlice = isFiltered(s, m.Message)
+	badWordExists, badWordsSlice, err := isFiltered(s, m.Message)
+	if err != nil {
+		guildSettings := db.GetGuildSettings(m.GuildID)
+		common.LogError(s, guildSettings.BotLog, err)
+		return
+	}
 
 	// Exit func if no filtered phrase found
 	if !badWordExists {
@@ -129,7 +139,7 @@ func FilterEditHandler(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	}
 
 	// Deletes the message first
-	err := s.ChannelMessageDelete(m.ChannelID, m.ID)
+	err = s.ChannelMessageDelete(m.ChannelID, m.ID)
 	if err != nil {
 		return
 	}
@@ -199,7 +209,7 @@ func FilterReactsHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 }
 
 // Checks if the message is supposed to be filtered
-func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
+func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string, error) {
 	var (
 		mLowercase string
 		mentions   string
@@ -216,7 +226,7 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 	)
 
 	if m.GuildID == "" {
-		return false, nil
+		return false, nil, nil
 	}
 
 	mLowercase = strings.ToLower(m.Content)
@@ -225,7 +235,10 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 	if strings.Contains(mLowercase, "<@") {
 
 		// Checks for both <@! and <@ mentions
-		mentionRegex := regexp.MustCompile(`(?m)<@!?\d+>`)
+		mentionRegex, err := regexp.Compile(`(?m)<@!?\d+>`)
+		if err != nil {
+			return false, nil, err
+		}
 		mentionCheck = mentionRegex.FindAllString(mLowercase, -1)
 		if mentionCheck != nil {
 			var wg sync.WaitGroup
@@ -292,7 +305,7 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 
 	// If a bad phrase exists return true to filter it
 	if len(badPhraseSlice) != 0 {
-		return true, badPhraseSlice
+		return true, badPhraseSlice, nil
 	}
 
 	// Iterates through all of the message requirements to see if the message follows a set requirement
@@ -321,15 +334,15 @@ func isFiltered(s *discordgo.Session, m *discordgo.Message) (bool, []string) {
 
 		if requirement.GetRequirementType() == "soft" {
 			if requirement.GetLastUserID() != m.Author.ID {
-				return true, nil
+				return true, nil, nil
 			}
 		}
 		if requirement.GetRequirementType() == "hard" {
-			return true, nil
+			return true, nil, nil
 		}
 	}
 
-	return false, nil
+	return false, nil, nil
 }
 
 // Checks if the React is supposed to be filtered

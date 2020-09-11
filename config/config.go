@@ -35,7 +35,6 @@ type configStruct struct {
 }
 
 type configSecrets struct {
-	DiscordAppSecret    string `json:"DiscordSecret"`
 	DiscordBotsSecret   string `json:"DiscordBotsSecret"`
 	DiscordBoatsSecret  string `json:"DiscordBoatsSecret"`
 	BotsOnDiscordSecret string `json:"BotsOnDiscordSecret"`

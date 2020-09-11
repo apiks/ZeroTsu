@@ -957,9 +957,12 @@ func InitDB(s *discordgo.Session, guildID string) {
 		// Send message to support server mod log that a server has been created on the public ZeroTsu
 		if s.State.User.ID == "614495694769618944" {
 			go func() {
-				guild, err := s.Guild(guildID)
-				if err == nil {
-					_, _ = s.ChannelMessageSend("619899424428130315", fmt.Sprintf("A DB entry has been created for guild: %s", guild.Name))
+				guild, err := s.State.Guild(guildID)
+				if err != nil {
+					guild, err = s.Guild(guildID)
+					if err != nil {
+						_, _ = s.ChannelMessageSend("619899424428130315", fmt.Sprintf("A DB entry has been created for guild: %s", guild.Name))
+					}
 				}
 			}()
 		}

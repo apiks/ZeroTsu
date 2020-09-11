@@ -40,10 +40,13 @@ func OnMessageEmoji(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guildEmojiStats := guildEmojiStatsReference
 
 	// Pulls the entire guild structure so we can check guild emojis from it later
-	guild, err := s.Guild(m.GuildID)
+	guild, err := s.State.Guild(m.GuildID)
 	if err != nil {
-		common.LogError(s, guildSettings.BotLog, err)
-		return
+		guild, err = s.Guild(m.GuildID)
+		if err != nil {
+			common.LogError(s, guildSettings.BotLog, err)
+			return
+		}
 	}
 
 	// If a message contains a server emoji it tracks it
@@ -104,10 +107,13 @@ func OnMessageEmojiReact(s *discordgo.Session, r *discordgo.MessageReactionAdd) 
 	guildEmojiStats := guildEmojiStatsReference
 
 	// Pulls the entire guild structure so we can check guild emojis from it later
-	guild, err := s.Guild(r.GuildID)
+	guild, err := s.State.Guild(r.GuildID)
 	if err != nil {
-		common.LogError(s, guildSettings.BotLog, err)
-		return
+		guild, err = s.Guild(r.GuildID)
+		if err != nil {
+			common.LogError(s, guildSettings.BotLog, err)
+			return
+		}
 	}
 
 	// If a message contains a server emoji it tracks it
@@ -164,10 +170,13 @@ func OnMessageEmojiUnreact(s *discordgo.Session, r *discordgo.MessageReactionRem
 	guildEmojiStats := guildEmojiStatsReference
 
 	// Pulls the entire guild structure so we can check guild emojis from it later
-	guild, err := s.Guild(r.GuildID)
+	guild, err := s.State.Guild(r.GuildID)
 	if err != nil {
-		common.LogError(s, guildSettings.BotLog, err)
-		return
+		guild, err = s.Guild(r.GuildID)
+		if err != nil {
+			common.LogError(s, guildSettings.BotLog, err)
+			return
+		}
 	}
 
 	// If a message contains a server emoji it tracks it
@@ -220,10 +229,13 @@ func showEmojiStats(s *discordgo.Session, m *discordgo.Message) {
 	}
 	sort.Sort(byEmojiFrequency(emojis))
 
-	guild, err := s.Guild(m.GuildID)
+	guild, err := s.State.Guild(m.GuildID)
 	if err != nil {
-		common.LogError(s, guildSettings.BotLog, err)
-		return
+		guild, err = s.Guild(m.GuildID)
+		if err != nil {
+			common.LogError(s, guildSettings.BotLog, err)
+			return
+		}
 	}
 
 	// Add every emoji and its stats to message and format it

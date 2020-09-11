@@ -45,10 +45,13 @@ func rolecallCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	guild, err := s.Guild(m.GuildID)
+	guild, err := s.State.Guild(m.GuildID)
 	if err != nil {
-		common.LogError(s, guildSettings.BotLog, err)
-		return
+		guild, err = s.Guild(m.GuildID)
+		if err != nil {
+			common.LogError(s, guildSettings.BotLog, err)
+			return
+		}
 	}
 	for _, mem := range guild.Members {
 		for _, memRole := range mem.Roles {

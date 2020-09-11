@@ -28,7 +28,12 @@ func remindMeCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if message contains filtered words, which would not be allowed as a remind
-	badWordExists, _ := isFiltered(s, m)
+	badWordExists, _, err := isFiltered(s, m)
+	if err != nil {
+		guildSettings := db.GetGuildSettings(m.GuildID)
+		common.LogError(s, guildSettings.BotLog, err)
+		return
+	}
 	if badWordExists {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Usage of server filtered words in the remindMe command is not allowed. Please use remindMe in another server I am in or DMs.")
 		if err != nil {

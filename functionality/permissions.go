@@ -30,9 +30,12 @@ func HasElevatedPermissions(s *discordgo.Session, userID string, guildID string)
 		return true
 	}
 
-	guild, err := s.Guild(guildID)
+	guild, err := s.State.Guild(guildID)
 	if err != nil {
-		return false
+		guild, err = s.Guild(guildID)
+		if err != nil {
+			return false
+		}
 	}
 	if userID == guild.OwnerID {
 		return true
@@ -43,9 +46,12 @@ func HasElevatedPermissions(s *discordgo.Session, userID string, guildID string)
 
 // Checks if member has admin permissions
 func MemberIsAdmin(s *discordgo.Session, guildID string, mem *discordgo.Member, permission int) (bool, error) {
-	guild, err := s.Guild(guildID)
+	guild, err := s.State.Guild(guildID)
 	if err != nil {
-		return false, nil
+		guild, err = s.Guild(guildID)
+		if err != nil {
+			return false, nil
+		}
 	}
 	if mem.User.ID == guild.OwnerID {
 		return true, nil

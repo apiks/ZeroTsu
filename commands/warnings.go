@@ -128,10 +128,13 @@ func issueWarningCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Pulls the guild name early on purpose
-	guild, err := s.Guild(m.GuildID)
+	guild, err := s.State.Guild(m.GuildID)
 	if err != nil {
-		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
+		guild, err = s.Guild(m.GuildID)
+		if err != nil {
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+			return
+		}
 	}
 
 	userID, err := common.GetUserID(m, cmdStrs)

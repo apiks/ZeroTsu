@@ -87,8 +87,11 @@ func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 			// Updates optin role stat
 			guildChannelStats = db.GetGuildChannelStats(guildID)
 			if roles != nil {
-				guild, err = s.Guild(guildID)
-				if err == nil {
+				guild, err := s.State.Guild(guildID)
+				if err != nil {
+					guild, _ = s.Guild(guildID)
+				}
+				if guild != nil && err == nil {
 					for _, stat = range guildChannelStats {
 						stat.Lock()
 						if stat.GetRoleCountMap() == nil {
@@ -353,9 +356,12 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 				}
 				if err != nil && guildID != "" {
 					// Checks if the user is in the server and then pings him if true
-					_, err := s.GuildMember(guildID, userID)
-					if err == nil {
-						_, _ = s.ChannelMessageSend(cmdChannel, msgChannel)
+					_, err := s.State.Member(guildID, userID)
+					if err != nil {
+						_, err := s.GuildMember(guildID, userID)
+						if err == nil {
+							_, _ = s.ChannelMessageSend(cmdChannel, msgChannel)
+						}
 					}
 				}
 			}(userID, msgDM, msgChannel, cmdChannel, guildID)
@@ -411,228 +417,111 @@ func feedHandler(s *discordgo.Session, guildIds []string) {
 		guildPostsMap[guildID] = feedsToPost
 	}
 
-	t := time.Now()
-	var wg sync.WaitGroup
-	wg.Add(len(guildIds))
 	for _, guildID := range guildIds {
-		go func(guildID string) {
-			defer wg.Done()
-			if _, ok := guildPostsMap[guildID]; !ok || guildPostsMap[guildID] == nil || len(guildPostsMap[guildID]) == 0 {
-				return
-			}
-			itemsPosted := 0
-			for feed, items := range guildPostsMap[guildID] {
-				var pinnedItems = make(map[*gofeed.Item]bool)
+		if _, ok := guildPostsMap[guildID]; !ok || guildPostsMap[guildID] == nil || len(guildPostsMap[guildID]) == 0 {
+			return
+		}
+		itemsPosted := 0
+		t := time.Now()
+		for feed, items := range guildPostsMap[guildID] {
+			var pinnedItems = make(map[*gofeed.Item]bool)
 
-				for _, item := range items {
-					var exists bool
+			for _, item := range items {
+				var exists bool
 
-					// Stops the iteration if the feed doesn't exist anymore
-					guildFeeds := db.GetGuildFeeds(guildID)
-					for _, guildFeed := range guildFeeds {
-						if guildFeed.GetSubreddit() == feed.GetSubreddit() &&
-							guildFeed.GetChannelID() == feed.GetChannelID() {
-							exists = true
-							break
-						}
-					}
-					guildFeeds = nil
-					if !exists {
+				// Stops the iteration if the feed doesn't exist anymore
+				guildFeeds := db.GetGuildFeeds(guildID)
+				for _, guildFeed := range guildFeeds {
+					if guildFeed.GetSubreddit() == feed.GetSubreddit() &&
+						guildFeed.GetChannelID() == feed.GetChannelID() {
+						exists = true
 						break
 					}
-					exists = false
-
-					// Checks if the item has already been posted
-					feedChecks := db.GetGuildFeedChecks(guildID)
-					for _, feedCheck := range feedChecks {
-						if feedCheck.GetGUID() == item.GUID &&
-							feedCheck.GetFeed().GetChannelID() == feed.GetChannelID() {
-							exists = true
-							break
-						}
-					}
-					feedChecks = nil
-					if exists {
-						continue
-					}
-					exists = false
-
-					// Wait three seconds so it doesn't hit the rate limit easily
-					time.Sleep(time.Second * 3)
-
-					// Sends the feed item
-					message, err := embeds.Feed(s, &feed, item)
-					if err != nil {
-						continue
-					}
-
-					// Adds that the feed has been posted
-					db.AddGuildFeedCheck(guildID, entities.NewFeedCheck(feed, t, item.GUID))
-					itemsPosted++
-
-					// Pins/unpins the feed items if necessary
-					if !feed.GetPin() {
-						continue
-					}
-					if _, ok := pinnedItems[item]; ok {
-						continue
-					}
-
-					pins, err := s.ChannelMessagesPinned(message.ChannelID)
-					if err != nil {
-						continue
-					}
-
-					// Unpins if necessary
-					for _, pin := range pins {
-
-						// Checks for whether the pin is one that should be unpinned
-						if pin.Author.ID != s.State.User.ID {
-							continue
-						}
-						if len(pin.Embeds) == 0 {
-							continue
-						}
-						if pin.Embeds[0].Author == nil {
-							continue
-						}
-						if !strings.HasPrefix(strings.ToLower(pin.Embeds[0].Author.URL), fmt.Sprintf("https://www.reddit.com/r/%s/comments/", feed.GetSubreddit())) {
-							continue
-						}
-
-						_ = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
-					}
-					pins = nil
-
-					// Pins
-					_ = s.ChannelMessagePin(message.ChannelID, message.ID)
-					message = nil
-					pinnedItems[item] = true
-					item = nil
 				}
-				feed = entities.Feed{}
-				items = nil
-				pinnedItems = nil
-
-				if itemsPosted >= 50 {
+				guildFeeds = nil
+				if !exists {
 					break
 				}
-			}
-		}(guildID)
-	}
-	wg.Wait()
-	guildPostsMap = nil
+				exists = false
 
-	//// Handles feeds
-	//var guildPostsMap = make(map[string]map[entities.Feed][]*gofeed.Item)
-	//for _, guildID := range guildIds {
-	//	feedsToPost, err := guildFeedsHandler(guildID)
-	//	if err != nil || feedsToPost == nil || len(feedsToPost) == 0 {
-	//		continue
-	//	}
-	//	guildPostsMap[guildID] = feedsToPost
-	//}
-	//
-	//t := time.Now()
-	//var wg sync.WaitGroup
-	//wg.Add(len(guildIds))
-	//for _, guildID := range guildIds {
-	//	go func(guildID string) {
-	//		defer wg.Done()
-	//		if _, ok := guildPostsMap[guildID]; !ok || guildPostsMap[guildID] == nil || len(guildPostsMap[guildID]) == 0 {
-	//			return
-	//		}
-	//		feedMap := guildPostsMap[guildID]
-	//		for feed, items := range feedMap {
-	//			var pinnedItems = make(map[*gofeed.Item]bool)
-	//
-	//			for _, item := range items {
-	//				var ok bool
-	//
-	//				// Wait five seconds so it doesn't hit the rate limit easily
-	//				time.Sleep(time.Second * 5)
-	//
-	//				// Stops the iteration if the feed doesn't exist anymore
-	//				guildFeeds := db.GetGuildFeeds(guildID)
-	//				for _, guildFeed := range guildFeeds {
-	//					if guildFeed.GetSubreddit() == feed.GetSubreddit() &&
-	//						guildFeed.GetChannelID() == feed.GetChannelID() {
-	//						ok = true
-	//						break
-	//					}
-	//				}
-	//				guildFeeds = nil
-	//				if !ok {
-	//					break
-	//				}
-	//				ok = false
-	//
-	//				// Checks if the item has already been posted
-	//				feedChecks := db.GetGuildFeedChecks(guildID)
-	//				for _, feedCheck := range feedChecks {
-	//					if feedCheck.GetGUID() == item.GUID &&
-	//						feedCheck.GetFeed().GetChannelID() == feed.GetChannelID {
-	//						ok = true
-	//						break
-	//					}
-	//				}
-	//				feedChecks = nil
-	//				if ok {
-	//					continue
-	//				}
-	//
-	//				// Sends the feed item
-	//				message, err := embeds.Feed(s, &feed, item)
-	//				if err != nil {
-	//					continue
-	//				}
-	//
-	//				// Adds that the feed has been posted
-	//				db.AddGuildFeedCheck(guildID, entities.NewFeedCheck(feed, t, item.GUID))
-	//
-	//				// Pins/unpins the feed items if necessary
-	//				if !feed.GetPin() {
-	//					continue
-	//				}
-	//				if _, ok := pinnedItems[item]; ok {
-	//					continue
-	//				}
-	//
-	//				pins, err := s.ChannelMessagesPinned(message.ChannelID)
-	//				if err != nil {
-	//					continue
-	//				}
-	//
-	//				// Unpins if necessary
-	//				for _, pin := range pins {
-	//
-	//					// Checks for whether the pin is one that should be unpinned
-	//					if pin.Author.ID != s.State.User.ID {
-	//						continue
-	//					}
-	//					if len(pin.Embeds) == 0 {
-	//						continue
-	//					}
-	//					if pin.Embeds[0].Author == nil {
-	//						continue
-	//					}
-	//					if !strings.HasPrefix(strings.ToLower(pin.Embeds[0].Author.URL), fmt.Sprintf("https://www.reddit.com/r/%s/comments/", feed.GetSubreddit())) {
-	//						continue
-	//					}
-	//
-	//					_ = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
-	//				}
-	//
-	//				// Pins
-	//				_ = s.ChannelMessagePin(message.ChannelID, message.ID)
-	//				pinnedItems[item] = true
-	//			}
-	//			pinnedItems = nil
-	//		}
-	//		feedMap = nil
-	//	}(guildID)
-	//}
-	//wg.Wait()
+				// Checks if the item has already been posted
+				feedChecks := db.GetGuildFeedChecks(guildID)
+				for _, feedCheck := range feedChecks {
+					if feedCheck.GetGUID() == item.GUID &&
+						feedCheck.GetFeed().GetChannelID() == feed.GetChannelID() {
+						exists = true
+						break
+					}
+				}
+				feedChecks = nil
+				if exists {
+					continue
+				}
+				exists = false
+
+				// Wait some seconds so it doesn't hit the rate limit easily
+				time.Sleep(time.Second * 4)
+
+				// Sends the feed item
+				message, err := embeds.Feed(s, &feed, item)
+				if err != nil {
+					continue
+				}
+
+				// Adds that the feed has been posted
+				db.AddGuildFeedCheck(guildID, entities.NewFeedCheck(feed, t, item.GUID))
+				itemsPosted++
+
+				// Pins/unpins the feed items if necessary
+				if !feed.GetPin() {
+					continue
+				}
+				if _, ok := pinnedItems[item]; ok {
+					continue
+				}
+
+				pins, err := s.ChannelMessagesPinned(message.ChannelID)
+				if err != nil {
+					continue
+				}
+
+				// Unpins if necessary
+				for _, pin := range pins {
+
+					// Checks for whether the pin is one that should be unpinned
+					if pin.Author.ID != s.State.User.ID {
+						continue
+					}
+					if len(pin.Embeds) == 0 {
+						continue
+					}
+					if pin.Embeds[0].Author == nil {
+						continue
+					}
+					if !strings.HasPrefix(strings.ToLower(pin.Embeds[0].Author.URL), fmt.Sprintf("https://www.reddit.com/r/%s/comments/", feed.GetSubreddit())) {
+						continue
+					}
+
+					_ = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
+				}
+				pins = nil
+
+				// Pins
+				_ = s.ChannelMessagePin(message.ChannelID, message.ID)
+				message = nil
+				pinnedItems[item] = true
+				item = nil
+			}
+			feed = entities.Feed{}
+			items = nil
+			pinnedItems = nil
+
+			if itemsPosted >= 50 {
+				break
+			}
+		}
+	}
+	guildPostsMap = nil
 
 	entities.Mutex.Lock()
 	redditFeedBlock = false
