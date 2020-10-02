@@ -185,6 +185,11 @@ func processEachShow(_ int, element *goquery.Selection) {
 	imageUrl, exists := element.Find(".show-poster").Attr("data-src")
 	if exists == true {
 		show.SetImageUrl(imageUrl)
+	} else {
+		imageUrl, exists = element.Find(".show-poster").Attr("src")
+		if exists {
+			show.SetImageUrl(imageUrl)
+		}
 	}
 
 	entities.AnimeSchedule[day] = append(entities.AnimeSchedule[day], &show)
@@ -284,8 +289,8 @@ func DailySchedule(s *discordgo.Session, guildID string) {
 	scheduleCommand(s, &message)
 }
 
-func ScheduleTimer(s *discordgo.Session, e *discordgo.Ready) {
-	for range time.NewTicker(20 * time.Minute).C {
+func ScheduleTimer(_ *discordgo.Session, _ *discordgo.Ready) {
+	for range time.NewTicker(30 * time.Minute).C {
 		// Update anime schedule
 		UpdateAnimeSchedule()
 	}

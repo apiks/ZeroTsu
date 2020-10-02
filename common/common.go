@@ -24,7 +24,7 @@ import (
 // File for misc. functions, commands and variables.
 
 const (
-	UserAgent       = "script:github.com/r-anime/zerotsu:v1.0.0 (by /u/thechosenapiks, /u/geo1088)"
+	UserAgent       = "script:github.com/apiks/zerotsu:v1.1.0 (by /u/thechosenapiks)"
 	ShortDateFormat = "2006-01-02"
 	LongDateFormat  = "2006-01-02 15:04:05.999999999 -0700 MST"
 )

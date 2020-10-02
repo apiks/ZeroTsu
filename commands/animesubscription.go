@@ -442,76 +442,10 @@ func animeSubsHandler(s *discordgo.Session) {
 }
 
 func AnimeSubsTimer(s *discordgo.Session, e *discordgo.Ready) {
-	for range time.NewTicker(1 * time.Minute).C {
+	for range time.NewTicker(2 * time.Minute).C {
 		// Anime Episodes subscription
 		animeSubsHandler(s)
 	}
-}
-
-// Set up all notified bools for anime subscriptions
-func resetSubNotified() {
-	// Saves program from panic and continues running normally without executing the command if it happens
-	defer func() {
-		if rec := recover(); rec != nil {
-			log.Println(rec)
-			log.Println("Recovery in resetSubNotified")
-		}
-	}()
-
-	var todayShows []*entities.ShowAirTime
-
-	now := time.Now()
-
-	entities.Mutex.RLock()
-	if int(now.Weekday()) == int(Today.Weekday()) {
-		return
-	}
-
-	animeSchedule := entities.AnimeSchedule
-	animeSubs := entities.SharedInfo.GetAnimeSubsMap()
-	entities.Mutex.RUnlock()
-
-	// Fetches Today's shows
-	for dayInt, scheduleShows := range animeSchedule {
-		// Checks if the target schedule day is Today or not
-		if int(now.UTC().Weekday()) != dayInt {
-			continue
-		}
-
-		// Saves Today's shows
-		todayShows = scheduleShows
-		break
-	}
-
-	// Iterates over all users and their shows and resets notified status
-	for userID, subscriptions := range animeSubs {
-		if subscriptions == nil {
-			continue
-		}
-
-		for subKey, userShow := range subscriptions {
-			if userShow == nil {
-				continue
-			}
-
-			for _, scheduleShow := range todayShows {
-				if scheduleShow == nil {
-					continue
-				}
-
-				if strings.ToLower(scheduleShow.GetName()) == strings.ToLower(userShow.GetShow()) {
-					entities.Mutex.Lock()
-					entities.SharedInfo.GetAnimeSubsMap()[userID][subKey].SetNotified(false)
-					entities.Mutex.Unlock()
-				}
-			}
-		}
-	}
-
-	// Write to shared AnimeSubs DB
-	entities.Mutex.Lock()
-	_ = entities.AnimeSubsWrite(entities.SharedInfo.GetAnimeSubsMap())
-	entities.Mutex.Unlock()
 }
 
 // Resets anime sub notifications status on bot start

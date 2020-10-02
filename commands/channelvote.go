@@ -319,7 +319,7 @@ func ChannelVoteTimer(s *discordgo.Session, e *discordgo.Ready) {
 		}
 	}()
 
-	for range time.NewTicker(30 * time.Second).C {
+	for range time.NewTicker(1 * time.Minute).C {
 		for _, guild = range e.Guilds {
 			entities.HandleNewGuild(guild.ID)
 
