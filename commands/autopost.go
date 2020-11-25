@@ -110,7 +110,7 @@ func setDailyScheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Parse and save the target channel
-	if commandStrings[1] == "disable" {
+	if commandStrings[1] == "disable" || commandStrings[1] == "0" || commandStrings[1] == "false" {
 		dailySchedule = entities.Cha{}
 	} else {
 		channelID, channelName := common.ChannelParser(s, commandStrings[1], m.GuildID)
@@ -121,7 +121,7 @@ func setDailyScheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 	db.SetGuildAutopost(m.GuildID, "dailyschedule", dailySchedule)
 
 	if dailySchedule == (entities.Cha{}) {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Success! Autopost Daily Anime Schedule has been disabled!")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Success! Autopost Daily Anime Schedule has been disabled! If this was not intentional please verify the channel ID.")
 		if err != nil {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		}
@@ -173,7 +173,7 @@ func setNewEpisodesCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Parse and save the target channel
-	if commandStrings[1] == "disable" {
+	if commandStrings[1] == "disable" || commandStrings[1] == "0" || commandStrings[1] == "false" {
 		newEpisodes = entities.Cha{}
 	} else {
 		channelID, channelName := common.ChannelParser(s, commandStrings[1], m.GuildID)
@@ -184,7 +184,7 @@ func setNewEpisodesCommand(s *discordgo.Session, m *discordgo.Message) {
 	db.SetGuildAutopost(m.GuildID, "newepisodes", newEpisodes)
 
 	if newEpisodes == (entities.Cha{}) {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Success! Autopost for new airing anime episodes has been disabled!")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Success! Autopost for new airing anime episodes has been disabled! If this was not intentional please verify the channel ID.")
 		if err != nil {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
