@@ -7,6 +7,7 @@ import (
 	"github.com/r-anime/ZeroTsu/embeds"
 	"github.com/r-anime/ZeroTsu/entities"
 	"github.com/r-anime/ZeroTsu/functionality"
+	"log"
 	"math/rand"
 	"net/http"
 	"strconv"
