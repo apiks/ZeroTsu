@@ -46,8 +46,9 @@ func Start() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	goBot.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAll - discordgo.IntentsGuildPresences)
-	goBot.StateEnabled = false
+	goBot.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAll)
+	//goBot.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAll - discordgo.IntentsGuildPresences)
+	//goBot.StateEnabled = false
 
 	// Guild join and leave listener
 	goBot.AddHandler(events.GuildCreate)
@@ -57,20 +58,20 @@ func Start() {
 	goBot.AddHandler(events.StatusReady)
 	goBot.AddHandler(events.CommonEvents)
 
-	//// Listens for a role deletion
-	//goBot.AddHandler(common.ListenForDeletedRoleHandler)
+	// Listens for a role deletion
+	goBot.AddHandler(common.ListenForDeletedRoleHandler)
 
-	//// Phrase Filter
-	//goBot.AddHandler(commands.FilterHandler)
-	//
-	//// Message Edit Filter
-	//goBot.AddHandler(commands.FilterEditHandler)
-	//
-	//// React Filter
-	//goBot.AddHandler(commands.FilterReactsHandler)
+	// Phrase Filter
+	goBot.AddHandler(commands.FilterHandler)
 
-	//// Deletes non-whitelisted attachments
-	//goBot.AddHandler(commands.MessageAttachmentsHandler)
+	// Message Edit Filter
+	goBot.AddHandler(commands.FilterEditHandler)
+
+	// React Filter
+	goBot.AddHandler(commands.FilterReactsHandler)
+
+	// Deletes non-whitelisted attachments
+	goBot.AddHandler(commands.MessageAttachmentsHandler)
 
 	// React Channel Join Handler
 	goBot.AddHandler(commands.ReactJoinHandler)
@@ -78,20 +79,20 @@ func Start() {
 	// React Channel Remove Handler
 	goBot.AddHandler(commands.ReactRemoveHandler)
 
-	//// Channel Vote Timer
-	//goBot.AddHandler(commands.ChannelVoteTimer)
+	// Channel Vote Timer
+	goBot.AddHandler(commands.ChannelVoteTimer)
 
-	//// MemberInfo
-	//goBot.AddHandler(events.OnMemberJoinGuild)
-	//goBot.AddHandler(events.OnMemberUpdate)
+	// MemberInfo
+	goBot.AddHandler(events.OnMemberJoinGuild)
+	goBot.AddHandler(events.OnMemberUpdate)
 
-	//// Emoji ChannelStats
-	//goBot.AddHandler(commands.OnMessageEmoji)
-	//goBot.AddHandler(commands.OnMessageEmojiReact)
-	//goBot.AddHandler(commands.OnMessageEmojiUnreact)
+	// Emoji ChannelStats
+	goBot.AddHandler(commands.OnMessageEmoji)
+	goBot.AddHandler(commands.OnMessageEmojiReact)
+	goBot.AddHandler(commands.OnMessageEmojiUnreact)
 
-	//// Channel Stats
-	//goBot.AddHandler(commands.OnMessageChannel)
+	// Channel Stats
+	goBot.AddHandler(commands.OnMessageChannel)
 	goBot.AddHandler(commands.DailyStatsTimer)
 
 	// Periodic Write Events
@@ -100,15 +101,15 @@ func Start() {
 	// Voice Role Event Handler
 	goBot.AddHandler(events.VoiceRoleHandler)
 
-	//// User stats
-	//goBot.AddHandler(commands.OnMemberJoin)
-	//goBot.AddHandler(commands.OnMemberRemoval)
+	// User stats
+	goBot.AddHandler(commands.OnMemberJoin)
+	goBot.AddHandler(commands.OnMemberRemoval)
 
 	// Bot fluff
 	goBot.AddHandler(events.OnBotPing)
 
-	//// Manual ban handler
-	//goBot.AddHandler(events.OnGuildBan)
+	// Manual ban handler
+	goBot.AddHandler(events.OnGuildBan)
 
 	// Abstraction of a command handler
 	goBot.AddHandler(commands.HandleCommand)
@@ -117,8 +118,8 @@ func Start() {
 	goBot.AddHandler(commands.RaffleReactJoin)
 	goBot.AddHandler(commands.RaffleReactLeave)
 
-	//// Mute command
-	//goBot.AddHandler(events.GuildJoin)
+	// Mute command
+	goBot.AddHandler(events.GuildJoin)
 
 	// Anime subscription handler
 	goBot.AddHandler(commands.AnimeSubsTimer)
