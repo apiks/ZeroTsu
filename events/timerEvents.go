@@ -7,10 +7,9 @@ import (
 	"github.com/r-anime/ZeroTsu/embeds"
 	"github.com/r-anime/ZeroTsu/entities"
 	"github.com/r-anime/ZeroTsu/functionality"
-	"log"
 	"math/rand"
 	"net/http"
-	"runtime/debug"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -21,8 +20,7 @@ import (
 	"github.com/r-anime/ZeroTsu/config"
 )
 
-const feedCheckLifespanHours = 2160
-
+const feedCheckLifespanHours = 1440
 var redditFeedBlock bool
 
 // Write Events
@@ -118,7 +116,10 @@ func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 		}
 
 		// Sends server count to bot list sites if it's the public ZeroTsu
-		functionality.SendServers(s)
+		GuildIds.RLock()
+		guildCountStr := strconv.Itoa(len(GuildIds.Ids))
+		GuildIds.RUnlock()
+		functionality.SendServers(guildCountStr, s)
 
 		guildIds = []string{}
 	}
@@ -129,15 +130,16 @@ func CommonEvents(s *discordgo.Session, _ *discordgo.Ready) {
 	var (
 		guildIds []string
 		guildID string
-		guild *discordgo.Guild
 
 		memberInfo map[string]entities.UserInfo
 	)
 
-	for range time.NewTicker(1 * time.Minute).C {
-		for _, guild = range s.State.Guilds {
-			guildIds = append(guildIds, guild.ID)
+	for range time.NewTicker(2 * time.Minute).C {
+		GuildIds.RLock()
+		for guildID := range GuildIds.Ids {
+			guildIds = append(guildIds, guildID)
 		}
+		GuildIds.RUnlock()
 
 		for _, guildID = range guildIds {
 			memberInfo = entities.Guilds.DB[guildID].GetMemberInfoMap()
@@ -307,12 +309,6 @@ func unmuteHandler(s *discordgo.Session, guildID string, user entities.PunishedU
 // remindMeHandler handles sending remindMe messages when called if it's time.
 // Sends either a DM, or, failing that, a ping in the channel the remindMe was set.
 func remindMeHandler(s *discordgo.Session, guildID string) {
-	defer func() {
-		if rec := recover(); rec != nil {
-			log.Printf("%v\n%s", rec, string(debug.Stack()))
-		}
-	}()
-
 	var writeFlag bool
 	var wg sync.WaitGroup
 	t := time.Now()
@@ -390,14 +386,6 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 
 // Fetches reddit feeds and returns the feeds that need to posted for all guilds
 func feedHandler(s *discordgo.Session, guildIds []string) {
-	defer func() {
-		if rec := recover(); rec != nil {
-			log.Println(rec)
-			log.Println("Recovery in feedHandler")
-			log.Println("stacktrace from panic: \n" + string(debug.Stack()))
-		}
-	}()
-
 	// Blocks handling of new feeds if there are some currently being sent
 	entities.Mutex.Lock()
 	if redditFeedBlock {
@@ -419,13 +407,10 @@ func feedHandler(s *discordgo.Session, guildIds []string) {
 
 	for _, guildID := range guildIds {
 		if _, ok := guildPostsMap[guildID]; !ok || guildPostsMap[guildID] == nil || len(guildPostsMap[guildID]) == 0 {
-			return
+			continue
 		}
-		itemsPosted := 0
-		t := time.Now()
 		for feed, items := range guildPostsMap[guildID] {
 			var pinnedItems = make(map[*gofeed.Item]bool)
-
 			for _, item := range items {
 				var exists bool
 
@@ -459,8 +444,8 @@ func feedHandler(s *discordgo.Session, guildIds []string) {
 				}
 				exists = false
 
-				// Wait some seconds so it doesn't hit the rate limit easily
-				time.Sleep(time.Second * 4)
+				// Wait some milliseconds so it doesn't hit the rate limit easily
+				time.Sleep(time.Millisecond * 200)
 
 				// Sends the feed item
 				message, err := embeds.Feed(s, &feed, item)
@@ -469,8 +454,8 @@ func feedHandler(s *discordgo.Session, guildIds []string) {
 				}
 
 				// Adds that the feed has been posted
+				t := time.Now()
 				db.AddGuildFeedCheck(guildID, entities.NewFeedCheck(feed, t, item.GUID))
-				itemsPosted++
 
 				// Pins/unpins the feed items if necessary
 				if !feed.GetPin() {
@@ -487,7 +472,6 @@ func feedHandler(s *discordgo.Session, guildIds []string) {
 
 				// Unpins if necessary
 				for _, pin := range pins {
-
 					// Checks for whether the pin is one that should be unpinned
 					if pin.Author.ID != s.State.User.ID {
 						continue
@@ -515,10 +499,6 @@ func feedHandler(s *discordgo.Session, guildIds []string) {
 			feed = entities.Feed{}
 			items = nil
 			pinnedItems = nil
-
-			if itemsPosted >= 50 {
-				break
-			}
 		}
 	}
 	guildPostsMap = nil

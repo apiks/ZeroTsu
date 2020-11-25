@@ -9,7 +9,9 @@ import (
 	"log"
 	"math/rand"
 	"runtime/debug"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -18,6 +20,15 @@ import (
 )
 
 var darlingTrigger int
+var GuildIds = &GuildIdsStruct{
+	Ids:     make(map[string]bool),
+}
+
+
+type GuildIdsStruct struct {
+	sync.RWMutex
+	Ids map[string]bool
+}
 
 // Status Ready Events
 func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
@@ -63,7 +74,10 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	}
 
 	// Sends server count to bot list sites if it's the public ZeroTsu
-	functionality.SendServers(s)
+	GuildIds.RLock()
+	guildCountStr := strconv.Itoa(len(GuildIds.Ids))
+	GuildIds.RUnlock()
+	functionality.SendServers(guildCountStr, s)
 }
 
 // Adds the voice role whenever a user joins the config voice chat
@@ -439,16 +453,15 @@ func cleanSpoilerRoles(s *discordgo.Session, guildID string) error {
 
 // Handles BOT joining a server
 func GuildCreate(s *discordgo.Session, g *discordgo.GuildCreate) {
-	// Send message to support server mod log that a server has been created on the public ZeroTsu
-	entities.Guilds.RLock()
-	if _, ok := entities.Guilds.DB[g.Guild.ID]; !ok {
-		if s.State.User.ID == "614495694769618944" {
-			_, _ = s.ChannelMessageSend("619899424428130315", fmt.Sprintf("A DB entry has been created for guild: %s", g.Name))
-		}
+	isNew, _ := entities.Guilds.Load(g.Guild.ID)
+	if isNew && s.State.User.ID == "614495694769618944" {
+		_, _ = s.ChannelMessageSend("619899424428130315", fmt.Sprintf("A DB entry has been created for guild: %s", g.Name))
 	}
-	entities.Guilds.RUnlock()
 
 	entities.HandleNewGuild(g.ID)
+	GuildIds.Lock()
+	GuildIds.Ids[g.Guild.ID] = true
+	GuildIds.Unlock()
 	log.Println(fmt.Sprintf("Joined guild %s", g.Guild.Name))
 }
 
@@ -457,6 +470,12 @@ func GuildDelete(_ *discordgo.Session, g *discordgo.GuildDelete) {
 	if g.Name == "" {
 		return
 	}
+	GuildIds.Lock()
+	entities.Guilds.Lock()
+	delete(GuildIds.Ids, g.Guild.ID)
+	delete(entities.Guilds.DB, g.Guild.ID)
+	entities.Guilds.Unlock()
+	GuildIds.Unlock()
 	log.Println(fmt.Sprintf("Left guild %s", g.Guild.Name))
 }
 
