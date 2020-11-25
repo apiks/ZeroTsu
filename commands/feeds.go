@@ -92,7 +92,7 @@ func setRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! This reddit feed has been saved. If there are valid posts they will start appearing in a few minutes."))
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! This reddit feed has been saved. If there are valid posts they will start appearing within an hour or two."))
 	if err != nil {
 		common.LogError(s, guildSettings.BotLog, err)
 		return

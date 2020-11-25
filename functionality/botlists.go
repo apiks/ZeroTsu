@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"strconv"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -14,13 +13,11 @@ import (
 )
 
 // Send number of servers via post request
-func SendServers(s *discordgo.Session) {
-
+func SendServers(guildCountStr string, s *discordgo.Session) {
 	if s.State.User.ID != "614495694769618944" {
 		return
 	}
 
-	guildCountStr := strconv.Itoa(len(s.State.Guilds))
 	client := &http.Client{Timeout: 10 * time.Second}
 
 	// Discord Bots
@@ -28,9 +25,6 @@ func SendServers(s *discordgo.Session) {
 
 	// Discord Boats
 	discordBoatsGuildCount(client, guildCountStr)
-
-	// Bots on Discord
-	discordBotsOnDiscordGuildCount(client, guildCountStr)
 }
 
 // Sends guild count to discordbots.org
@@ -72,28 +66,6 @@ func discordBoatsGuildCount(client *http.Client, guildCount string) {
 	response, err := client.Do(req)
 	if err != nil {
 		log.Println("discordBoats Err")
-		log.Println(err)
-		return
-	}
-	response.Body.Close()
-}
-
-// Sends guild count to bots.ondiscord.xyz
-func discordBotsOnDiscordGuildCount(client *http.Client, guildCount string) {
-	data := url.Values{
-		"guildCount": {guildCount},
-	}
-	req, err := http.NewRequest("POST", "https://bots.ondiscord.xyz/bot-api/bots/614495694769618944/guilds", bytes.NewBufferString(data.Encode()))
-	if err != nil {
-		log.Println("discordBotsOnDiscord Err")
-		log.Println(err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
-	req.Header.Add("Authorization", config.BotsOnDiscordSecret)
-	response, err := client.Do(req)
-	if err != nil {
-		log.Println("BotsOnDiscord Err")
 		log.Println(err)
 		return
 	}

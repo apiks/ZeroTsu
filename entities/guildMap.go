@@ -32,14 +32,17 @@ func NewGuildMap(DB map[string]*GuildInfo) *GuildMap {
 }
 
 // Init initializes a new guild with an empty GuildInfo Object
-func (g *GuildMap) Init(guildID string) {
+func (g *GuildMap) Init(guildID string) bool {
+	isNew := false
+
 	path := fmt.Sprintf("%s/%s", DBPath, guildID)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		err := os.Mkdir(path, 0777)
 		if err != nil {
 			log.Println(err)
-			return
+			return false
 		}
+		isNew = true
 	}
 
 	for _, name := range guildFileNames {
@@ -75,11 +78,13 @@ func (g *GuildMap) Init(guildID string) {
 		ExtensionList:   make(map[string]string),
 		Autoposts:       make(map[string]Cha),
 	}
+
+	return isNew
 }
 
 // Load loads a preexisting guild
-func (g *GuildMap) Load(guildID string) error {
-	g.Init(guildID)
+func (g *GuildMap) Load(guildID string) (bool, error) {
+	isNew := g.Init(guildID)
 
 	g.RLock()
 	guild := g.DB[guildID]
@@ -87,14 +92,14 @@ func (g *GuildMap) Load(guildID string) error {
 
 	files, err := IOReadDir(fmt.Sprintf("%s/%s/", DBPath, guildID))
 	if err != nil {
-		return err
+		return isNew, err
 	}
 
 	// Load guild settings first because some files check against bools in the settings
 	err = guild.Load("guildSettings.json", guildID)
 	if err != nil {
 		log.Println("error in loading guild settings")
-		return err
+		return isNew, err
 	}
 
 	// Load each of the guild files
@@ -104,7 +109,7 @@ func (g *GuildMap) Load(guildID string) error {
 		}
 		err = guild.Load(file, guildID)
 		if err != nil {
-			return err
+			return isNew, err
 		}
 	}
 
@@ -119,7 +124,7 @@ func (g *GuildMap) Load(guildID string) error {
 	*g.DB[guildID] = *guild
 	g.Unlock()
 
-	return nil
+	return isNew, nil
 }
 
 // LoadAll loads all guilds from storage
@@ -149,8 +154,9 @@ func (g *GuildMap) LoadAll() {
 		if !f.IsDir() {
 			continue
 		}
-		err = g.Load(f.Name())
+		_, err = g.Load(f.Name())
 		if err != nil {
+			log.Println(f.Name())
 			log.Panicln(err)
 		}
 	}
@@ -164,7 +170,7 @@ func HandleNewGuild(guildID string) {
 	Guilds.RLock()
 	if _, ok := Guilds.DB[guildID]; !ok {
 		Guilds.RUnlock()
-		Guilds.Init(guildID)
+		_ = Guilds.Init(guildID)
 		return
 	}
 	Guilds.RUnlock()

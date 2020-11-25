@@ -946,7 +946,6 @@ func IOReadDir(root string) ([]string, error) {
 
 // Initializes BOT DB files
 func InitDB(s *discordgo.Session, guildID string) {
-
 	path := fmt.Sprintf("%s/%s", DBPath, guildID)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		err := os.Mkdir(path, 0777)

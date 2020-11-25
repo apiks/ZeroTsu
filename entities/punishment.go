@@ -48,8 +48,6 @@ func (p Punishment) SetTimestamp(timestamp time.Time) Punishment {
 }
 
 func (p Punishment) GetTimestamp() time.Time {
-	p.RLock()
-	defer p.RUnlock()
 	if p == (Punishment{}) {
 		return time.Time{}
 	}

@@ -174,10 +174,11 @@ func processEachShow(_ int, element *goquery.Selection) {
 	show.SetName(element.Find(".show-title-bar").Text())
 	show.SetEpisode(element.Find(".show-episode").Text())
 	show.SetEpisode(strings.Replace(show.GetEpisode(), "\n", "", -1))
-	show.SetAirTime( element.Find(".show-air-time").Text())
+	show.SetAirTime(element.Find(".show-air-time").Text())
+	show.SetAirTime(strings.Replace(show.GetAirTime(), "\n", "", -1))
 	show.SetDelayed(strings.TrimPrefix(element.Find(".show-delay-bar").Text(), " "))
 	show.SetDelayed(strings.Trim(show.GetDelayed(), "\n"))
-	key, exists := element.Find(".poster-link").Attr("href")
+	key, exists := element.Find(".show-link").Attr("href")
 	if exists == true {
 		show.SetKey(key)
 		show.SetKey(strings.ToLower(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(show.GetKey(), "/shows/"), "shows/"), "/shows")))

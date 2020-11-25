@@ -69,6 +69,8 @@ func (u UserInfo) GetUsername() string {
 }
 
 func (u UserInfo) SetNickname(nickname string) UserInfo {
+	u.Lock()
+	defer u.Unlock()
 	u.Nickname = nickname
 	return u
 }

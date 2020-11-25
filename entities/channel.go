@@ -14,11 +14,15 @@ type Channel struct {
 }
 
 func (c Channel) SetChannelID(channelID string) Channel {
+	c.Lock()
+	defer c.Unlock()
 	c.ChannelID = channelID
 	return c
 }
 
 func (c Channel) GetChannelID() string {
+	c.RLock()
+	defer c.RUnlock()
 	if c.ChannelID == "" {
 		return ""
 	}
@@ -26,11 +30,15 @@ func (c Channel) GetChannelID() string {
 }
 
 func (c Channel) SetName(name string) Channel {
+	c.Lock()
+	defer c.Unlock()
 	c.Name = name
 	return c
 }
 
 func (c Channel) GetName() string {
+	c.RLock()
+	defer c.RUnlock()
 	if c.Name == "" {
 		return ""
 	}
@@ -38,11 +46,15 @@ func (c Channel) GetName() string {
 }
 
 func (c Channel) SetMessagesMap(messages map[string]int) Channel {
+	c.Lock()
+	defer c.Unlock()
 	c.Messages = messages
 	return c
 }
 
 func (c Channel) GetMessagesMap() map[string]int {
+	c.RLock()
+	defer c.RUnlock()
 	if c.Messages == nil {
 		return nil
 	}
@@ -50,6 +62,8 @@ func (c Channel) GetMessagesMap() map[string]int {
 }
 
 func (c Channel) AddMessages(date string, messages int) Channel {
+	c.Lock()
+	defer c.Unlock()
 	if c.RoleCount == nil {
 		c.RoleCount = make(map[string]int)
 	}
@@ -58,6 +72,8 @@ func (c Channel) AddMessages(date string, messages int) Channel {
 }
 
 func (c Channel) SetMessages(date string, messages int) Channel {
+	c.Lock()
+	defer c.Unlock()
 	if c.RoleCount == nil {
 		c.RoleCount = make(map[string]int)
 	}
@@ -66,6 +82,8 @@ func (c Channel) SetMessages(date string, messages int) Channel {
 }
 
 func (c Channel) GetMessages(date string) int {
+	c.RLock()
+	defer c.RUnlock()
 	if c.Messages == nil {
 		return 0
 	}
@@ -73,11 +91,15 @@ func (c Channel) GetMessages(date string) int {
 }
 
 func (c Channel) SetRoleCountMap(roleCount map[string]int) Channel {
+	c.Lock()
+	defer c.Unlock()
 	c.RoleCount = roleCount
 	return c
 }
 
 func (c Channel) GetRoleCountMap() map[string]int {
+	c.RLock()
+	defer c.RUnlock()
 	if c.RoleCount == nil {
 		return nil
 	}
@@ -85,6 +107,8 @@ func (c Channel) GetRoleCountMap() map[string]int {
 }
 
 func (c Channel) SetRoleCount(date string, roleCount int) Channel {
+	c.Lock()
+	defer c.Unlock()
 	if c.RoleCount == nil {
 		c.RoleCount = make(map[string]int)
 	}
@@ -93,6 +117,8 @@ func (c Channel) SetRoleCount(date string, roleCount int) Channel {
 }
 
 func (c Channel) GetRoleCount(date string) int {
+	c.RLock()
+	defer c.RUnlock()
 	if c.RoleCount == nil {
 		return 0
 	}
@@ -100,24 +126,32 @@ func (c Channel) GetRoleCount(date string) int {
 }
 
 func (c Channel) SetOptin(optin bool) Channel {
+	c.Lock()
+	defer c.Unlock()
 	c.Optin = optin
 	return c
 }
 
 func (c Channel) GetOptin() bool {
-	if c.Optin == false {
+	c.RLock()
+	defer c.RUnlock()
+	if !c.Optin {
 		return false
 	}
 	return c.Optin
 }
 
 func (c Channel) SetExists(exists bool) Channel {
+	c.Lock()
+	defer c.Unlock()
 	c.Exists = exists
 	return c
 }
 
 func (c Channel) GetExists() bool {
-	if c.Exists == false {
+	c.RLock()
+	defer c.RUnlock()
+	if !c.Exists {
 		return false
 	}
 	return c.Exists

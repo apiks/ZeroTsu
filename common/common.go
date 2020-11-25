@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/entities"
+	"github.com/r-anime/ZeroTsu/functionality"
 	"io"
 	"log"
 	"math"
@@ -305,7 +306,6 @@ func SplitLongMessage(message string) (split []string) {
 
 // Finds out how many users have the role and returns that number
 func GetRoleUserAmount(guild *discordgo.Guild, roles []*discordgo.Role, roleName string) int {
-
 	var (
 		users  int
 		roleID string
@@ -332,7 +332,6 @@ func GetRoleUserAmount(guild *discordgo.Guild, roles []*discordgo.Role, roleName
 
 // Checks if a message contains a channel or user mentions and changes them to a non-mention if true
 func MentionParser(s *discordgo.Session, m string, guildID string) string {
-
 	var (
 		mentions            string
 		userID              string
@@ -367,7 +366,7 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 					continue
 				}
 
-				// If user wasn't found in memberInfo then fetch manually from Discord
+				// If user wasn't found in memberInfo then fetch manually from Discord and add to memberInfo
 				user, err := s.State.Member(guildID, userID)
 				if err != nil {
 					user, err = s.GuildMember(guildID, userID)
@@ -375,6 +374,7 @@ func MentionParser(s *discordgo.Session, m string, guildID string) string {
 						continue
 					}
 				}
+				functionality.InitializeUser(user.User, guildID)
 
 				m = strings.Replace(m, mention, fmt.Sprintf("@%s", user.Nick), -1)
 			}

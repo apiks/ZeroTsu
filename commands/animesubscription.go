@@ -322,16 +322,7 @@ func viewSubscriptions(s *discordgo.Session, m *discordgo.Message) {
 
 // Handles sending notifications to users when it's time
 func animeSubsHandler(s *discordgo.Session) {
-	// Saves program from panic and continues running normally without executing the command if it happens
-	defer func() {
-		if rec := recover(); rec != nil {
-			log.Println(rec)
-			log.Println("Recovery in animeSubsHandler")
-		}
-	}()
-
 	var todayShows []*entities.ShowAirTime
-
 	now := time.Now()
 
 	entities.Mutex.RLock()
@@ -402,6 +393,9 @@ func animeSubsHandler(s *discordgo.Session) {
 				if difference <= 0 {
 					continue
 				}
+
+				// Wait some milliseconds so it doesn't hit the rate limit easily
+				time.Sleep(time.Millisecond * 200)
 
 				// Sends notification to user DMs if possible, or to guild autopost channel
 				if userShow.GetGuild() {

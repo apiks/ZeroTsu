@@ -399,7 +399,9 @@ func raffleWinnerCommand(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		_, err := s.GuildMember(m.GuildID, winnerID)
 		if err != nil {
-			winnerMention = common.MentionParser(s, winnerMention, m.GuildID)
+			common.LogError(s, guildSettings.BotLog, err)
+			return
+			//winnerMention = common.MentionParser(s, winnerMention, m.GuildID)
 		}
 	}
 

@@ -5,6 +5,7 @@ import (
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/entities"
+	"github.com/r-anime/ZeroTsu/events"
 	"math/rand"
 	"strings"
 	"time"
@@ -156,7 +157,9 @@ func serversCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I am in %d servers.", len(s.State.Guilds)))
+	events.GuildIds.RLock()
+	defer events.GuildIds.RUnlock()
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I am in %d servers.", len(events.GuildIds.Ids)))
 	if err != nil {
 		if m.GuildID != "" {
 			guildSettings := db.GetGuildSettings(m.GuildID)
@@ -178,6 +181,29 @@ func uptimeCommand(s *discordgo.Session, m *discordgo.Message) {
 			guildSettings := db.GetGuildSettings(m.GuildID)
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		}
+	}
+}
+
+// Messages all BOT logs with a message
+func messageBotLogsCommand(s *discordgo.Session, m *discordgo.Message) {
+	if m.Author.ID != config.OwnerID {
+		return
+	}
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
+
+	entities.Guilds.RLock()
+	defer entities.Guilds.RUnlock()
+
+	for guildID, guild := range entities.Guilds.DB {
+		guild.RLock()
+		if db.GetGuildSettings(guildID).GetBotLog() == (entities.Cha{}) ||
+			db.GetGuildSettings(guildID).GetBotLog().GetName() == "" ||
+			db.GetGuildSettings(guildID).GetBotLog().GetID() == "" {
+			continue
+		}
+		_, _ = s.ChannelMessageSend(db.GetGuildSettings(guildID).GetBotLog().GetID(), commandStrings[1])
+		guild.RUnlock()
+		time.Sleep(1 * time.Second)
 	}
 }
 
@@ -208,6 +234,13 @@ func init() {
 		Execute:    uptimeCommand,
 		Trigger:    "uptime",
 		Desc:       "Print how long I've been on for",
+		DMAble:     true,
+		Permission: functionality.Owner,
+	})
+	Add(&Command{
+		Execute:    messageBotLogsCommand,
+		Trigger:    "messagelogs",
+		Desc:       "Messages all BOT logs with a message",
 		DMAble:     true,
 		Permission: functionality.Owner,
 	})
