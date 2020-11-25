@@ -10,13 +10,10 @@ import (
 	"github.com/r-anime/ZeroTsu/events"
 	"log"
 	"time"
-	//_ "net/http/pprof"
 )
 
 // Initializes and starts Bot
 func main() {
-	//defer profile.Start(profile.MemProfile, profile.ProfilePath(".")).Stop()
-
 	// Initialize Config values
 	err := config.ReadConfig()
 	if err != nil {
@@ -34,15 +31,9 @@ func main() {
 	entities.Mutex.Lock()
 	entities.LoadSharedDB()
 	entities.Mutex.Unlock()
-	entities.Guilds.LoadAll()
 	commands.ResetSubscriptions()
-	//commands.CleanGuild()
 
 	Start()
-
-	//go func() {
-	//	log.Println(http.ListenAndServe(":6969", nil))
-	//}()
 
 	<-make(chan struct{})
 	return
@@ -56,6 +47,14 @@ func Start() {
 		log.Fatal(err)
 	}
 	goBot.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAll)
+	//goBot.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAll - discordgo.IntentsGuildPresences)
+	//goBot.StateEnabled = false
+	////goBot.State.TrackEmojis = false
+	////goBot.State.TrackPresences = false
+	////goBot.State.TrackVoice = false
+	////goBot.State.TrackMembers = false
+	////goBot.State.TrackRoles = false
+	////goBot.State.TrackChannels = false
 
 	// Guild join and leave listener
 	goBot.AddHandler(events.GuildCreate)
@@ -92,7 +91,6 @@ func Start() {
 	// MemberInfo
 	goBot.AddHandler(events.OnMemberJoinGuild)
 	goBot.AddHandler(events.OnMemberUpdate)
-	//goBot.AddHandler(events.OnPresenceUpdate)
 
 	// Emoji ChannelStats
 	goBot.AddHandler(commands.OnMessageEmoji)
@@ -109,13 +107,9 @@ func Start() {
 	// Voice Role Event Handler
 	goBot.AddHandler(events.VoiceRoleHandler)
 
-	// Username stats
+	// User stats
 	goBot.AddHandler(commands.OnMemberJoin)
 	goBot.AddHandler(commands.OnMemberRemoval)
-
-	// Spam filter
-	//goBot.AddHandler(commands.SpamFilter)
-	//goBot.AddHandler(commands.SpamFilterTimer)
 
 	// Bot fluff
 	goBot.AddHandler(events.OnBotPing)
