@@ -7,7 +7,7 @@
 
 * Channel lock via dynamic permission change that remembers older permissions
 
-* Anime Schedule that prints what anime are airing when SUBBED
+* Anime Schedule that prints what anime are airing when SUBBED. Source: https://AnimeSchedule.net
 
 * Extensive member system that tracks past member usernames, nicknames, mod-issued warnings, kicks, bans, whether in the server, timestamps for punishments, server join date and account creation date
 
