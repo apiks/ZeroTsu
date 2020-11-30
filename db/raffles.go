@@ -27,7 +27,7 @@ func SetGuildRaffles(guildID string, raffles []*entities.Raffle) error {
 		return fmt.Errorf("Error: You have reached the raffle limit (200) for this premium server.")
 	} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(raffles) >= 50 {
 		entities.Guilds.Unlock()
-		return fmt.Errorf("Error: You have reached the raffle limit (50) for this server. Please remove some or increase them to 200 by upgrading to a premium server at <https://patreon.com/apiks>")
+		return fmt.Errorf("Error: You have reached the raffle limit (50) for this server. Please remove some or increase them to 200 by upgrading to a premium server at <https://patreon.com/animeschedule>")
 	}
 
 	entities.Guilds.DB[guildID].SetRaffles(raffles)
@@ -51,7 +51,7 @@ func SetGuildRaffle(guildID string, raffle *entities.Raffle, delete ...bool) err
 			return fmt.Errorf("Error: You have reached the raffle limit (200) for this premium server.")
 		} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetRaffles()) >= 50 {
 			entities.Guilds.Unlock()
-			return fmt.Errorf("Error: You have reached the raffle limit (50) for this server. Please remove some or increase them to 200 by upgrading to a premium server at <https://patreon.com/apiks>")
+			return fmt.Errorf("Error: You have reached the raffle limit (50) for this server. Please remove some or increase them to 200 by upgrading to a premium server at <https://patreon.com/animeschedule>")
 		}
 	}
 

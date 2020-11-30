@@ -38,7 +38,7 @@ func SetGuildTempChannel(guildID, roleID string, tempCha *entities.TempChaInfo, 
 			return fmt.Errorf("Error: You have reached the temporary channel limit (200) for this premium server.")
 		} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetTempChaMap()) >= 50 {
 			entities.Guilds.Unlock()
-			return fmt.Errorf("Error: You have reached the temporary channel limit (50) for this server. Please wait for some to be removed or increase them to 200 by upgrading to a premium server at <https://patreon.com/apiks>")
+			return fmt.Errorf("Error: You have reached the temporary channel limit (50) for this server. Please wait for some to be removed or increase them to 200 by upgrading to a premium server at <https://patreon.com/animeschedule>")
 		}
 	}
 

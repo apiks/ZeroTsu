@@ -28,7 +28,7 @@ func About(s *discordgo.Session, m *discordgo.Message) error {
 
 			supporterPerksEmbedField = &discordgo.MessageEmbedField{
 				Name:  "**Supporter Perks:**",
-				Value: "Consider becoming a [Patron](https://patreon.com/apiks) if you want to support me and get: \n**-** Increased database limits for you and a server of your choice\n**-** Development Updates\n**-** Be in the BOT Status",
+				Value: "Consider becoming a [Patron](https://patreon.com/animeschedule) if you want to support me and get: \n**-** Increased database limits for you and a server of your choice\n**-** Development Updates\n**-** Be in the BOT Status",
 			}
 		)
 

@@ -32,7 +32,7 @@ func SetGuildFeeds(guildID string, feeds []entities.Feed) error {
 	} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(feeds) >= 50 {
 		entities.Guilds.Unlock()
 		entities.Guilds.DB[guildID].Unlock()
-		return fmt.Errorf("Error: You have reached the reddit feed autopost limit (50) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/apiks>")
+		return fmt.Errorf("Error: You have reached the reddit feed autopost limit (50) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/animeschedule>")
 	}
 
 	entities.Guilds.DB[guildID].SetFeeds(feeds)
@@ -73,7 +73,7 @@ func SetGuildFeed(guildID string, feed entities.Feed, delete ...bool) error {
 			return fmt.Errorf("Error: You have reached the reddit feed autopost limit (400) for this server.")
 		} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetFeeds()) >= 50 {
 			entities.Guilds.Unlock()
-			return fmt.Errorf("Error: You have reached the reddit feed autopost limit (50) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/apiks>")
+			return fmt.Errorf("Error: You have reached the reddit feed autopost limit (50) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/animeschedule>")
 		}
 	}
 

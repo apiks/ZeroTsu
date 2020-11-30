@@ -27,7 +27,7 @@ func SetGuildWaifus(guildID string, waifus []*entities.Waifu) error {
 		return fmt.Errorf("Error: You have reached the waifu limit (400) for this premium server.")
 	} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(waifus) >= 50 {
 		entities.Guilds.Unlock()
-		return fmt.Errorf("Error: You have reached the waifu limit (50) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/apiks>")
+		return fmt.Errorf("Error: You have reached the waifu limit (50) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/animeschedule>")
 	}
 
 	entities.Guilds.DB[guildID].SetWaifus(waifus)
@@ -51,7 +51,7 @@ func SetGuildWaifu(guildID string, waifu entities.Waifu, delete ...bool) error {
 			return fmt.Errorf("Error: You have reached the waifu limit (400) for this premium server.")
 		} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetWaifus()) >= 50 {
 			entities.Guilds.Unlock()
-			return fmt.Errorf("Error: You have reached the waifu limit (50) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/apiks>")
+			return fmt.Errorf("Error: You have reached the waifu limit (50) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/animeschedule>")
 		}
 	}
 

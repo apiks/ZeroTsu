@@ -27,7 +27,7 @@ func SetGuildMessageRequirements(guildID string, messRequirements []entities.Mes
 		return fmt.Errorf("Error: You have reached the message requirement filter limit (150) for this premium server.")
 	} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(messRequirements) >= 50 {
 		entities.Guilds.Unlock()
-		return fmt.Errorf("Error: You have reached the message requirement filter limit (50) for this server. Please remove some or increase them to 150 by upgrading to a premium server at <https://patreon.com/apiks>")
+		return fmt.Errorf("Error: You have reached the message requirement filter limit (50) for this server. Please remove some or increase them to 150 by upgrading to a premium server at <https://patreon.com/animeschedule>")
 	}
 
 	entities.Guilds.DB[guildID].SetMessageRequirements(messRequirements)
@@ -51,7 +51,7 @@ func SetGuildMessageRequirement(guildID string, messRequirement entities.MessReq
 			return fmt.Errorf("Error: You have reached the message requirement filter limit (150) for this premium server.")
 		} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetMessageRequirements()) >= 50 {
 			entities.Guilds.Unlock()
-			return fmt.Errorf("Error: You have reached the message requirement filter limit (50) for this server. Please remove some or increase them to 150 by upgrading to a premium server at <https://patreon.com/apiks>")
+			return fmt.Errorf("Error: You have reached the message requirement filter limit (50) for this server. Please remove some or increase them to 150 by upgrading to a premium server at <https://patreon.com/animeschedule>")
 		}
 	}
 

@@ -28,7 +28,7 @@ func SetGuildFilter(guildID string, filter entities.Filter, delete ...bool) erro
 			return fmt.Errorf("Error: You have reached the filter limit (300) for this premium server.")
 		} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetFilters()) >= 50 {
 			entities.Guilds.Unlock()
-			return fmt.Errorf("Error: You have reached the filter limit (50) for this server. Please remove some or increase them to 300 by upgrading to a premium server at <https://patreon.com/apiks>")
+			return fmt.Errorf("Error: You have reached the filter limit (50) for this server. Please remove some or increase them to 300 by upgrading to a premium server at <https://patreon.com/animeschedule>")
 		}
 	}
 
