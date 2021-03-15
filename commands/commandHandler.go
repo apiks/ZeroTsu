@@ -116,17 +116,6 @@ func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 	}
-	if cmd.Trigger == "votecategory" ||
-		cmd.Trigger == "startvote" {
-		if !guildSettings.GetVoteModule() {
-			return
-		}
-	}
-	if cmd.Module == "waifus" {
-		if !guildSettings.GetWaifuModule() {
-			return
-		}
-	}
 	if cmd.Module == "reacts" {
 		if !guildSettings.GetReactsModule() {
 			return
@@ -156,9 +145,4 @@ func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 	}
-}
-
-// Handles a command from DMs
-func handleDM(s *discordgo.Session, m *discordgo.MessageCreate) {
-
 }

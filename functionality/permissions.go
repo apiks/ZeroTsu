@@ -45,7 +45,7 @@ func HasElevatedPermissions(s *discordgo.Session, userID string, guildID string)
 }
 
 // Checks if member has admin permissions
-func MemberIsAdmin(s *discordgo.Session, guildID string, mem *discordgo.Member, permission int) (bool, error) {
+func MemberIsAdmin(s *discordgo.Session, guildID string, mem *discordgo.Member, permission int64) (bool, error) {
 	guild, err := s.State.Guild(guildID)
 	if err != nil {
 		guild, err = s.Guild(guildID)

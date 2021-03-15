@@ -61,7 +61,7 @@ func playingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 	entities.Mutex.Unlock()
 
 	// Refreshes playing message
-	err = s.UpdateStatus(0, commandStrings[1])
+	err = s.UpdateGameStatus(0, commandStrings[1])
 	if err != nil {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
@@ -137,11 +137,11 @@ func removePlayingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 	if len(config.PlayingMsg) > 1 {
 		rand.Seed(time.Now().UnixNano())
 		randInt := rand.Intn(len(config.PlayingMsg))
-		err = s.UpdateStatus(0, config.PlayingMsg[randInt])
+		err = s.UpdateGameStatus(0, config.PlayingMsg[randInt])
 	} else if len(config.PlayingMsg) == 1 {
-		err = s.UpdateStatus(0, config.PlayingMsg[0])
+		err = s.UpdateGameStatus(0, config.PlayingMsg[0])
 	} else {
-		err = s.UpdateStatus(0, "")
+		err = s.UpdateGameStatus(0, "")
 	}
 	if err != nil {
 		entities.Mutex.Unlock()
@@ -158,16 +158,18 @@ func serversCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	events.GuildIds.RLock()
-	defer events.GuildIds.RUnlock()
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I am in %d servers.", len(events.GuildIds.Ids)))
 	if err != nil {
 		if m.GuildID != "" {
+			events.GuildIds.RUnlock()
 			guildSettings := db.GetGuildSettings(m.GuildID)
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 			return
 		}
+		events.GuildIds.RUnlock()
 		return
 	}
+	events.GuildIds.RUnlock()
 }
 
 // Prints BOT uptime

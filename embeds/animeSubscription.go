@@ -10,7 +10,7 @@ import (
 // Subscription sends an embed anime subscription message
 func Subscription(s *discordgo.Session, show *entities.ShowAirTime, channelID string) error {
 	var embed = &discordgo.MessageEmbed{
-		URL:         fmt.Sprintf("https://animeschedule.net/shows/%s", show.GetKey()),
+		URL:         fmt.Sprintf("https://animeschedule.net/anime/%s", show.GetKey()),
 		Title:       show.GetName(),
 		Description: fmt.Sprintf("__**%s**__ is out!", show.GetEpisode()),
 		Timestamp:   time.Now().Format(time.RFC3339),

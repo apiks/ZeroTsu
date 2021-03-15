@@ -16,13 +16,12 @@ import (
 
 // Command categories in sorted form and map form(map for descriptions)
 var (
-	categoriesSorted = [...]string{"Autopost", "Channel", "Filters", "Misc", "Normal", "Moderation", "Reacts", "Reddit", "Stats", "Raffles", "Waifus", "Settings"}
+	categoriesSorted = [...]string{"Autopost", "Misc", "Normal", "Reacts", "Reddit", "Raffles", "Settings"}
 	categoriesMap    = make(map[string]string)
 )
 
 // Prints pretty help command
 func helpEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
-
 	var (
 		elevated bool
 		admin    bool
@@ -62,7 +61,6 @@ func helpEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 
 // Embed message for general all-purpose help message
 func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin bool) error {
-
 	var (
 		embedMess   discordgo.MessageEmbed
 		embedFooter discordgo.MessageEmbedFooter
@@ -127,16 +125,6 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 				}
 			}
 			if CommandMap[commands[i]].Permission == functionality.User {
-				if CommandMap[commands[i]].Module == "waifus" {
-					if !guildSettings.GetWaifuModule() {
-						continue
-					}
-				}
-				if CommandMap[commands[i]].Trigger == "startvote" {
-					if !guildSettings.GetVoteModule() {
-						continue
-					}
-				}
 				userCommands.Value += fmt.Sprintf("`%v` - %v\n", commands[i], CommandMap[commands[i]].Desc)
 			}
 		}
@@ -151,11 +139,6 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 
 		// Iterates through categories and their descriptions and adds them to the embed. Special behavior for waifus and reacts and settings based on settings
 		for i := 0; i < len(categoriesSorted); i++ {
-			if categoriesSorted[i] == "Waifus" {
-				if !guildSettings.GetWaifuModule() {
-					continue
-				}
-			}
 			if categoriesSorted[i] == "Reacts" {
 				if !guildSettings.GetReactsModule() {
 					continue
@@ -195,140 +178,6 @@ func helpEmbed(s *discordgo.Session, m *discordgo.Message, elevated bool, admin 
 }
 
 // Mod command help page
-func helpChannelCommand(s *discordgo.Session, m *discordgo.Message) {
-	err := helpChannelEmbed(s, m)
-	if err != nil {
-		guildSettings := db.GetGuildSettings(m.GuildID)
-		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
-	}
-}
-
-// Mod command help page embed
-func helpChannelEmbed(s *discordgo.Session, m *discordgo.Message) error {
-
-	var (
-		embedMess   discordgo.MessageEmbed
-		embedFooter discordgo.MessageEmbedFooter
-
-		// Embed slice and its fields
-		embed         []*discordgo.MessageEmbedField
-		commandsField discordgo.MessageEmbedField
-
-		// Slice for sorting
-		commands []string
-	)
-
-	guildSettings := db.GetGuildSettings(m.GuildID)
-
-	// Set embed color
-	embedMess.Color = 16758465
-
-	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %vcommand to see a detailed description", guildSettings.GetPrefix())
-	embedMess.Footer = &embedFooter
-
-	// Sets command field
-	commandsField.Name = "Command:"
-	commandsField.Inline = true
-
-	// Iterates through commands in the filter category
-	for command := range CommandMap {
-		commands = append(commands, command)
-	}
-	sort.Strings(commands)
-	for i := 0; i < len(commands); i++ {
-		if CommandMap[commands[i]].Module == "channel" {
-			commandsField.Value += fmt.Sprintf("`%v` - %v\n", commands[i], CommandMap[commands[i]].Desc)
-		}
-	}
-
-	// Adds the field to embed slice (because embedMess.Fields requires slice input)
-	embed = append(embed, &commandsField)
-
-	// Adds everything together
-	embedMess.Fields = embed
-	embeds := splitHelpEmbedField(&embedMess, true)
-
-	for _, splitEmbed := range embeds {
-		// Sends embed in channel
-		_, err := s.ChannelMessageSendEmbed(m.ChannelID, splitEmbed)
-		if err != nil {
-			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-			return err
-		}
-	}
-	return nil
-}
-
-// Mod command help page
-func helpFiltersCommand(s *discordgo.Session, m *discordgo.Message) {
-	err := helpFiltersEmbed(s, m)
-	if err != nil {
-		guildSettings := db.GetGuildSettings(m.GuildID)
-		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
-	}
-}
-
-// Mod command help page embed
-func helpFiltersEmbed(s *discordgo.Session, m *discordgo.Message) error {
-
-	var (
-		embedMess   discordgo.MessageEmbed
-		embedFooter discordgo.MessageEmbedFooter
-
-		// Embed slice and its fields
-		embed         []*discordgo.MessageEmbedField
-		commandsField discordgo.MessageEmbedField
-
-		// Slice for sorting
-		commands []string
-	)
-
-	guildSettings := db.GetGuildSettings(m.GuildID)
-
-	// Set embed color
-	embedMess.Color = 16758465
-
-	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %scommand to see a detailed description", guildSettings.GetPrefix())
-	embedMess.Footer = &embedFooter
-
-	// Sets command field
-	commandsField.Name = "Command:"
-	commandsField.Inline = true
-
-	// Iterates through commands in the filter category
-	for command := range CommandMap {
-		commands = append(commands, command)
-	}
-	sort.Strings(commands)
-	for i := 0; i < len(commands); i++ {
-		if CommandMap[commands[i]].Module == "filters" {
-			commandsField.Value += fmt.Sprintf("`%s` - %s\n", commands[i], CommandMap[commands[i]].Desc)
-		}
-	}
-
-	// Adds the field to embed slice (because embedMess.Fields requires slice input)
-	embed = append(embed, &commandsField)
-
-	// Adds everything together
-	embedMess.Fields = embed
-	embeds := splitHelpEmbedField(&embedMess, true)
-
-	for _, splitEmbed := range embeds {
-		// Sends embed in channel
-		_, err := s.ChannelMessageSendEmbed(m.ChannelID, splitEmbed)
-		if err != nil {
-			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-			return err
-		}
-	}
-	return nil
-}
-
-// Mod command help page
 func helpMiscCommand(s *discordgo.Session, m *discordgo.Message) {
 	err := helpMiscEmbed(s, m)
 	if err != nil {
@@ -340,7 +189,6 @@ func helpMiscCommand(s *discordgo.Session, m *discordgo.Message) {
 
 // Mod command help page embed
 func helpMiscEmbed(s *discordgo.Session, m *discordgo.Message) error {
-
 	var (
 		embedMess   discordgo.MessageEmbed
 		embedFooter discordgo.MessageEmbedFooter
@@ -462,73 +310,6 @@ func helpNormalEmbed(s *discordgo.Session, m *discordgo.Message) error {
 	return nil
 }
 
-// Mod command help page
-func helpModerationCommand(s *discordgo.Session, m *discordgo.Message) {
-	err := helpModerationEmbed(s, m)
-	if err != nil {
-		guildSettings := db.GetGuildSettings(m.GuildID)
-		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
-	}
-}
-
-// Mod command help page embed
-func helpModerationEmbed(s *discordgo.Session, m *discordgo.Message) error {
-
-	var (
-		embedMess   discordgo.MessageEmbed
-		embedFooter discordgo.MessageEmbedFooter
-
-		// Embed slice and its fields
-		embed         []*discordgo.MessageEmbedField
-		commandsField discordgo.MessageEmbedField
-
-		// Slice for sorting
-		commands []string
-	)
-
-	guildSettings := db.GetGuildSettings(m.GuildID)
-
-	// Set embed color
-	embedMess.Color = 16758465
-
-	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %scommand to see a detailed description", guildSettings.GetPrefix())
-	embedMess.Footer = &embedFooter
-
-	// Sets command field
-	commandsField.Name = "Command:"
-	commandsField.Inline = true
-
-	// Iterates through commands in the filter category
-	for command := range CommandMap {
-		commands = append(commands, command)
-	}
-	sort.Strings(commands)
-	for i := 0; i < len(commands); i++ {
-		if CommandMap[commands[i]].Module == "moderation" {
-			commandsField.Value += fmt.Sprintf("`%s` - %s\n", commands[i], CommandMap[commands[i]].Desc)
-		}
-	}
-
-	// Adds the field to embed slice (because embedMess.Fields requires slice input)
-	embed = append(embed, &commandsField)
-
-	// Adds everything together
-	embedMess.Fields = embed
-	embeds := splitHelpEmbedField(&embedMess, true)
-
-	for _, splitEmbed := range embeds {
-		// Sends embed in channel
-		_, err := s.ChannelMessageSendEmbed(m.ChannelID, splitEmbed)
-		if err != nil {
-			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-			return err
-		}
-	}
-	return nil
-}
-
 // Prints pretty help
 func helpReactsCommand(s *discordgo.Session, m *discordgo.Message) {
 
@@ -548,7 +329,6 @@ func helpReactsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 // Mod command help page embed
 func helpReactsEmbed(s *discordgo.Session, m *discordgo.Message) error {
-
 	var (
 		embedMess   discordgo.MessageEmbed
 		embedFooter discordgo.MessageEmbedFooter
@@ -615,7 +395,6 @@ func helpRedditCommand(s *discordgo.Session, m *discordgo.Message) {
 
 // Mod command help page embed
 func helpRedditEmbed(s *discordgo.Session, m *discordgo.Message) error {
-
 	var (
 		embedMess   discordgo.MessageEmbed
 		embedFooter discordgo.MessageEmbedFooter
@@ -671,73 +450,6 @@ func helpRedditEmbed(s *discordgo.Session, m *discordgo.Message) error {
 }
 
 // Mod command help page
-func helpStatsCommand(s *discordgo.Session, m *discordgo.Message) {
-	err := helpStatsEmbed(s, m)
-	if err != nil {
-		guildSettings := db.GetGuildSettings(m.GuildID)
-		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
-	}
-}
-
-// Mod command help page embed
-func helpStatsEmbed(s *discordgo.Session, m *discordgo.Message) error {
-
-	var (
-		embedMess   discordgo.MessageEmbed
-		embedFooter discordgo.MessageEmbedFooter
-
-		// Embed slice and its fields
-		embed         []*discordgo.MessageEmbedField
-		commandsField discordgo.MessageEmbedField
-
-		// Slice for sorting
-		commands []string
-	)
-
-	guildSettings := db.GetGuildSettings(m.GuildID)
-
-	// Set embed color
-	embedMess.Color = 16758465
-
-	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %scommand to see a detailed description", guildSettings.GetPrefix())
-	embedMess.Footer = &embedFooter
-
-	// Sets command field
-	commandsField.Name = "Command:"
-	commandsField.Inline = true
-
-	// Iterates through commands in the filter category
-	for command := range CommandMap {
-		commands = append(commands, command)
-	}
-	sort.Strings(commands)
-	for i := 0; i < len(commands); i++ {
-		if CommandMap[commands[i]].Module == "stats" {
-			commandsField.Value += fmt.Sprintf("`%s` - %s\n", commands[i], CommandMap[commands[i]].Desc)
-		}
-	}
-
-	// Adds the field to embed slice (because embedMess.Fields requires slice input)
-	embed = append(embed, &commandsField)
-
-	// Adds everything together
-	embedMess.Fields = embed
-	embeds := splitHelpEmbedField(&embedMess, true)
-
-	for _, splitEmbed := range embeds {
-		// Sends embed in channel
-		_, err := s.ChannelMessageSendEmbed(m.ChannelID, splitEmbed)
-		if err != nil {
-			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-			return err
-		}
-	}
-	return nil
-}
-
-// Mod command help page
 func helpRaffleCommand(s *discordgo.Session, m *discordgo.Message) {
 	err := helpRaffleEmbed(s, m)
 	if err != nil {
@@ -749,7 +461,6 @@ func helpRaffleCommand(s *discordgo.Session, m *discordgo.Message) {
 
 // Mod command help page embed
 func helpRaffleEmbed(s *discordgo.Session, m *discordgo.Message) error {
-
 	var (
 		embedMess   discordgo.MessageEmbed
 		embedFooter discordgo.MessageEmbedFooter
@@ -805,80 +516,6 @@ func helpRaffleEmbed(s *discordgo.Session, m *discordgo.Message) error {
 }
 
 // Mod command help page
-func helpWaifuCommand(s *discordgo.Session, m *discordgo.Message) {
-
-	guildSettings := db.GetGuildSettings(m.GuildID)
-
-	// Checks if waifus are disabled in the guild
-	if !guildSettings.GetWaifuModule() {
-		return
-	}
-
-	err := helpWaifuEmbed(s, m)
-	if err != nil {
-		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
-	}
-}
-
-// Mod command help page embed
-func helpWaifuEmbed(s *discordgo.Session, m *discordgo.Message) error {
-
-	var (
-		embedMess   discordgo.MessageEmbed
-		embedFooter discordgo.MessageEmbedFooter
-
-		// Embed slice and its fields
-		embed         []*discordgo.MessageEmbedField
-		commandsField discordgo.MessageEmbedField
-
-		// Slice for sorting
-		commands []string
-	)
-
-	guildSettings := db.GetGuildSettings(m.GuildID)
-
-	// Set embed color
-	embedMess.Color = 16758465
-
-	// Sets footer field
-	embedFooter.Text = fmt.Sprintf("Tip: Type %scommand to see a detailed description", guildSettings.GetPrefix())
-	embedMess.Footer = &embedFooter
-
-	// Sets command field
-	commandsField.Name = "Command:"
-	commandsField.Inline = true
-
-	// Iterates through commands in the waifus category
-	for command := range CommandMap {
-		commands = append(commands, command)
-	}
-	sort.Strings(commands)
-	for i := 0; i < len(commands); i++ {
-		if CommandMap[commands[i]].Module == "waifus" {
-			commandsField.Value += fmt.Sprintf("`%s` - %s\n", commands[i], CommandMap[commands[i]].Desc)
-		}
-	}
-
-	// Adds the field to embed slice (because embedMess.Fields requires slice input)
-	embed = append(embed, &commandsField)
-
-	// Adds everything together
-	embedMess.Fields = embed
-	embeds := splitHelpEmbedField(&embedMess, true)
-
-	for _, splitEmbed := range embeds {
-		// Sends embed in channel
-		_, err := s.ChannelMessageSendEmbed(m.ChannelID, splitEmbed)
-		if err != nil {
-			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-			return err
-		}
-	}
-	return nil
-}
-
-// Mod command help page
 func helpAutopostCommand(s *discordgo.Session, m *discordgo.Message) {
 	err := helpAutopostEmbed(s, m)
 	if err != nil {
@@ -890,7 +527,6 @@ func helpAutopostCommand(s *discordgo.Session, m *discordgo.Message) {
 
 // Mod command help page embed
 func helpAutopostEmbed(s *discordgo.Session, m *discordgo.Message) error {
-
 	var (
 		embedMess   discordgo.MessageEmbed
 		embedFooter discordgo.MessageEmbedFooter
@@ -957,7 +593,6 @@ func helpGuildSettingsCommand(s *discordgo.Session, m *discordgo.Message) {
 
 // Mod command help page embed
 func helpGuildSettingsEmbed(s *discordgo.Session, m *discordgo.Message) error {
-
 	var (
 		embedMess   discordgo.MessageEmbed
 		embedFooter discordgo.MessageEmbedFooter
@@ -1014,7 +649,6 @@ func helpGuildSettingsEmbed(s *discordgo.Session, m *discordgo.Message) error {
 
 // Split a help embed into multiple parts
 func splitHelpEmbedField(embed *discordgo.MessageEmbed, elevated bool) []*discordgo.MessageEmbed {
-
 	var (
 		totalLen      int
 		newEmbed      *discordgo.MessageEmbed
@@ -1121,20 +755,6 @@ func init() {
 		DMAble:  true,
 	})
 	Add(&Command{
-		Execute:    helpChannelCommand,
-		Trigger:    "h-channel",
-		Aliases:    []string{"h[channel]", "hchannels", "h[channels]", "h-chanel", "help-channel", "help-chanel", "hchannel", "h-channels", "help-channels", "channel"},
-		Desc:       "Print all channel related commands",
-		Permission: functionality.Mod,
-	})
-	Add(&Command{
-		Execute:    helpFiltersCommand,
-		Trigger:    "h-filters",
-		Aliases:    []string{"h[filters]", "hfilter", "h[filters]", "h-filter", "help-filters", "help-filter", "hfilters"},
-		Desc:       "Print all commands related to filters",
-		Permission: functionality.Mod,
-	})
-	Add(&Command{
 		Execute:    helpMiscCommand,
 		Trigger:    "h-misc",
 		Aliases:    []string{"h[misc]", "hmiscellaneous", "h[miscellaneous]", "help-misc", "hmisc", "misc"},
@@ -1146,13 +766,6 @@ func init() {
 		Trigger:    "h-normal",
 		Aliases:    []string{"h[normal]", "h-norma", "h-norm", "help-normal", "hnormal", "normal"},
 		Desc:       "Print all normal user commands",
-		Permission: functionality.Mod,
-	})
-	Add(&Command{
-		Execute:    helpModerationCommand,
-		Trigger:    "h-moderation",
-		Aliases:    []string{"h[moderation]", "hmoderation", "h-mod", "h-mode", "help-moderation", "moderation"},
-		Desc:       "Print all mod moderation commands",
 		Permission: functionality.Mod,
 	})
 	Add(&Command{
@@ -1170,24 +783,10 @@ func init() {
 		Permission: functionality.Mod,
 	})
 	Add(&Command{
-		Execute:    helpStatsCommand,
-		Trigger:    "h-stats",
-		Aliases:    []string{"h[stats]", "hstat", "h[stat]", "help-stats", "hstats", "h-stats", "help-stats"},
-		Desc:       "Print all channel & emoji stat commands",
-		Permission: functionality.Mod,
-	})
-	Add(&Command{
 		Execute:    helpRaffleCommand,
 		Trigger:    "h-raffles",
 		Aliases:    []string{"h[raffle]", "hraffles", "h[raffles]", "help-raffle", "help-raffles", "h-raffle", "hraffle", "raffle"},
 		Desc:       "Print all raffle commands",
-		Permission: functionality.Mod,
-	})
-	Add(&Command{
-		Execute:    helpWaifuCommand,
-		Trigger:    "h-waifu",
-		Aliases:    []string{"h[waifu]", "hwaifus", "h[waifus]", "help-waifu", "help-waifus", "h-waifus", "hwaifu"},
-		Desc:       "Print all waifu commands",
 		Permission: functionality.Mod,
 	})
 	Add(&Command{
@@ -1205,16 +804,11 @@ func init() {
 		Permission: functionality.Admin,
 	})
 
-	categoriesMap["Channel"] = "Mod channel-related commands"
-	categoriesMap["Filters"] = "Phrase, extension and emoji filters"
 	categoriesMap["Misc"] = "Miscellaneous Mod commands"
 	categoriesMap["Normal"] = "Normal Username commands"
-	categoriesMap["Moderation"] = "Moderation commands"
 	categoriesMap["Reacts"] = "React Autorole commands"
 	categoriesMap["Reddit"] = "Reddit Feed commands"
-	categoriesMap["Stats"] = "Channel & Emoji Stats commands"
 	categoriesMap["Raffles"] = "Raffle commands"
-	categoriesMap["Waifus"] = "Waifu commands"
 	categoriesMap["Autopost"] = "Autopost commands"
 	categoriesMap["Settings"] = "Server setting commands"
 }

@@ -12,7 +12,6 @@ import (
 
 // Returns user avatar in channel as message
 func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
-
 	var (
 		err           error
 		guildSettings = entities.GuildSettings{Prefix: "."}

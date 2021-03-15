@@ -9,15 +9,9 @@ type GuildSettings struct {
 	Prefix              string     `json:"Prefix"`
 	BotLog              Cha        `json:"BotLogID"`
 	CommandRoles        []Role     `json:"CommandRoles"`
-	OptInUnder          Role       `json:"OptInUnder"`
-	OptInAbove          Role       `json:"OptInAbove"`
 	MutedRole           Role       `json:"MutedRole"`
 	VoiceChas           []VoiceCha `json:"VoiceChas"`
-	VoteModule          bool       `json:"VoteModule"`
 	ModOnly             bool       `json:"ModOnly"`
-	VoteChannelCategory Cha        `json:"VoteChannelCategory"`
-	WaifuModule         bool       `json:"WaifuModule"`
-	WhitelistFileFilter bool       `json:"WhitelistFileFilter"`
 	ReactsModule        bool       `json:"ReactsModule"`
 	PingMessage         string     `json:"PingMessage"`
 	Premium             bool       `json:"Premium"`
@@ -69,30 +63,6 @@ func (g GuildSettings) GetCommandRoles() []Role {
 	return g.CommandRoles
 }
 
-func (g GuildSettings) SetOptInUnder(role Role) GuildSettings {
-	g.OptInUnder = role
-	return g
-}
-
-func (g GuildSettings) GetOptInUnder() Role {
-	if g.OptInUnder == (Role{}) {
-		return Role{}
-	}
-	return g.OptInUnder
-}
-
-func (g GuildSettings) SetOptInAbove(role Role) GuildSettings {
-	g.OptInAbove = role
-	return g
-}
-
-func (g GuildSettings) GetOptInAbove() Role {
-	if g.OptInAbove == (Role{}) {
-		return Role{}
-	}
-	return g.OptInAbove
-}
-
 func (g GuildSettings) SetMutedRole(role Role) GuildSettings {
 	g.MutedRole = role
 	return g
@@ -127,18 +97,6 @@ func (g GuildSettings) GetVoiceChas() []VoiceCha {
 	return g.VoiceChas
 }
 
-func (g GuildSettings) SetVoteModule(voteModule bool) GuildSettings {
-	g.VoteModule = voteModule
-	return g
-}
-
-func (g GuildSettings) GetVoteModule() bool {
-	if g.VoteModule == false {
-		return false
-	}
-	return g.VoteModule
-}
-
 func (g GuildSettings) SetModOnly(modOnly bool) GuildSettings {
 	g.ModOnly = modOnly
 	return g
@@ -149,42 +107,6 @@ func (g GuildSettings) GetModOnly() bool {
 		return false
 	}
 	return g.ModOnly
-}
-
-func (g GuildSettings) SetVoteChannelCategory(cha Cha) GuildSettings {
-	g.VoteChannelCategory = cha
-	return g
-}
-
-func (g GuildSettings) GetVoteChannelCategory() Cha {
-	if g.VoteChannelCategory == (Cha{}) {
-		return Cha{}
-	}
-	return g.VoteChannelCategory
-}
-
-func (g GuildSettings) SetWaifuModule(waifuModule bool) GuildSettings {
-	g.WaifuModule = waifuModule
-	return g
-}
-
-func (g GuildSettings) GetWaifuModule() bool {
-	if g.WaifuModule == false {
-		return false
-	}
-	return g.WaifuModule
-}
-
-func (g GuildSettings) SetWhitelistFileFilter(whitelistFileFilter bool) GuildSettings {
-	g.WhitelistFileFilter = whitelistFileFilter
-	return g
-}
-
-func (g GuildSettings) GetWhitelistFileFilter() bool {
-	if g.WhitelistFileFilter == false {
-		return false
-	}
-	return g.WhitelistFileFilter
 }
 
 func (g GuildSettings) SetReactsModule(reactsModule bool) GuildSettings {

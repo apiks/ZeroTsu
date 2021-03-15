@@ -8,7 +8,6 @@ import (
 	"github.com/r-anime/ZeroTsu/functionality"
 	"log"
 	"math/rand"
-	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -21,9 +20,8 @@ import (
 
 var darlingTrigger int
 var GuildIds = &GuildIdsStruct{
-	Ids:     make(map[string]bool),
+	Ids: make(map[string]bool),
 }
-
 
 type GuildIdsStruct struct {
 	sync.RWMutex
@@ -41,15 +39,6 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	for _, guildID := range guildIds {
 		// Initialize guild if missing
 		entities.HandleNewGuild(guildID)
-
-		// Clean up SpoilerRoles.json in each guild
-		err := cleanSpoilerRoles(s, guildID)
-		if err != nil {
-			log.Println(err)
-		}
-
-		// Handles Unbans and Unmutes
-		punishmentHandler(s, guildID)
 
 		// Handles RemindMes
 		remindMeHandler(s, guildID)
@@ -70,7 +59,7 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	}
 	entities.Mutex.RUnlock()
 	if randomPlayingMsg != "" {
-		_ = s.UpdateStatus(0, randomPlayingMsg)
+		_ = s.UpdateGameStatus(0, randomPlayingMsg)
 	}
 
 	// Sends server count to bot list sites if it's the public ZeroTsu
@@ -82,15 +71,6 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 
 // Adds the voice role whenever a user joins the config voice chat
 func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
-	// Saves program from panic and continues running normally without executing the command if it happens
-	defer func() {
-		if rec := recover(); rec != nil {
-			log.Println(rec)
-			log.Println("Recovery in VoiceRoleHandler")
-			log.Println("stacktrace from panic: \n" + string(debug.Stack()))
-		}
-	}()
-
 	if v.GuildID == "" {
 		return
 	}
@@ -333,124 +313,6 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
-// If there's a manual ban handle it
-func OnGuildBan(s *discordgo.Session, e *discordgo.GuildBanAdd) {
-	if e.GuildID == "" {
-		return
-	}
-
-	entities.HandleNewGuild(e.GuildID)
-
-	// Check if a bot did the banning
-	auditLog, err := s.GuildAuditLog(e.GuildID, e.User.ID, "", int(discordgo.AuditLogActionMemberBanAdd), 10)
-	if err == nil {
-		for _, entry := range auditLog.AuditLogEntries {
-			if entry.TargetID == e.User.ID {
-				userBanning, err := s.User(entry.UserID)
-				if err != nil {
-					continue
-				}
-				if userBanning.Bot {
-					return
-				}
-				break
-			}
-		}
-	}
-
-	user := db.GetGuildPunishedUser(e.GuildID, e.User.ID)
-	if user != (entities.PunishedUsers{}) {
-		return
-	}
-
-	guildSettings := db.GetGuildSettings(e.GuildID)
-	if guildSettings.BotLog == (entities.Cha{}) || guildSettings.BotLog.GetID() == "" {
-		return
-	}
-
-	_, _ = s.ChannelMessageSend(guildSettings.BotLog.GetID(), fmt.Sprintf("%s#%s was manually permabanned. ID: %s", e.User.Username, e.User.Discriminator, e.User.ID))
-}
-
-// Sends a message to a channel to log whenever a user joins. Intended use was to catch spambots for r/anime
-// Now also serves for the mute command
-func GuildJoin(s *discordgo.Session, u *discordgo.GuildMemberAdd) {
-	// Saves program from panic and continues running normally without executing the command if it happens
-	defer func() {
-		if rec := recover(); rec != nil {
-			log.Println(rec)
-			log.Println("Recovery in GuildJoin")
-			log.Println("stacktrace from panic: \n" + string(debug.Stack()))
-		}
-	}()
-
-	if u.GuildID == "" {
-		return
-	}
-
-	entities.HandleNewGuild(u.GuildID)
-
-	// Gives the user the muted role if he is muted and has rejoined the server
-	punishedUser := db.GetGuildPunishedUser(u.GuildID, u.User.ID)
-	if punishedUser != (entities.PunishedUsers{}) && punishedUser.GetUnmuteDate() != (time.Time{}) {
-		t := time.Now()
-		muteDifference := t.Sub(punishedUser.GetUnmuteDate())
-
-		if muteDifference <= 0 {
-			guildSettings := db.GetGuildSettings(u.GuildID)
-			if guildSettings.GetMutedRole() == (entities.Role{}) || guildSettings.GetMutedRole().GetID() == "" {
-				deb, _ := s.GuildRoles(u.GuildID)
-				for _, role := range deb {
-					if strings.ToLower(role.Name) == "muted" || strings.ToLower(role.Name) == "t-mute" {
-						_ = s.GuildMemberRoleAdd(u.GuildID, punishedUser.GetID(), role.ID)
-						break
-					}
-				}
-			} else {
-				_ = s.GuildMemberRoleAdd(u.GuildID, punishedUser.GetID(), guildSettings.GetMutedRole().GetID())
-			}
-		}
-	}
-}
-
-// Cleans spoilerRoles.json
-func cleanSpoilerRoles(s *discordgo.Session, guildID string) error {
-	var shouldDelete bool
-
-	// Pulls all of the server roles
-	roles, err := s.GuildRoles(guildID)
-	if err != nil {
-		guildSettings := db.GetGuildSettings(guildID)
-		common.LogError(s, guildSettings.BotLog, err)
-		return err
-	}
-
-	// Removes roles not found in spoilerRoles.json
-	guildSpoilerMap := db.GetGuildSpoilerMap(guildID)
-	for _, spoilerRole := range guildSpoilerMap {
-		if spoilerRole == nil {
-			continue
-		}
-
-		shouldDelete = true
-		for _, role := range roles {
-			if role.ID == spoilerRole.ID {
-				shouldDelete = false
-
-				// Updates names
-				if strings.ToLower(role.Name) != strings.ToLower(spoilerRole.Name) {
-					spoilerRole.Name = role.Name
-				}
-				break
-			}
-		}
-		if shouldDelete {
-			db.SetGuildSpoilerRole(guildID, spoilerRole, true)
-		}
-	}
-
-	return nil
-}
-
 // Handles BOT joining a server
 func GuildCreate(s *discordgo.Session, g *discordgo.GuildCreate) {
 	isNew, _ := entities.Guilds.Load(g.Guild.ID)
@@ -465,18 +327,16 @@ func GuildCreate(s *discordgo.Session, g *discordgo.GuildCreate) {
 	log.Println(fmt.Sprintf("Joined guild %s", g.Guild.Name))
 }
 
+
 // Logs BOT leaving a server
 func GuildDelete(_ *discordgo.Session, g *discordgo.GuildDelete) {
-	if g.Name == "" {
-		return
-	}
 	GuildIds.Lock()
 	entities.Guilds.Lock()
 	delete(GuildIds.Ids, g.Guild.ID)
 	delete(entities.Guilds.DB, g.Guild.ID)
 	entities.Guilds.Unlock()
 	GuildIds.Unlock()
-	log.Println(fmt.Sprintf("Left guild %s", g.Guild.Name))
+	log.Println(fmt.Sprintf("Left guild with ID: %s", g.Guild.ID))
 }
 
 // Changes the BOT's nickname dynamically to a `prefix username` format if there is no existing custom nickname
@@ -484,12 +344,9 @@ func DynamicNicknameChange(s *discordgo.Session, guildID string) {
 	guildSettings := db.GetGuildSettings(guildID)
 
 	// Set custom nickname based on guild prefix if there is no existing nickname
-	bot, err := s.State.Member(guildID, s.State.User.ID)
+	bot, err := s.GuildMember(guildID, s.State.User.ID)
 	if err != nil {
-		bot, err = s.GuildMember(guildID, s.State.User.ID)
-		if err != nil {
-			return
-		}
+		return
 	}
 
 	if bot.Nick != "" {
@@ -512,7 +369,13 @@ func DynamicNicknameChange(s *discordgo.Session, guildID string) {
 // Fixes broken anime guild subs that are null
 func fixGuildSubsCommand(guildID string) {
 	entities.Mutex.Lock()
-	for ID, subs := range entities.SharedInfo.GetAnimeSubsMap() {
+	defer entities.Mutex.Unlock()
+	entities.SharedInfo.Lock()
+	defer entities.SharedInfo.Unlock()
+	entities.AnimeSchedule.RLock()
+	defer entities.AnimeSchedule.RUnlock()
+
+	for ID, subs := range entities.SharedInfo.AnimeSubs {
 		if subs != nil || ID != guildID {
 			continue
 		}
@@ -520,5 +383,4 @@ func fixGuildSubsCommand(guildID string) {
 		entities.SetupGuildSub(guildID)
 		break
 	}
-	entities.Mutex.Unlock()
 }

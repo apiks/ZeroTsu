@@ -5,11 +5,11 @@ import "sync"
 type ShowAirTime struct {
 	sync.RWMutex
 
-	Name    string
-	AirTime string
-	Episode string
-	Delayed string
-	Key     string
+	Name     string
+	AirTime  string
+	Episode  string
+	Delayed  string
+	Key      string
 	ImageUrl string
 }
 

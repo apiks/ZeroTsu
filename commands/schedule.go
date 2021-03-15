@@ -16,7 +16,6 @@ import (
 
 // Shows todays airing anime times, fetched from AnimeSchedule.net
 func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
-
 	var (
 		currentDay   = int(time.Now().Weekday())
 		day          = -1
@@ -89,8 +88,10 @@ func getDaySchedule(weekday int) string {
 		PST = time.FixedZone("PST", -8*3600)
 	}
 
-	entities.Mutex.Lock()
-	for dayInt, showSlice := range entities.AnimeSchedule {
+	entities.AnimeSchedule.RLock()
+	defer entities.AnimeSchedule.RUnlock()
+
+	for dayInt, showSlice := range entities.AnimeSchedule.AnimeSchedule {
 		if showSlice == nil {
 			continue
 		}
@@ -142,7 +143,6 @@ func getDaySchedule(weekday int) string {
 		}
 		break
 	}
-	entities.Mutex.Unlock()
 
 	return printMessage
 }
@@ -175,13 +175,13 @@ func processEachShow(_ int, element *goquery.Selection) {
 	show.SetEpisode(element.Find(".show-episode").Text())
 	show.SetEpisode(strings.Replace(show.GetEpisode(), "\n", "", -1))
 	show.SetAirTime(element.Find(".show-air-time").Text())
-	show.SetAirTime(strings.Replace(show.GetAirTime(), "\n", "", -1))
+	show.SetAirTime(strings.TrimSuffix(strings.TrimPrefix(strings.Replace(show.GetAirTime(), "\n", "", -1), " "), " "))
 	show.SetDelayed(strings.TrimPrefix(element.Find(".show-delay-bar").Text(), " "))
 	show.SetDelayed(strings.Trim(show.GetDelayed(), "\n"))
 	key, exists := element.Find(".show-link").Attr("href")
 	if exists == true {
 		show.SetKey(key)
-		show.SetKey(strings.ToLower(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(show.GetKey(), "/shows/"), "shows/"), "/shows")))
+		show.SetKey(strings.ToLower(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(show.GetKey(), "/anime/"), "anime/"), "/anime")))
 	}
 	imageUrl, exists := element.Find(".show-poster").Attr("data-src")
 	if exists == true {
@@ -193,14 +193,14 @@ func processEachShow(_ int, element *goquery.Selection) {
 		}
 	}
 
-	entities.AnimeSchedule[day] = append(entities.AnimeSchedule[day], &show)
+	entities.AnimeSchedule.AnimeSchedule[day] = append(entities.AnimeSchedule.AnimeSchedule[day], &show)
 }
 
 // Scrapes https://AnimeSchedule.net for air times subbed
 func UpdateAnimeSchedule() {
 	// Create HTTP client with timeout
 	client := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 30 * time.Second,
 	}
 
 	// Create and modify HTTP request before sending
@@ -227,18 +227,18 @@ func UpdateAnimeSchedule() {
 	}
 
 	// Find all airing shows and process them after resetting map
-	entities.Mutex.Lock()
-	defer entities.Mutex.Unlock()
-	for dayInt := range entities.AnimeSchedule {
-		for len(entities.AnimeSchedule[dayInt]) > 0 {
-			for i := range entities.AnimeSchedule[dayInt] {
-				copy(entities.AnimeSchedule[dayInt][i:], entities.AnimeSchedule[dayInt][i+1:])
-				entities.AnimeSchedule[dayInt][len(entities.AnimeSchedule[dayInt])-1] = nil
-				entities.AnimeSchedule[dayInt] = entities.AnimeSchedule[dayInt][:len(entities.AnimeSchedule[dayInt])-1]
+	entities.AnimeSchedule.Lock()
+	defer entities.AnimeSchedule.Unlock()
+	for dayInt := range entities.AnimeSchedule.AnimeSchedule {
+		for len(entities.AnimeSchedule.AnimeSchedule[dayInt]) > 0 {
+			for i := range entities.AnimeSchedule.AnimeSchedule[dayInt] {
+				copy(entities.AnimeSchedule.AnimeSchedule[dayInt][i:], entities.AnimeSchedule.AnimeSchedule[dayInt][i+1:])
+				entities.AnimeSchedule.AnimeSchedule[dayInt][len(entities.AnimeSchedule.AnimeSchedule[dayInt])-1] = nil
+				entities.AnimeSchedule.AnimeSchedule[dayInt] = entities.AnimeSchedule.AnimeSchedule[dayInt][:len(entities.AnimeSchedule.AnimeSchedule[dayInt])-1]
 				break
 			}
 		}
-		delete(entities.AnimeSchedule, dayInt)
+		delete(entities.AnimeSchedule.AnimeSchedule, dayInt)
 	}
 	document.Find(".timetable-column .timetable-column-show").Each(processEachShow)
 }

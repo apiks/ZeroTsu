@@ -39,9 +39,9 @@ func Feed(s *discordgo.Session, feed *entities.Feed, item *gofeed.Item) (*discor
 
 	embed := &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{
-			URL:          item.Link,
-			Name:         item.Title,
-			IconURL:      "https://images-eu.ssl-images-amazon.com/images/I/418PuxYS63L.png",
+			URL:     item.Link,
+			Name:    item.Title,
+			IconURL: "https://images-eu.ssl-images-amazon.com/images/I/418PuxYS63L.png",
 		},
 		Description: item.Description,
 		Timestamp:   item.Published,

@@ -22,9 +22,6 @@ func SendServers(guildCountStr string, s *discordgo.Session) {
 
 	// Discord Bots
 	discordBotsGuildCount(client, guildCountStr)
-
-	// Discord Boats
-	discordBoatsGuildCount(client, guildCountStr)
 }
 
 // Sends guild count to discordbots.org
@@ -44,28 +41,6 @@ func discordBotsGuildCount(client *http.Client, guildCount string) {
 	response, err := client.Do(req)
 	if err != nil {
 		log.Println("discordBots Err")
-		log.Println(err)
-		return
-	}
-	response.Body.Close()
-}
-
-// Sends guild count to discord.boats
-func discordBoatsGuildCount(client *http.Client, guildCount string) {
-	data := url.Values{
-		"server_count": {guildCount},
-	}
-	req, err := http.NewRequest("POST", "https://discord.boats/api/bot/614495694769618944", bytes.NewBufferString(data.Encode()))
-	if err != nil {
-		log.Println("discordBoats Err")
-		log.Println(err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
-	req.Header.Add("Authorization", config.DiscordBoatsSecret)
-	response, err := client.Do(req)
-	if err != nil {
-		log.Println("discordBoats Err")
 		log.Println(err)
 		return
 	}
