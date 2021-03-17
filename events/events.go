@@ -381,6 +381,7 @@ func fixGuildSubsCommand(guildID string) {
 		}
 
 		entities.SetupGuildSub(guildID)
+		_ = entities.AnimeSubsWrite(entities.SharedInfo.AnimeSubs)
 		break
 	}
 }

@@ -16,7 +16,6 @@ import (
 func setDailyScheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := db.GetGuildSettings(m.GuildID)
 	dailySchedule := db.GetGuildAutopost(m.GuildID, "dailyschedule")
-
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	// Displays current dailyschedule channel
@@ -79,7 +78,6 @@ func setDailyScheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 func setNewEpisodesCommand(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := db.GetGuildSettings(m.GuildID)
 	newEpisodes := db.GetGuildAutopost(m.GuildID, "newepisodes")
-
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
 	// Displays current new episodes channel
@@ -137,10 +135,17 @@ func setNewEpisodesCommand(s *discordgo.Session, m *discordgo.Message) {
 	entities.AnimeSchedule.RLock()
 	entities.SetupGuildSub(m.GuildID)
 	entities.AnimeSchedule.RUnlock()
+	err := entities.AnimeSubsWrite(entities.SharedInfo.AnimeSubs)
+	if err != nil {
+		entities.SharedInfo.Unlock()
+		entities.Mutex.Unlock()
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		return
+	}
 	entities.SharedInfo.Unlock()
 	entities.Mutex.Unlock()
 
-	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New Autopost channel for new airing anime episodes is: `%s - %s`", newEpisodes.GetName(), newEpisodes.GetID()))
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New Autopost channel for new airing anime episodes is: `%s - %s`", newEpisodes.GetName(), newEpisodes.GetID()))
 	if err != nil {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
