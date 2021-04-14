@@ -44,7 +44,6 @@ func SetGuildRaffle(guildID string, raffle *entities.Raffle, delete ...bool) err
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
-
 	if len(delete) == 0 {
 		if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetRaffles()) >= 200 {
 			entities.Guilds.Unlock()
@@ -79,7 +78,6 @@ func SetGuildRaffle(guildID string, raffle *entities.Raffle, delete ...bool) err
 			return err
 		}
 	}
-
 	entities.Guilds.Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("raffles", entities.Guilds.DB[guildID].GetRaffles())

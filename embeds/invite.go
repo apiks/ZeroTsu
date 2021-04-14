@@ -2,7 +2,7 @@ package embeds
 
 import "github.com/bwmarrin/discordgo"
 
-const inviteLink = "https://discordapp.com/api/oauth2/authorize?client_id=614495694769618944&permissions=401960278&scope=bot"
+const inviteLink = "https://discord.com/oauth2/authorize?client_id=614495694769618944&scope=bot&permissions=335899736"
 
 // Invite sends an embed invite message
 func Invite(s *discordgo.Session, m *discordgo.Message) error {

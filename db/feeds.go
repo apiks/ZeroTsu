@@ -12,8 +12,6 @@ func GetGuildFeeds(guildID string) []entities.Feed {
 
 	entities.Guilds.RLock()
 	defer entities.Guilds.RUnlock()
-	entities.Guilds.DB[guildID].RLock()
-	defer entities.Guilds.DB[guildID].RUnlock()
 
 	return entities.Guilds.DB[guildID].GetFeeds()
 }

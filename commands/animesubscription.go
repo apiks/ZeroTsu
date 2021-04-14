@@ -41,8 +41,7 @@ func subscribeCommand(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	now := time.Now()
-	now = now.UTC()
+	now := time.Now().UTC()
 
 	// Iterates over all of the anime shows saved from AnimeSchedule and checks if it finds one
 	entities.AnimeSchedule.RLock()
@@ -453,7 +452,7 @@ func AnimeSubsTimer(s *discordgo.Session, _ *discordgo.Ready) {
 	}
 }
 
-// Resets anime sub notifications status on bot start
+// ResetSubscriptions Resets anime sub notifications status on bot start
 func ResetSubscriptions() {
 	var todayShows []*entities.ShowAirTime
 	now := time.Now()
