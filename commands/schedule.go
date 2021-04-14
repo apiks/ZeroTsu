@@ -154,20 +154,20 @@ func processEachShow(_ int, element *goquery.Selection) {
 		show entities.ShowAirTime
 	)
 
-	switch strings.ToLower(element.SiblingsFiltered(".timetable-column-day").Text()) {
-	case "sunday", "sundays", "sun":
+	date := strings.ToLower(element.SiblingsFiltered(".timetable-column-date").Text())
+	if strings.Contains(date, "sunday") {
 		day = 0
-	case "monday", "mondays", "mon":
+	} else if strings.Contains(date, "monday") {
 		day = 1
-	case "tuesday", "tuesdays", "tue", "tues":
+	} else if strings.Contains(date, "tuesday") {
 		day = 2
-	case "wednesday", "wednesdays", "wed":
+	} else if strings.Contains(date, "wednesday") {
 		day = 3
-	case "thursday", "thursdays", "thu", "thurs", "thur":
+	} else if strings.Contains(date, "thursday") {
 		day = 4
-	case "friday", "fridays", "fri":
+	} else if strings.Contains(date, "friday") {
 		day = 5
-	case "saturday", "saturdays", "sat":
+	} else if strings.Contains(date, "saturday") {
 		day = 6
 	}
 
@@ -196,7 +196,7 @@ func processEachShow(_ int, element *goquery.Selection) {
 	entities.AnimeSchedule.AnimeSchedule[day] = append(entities.AnimeSchedule.AnimeSchedule[day], &show)
 }
 
-// Scrapes https://AnimeSchedule.net for air times subbed
+// UpdateAnimeSchedule Scrapes https://AnimeSchedule.net for air times subbed
 func UpdateAnimeSchedule() {
 	// Create HTTP client with timeout
 	client := &http.Client{
