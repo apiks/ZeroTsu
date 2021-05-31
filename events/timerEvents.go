@@ -150,14 +150,11 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 
 // Fetches reddit feeds and returns the feeds that need to posted for all guilds
 func feedHandler(s *discordgo.Session, guildIds []string) {
-	redditFeedBlock.RLock()
+	redditFeedBlock.Lock()
 	if redditFeedBlock.Block {
-		redditFeedBlock.RUnlock()
+		redditFeedBlock.Unlock()
 		return
 	}
-	redditFeedBlock.RUnlock()
-
-	redditFeedBlock.Lock()
 	redditFeedBlock.Block = true
 	redditFeedBlock.Unlock()
 
@@ -260,7 +257,7 @@ func feedHandler(s *discordgo.Session, guildIds []string) {
 				exists = false
 
 				// Wait some milliseconds so it doesn't hit the rate limit easily
-				time.Sleep(time.Millisecond * 200)
+				time.Sleep(time.Millisecond * 100)
 
 				// Sends the feed item
 				message, err := embeds.Feed(s, &feed, item)

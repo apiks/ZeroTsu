@@ -309,23 +309,20 @@ func viewSubscriptions(s *discordgo.Session, m *discordgo.Message) {
 // Handles sending notifications to users when it's time
 func animeSubsHandler(s *discordgo.Session) {
 	now := time.Now()
-	var todayShows []*entities.ShowAirTime
+	var todayShows []entities.ShowAirTime
 
-	entities.Mutex.Lock()
-	if int(Today.Weekday()) != int(now.Weekday()) {
-		entities.Mutex.Unlock()
+	Today.RLock()
+	if Today.Time.Day() != now.Day() {
+		Today.RUnlock()
 		return
 	}
-	entities.Mutex.Unlock()
-
-	animeSubFeedBlock.RLock()
-	if animeSubFeedBlock.Block {
-		animeSubFeedBlock.RUnlock()
-		return
-	}
-	animeSubFeedBlock.RUnlock()
+	Today.RUnlock()
 
 	animeSubFeedBlock.Lock()
+	if animeSubFeedBlock.Block {
+		animeSubFeedBlock.Unlock()
+		return
+	}
 	animeSubFeedBlock.Block = true
 	animeSubFeedBlock.Unlock()
 
@@ -333,15 +330,8 @@ func animeSubsHandler(s *discordgo.Session) {
 
 	// Fetches Today's shows
 	entities.AnimeSchedule.RLock()
-	for dayInt, scheduleShows := range entities.AnimeSchedule.AnimeSchedule {
-		// Checks if the target schedule day is Today or not
-		if int(now.Weekday()) != dayInt {
-			continue
-		}
-
-		// Saves Today's shows
-		todayShows = scheduleShows
-		break
+	for _, show := range entities.AnimeSchedule.AnimeSchedule[now.Day()] {
+		todayShows = append(todayShows, *show)
 	}
 	entities.AnimeSchedule.RUnlock()
 
@@ -354,22 +344,17 @@ func animeSubsHandler(s *discordgo.Session) {
 			if userShow == nil {
 				continue
 			}
-
-			// Checks if the user has already been notified for this show
 			if userShow.GetNotified() {
 				continue
 			}
 
 			for _, scheduleShow := range todayShows {
-				if scheduleShow == nil {
+				if scheduleShow == (entities.ShowAirTime{}) {
 					continue
 				}
-
 				if scheduleShow.GetDelayed() != "" {
 					continue
 				}
-
-				// Checks if the target show matches
 				if strings.ToLower(userShow.GetShow()) != strings.ToLower(scheduleShow.GetName()) {
 					continue
 				}
@@ -401,7 +386,7 @@ func animeSubsHandler(s *discordgo.Session) {
 					}
 
 					// Sends embed
-					err := embeds.Subscription(s, scheduleShow, newepisodes.GetID())
+					err := embeds.Subscription(s, &scheduleShow, newepisodes.GetID())
 					if err != nil {
 						continue
 					}

@@ -14,17 +14,6 @@ func GetGuildFeedChecks(guildID string) []entities.FeedCheck {
 	return entities.Guilds.DB[guildID].GetFeedChecks()
 }
 
-// SetGuildFeedChecks sets a target guild's feed checks in-memory
-func SetGuildFeedChecks(guildID string, feedChecks []entities.FeedCheck) {
-	entities.HandleNewGuild(guildID)
-
-	entities.Guilds.Lock()
-	entities.Guilds.DB[guildID].SetFeedChecks(feedChecks)
-	entities.Guilds.Unlock()
-
-	entities.Guilds.DB[guildID].WriteData("rssThreadCheck", entities.Guilds.DB[guildID].GetFeedChecks())
-}
-
 // AddGuildFeedCheck adds a target guild's feed check in-memory
 func AddGuildFeedCheck(guildID string, feedCheck entities.FeedCheck, delete ...bool) {
 	entities.HandleNewGuild(guildID)

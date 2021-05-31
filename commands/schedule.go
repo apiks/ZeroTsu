@@ -152,9 +152,9 @@ func processEachShow(_ int, element *goquery.Selection) {
 	var (
 		day  int
 		show entities.ShowAirTime
-	)
+		)
 
-	date := strings.ToLower(element.SiblingsFiltered(".timetable-column-day").Text())
+	date := strings.ToLower(element.SiblingsFiltered(".timetable-column-date").Find(".timetable-column-day").Text())
 	if strings.Contains(date, "sunday") {
 		day = 0
 	} else if strings.Contains(date, "monday") {

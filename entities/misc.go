@@ -12,10 +12,7 @@ import (
 
 var (
 	Mutex sync.RWMutex
-
 	SharedInfo *sharedInfo
-
-	sharedFileNames = [...]string{"remindMes.json", "animeSubs.json"}
 	AnimeSchedule   = &AnimeScheduleMap{AnimeSchedule: make(map[int][]*ShowAirTime)}
 )
 
@@ -24,7 +21,7 @@ type AnimeScheduleMap struct {
 	AnimeSchedule map[int][]*ShowAirTime
 }
 
-// Loads global shared DBs
+// LoadSharedDB loads global shared DBs in mem
 func LoadSharedDB() {
 	// Creates missing "database" and "shared" folder if they don't exist
 	if _, err := os.Stat("database"); os.IsNotExist(err) {

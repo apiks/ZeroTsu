@@ -1,26 +1,31 @@
 package commands
 
 import (
-	"github.com/r-anime/ZeroTsu/entities"
 	"io/ioutil"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-var Today = time.Now()
+type SafeTime struct {
+	sync.RWMutex
+	Time time.Time
+}
 
-// Posts daily stats and update schedule command
-func dailyStats(s *discordgo.Session) {
+var Today = &SafeTime{Time: time.Now()}
+
+// dailyEvents is Daily events
+func dailyEvents(s *discordgo.Session) {
 	t := time.Now()
 
-	entities.Mutex.RLock()
-	if Today.Day() == t.Day() {
-		entities.Mutex.RUnlock()
+	Today.RLock()
+	if Today.Time.Day() == t.Day() {
+		Today.RUnlock()
 		return
 	}
-	entities.Mutex.RUnlock()
+	Today.RUnlock()
 
 	// Update daily anime schedule
 	UpdateAnimeSchedule()
@@ -32,7 +37,7 @@ func dailyStats(s *discordgo.Session) {
 		return
 	}
 
-	// Sleeps until anime schedule is definitely updated
+	// Sleeps until anime schedule is (reasonably) definitely updated
 	time.Sleep(10 * time.Second)
 
 	for _, f := range folders {
@@ -48,14 +53,14 @@ func dailyStats(s *discordgo.Session) {
 		DailySchedule(s, guildID)
 	}
 
-	entities.Mutex.Lock()
-	Today = t
-	entities.Mutex.Unlock()
+	Today.Lock()
+	Today.Time = t
+	Today.Unlock()
 }
 
 // Daily stats and schedule update timer
 func DailyStatsTimer(s *discordgo.Session, _ *discordgo.Ready) {
 	for range time.NewTicker(5 * time.Minute).C {
-		dailyStats(s)
+		dailyEvents(s)
 	}
 }
