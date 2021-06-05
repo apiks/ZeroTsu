@@ -312,7 +312,7 @@ func animeSubsHandler(s *discordgo.Session) {
 	var todayShows []entities.ShowAirTime
 
 	Today.RLock()
-	if Today.Time.Day() != now.Day() {
+	if int(Today.Time.Weekday()) != int(now.Weekday()) {
 		Today.RUnlock()
 		return
 	}
@@ -326,11 +326,15 @@ func animeSubsHandler(s *discordgo.Session) {
 	animeSubFeedBlock.Block = true
 	animeSubFeedBlock.Unlock()
 
-	now = now.UTC()
+	location, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		return
+	}
+	now = now.In(location)
 
 	// Fetches Today's shows
 	entities.AnimeSchedule.RLock()
-	for _, show := range entities.AnimeSchedule.AnimeSchedule[now.Day()] {
+	for _, show := range entities.AnimeSchedule.AnimeSchedule[int(now.Weekday())] {
 		todayShows = append(todayShows, *show)
 	}
 	entities.AnimeSchedule.RUnlock()

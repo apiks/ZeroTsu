@@ -21,7 +21,7 @@ func dailyEvents(s *discordgo.Session) {
 	t := time.Now()
 
 	Today.RLock()
-	if Today.Time.Day() == t.Day() {
+	if int(Today.Time.Weekday()) == int(t.Weekday()) {
 		Today.RUnlock()
 		return
 	}
