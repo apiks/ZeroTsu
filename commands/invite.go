@@ -21,10 +21,20 @@ func inviteCommand(s *discordgo.Session, m *discordgo.Message) {
 func init() {
 	Add(&Command{
 		Execute: inviteCommand,
-		Trigger: "invite",
+		Name:    "invite",
 		Aliases: []string{"inv", "invit"},
-		Desc:    "Display my invite link",
+		Desc:    "Display my invite link.",
 		Module:  "normal",
 		DMAble:  true,
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Embeds: []*discordgo.MessageEmbed{
+						embeds.CreateInviteEmbed(s.State.User),
+					},
+				},
+			})
+		},
 	})
 }

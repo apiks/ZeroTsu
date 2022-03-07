@@ -2,16 +2,17 @@ package events
 
 import (
 	"fmt"
-	"github.com/r-anime/ZeroTsu/common"
-	"github.com/r-anime/ZeroTsu/db"
-	"github.com/r-anime/ZeroTsu/entities"
-	"github.com/r-anime/ZeroTsu/functionality"
 	"log"
 	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
+	"github.com/r-anime/ZeroTsu/functionality"
 
 	"github.com/bwmarrin/discordgo"
 
@@ -28,27 +29,28 @@ type GuildIdsStruct struct {
 	Ids map[string]bool
 }
 
-// Status Ready Events
-func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
+func StatusReady(s *discordgo.Session, _ *discordgo.Ready) {
 	var guildIds []string
 
-	for _, guild := range e.Guilds {
-		guildIds = append(guildIds, guild.ID)
+	GuildIds.RLock()
+	for gID := range GuildIds.Ids {
+		guildIds = append(guildIds, gID)
 	}
+	GuildIds.RUnlock()
 
 	for _, guildID := range guildIds {
 		// Initialize guild if missing
 		entities.HandleNewGuild(guildID)
-
-		// Handles RemindMes
-		remindMeHandler(s, guildID)
 
 		// Reload null guild anime subs
 		fixGuildSubsCommand(guildID)
 	}
 
 	// Handles Reddit Feeds
-	feedHandler(s, guildIds)
+	feedHandler(guildIds)
+
+	// Handles RemindMes
+	remindMeHandler(config.Mgr.SessionForDM())
 
 	// Updates playing status
 	var randomPlayingMsg string
@@ -69,8 +71,13 @@ func StatusReady(s *discordgo.Session, e *discordgo.Ready) {
 	functionality.SendServers(guildCountStr, s)
 }
 
-// Adds the voice role whenever a user joins the config voice chat
+// VoiceRoleHandler toggles a role whenever a user join/leave the specified voice channel
 func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
+	var (
+		noRemovalRoles []entities.Role
+		dontRemove     bool
+	)
+
 	if v.GuildID == "" {
 		return
 	}
@@ -81,11 +88,6 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 	if guildSettings.GetVoiceChas() == nil || len(guildSettings.GetVoiceChas()) == 0 {
 		return
 	}
-
-	var (
-		noRemovalRoles []entities.Role
-		dontRemove     bool
-	)
 
 	// Goes through each guild voice channel and removes/adds roles
 	for _, cha := range guildSettings.GetVoiceChas() {
@@ -98,7 +100,7 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 			if v.ChannelID == cha.GetID() {
 				err := s.GuildMemberRoleAdd(v.GuildID, v.UserID, chaRole.GetID())
 				if err != nil {
-					return
+					continue
 				}
 				noRemovalRoles = append(noRemovalRoles, chaRole)
 			}
@@ -119,7 +121,7 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 	}
 }
 
-// Print fluff message on bot ping
+// OnBotPing Prints fluff message on bot ping
 func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.GuildID == "" {
 		return
@@ -313,7 +315,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
-// Handles BOT joining a server
+// GuildCreate Handles BOT joining a server
 func GuildCreate(s *discordgo.Session, g *discordgo.GuildCreate) {
 	isNew, _ := entities.Guilds.Load(g.Guild.ID)
 	if isNew && s.State.User.ID == "614495694769618944" {
@@ -327,8 +329,7 @@ func GuildCreate(s *discordgo.Session, g *discordgo.GuildCreate) {
 	log.Println(fmt.Sprintf("Joined guild %s", g.Guild.Name))
 }
 
-
-// Logs BOT leaving a server
+// GuildDelete logs BOT leaving a server
 func GuildDelete(_ *discordgo.Session, g *discordgo.GuildDelete) {
 	GuildIds.Lock()
 	entities.Guilds.Lock()
@@ -339,7 +340,7 @@ func GuildDelete(_ *discordgo.Session, g *discordgo.GuildDelete) {
 	log.Println(fmt.Sprintf("Left guild with ID: %s", g.Guild.ID))
 }
 
-// Changes the BOT's nickname dynamically to a `prefix username` format if there is no existing custom nickname
+// DynamicNicknameChange Changes the BOT's nickname dynamically to a `prefix username` format if there is no existing custom nickname
 func DynamicNicknameChange(s *discordgo.Session, guildID string) {
 	guildSettings := db.GetGuildSettings(guildID)
 

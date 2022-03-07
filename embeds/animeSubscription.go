@@ -2,17 +2,23 @@ package embeds
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/r-anime/ZeroTsu/entities"
-	"time"
 )
 
 // Subscription sends an embed anime subscription message
 func Subscription(s *discordgo.Session, show *entities.ShowAirTime, channelID string) error {
-	var embed = &discordgo.MessageEmbed{
+	description := fmt.Sprintf("__**%s**__ raw is out!", show.GetEpisode())
+	if show.GetSubbed() {
+		description = fmt.Sprintf("__**%s**__ subbed is out!", show.GetEpisode())
+	}
+
+	_, err := s.ChannelMessageSendEmbed(channelID, &discordgo.MessageEmbed{
 		URL:         fmt.Sprintf("https://animeschedule.net/anime/%s", show.GetKey()),
 		Title:       show.GetName(),
-		Description: fmt.Sprintf("__**%s**__ is out!", show.GetEpisode()),
+		Description: description,
 		Timestamp:   time.Now().Format(time.RFC3339),
 		Color:       purpleColor,
 		Image: &discordgo.MessageEmbedImage{
@@ -20,8 +26,12 @@ func Subscription(s *discordgo.Session, show *entities.ShowAirTime, channelID st
 			Height: 60,
 			URL:    show.GetImageUrl(),
 		},
-	}
-
-	_, err := s.ChannelMessageSendEmbed(channelID, embed)
+		Author: &discordgo.MessageEmbedAuthor{
+			URL:          "https://AnimeSchedule.net",
+			Name:         "AnimeSchedule.net",
+			IconURL:      "https://cdn.animeschedule.net/production/assets/public/img/logos/as-logo-3ab78c35b0.png",
+			ProxyIconURL: "",
+		},
+	})
 	return err
 }

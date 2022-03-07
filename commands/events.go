@@ -3,8 +3,11 @@ package commands
 import (
 	"io/ioutil"
 	"log"
+	"strconv"
 	"sync"
 	"time"
+
+	"github.com/r-anime/ZeroTsu/config"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -17,15 +20,16 @@ type SafeTime struct {
 var Today = &SafeTime{Time: time.Now()}
 
 // dailyEvents is Daily events
-func dailyEvents(s *discordgo.Session) {
+func dailyEvents() {
 	t := time.Now()
 
-	Today.RLock()
+	Today.Lock()
 	if int(Today.Time.Weekday()) == int(t.Weekday()) {
-		Today.RUnlock()
+		Today.Unlock()
 		return
 	}
-	Today.RUnlock()
+	Today.Time = t
+	Today.Unlock()
 
 	// Update daily anime schedule
 	UpdateAnimeSchedule()
@@ -46,21 +50,33 @@ func dailyEvents(s *discordgo.Session) {
 		}
 		guildID := f.Name()
 
+		guildIDInt, err := strconv.ParseInt(guildID, 10, 64)
+		if err != nil {
+			continue
+		}
+
 		// Wait some milliseconds so it doesn't hit the rate limit easily
 		time.Sleep(time.Millisecond * 300)
 
 		// Sends daily schedule if need be
-		DailySchedule(s, guildID)
+		DailySchedule(config.Mgr.SessionForGuild(guildIDInt), guildID)
 	}
-
-	Today.Lock()
-	Today.Time = t
-	Today.Unlock()
 }
 
-// Daily stats and schedule update timer
-func DailyStatsTimer(s *discordgo.Session, _ *discordgo.Ready) {
-	for range time.NewTicker(5 * time.Minute).C {
-		dailyEvents(s)
+func DailyStatsTimer(_ *discordgo.Session, _ *discordgo.Ready) {
+	// Register slash commands per guild.
+	// Used for testing purposes since propagation is faster.
+	//for _, guild := range e.Guilds {
+	//	for _, v := range SlashCommands {
+	//		err := config.Mgr.ApplicationCommandCreate(guild.ID, v)
+	//		if err != nil {
+	//			log.Panicf("Cannot create '%v' command: %v", v.Name, err)
+	//		}
+	//	}
+	//}
+	//log.Println("Slash command registration is done.")
+
+	for range time.NewTicker(10 * time.Minute).C {
+		dailyEvents()
 	}
 }

@@ -2,8 +2,6 @@ package common
 
 import (
 	"fmt"
-	"github.com/r-anime/ZeroTsu/db"
-	"github.com/r-anime/ZeroTsu/entities"
 	"math"
 	"net/http"
 	"regexp"
@@ -12,12 +10,15 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
+
 	"github.com/bwmarrin/discordgo"
 )
 
 // File for misc. functions, commands and variables.
 
-const UserAgent       = "script:github.com/apiks/zerotsu:v2.1.0 (by /u/thechosenapiks)"
+const UserAgent = "script:github.com/apiks/zerotsu:v2.2.0 (by /u/thechosenapiks)"
 
 var StartTime time.Time
 
@@ -237,7 +238,7 @@ func SplitLongMessage(message string) (split []string) {
 	return
 }
 
-// Parses a string for a channel and returns its ID and name
+// ChannelParser parses a string for a channel and returns its ID and name
 func ChannelParser(s *discordgo.Session, channel string, guildID string) (string, string) {
 	var (
 		channelID   string
@@ -334,7 +335,7 @@ func CategoryParser(s *discordgo.Session, category string, guildID string) (stri
 	return categoryID, categoryName
 }
 
-// Parses a string for a role and returns its ID and name
+// RoleParser parses a string for a role and returns its ID and name
 func RoleParser(s *discordgo.Session, role string, guildID string) (string, string) {
 	var (
 		roleID   string

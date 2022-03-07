@@ -2,16 +2,22 @@ package commands
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/entities"
-	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-// Returns user avatar in channel as message
-func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
+// avatarCommand returns the target user avatar
+func avatarCommand(targetUser *discordgo.User) string {
+	return targetUser.AvatarURL("256")
+}
+
+// avatarCommandHandler returns the target user avatar
+func avatarCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	var (
 		err           error
 		guildSettings = entities.GuildSettings{Prefix: "."}
@@ -71,10 +77,35 @@ func avatarCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func init() {
 	Add(&Command{
-		Execute: avatarCommand,
-		Trigger: "avatar",
-		Desc:    "Show user avatar. Add a @mention or userID to specify a user",
+		Execute: avatarCommandHandler,
+		Name:    "avatar",
+		Desc:    "Show a user's avatar.",
 		Module:  "normal",
 		DMAble:  true,
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionUser,
+				Name:        "user",
+				Description: "The user of whom you want to see the avatar of.",
+				Required:    false,
+			},
+		},
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			user := i.Member.User
+			if i.Data.Options != nil {
+				for _, option := range i.Data.Options {
+					if option.Name == "user" {
+						user = option.UserValue(s)
+					}
+				}
+			}
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Content: avatarCommand(user),
+				},
+			})
+		},
 	})
 }

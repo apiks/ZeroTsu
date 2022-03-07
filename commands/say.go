@@ -1,19 +1,30 @@
 package commands
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/embeds"
-	"strconv"
-	"strings"
 
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/functionality"
 )
 
-// Sends a message from the bot to a channel
-func sayCommand(s *discordgo.Session, m *discordgo.Message) {
+// sayCommand sends a message from the bot to a channel
+func sayCommand(s *discordgo.Session, message, targetChannelID string) string {
+	_, err := s.ChannelMessageSend(targetChannelID, message)
+	if err != nil {
+		return err.Error()
+	}
+
+	return "Success! Message sent."
+}
+
+// sayCommandHandler sends a message from the bot to a channel
+func sayCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := db.GetGuildSettings(m.GuildID)
 	cmdStrs := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 3)
 
@@ -74,8 +85,18 @@ func sayCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-// Sends a message embed from the bot to a channel
-func sayEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
+// sayEmbedCommand sends a message embed from the bot to a channel
+func sayEmbedCommand(s *discordgo.Session, message, targetChannelID string) string {
+	err := embeds.Say(s, message, targetChannelID)
+	if err != nil {
+		return err.Error()
+	}
+
+	return "Success! Embed message sent."
+}
+
+// sayEmbedCommandHandler sends a message embed from the bot to a channel
+func sayEmbedCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := db.GetGuildSettings(m.GuildID)
 	cmdStrs := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 3)
 
@@ -136,8 +157,18 @@ func sayEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-// Edits a message sent by the bot with another message
-func editCommand(s *discordgo.Session, m *discordgo.Message) {
+// editCommand edits a message sent by the bot with another message
+func editCommand(s *discordgo.Session, targetChannelID, targetMessageID, message string) string {
+	_, err := s.ChannelMessageEdit(targetChannelID, targetMessageID, message)
+	if err != nil {
+		return err.Error()
+	}
+
+	return "Success! Target message has been edited."
+}
+
+// editCommandHandler edits a message sent by the bot with another message
+func editCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := db.GetGuildSettings(m.GuildID)
 	cmdStrs := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 4)
 
@@ -186,8 +217,18 @@ func editCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-// Edits an embed message sent by the bot with another embed message
-func editEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
+// editEmbedCommand edits an embed message sent by the bot with another embed message
+func editEmbedCommand(s *discordgo.Session, targetChannelID, targetMessageID, message string) string {
+	err := embeds.Edit(s, targetChannelID, targetMessageID, message)
+	if err != nil {
+		return err.Error()
+	}
+
+	return "Success! Target embed message has been edited."
+}
+
+// editEmbedCommandHandler edits an embed message sent by the bot with another embed message
+func editEmbedCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := db.GetGuildSettings(m.GuildID)
 	cmdStrs := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 4)
 
@@ -238,32 +279,238 @@ func editEmbedCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func init() {
 	Add(&Command{
-		Execute:    sayCommand,
-		Trigger:    "say",
-		Desc:       "Sends a message from bot in the command channel",
+		Execute:    sayCommandHandler,
+		Name:       "say",
+		Desc:       "Sends a message from bot in the target channel.",
 		Permission: functionality.Mod,
 		Module:     "misc",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "message",
+				Description: "The message you want to send.",
+				Required:    true,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionChannel,
+				Name:        "channel",
+				Description: "The channel in which you want to send the message to.",
+				Required:    false,
+			},
+		},
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			err := VerifySlashCommand(s, "say", i)
+			if err != nil {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionApplicationCommandResponseData{
+						Content: err.Error(),
+					},
+				})
+				return
+			}
+
+			if i.Data.Options == nil {
+				return
+			}
+
+			message := ""
+			targetChannelID := i.ChannelID
+			for _, option := range i.Data.Options {
+				if option.Name == "message" {
+					message = option.StringValue()
+				} else if option.Name == "channel" {
+					targetChannelID = option.ChannelValue(s).ID
+				}
+			}
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Content: sayCommand(s, message, targetChannelID),
+				},
+			})
+		},
 	})
 	Add(&Command{
-		Execute:    sayEmbedCommand,
-		Trigger:    "embed",
-		Aliases:    []string{"esay"},
-		Desc:       "Sends an embed message from bot in the command channel",
+		Execute:    sayEmbedCommandHandler,
+		Name:       "embed",
+		Aliases:    []string{"esay", "sayembed"},
+		Desc:       "Sends an embed message from bot in the command channel.",
 		Permission: functionality.Mod,
 		Module:     "misc",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "message",
+				Description: "The message you want to send.",
+				Required:    true,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionChannel,
+				Name:        "channel",
+				Description: "The channel in which you want to send the message to.",
+				Required:    false,
+			},
+		},
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			err := VerifySlashCommand(s, "embed", i)
+			if err != nil {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionApplicationCommandResponseData{
+						Content: err.Error(),
+					},
+				})
+				return
+			}
+
+			if i.Data.Options == nil {
+				return
+			}
+
+			message := ""
+			targetChannelID := i.ChannelID
+			for _, option := range i.Data.Options {
+				if option.Name == "message" {
+					message = option.StringValue()
+				} else if option.Name == "channel" {
+					targetChannelID = option.ChannelValue(s).ID
+				}
+			}
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Content: sayEmbedCommand(s, message, targetChannelID),
+				},
+			})
+		},
 	})
 	Add(&Command{
-		Execute:    editCommand,
-		Trigger:    "edit",
-		Desc:       "Edits a message sent by the bot",
+		Execute:    editCommandHandler,
+		Name:       "edit",
+		Desc:       "Edits a message sent by the bot.",
 		Permission: functionality.Mod,
 		Module:     "misc",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionChannel,
+				Name:        "channel",
+				Description: "The channel in which the message is.",
+				Required:    true,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "message-id",
+				Description: "The ID of the message itself.",
+				Required:    true,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "message",
+				Description: "The new message with which to replace the old one.",
+				Required:    true,
+			},
+		},
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			err := VerifySlashCommand(s, "edit", i)
+			if err != nil {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionApplicationCommandResponseData{
+						Content: err.Error(),
+					},
+				})
+				return
+			}
+
+			if i.Data.Options == nil {
+				return
+			}
+
+			targetChannelID := ""
+			messageID := ""
+			message := ""
+			for _, option := range i.Data.Options {
+				if option.Name == "channel" {
+					targetChannelID = option.ChannelValue(s).ID
+				} else if option.Name == "message-id" {
+					messageID = option.ChannelValue(s).ID
+				} else if option.Name == "message" {
+					message = option.StringValue()
+				}
+			}
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Content: editCommand(s, targetChannelID, messageID, message),
+				},
+			})
+		},
 	})
 	Add(&Command{
-		Execute:    editEmbedCommand,
-		Trigger:    "editembed",
-		Desc:       "Edits a message embed sent by the bot",
+		Execute:    editEmbedCommandHandler,
+		Name:       "editembed",
+		Desc:       "Edits a message embed sent by the bot.",
 		Permission: functionality.Mod,
 		Module:     "misc",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionChannel,
+				Name:        "channel",
+				Description: "The channel in which the message is.",
+				Required:    true,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "message-id",
+				Description: "The ID of the message itself.",
+				Required:    true,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "message",
+				Description: "The new message with which to replace the old one.",
+				Required:    true,
+			},
+		},
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			err := VerifySlashCommand(s, "editembed", i)
+			if err != nil {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionApplicationCommandResponseData{
+						Content: err.Error(),
+					},
+				})
+				return
+			}
+
+			if i.Data.Options == nil {
+				return
+			}
+
+			targetChannelID := ""
+			messageID := ""
+			message := ""
+			for _, option := range i.Data.Options {
+				if option.Name == "channel" {
+					targetChannelID = option.ChannelValue(s).ID
+				} else if option.Name == "message-id" {
+					messageID = option.ChannelValue(s).ID
+				} else if option.Name == "message" {
+					message = option.StringValue()
+				}
+			}
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Content: editEmbedCommand(s, targetChannelID, messageID, message),
+				},
+			})
+		},
 	})
 }

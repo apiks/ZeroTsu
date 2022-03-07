@@ -6,15 +6,16 @@ import "sync"
 type GuildSettings struct {
 	sync.RWMutex
 
-	Prefix              string     `json:"Prefix"`
-	BotLog              Cha        `json:"BotLogID"`
-	CommandRoles        []Role     `json:"CommandRoles"`
-	MutedRole           Role       `json:"MutedRole"`
-	VoiceChas           []VoiceCha `json:"VoiceChas"`
-	ModOnly             bool       `json:"ModOnly"`
-	ReactsModule        bool       `json:"ReactsModule"`
-	PingMessage         string     `json:"PingMessage"`
-	Premium             bool       `json:"Premium"`
+	Prefix       string     `json:"Prefix"`
+	BotLog       Cha        `json:"BotLogID"`
+	CommandRoles []Role     `json:"CommandRoles"`
+	MutedRole    Role       `json:"MutedRole"`
+	VoiceChas    []VoiceCha `json:"VoiceChas"`
+	ModOnly      bool       `json:"ModOnly"`
+	Donghua      bool       `json:"Donghua"`
+	ReactsModule bool       `json:"ReactsModule"`
+	PingMessage  string     `json:"PingMessage"`
+	Premium      bool       `json:"Premium"`
 }
 
 func (g GuildSettings) SetPrefix(prefix string) GuildSettings {
@@ -107,6 +108,18 @@ func (g GuildSettings) GetModOnly() bool {
 		return false
 	}
 	return g.ModOnly
+}
+
+func (g GuildSettings) SetDonghua(donghua bool) GuildSettings {
+	g.Donghua = donghua
+	return g
+}
+
+func (g GuildSettings) GetDonghua() bool {
+	if g.Donghua == false {
+		return false
+	}
+	return g.Donghua
 }
 
 func (g GuildSettings) SetReactsModule(reactsModule bool) GuildSettings {

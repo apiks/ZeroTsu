@@ -2,17 +2,27 @@ package embeds
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/r-anime/ZeroTsu/entities"
-	"time"
 )
+
+func CreatePingEmbed(botUser *discordgo.User, settings entities.GuildSettings) *discordgo.MessageEmbed {
+	return &discordgo.MessageEmbed{
+		Title:       ":ping_pong:",
+		Description: settings.GetPingMessage(),
+		Color:       lightPinkColor,
+		Thumbnail:   &discordgo.MessageEmbedThumbnail{URL: botUser.AvatarURL("256")},
+	}
+}
 
 // Ping sends an embed ping message
 func Ping(s *discordgo.Session, m *discordgo.Message, settings entities.GuildSettings) error {
 	embed := &discordgo.MessageEmbed{
 		Title:       ":ping_pong:",
 		Description: settings.GetPingMessage(),
-		Color:       purpleColor,
+		Color:       lightPinkColor,
 		Thumbnail:   &discordgo.MessageEmbedThumbnail{URL: s.State.User.AvatarURL("256")},
 	}
 

@@ -1,38 +1,53 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
-	"github.com/r-anime/ZeroTsu/db"
-	"github.com/r-anime/ZeroTsu/entities"
-	"github.com/r-anime/ZeroTsu/functionality"
 	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/r-anime/ZeroTsu/config"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
+	"github.com/r-anime/ZeroTsu/functionality"
 )
 
 var (
-	CommandMap = make(map[string]*Command)
-	aliasMap   = make(map[string]string)
+	SlashCommands         []*discordgo.ApplicationCommand
+	SlashCommandsHandlers = make(map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate))
+	CommandMap            = make(map[string]*Command)
+	aliasMap              = make(map[string]string)
 )
 
 type Command struct {
 	Execute     func(*discordgo.Session, *discordgo.Message)
-	Trigger     string
+	Name        string
 	Aliases     []string
 	Desc        string
 	DeleteAfter bool
 	Permission  functionality.Permission
 	Module      string
 	DMAble      bool
+	Options     []*discordgo.ApplicationCommandOption
+	Handler     func(s *discordgo.Session, i *discordgo.InteractionCreate)
 }
 
 func Add(c *Command) {
-	CommandMap[c.Trigger] = c
+	CommandMap[c.Name] = c
 	for _, alias := range c.Aliases {
-		aliasMap[alias] = c.Trigger
+		aliasMap[alias] = c.Name
 	}
-	log.Printf("Added command %s | %d aliases | %v module", c.Trigger, len(c.Aliases), c.Module)
+	if c.Handler != nil {
+		SlashCommands = append(SlashCommands, &discordgo.ApplicationCommand{
+			Name:        c.Name,
+			Description: c.Desc,
+			Options:     c.Options,
+		})
+		SlashCommandsHandlers[c.Name] = c.Handler
+	}
+
+	log.Printf("Added command %s | %d aliases | %v module", c.Name, len(c.Aliases), c.Module)
 }
 
 // HandleCommand handles the incoming message
@@ -101,7 +116,6 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 // Handles a command from a guild
 func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 	entities.HandleNewGuild(m.GuildID)
-
 	guildSettings := db.GetGuildSettings(m.GuildID)
 
 	if len(m.Message.Content) <= len(guildSettings.GetPrefix()) || m.Message.Content[0:len(guildSettings.GetPrefix())] != guildSettings.GetPrefix() {
@@ -143,6 +157,50 @@ func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
 		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {
 			return
+		}
+	}
+}
+
+func IsValidSlashCommand(s *discordgo.Session, cmdTrigger, authorID, guildID string) bool {
+	cmd, ok := CommandMap[cmdTrigger]
+	if !ok {
+		cmd, ok = CommandMap[aliasMap[cmdTrigger]]
+		if !ok {
+			return false
+		}
+	}
+	guildSettings := db.GetGuildSettings(guildID)
+	if cmd.Module == "reacts" {
+		if !guildSettings.GetReactsModule() {
+			return false
+		}
+	}
+	if cmd.Permission != functionality.User || guildSettings.GetModOnly() {
+		if !functionality.HasElevatedPermissions(s, authorID, guildID) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func VerifySlashCommand(s *discordgo.Session, cmdTrigger string, i *discordgo.InteractionCreate) error {
+	if i.GuildID == "" {
+		return errors.New("Error: Slash commands are not supported in DMs at the moment. Use the prefix `.` instead.")
+	}
+
+	if !IsValidSlashCommand(s, cmdTrigger, i.Member.User.ID, i.GuildID) {
+		return errors.New("Error: You do not have permissions to do this command.")
+	}
+
+	return nil
+}
+
+func RegisterSlashCommands(_ *discordgo.Session, _ *discordgo.Ready) {
+	for _, v := range SlashCommands {
+		err := config.Mgr.ApplicationCommandCreate("", v)
+		if err != nil {
+			log.Panicf("Cannot create '%v' command: %v", v.Name, err)
 		}
 	}
 }

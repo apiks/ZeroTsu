@@ -7,6 +7,7 @@ type RemindMeSlice struct {
 
 	RemindMeSlice []*RemindMe
 	Premium       bool
+	Guild         bool
 }
 
 func NewRemindMeSlice(remindMeSlice []*RemindMe, premium bool) *RemindMeSlice {
@@ -57,4 +58,19 @@ func (r *RemindMeSlice) GetPremium() bool {
 		return false
 	}
 	return r.Premium
+}
+
+func (r *RemindMeSlice) SetGuild(guild bool) {
+	r.Lock()
+	r.Guild = guild
+	r.Unlock()
+}
+
+func (r *RemindMeSlice) GetGuild() bool {
+	r.RLock()
+	defer r.RUnlock()
+	if r == nil {
+		return false
+	}
+	return r.Guild
 }

@@ -2,10 +2,12 @@ package commands
 
 import (
 	"encoding/json"
-	"github.com/r-anime/ZeroTsu/common"
-	"github.com/r-anime/ZeroTsu/db"
+	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -32,8 +34,19 @@ func getJson(url string, target interface{}) error {
 	return json.NewDecoder(r.Body).Decode(target)
 }
 
-// Prints a random joke in chat
-func jokeCommand(s *discordgo.Session, m *discordgo.Message) {
+// jokeCommand prints a random joke
+func jokeCommand() string {
+	joke := new(Joke)
+	err := getJson(jokeURL, joke)
+	if err != nil {
+		return "Error: Joke website is not working properly. Please notify Apiks#8969 about it."
+	}
+
+	return fmt.Sprintf("%s\n\n%s", joke.Setup, joke.Punchline)
+}
+
+// jokeCommandHandler prints a random joke
+func jokeCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	joke := new(Joke)
 	err := getJson(jokeURL, joke)
 	if err != nil {
@@ -60,10 +73,18 @@ func jokeCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func init() {
 	Add(&Command{
-		Execute: jokeCommand,
-		Trigger: "joke",
+		Execute: jokeCommandHandler,
+		Name:    "joke",
 		Desc:    "Prints a (bad) joke",
 		Module:  "normal",
 		DMAble:  true,
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Content: jokeCommand(),
+				},
+			})
+		},
 	})
 }

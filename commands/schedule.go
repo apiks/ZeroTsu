@@ -2,31 +2,84 @@ package commands
 
 import (
 	"fmt"
-	"github.com/r-anime/ZeroTsu/common"
-	"github.com/r-anime/ZeroTsu/db"
-	"github.com/r-anime/ZeroTsu/entities"
 	"log"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
+
 	"github.com/PuerkitoBio/goquery"
 	"github.com/bwmarrin/discordgo"
 )
 
-// Shows todays airing anime times, fetched from AnimeSchedule.net
-func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
+// scheduleCommand Prints out the target day's airing anime times, fetched from AnimeSchedule.net
+func scheduleCommand(targetDay string) []string {
+	var (
+		currentDay = int(time.Now().Weekday())
+		day        = -1
+		message    string
+		messages   []string
+	)
+	if targetDay == "" {
+		// Get the current day's schedule in print format
+		message = getDaySchedule(currentDay, true)
+	} else {
+		// Else get the target day's schedule in print format
+		switch targetDay {
+		case "sunday", "sundays", "sun":
+			day = 0
+		case "monday", "mondays", "mon":
+			day = 1
+		case "tuesday", "tuesdays", "tue", "tues":
+			day = 2
+		case "wednesday", "wednesdays", "wed":
+			day = 3
+		case "thursday", "thursdays", "thu", "thurs", "thur":
+			day = 4
+		case "friday", "fridays", "fri":
+			day = 5
+		case "saturday", "saturdays", "sat":
+			day = 6
+		}
+
+		// Check if it's a valid int
+		if day < 0 || day > 6 {
+			return []string{"Error: Cannot parse that day."}
+		}
+
+		message = getDaySchedule(day, true)
+	}
+
+	message += "\n\n**Full Week:** <https://AnimeSchedule.net>"
+
+	// Splits the message if it's too big into multiple ones
+	if len(message) > 1900 {
+		messages = common.SplitLongMessage(message)
+	}
+
+	if messages == nil {
+		return []string{message}
+	}
+
+	return messages
+}
+
+// scheduleCommandHandler Prints out the target day's airing anime times, fetched from AnimeSchedule.net
+func scheduleCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	var (
 		currentDay   = int(time.Now().Weekday())
 		day          = -1
 		printMessage string
 	)
-
+	guildSettings := db.GetGuildSettings(m.GuildID)
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
 
 	if len(commandStrings) == 1 {
 		// Get the current day's schedule in print format
-		printMessage = getDaySchedule(currentDay)
+		printMessage = getDaySchedule(currentDay, guildSettings.GetDonghua())
 	} else {
 		// Else get the target day's schedule in print format
 		switch commandStrings[1] {
@@ -59,7 +112,7 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 
-		printMessage = getDaySchedule(day)
+		printMessage = getDaySchedule(day, guildSettings.GetDonghua())
 	}
 
 	printMessage += "\n\n**Full Week:** <https://AnimeSchedule.net>"
@@ -69,7 +122,7 @@ func scheduleCommand(s *discordgo.Session, m *discordgo.Message) {
 }
 
 // Gets a target weekday's anime schedule
-func getDaySchedule(weekday int) string {
+func getDaySchedule(weekday int, donghua bool) string {
 	var (
 		printMessage = fmt.Sprintf("**__%s:__**\n\n", time.Weekday(weekday).String())
 		DST          = isTimeDST(time.Now())
@@ -102,6 +155,9 @@ func getDaySchedule(weekday int) string {
 
 		for _, show := range showSlice {
 			if show == nil {
+				continue
+			}
+			if !donghua && show.GetDonghua() {
 				continue
 			}
 
@@ -152,7 +208,7 @@ func processEachShow(_ int, element *goquery.Selection) {
 	var (
 		day  int
 		show entities.ShowAirTime
-		)
+	)
 
 	date := strings.ToLower(element.SiblingsFiltered(".timetable-column-date").Find(".timetable-column-day").Text())
 	if strings.Contains(date, "sunday") {
@@ -191,6 +247,15 @@ func processEachShow(_ int, element *goquery.Selection) {
 		if exists {
 			show.SetImageUrl(imageUrl)
 		}
+	}
+	if element.Find(".subtitle-availability").Text() == "" {
+		show.SetSubbed(true)
+	} else {
+		show.SetSubbed(false)
+	}
+	donghua, _ := element.Attr("chinese")
+	if donghua == "true" {
+		show.SetDonghua(true)
 	}
 
 	entities.AnimeSchedule.AnimeSchedule[day] = append(entities.AnimeSchedule.AnimeSchedule[day], &show)
@@ -267,17 +332,17 @@ func isTimeDST(t time.Time) bool {
 	return false
 }
 
-// Posts the schedule in a target channel if a guild has enabled it
+// DailySchedule posts the schedule in a target channel if a guild has enabled it
 func DailySchedule(s *discordgo.Session, guildID string) {
-	dailyschedule := db.GetGuildAutopost(guildID, "dailyschedule")
-	if dailyschedule == (entities.Cha{}) || dailyschedule.GetID() == "" {
-		return
-	}
-
 	var (
 		message discordgo.Message
 		author  discordgo.User
 	)
+
+	dailyschedule := db.GetGuildAutopost(guildID, "dailyschedule")
+	if dailyschedule == (entities.Cha{}) || dailyschedule.GetID() == "" {
+		return
+	}
 
 	guildSettings := db.GetGuildSettings(guildID)
 
@@ -287,23 +352,64 @@ func DailySchedule(s *discordgo.Session, guildID string) {
 	message.Content = fmt.Sprintf("%sschedule", guildSettings.GetPrefix())
 	message.ChannelID = dailyschedule.GetID()
 
-	scheduleCommand(s, &message)
+	scheduleCommandHandler(s, &message)
 }
 
 func ScheduleTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 	for range time.NewTicker(30 * time.Minute).C {
-		// Update anime schedule
 		UpdateAnimeSchedule()
 	}
 }
 
 func init() {
 	Add(&Command{
-		Execute: scheduleCommand,
-		Trigger: "schedule",
+		Execute: scheduleCommandHandler,
+		Name:    "schedule",
 		Aliases: []string{"schedul", "schedu", "schedle", "schdule", "animeschedule", "anischedule"},
-		Desc:    "Print Anime Air Times (subbed where possible.) Add a day to specify a day",
+		Desc:    "Prints out all of today's anime release times (subbed where possible.)",
 		Module:  "normal",
 		DMAble:  true,
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "day",
+				Description: "The target day you want to get the schedule of.",
+				Required:    false,
+			},
+		},
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			day := ""
+			if i.Data.Options != nil {
+				for _, option := range i.Data.Options {
+					if option.Name == "day" {
+						day = option.StringValue()
+					}
+				}
+			}
+
+			messages := scheduleCommand(day)
+			if messages == nil {
+				return
+			}
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Content: messages[0],
+				},
+			})
+
+			if len(messages) > 1 {
+				for j, message := range messages {
+					if j == 0 {
+						continue
+					}
+
+					s.FollowupMessageCreate(s.State.User.ID, i.Interaction, false, &discordgo.WebhookParams{
+						Content: message,
+					})
+				}
+			}
+		},
 	})
 }

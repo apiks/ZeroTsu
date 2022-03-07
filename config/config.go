@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+
+	"github.com/servusdei2018/shards"
 )
 
 // File for BOT, server, channel and role info
 
 var (
+	Mgr        *shards.Manager
 	Token      string
 	OwnerID    string
 	PlayingMsg []string

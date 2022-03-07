@@ -2,8 +2,9 @@ package db
 
 import (
 	"fmt"
-	"github.com/r-anime/ZeroTsu/entities"
 	"strings"
+
+	"github.com/r-anime/ZeroTsu/entities"
 )
 
 // GetGuildRaffles the guild's raffles from in-memory

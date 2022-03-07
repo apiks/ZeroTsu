@@ -14,11 +14,11 @@ type GuildInfo struct {
 
 	ID            string
 	GuildSettings GuildSettings
-	Feeds               []Feed
-	FeedChecks          []FeedCheck
-	Raffles             []*Raffle
-	ReactJoinMap    map[string]*ReactJoin
-	Autoposts       map[string]Cha
+	Feeds         []Feed
+	FeedChecks    []FeedCheck
+	Raffles       []*Raffle
+	ReactJoinMap  map[string]*ReactJoin
+	Autoposts     map[string]Cha
 }
 
 func (g *GuildInfo) SetID(id string) {

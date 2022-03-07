@@ -2,13 +2,14 @@ package commands
 
 import (
 	"fmt"
+	"math/rand"
+	"strings"
+	"time"
+
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/entities"
 	"github.com/r-anime/ZeroTsu/events"
-	"math/rand"
-	"strings"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 
@@ -172,6 +173,20 @@ func serversCommand(s *discordgo.Session, m *discordgo.Message) {
 	events.GuildIds.RUnlock()
 }
 
+// Prints in how many servers the BOT is from the sharding manager
+func serversShardCommand(s *discordgo.Session, m *discordgo.Message) {
+	if m.Author.ID != config.OwnerID {
+		return
+	}
+
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I am in %d servers.", config.Mgr.GuildCount()))
+	if err != nil {
+		guildSettings := db.GetGuildSettings(m.GuildID)
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		return
+	}
+}
+
 // Prints BOT uptime
 func uptimeCommand(s *discordgo.Session, m *discordgo.Message) {
 	if m.Author.ID != config.OwnerID {
@@ -212,14 +227,14 @@ func messageBotLogsCommand(s *discordgo.Session, m *discordgo.Message) {
 func init() {
 	Add(&Command{
 		Execute:    playingMsgCommand,
-		Trigger:    "playingmsg",
-		Desc:       "Prints or adds a BOT playing message",
+		Name:       "playingmsg",
+		Desc:       "Prints or sets a BOT playing message",
 		DMAble:     true,
 		Permission: functionality.Owner,
 	})
 	Add(&Command{
 		Execute:    removePlayingMsgCommand,
-		Trigger:    "removeplayingmsg",
+		Name:       "removeplayingmsg",
 		Aliases:    []string{"killplayingmsg"},
 		Desc:       "Removes a BOT playing message",
 		DMAble:     true,
@@ -227,21 +242,28 @@ func init() {
 	})
 	Add(&Command{
 		Execute:    serversCommand,
-		Trigger:    "servers",
+		Name:       "servers",
 		Desc:       "Prints the number of servers the BOT is in",
 		DMAble:     true,
 		Permission: functionality.Owner,
 	})
 	Add(&Command{
+		Execute:    serversShardCommand,
+		Name:       "serversshards",
+		Desc:       "Prints the number of servers the BOT is in using the sharding manager",
+		DMAble:     true,
+		Permission: functionality.Owner,
+	})
+	Add(&Command{
 		Execute:    uptimeCommand,
-		Trigger:    "uptime",
+		Name:       "uptime",
 		Desc:       "Print how long I've been on for",
 		DMAble:     true,
 		Permission: functionality.Owner,
 	})
 	Add(&Command{
 		Execute:    messageBotLogsCommand,
-		Trigger:    "messagelogs",
+		Name:       "messagelogs",
 		Desc:       "Messages all BOT logs with a message",
 		DMAble:     true,
 		Permission: functionality.Owner,

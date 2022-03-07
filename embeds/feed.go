@@ -2,10 +2,11 @@ package embeds
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/mmcdole/gofeed"
 	"github.com/r-anime/ZeroTsu/entities"
-	"strings"
 )
 
 // Feed sends a reddit feed embed message
@@ -45,7 +46,7 @@ func Feed(s *discordgo.Session, feed *entities.Feed, item *gofeed.Item) (*discor
 		},
 		Description: item.Description,
 		Timestamp:   item.Published,
-		Color:       purpleColor,
+		Color:       lightPinkColor,
 		Footer: &discordgo.MessageEmbedFooter{
 			Text: footerText,
 		},

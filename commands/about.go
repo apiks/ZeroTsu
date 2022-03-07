@@ -19,9 +19,19 @@ func aboutCommand(s *discordgo.Session, m *discordgo.Message) {
 func init() {
 	Add(&Command{
 		Execute: aboutCommand,
-		Trigger: "about",
-		Desc:    "Display more information about me",
+		Name:    "about",
+		Desc:    "Display more information about me.",
 		Module:  "normal",
 		DMAble:  true,
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Embeds: []*discordgo.MessageEmbed{
+						embeds.CreateAboutEmbed(s.State.User),
+					},
+				},
+			})
+		},
 	})
 }

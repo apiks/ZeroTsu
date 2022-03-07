@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	Mutex sync.RWMutex
-	SharedInfo *sharedInfo
-	AnimeSchedule   = &AnimeScheduleMap{AnimeSchedule: make(map[int][]*ShowAirTime)}
+	Mutex         sync.RWMutex
+	SharedInfo    *sharedInfo
+	AnimeSchedule = &AnimeScheduleMap{AnimeSchedule: make(map[int][]*ShowAirTime)}
 )
 
 type AnimeScheduleMap struct {
@@ -68,7 +68,7 @@ func LoadSharedDBFile(file string) {
 	}
 }
 
-// Writes RemindMe notes to remindMes.json
+// RemindMeWrite writes RemindMes to remindMes.json
 func RemindMeWrite(remindMe map[string]*RemindMeSlice) error {
 
 	// Checks if the user has hit the db limit
@@ -132,10 +132,13 @@ func IOReadDir(root string) ([]string, error) {
 }
 
 func SetupGuildSub(guildID string) {
-	var shows []*ShowSub
-	now := time.Now().UTC()
+	var (
+		shows      []*ShowSub
+		now        = time.Now().UTC()
+		addedShows = make(map[string]bool)
+	)
 
-	// Adds every single show as a guild subscription
+	// Adds every single non-duplicate show as a guild subscription
 	for dayInt, scheduleShows := range AnimeSchedule.AnimeSchedule {
 		if scheduleShows == nil {
 			continue
@@ -143,6 +146,9 @@ func SetupGuildSub(guildID string) {
 
 		for _, show := range scheduleShows {
 			if show == nil {
+				continue
+			}
+			if _, ok := addedShows[show.GetKey()]; ok {
 				continue
 			}
 
@@ -177,6 +183,7 @@ func SetupGuildSub(guildID string) {
 			}
 
 			shows = append(shows, guildSub)
+			addedShows[show.GetKey()] = true
 		}
 	}
 

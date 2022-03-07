@@ -2,18 +2,41 @@ package commands
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/entities"
-	"strings"
 
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/functionality"
 )
 
-// Sets a reddit feed by subreddit and other params
-func setRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
+// addRedditFeedCommand adds a reddit feed by subreddit and other args to a channel
+func addRedditFeedCommand(targetChannel *discordgo.Channel, subreddit, author, postType, title string, pin bool) string {
+	if strings.HasPrefix(subreddit, "r/") || strings.HasPrefix(subreddit, "/r/") {
+		subreddit = strings.TrimPrefix(subreddit, "/r/")
+		subreddit = strings.TrimPrefix(subreddit, "r/")
+	}
+	if strings.HasPrefix(author, "u/") || strings.HasPrefix(author, "/u/") {
+		author = strings.TrimPrefix(author, "/u/")
+		author = strings.TrimPrefix(author, "u/")
+	}
+	if postType != "hot" && postType != "rising" && postType != "new" {
+		return "Error: Invalid post type."
+	}
+
+	err := db.SetGuildFeed(targetChannel.GuildID, entities.NewFeed(subreddit, title, author, pin, postType, targetChannel.ID))
+	if err != nil {
+		return err.Error()
+	}
+
+	return "Success! This reddit feed has been added. If there are valid posts they will start appearing within an hour or two."
+}
+
+// addRedditFeedCommandHandler adds a reddit feed by subreddit and other args to a channel
+func addRedditFeedCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	var (
 		subreddit string
 		author    string
@@ -99,8 +122,37 @@ func setRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-// Removes a previously set reddit feed
-func removeRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
+// removeRedditFeedCommand removes a previously set reddit feed
+func removeRedditFeedCommand(targetChannel *discordgo.Channel, subreddit, author, postType, title string) string {
+	guildFeeds := db.GetGuildFeeds(targetChannel.GuildID)
+
+	if guildFeeds == nil || len(guildFeeds) == 0 {
+		return "Error. There are no set reddit feeds."
+	}
+
+	if strings.HasPrefix(subreddit, "/r/") || strings.HasPrefix(subreddit, "r/") {
+		subreddit = strings.TrimPrefix(subreddit, "/r/")
+		subreddit = strings.TrimPrefix(subreddit, "r/")
+	}
+	if strings.HasPrefix(author, "/u/") || strings.HasPrefix(author, "u/") {
+		author = strings.TrimPrefix(author, "/u/")
+		author = strings.TrimPrefix(author, "u/")
+	}
+	if postType != "hot" && postType != "rising" && postType != "new" {
+		return "Error: Invalid post type."
+	}
+
+	// Write
+	err := db.SetGuildFeed(targetChannel.GuildID, entities.NewFeed(subreddit, title, author, false, postType, targetChannel.ID), true)
+	if err != nil {
+		return err.Error()
+	}
+
+	return "Success! This reddit feed has been removed."
+}
+
+// removeRedditFeedCommandHandler removes a previously set reddit feed
+func removeRedditFeedCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	var (
 		subreddit string
 		title     string
@@ -218,8 +270,40 @@ func removeRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-// Prints all currently set reddit feeds
-func viewRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
+// viewRedditFeedCommand prints all currently set reddit feeds
+func viewRedditFeedCommand(guildID string) []string {
+	var (
+		message    string
+		guildFeeds = db.GetGuildFeeds(guildID)
+	)
+
+	if guildFeeds == nil || len(guildFeeds) == 0 {
+		return []string{"Error: There are no set reddit feeds."}
+	}
+
+	// Iterates through all the reddit feeds if they exist and adds them to the message string and print them
+	for _, feed := range guildFeeds {
+		// Format print string
+		message += fmt.Sprintf("**r/%s**", feed.GetSubreddit())
+		if feed.GetAuthor() != "" {
+			message += fmt.Sprintf(" - **u/%s**", feed.GetAuthor())
+		}
+		message += fmt.Sprintf(" - **%s**", feed.GetPostType())
+		if feed.GetPin() {
+			message += " - **pinned**"
+		}
+		message += fmt.Sprintf(" - **%s**", feed.GetChannelID())
+		if feed.GetTitle() != "" {
+			message += fmt.Sprintf(" - **%s**", feed.GetTitle())
+		}
+		message += "\n"
+	}
+
+	return common.SplitLongMessage(message)
+}
+
+// viewRedditFeedCommandHandler prints all currently set reddit feeds
+func viewRedditFeedCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	var (
 		message      string
 		splitMessage []string
@@ -284,27 +368,222 @@ func viewRedditFeedCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func init() {
 	Add(&Command{
-		Execute:    setRedditFeedCommand,
-		Trigger:    "addfeed",
-		Aliases:    []string{"setfeed", "adfeed", "addreddit", "setreddit"},
-		Desc:       "Adds a reddit feed to the channel",
+		Execute:    addRedditFeedCommandHandler,
+		Name:       "add-reddit-feed",
+		Aliases:    []string{"setfeed", "adfeed", "addreddit", "setreddit", "addredditfeed"},
+		Desc:       "Adds a reddit feed to a channel",
 		Permission: functionality.Mod,
 		Module:     "reddit",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionChannel,
+				Name:        "channel",
+				Description: "The channel in which you want add a reddit feed in.",
+				Required:    true,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "subreddit",
+				Description: "The subreddit you want to set a feed for. Quarantined or private subreddits do not work.",
+				Required:    true,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "author",
+				Description: "Filter to a user who you want posts only from.",
+				Required:    false,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "post-type",
+				Description: "The type of feed filter you want to set. Defaults to 'hot'. Use 'hot', 'rising' or 'new'.",
+				Required:    false,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "title",
+				Description: "Filter to posts starting only with this title.",
+				Required:    false,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionBoolean,
+				Name:        "pin",
+				Description: "Whether to automatically pin the latest post and unpin the previous one.",
+				Required:    false,
+			},
+		},
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			err := VerifySlashCommand(s, "add-reddit-feed", i)
+			if err != nil {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionApplicationCommandResponseData{
+						Content: err.Error(),
+					},
+				})
+				return
+			}
+
+			var (
+				targetChannel *discordgo.Channel
+				subreddit     string
+				author        string
+				postType      = "hot"
+				title         string
+				pin           bool
+			)
+			if i.Data.Options == nil {
+				return
+			}
+			for _, option := range i.Data.Options {
+				if option.Name == "channel" {
+					targetChannel = option.ChannelValue(s)
+				} else if option.Name == "subreddit" {
+					subreddit = option.StringValue()
+				} else if option.Name == "author" {
+					author = option.StringValue()
+				} else if option.Name == "post-type" {
+					postType = option.StringValue()
+				} else if option.Name == "title" {
+					title = option.StringValue()
+				} else if option.Name == "pin" {
+					pin = option.BoolValue()
+				}
+			}
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Content: addRedditFeedCommand(targetChannel, subreddit, author, postType, title, pin),
+				},
+			})
+		},
 	})
 	Add(&Command{
-		Execute:    removeRedditFeedCommand,
-		Trigger:    "removefeed",
-		Aliases:    []string{"killfeed", "deletefeed", "removereddit", "killreddit", "deletereddit"},
-		Desc:       "Removes a reddit feed",
+		Execute:    removeRedditFeedCommandHandler,
+		Name:       "remove-reddit-feed",
+		Aliases:    []string{"killfeed", "deletefeed", "removereddit", "killreddit", "deletereddit", "removeredditfeed"},
+		Desc:       "Removes a reddit feed from a channel",
 		Permission: functionality.Mod,
 		Module:     "reddit",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionChannel,
+				Name:        "channel",
+				Description: "The channel in from which you want to remove reddit feeds.",
+				Required:    true,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "subreddit",
+				Description: "The subreddit you want to remove.",
+				Required:    true,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "author",
+				Description: "The author filter the feed you want to remove has.",
+				Required:    false,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "post-type",
+				Description: "The post type filter the feed you want to remove has.",
+				Required:    false,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "title",
+				Description: "The title filter the feed you want to remove has.",
+				Required:    false,
+			},
+		},
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			err := VerifySlashCommand(s, "remove-reddit-feed", i)
+			if err != nil {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionApplicationCommandResponseData{
+						Content: err.Error(),
+					},
+				})
+				return
+			}
+
+			var (
+				targetChannel *discordgo.Channel
+				subreddit     string
+				author        string
+				postType      = "hot"
+				title         string
+			)
+			if i.Data.Options == nil {
+				return
+			}
+			for _, option := range i.Data.Options {
+				if option.Name == "channel" {
+					targetChannel = option.ChannelValue(s)
+				} else if option.Name == "subreddit" {
+					subreddit = option.StringValue()
+				} else if option.Name == "author" {
+					author = option.StringValue()
+				} else if option.Name == "post-type" {
+					postType = strings.ToLower(option.StringValue())
+				} else if option.Name == "title" {
+					title = option.StringValue()
+				}
+			}
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Content: removeRedditFeedCommand(targetChannel, subreddit, author, postType, title),
+				},
+			})
+		},
 	})
 	Add(&Command{
-		Execute:    viewRedditFeedCommand,
-		Trigger:    "feeds",
-		Aliases:    []string{"showreddit", "redditview", "redditshow", "printfeed", "viewfeeds", "showfeeds", "showfeed", "viewfeed", "feed"},
+		Execute:    viewRedditFeedCommandHandler,
+		Name:       "reddit-feeds",
+		Aliases:    []string{"showreddit", "redditview", "redditshow", "printfeed", "viewfeeds", "showfeeds", "showfeed", "viewfeed", "feed", "feeds", "redditfeeds"},
 		Desc:       "Prints all currently set Reddit feeds",
 		Permission: functionality.Mod,
 		Module:     "reddit",
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			err := VerifySlashCommand(s, "reddit-feeds", i)
+			if err != nil {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionApplicationCommandResponseData{
+						Content: err.Error(),
+					},
+				})
+				return
+			}
+
+			messages := viewRedditFeedCommand(i.GuildID)
+			if messages == nil {
+				return
+			}
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Content: messages[0],
+				},
+			})
+
+			if len(messages) > 1 {
+				for j, message := range messages {
+					if j == 0 {
+						continue
+					}
+
+					s.FollowupMessageCreate(s.State.User.ID, i.Interaction, false, &discordgo.WebhookParams{
+						Content: message,
+					})
+				}
+			}
+		},
 	})
 }

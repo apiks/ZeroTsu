@@ -1,6 +1,9 @@
 package commands
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/db"
@@ -9,7 +12,7 @@ import (
 )
 
 // Prints a message to see if the BOT is alive
-func pingCommand(s *discordgo.Session, m *discordgo.Message) {
+func pingCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	guildSettings := db.GetGuildSettings(m.GuildID)
 	err := embeds.Ping(s, m, guildSettings)
 	if err != nil {
@@ -19,11 +22,40 @@ func pingCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func init() {
 	Add(&Command{
-		Execute:    pingCommand,
-		Trigger:    "ping",
+		Execute:    pingCommandHandler,
+		Name:       "ping",
 		Aliases:    []string{"pingme"},
 		Desc:       "See if I respond",
 		Permission: functionality.Mod,
 		Module:     "misc",
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			err := VerifySlashCommand(s, "ping", i)
+			if err != nil {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionApplicationCommandResponseData{
+						Content: err.Error(),
+					},
+				})
+				return
+			}
+
+			embed := embeds.CreatePingEmbed(s.State.User, db.GetGuildSettings(i.GuildID))
+			then := time.Now()
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Embeds: []*discordgo.MessageEmbed{
+						embed,
+					},
+				},
+			})
+			embed.Title += fmt.Sprintf(" %s", time.Since(then).Truncate(time.Millisecond).String())
+			s.InteractionResponseEdit(s.State.User.ID, i.Interaction, &discordgo.WebhookEdit{
+				Embeds: []*discordgo.MessageEmbed{
+					embed,
+				},
+			})
+		},
 	})
 }

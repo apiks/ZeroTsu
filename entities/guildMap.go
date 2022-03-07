@@ -64,8 +64,8 @@ func (g *GuildMap) Init(guildID string) bool {
 			ReactsModule: true,
 			PingMessage:  "Hmmm~ So this is what you do all day long?",
 		},
-		ReactJoinMap:    make(map[string]*ReactJoin),
-		Autoposts:       make(map[string]Cha),
+		ReactJoinMap: make(map[string]*ReactJoin),
+		Autoposts:    make(map[string]Cha),
 	}
 
 	return isNew

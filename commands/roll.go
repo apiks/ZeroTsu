@@ -2,18 +2,32 @@ package commands
 
 import (
 	"fmt"
-	"github.com/r-anime/ZeroTsu/common"
-	"github.com/r-anime/ZeroTsu/db"
-	"github.com/r-anime/ZeroTsu/entities"
 	"math/rand"
 	"strconv"
 	"strings"
 
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
+
 	"github.com/bwmarrin/discordgo"
 )
 
-// Rolls a number between 1 and a specified number (defaults to 100)
-func rollCommand(s *discordgo.Session, m *discordgo.Message) {
+// rollCommand rolls a number between 1 and a specified number (defaults to 100)
+func rollCommand(max int) int {
+	var result int
+
+	if max <= 1 {
+		result = rand.Intn(99) + 1
+	} else if max > 1 {
+		result = rand.Intn(max) + 1
+	}
+
+	return result
+}
+
+// rollCommandHandler rolls a number between 1 and a specified number (defaults to 100)
+func rollCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	var (
 		err           error
 		guildSettings = entities.GuildSettings{Prefix: "."}
@@ -87,11 +101,36 @@ func rollCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func init() {
 	Add(&Command{
-		Execute: rollCommand,
-		Trigger: "roll",
+		Execute: rollCommandHandler,
+		Name:    "roll",
 		Aliases: []string{"rol", "r"},
-		Desc:    "Rolls a number from 1 to 100. Specify a positive number to change the range",
+		Desc:    "Rolls a number from 1 to 100. Specify a positive number to change the range.",
 		Module:  "normal",
 		DMAble:  true,
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionInteger,
+				Name:        "number",
+				Description: "A positive number that specifies the range from 1 to the number.",
+				Required:    false,
+			},
+		},
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			var max int
+			if i.Data.Options != nil {
+				for _, option := range i.Data.Options {
+					if option.Name == "number" {
+						max = int(option.IntValue())
+					}
+				}
+			}
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Content: strconv.Itoa(rollCommand(max)),
+				},
+			})
+		},
 	})
 }

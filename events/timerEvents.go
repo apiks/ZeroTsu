@@ -2,17 +2,19 @@ package events
 
 import (
 	"fmt"
-	"github.com/r-anime/ZeroTsu/common"
-	"github.com/r-anime/ZeroTsu/db"
-	"github.com/r-anime/ZeroTsu/embeds"
-	"github.com/r-anime/ZeroTsu/entities"
-	"github.com/r-anime/ZeroTsu/functionality"
+	"log"
 	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/embeds"
+	"github.com/r-anime/ZeroTsu/entities"
+	"github.com/r-anime/ZeroTsu/functionality"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mmcdole/gofeed"
@@ -29,7 +31,6 @@ type Block struct {
 	Block bool
 }
 
-// Write Events
 func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 	var (
 		t                time.Time
@@ -52,33 +53,27 @@ func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 
 		// Sends server count to bot list sites if it's the public ZeroTsu
 		GuildIds.RLock()
-		guildCountStr := strconv.Itoa(len(GuildIds.Ids))
+		guildCountStr := strconv.Itoa(config.Mgr.GuildCount())
 		GuildIds.RUnlock()
 		functionality.SendServers(guildCountStr, s)
 	}
 }
 
-// Common Timer Events
-func CommonEvents(s *discordgo.Session, _ *discordgo.Ready) {
-	var (
-		guildIds []string
-		guildID  string
-	)
+func CommonEvents(_ *discordgo.Session, _ *discordgo.Ready) {
+	var guildIds []string
 
-	for range time.NewTicker(2 * time.Minute).C {
+	for range time.NewTicker(1 * time.Minute).C {
 		GuildIds.RLock()
-		for guildID := range GuildIds.Ids {
-			guildIds = append(guildIds, guildID)
+		for gID := range GuildIds.Ids {
+			guildIds = append(guildIds, gID)
 		}
 		GuildIds.RUnlock()
 
-		for _, guildID = range guildIds {
-			// Handles RemindMes
-			remindMeHandler(s, guildID)
-		}
+		// Handles RemindMes
+		remindMeHandler(config.Mgr.SessionForDM())
 
 		// Handles Reddit Feeds
-		feedHandler(s, guildIds)
+		feedHandler(guildIds)
 
 		guildIds = []string{}
 	}
@@ -86,7 +81,7 @@ func CommonEvents(s *discordgo.Session, _ *discordgo.Ready) {
 
 // remindMeHandler handles sending remindMe messages when called if it's time.
 // Sends either a DM, or, failing that, a ping in the channel the remindMe was set.
-func remindMeHandler(s *discordgo.Session, guildID string) {
+func remindMeHandler(s *discordgo.Session) {
 	var (
 		writeFlag bool
 		t         = time.Now()
@@ -116,19 +111,10 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 			}
 
 			msgDM := fmt.Sprintf("RemindMe: %s", remindMe.GetMessage())
-			msgChannel := fmt.Sprintf("<@%s> Remindme: %s", userID, remindMe.GetMessage())
-			cmdChannel := remindMe.GetCommandChannel()
 
 			dm, err := s.UserChannelCreate(userID)
 			if err == nil {
 				_, err = s.ChannelMessageSend(dm.ID, msgDM)
-			}
-			if err != nil && guildID != "" {
-				// Checks if the user is in the server and then pings him if true
-				_, err := s.GuildMember(guildID, userID)
-				if err == nil {
-					_, _ = s.ChannelMessageSend(cmdChannel, msgChannel)
-				}
 			}
 
 			writeFlag = true
@@ -141,15 +127,14 @@ func remindMeHandler(s *discordgo.Session, guildID string) {
 	}
 
 	err := entities.RemindMeWrite(entities.SharedInfo.GetRemindMesMap())
-	if err != nil && guildID != "" {
-		guildSettings := db.GetGuildSettings(guildID)
-		common.LogError(s, guildSettings.BotLog, err)
+	if err != nil {
+		log.Println(err)
 		return
 	}
 }
 
 // Fetches reddit feeds and returns the feeds that need to posted for all guilds
-func feedHandler(s *discordgo.Session, guildIds []string) {
+func feedHandler(guildIds []string) {
 	redditFeedBlock.Lock()
 	if redditFeedBlock.Block {
 		redditFeedBlock.Unlock()
@@ -168,7 +153,13 @@ func feedHandler(s *discordgo.Session, guildIds []string) {
 			fp              = gofeed.NewParser()
 			removedCheck    bool
 		)
-		fp.Client = &http.Client{Transport: &common.UserAgentTransport{RoundTripper: http.DefaultTransport}, Timeout: time.Second * 6}
+		fp.Client = &http.Client{Transport: &common.UserAgentTransport{RoundTripper: http.DefaultTransport}, Timeout: time.Second * 10}
+
+		guildIDInt, err := strconv.ParseInt(guildID, 10, 64)
+		if err != nil {
+			continue
+		}
+		s := config.Mgr.SessionForGuild(guildIDInt)
 
 		// Removes a check if more than its allowed lifespan hours have passed
 		for _, feedCheck := range guildFeedChecks {
@@ -192,6 +183,7 @@ func feedHandler(s *discordgo.Session, guildIds []string) {
 			if err != nil {
 				if _, ok := err.(*gofeed.HTTPError); ok {
 					if err.(*gofeed.HTTPError).StatusCode == 429 {
+						time.Sleep(1 * time.Minute)
 						continue
 					}
 				}
@@ -257,7 +249,7 @@ func feedHandler(s *discordgo.Session, guildIds []string) {
 				exists = false
 
 				// Wait some milliseconds so it doesn't hit the rate limit easily
-				time.Sleep(time.Millisecond * 100)
+				time.Sleep(time.Millisecond * 200)
 
 				// Sends the feed item
 				message, err := embeds.Feed(s, &feed, item)

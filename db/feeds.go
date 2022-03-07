@@ -2,8 +2,9 @@ package db
 
 import (
 	"fmt"
-	"github.com/r-anime/ZeroTsu/entities"
 	"strings"
+
+	"github.com/r-anime/ZeroTsu/entities"
 )
 
 // GetGuildFeeds returns the guild's feeds from in-memory

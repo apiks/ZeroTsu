@@ -2,17 +2,58 @@ package commands
 
 import (
 	"fmt"
+	"math/rand"
+	"strings"
+
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/entities"
-	"math/rand"
-	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-// Picks one item from a specified number of item.
-func pickCommand(s *discordgo.Session, m *discordgo.Message) {
+// pickCommand picks one item from a specified number of item.
+func pickCommand(items string) []string {
+	var messages []string
+
+	// Splits each item individually
+	itemsSplit := strings.Split(items, "|")
+	if len(itemsSplit) == 1 {
+		itemsSplit = strings.Split(items, ",")
+		if len(itemsSplit) == 1 {
+			itemsSplit = strings.Split(items, "‚")
+		}
+	}
+
+	// Trims trailing and leading whitespace from each item. Also removes items that are empty
+	for i := len(itemsSplit) - 1; i >= 0; i-- {
+		itemsSplit[i] = strings.TrimSpace(itemsSplit[i])
+		if itemsSplit[i] == "" {
+			itemsSplit = append(itemsSplit[:i], itemsSplit[i+1:]...)
+		}
+	}
+
+	if len(itemsSplit) == 1 {
+		return []string{"Error: At least 2 items required."}
+	}
+
+	// Picks a random item
+	message := fmt.Sprintf("**Picked:** %s", itemsSplit[rand.Intn(len(itemsSplit))])
+
+	// Splits the message if it's too big into multiple ones
+	if len(message) > 1900 {
+		messages = common.SplitLongMessage(message)
+	}
+
+	if messages == nil {
+		return []string{message}
+	}
+
+	return messages
+}
+
+// pickCommandHandler picks one item from a specified number of item.
+func pickCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	var (
 		err           error
 		guildSettings = entities.GuildSettings{Prefix: "."}
@@ -71,11 +112,57 @@ func pickCommand(s *discordgo.Session, m *discordgo.Message) {
 
 func init() {
 	Add(&Command{
-		Execute: pickCommand,
-		Trigger: "pick",
+		Execute: pickCommandHandler,
+		Name:    "pick",
 		Aliases: []string{"pic", "pik", "p"},
-		Desc:    "Picks a random item from a list of items",
+		Desc:    "Picks a random item from a list of items.",
 		Module:  "normal",
 		DMAble:  true,
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "items",
+				Description: "Items to select from, separate using a | or a comma (,). Minimum items required is 2.",
+				Required:    true,
+			},
+		},
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			if i.Data.Options == nil {
+				return
+			}
+
+			items := ""
+			if i.Data.Options != nil {
+				for _, option := range i.Data.Options {
+					if option.Name == "items" {
+						items = option.StringValue()
+					}
+				}
+			}
+
+			messages := pickCommand(items)
+			if messages == nil {
+				return
+			}
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Content: messages[0],
+				},
+			})
+
+			if len(messages) > 1 {
+				for j, message := range messages {
+					if j == 0 {
+						continue
+					}
+
+					s.FollowupMessageCreate(s.State.User.ID, i.Interaction, false, &discordgo.WebhookParams{
+						Content: message,
+					})
+				}
+			}
+		},
 	})
 }

@@ -11,6 +11,8 @@ type ShowAirTime struct {
 	Delayed  string
 	Key      string
 	ImageUrl string
+	Subbed   bool
+	Donghua  bool
 }
 
 func NewShowAirTime(name string, airTime string, episode string, delayed string, key string) *ShowAirTime {
@@ -105,4 +107,34 @@ func (s *ShowAirTime) GetImageUrl() string {
 		return ""
 	}
 	return s.ImageUrl
+}
+
+func (s *ShowAirTime) SetSubbed(subbed bool) {
+	s.Lock()
+	s.Subbed = subbed
+	s.Unlock()
+}
+
+func (s *ShowAirTime) GetSubbed() bool {
+	s.RLock()
+	defer s.RUnlock()
+	if s == nil {
+		return false
+	}
+	return s.Subbed
+}
+
+func (s *ShowAirTime) SetDonghua(donghua bool) {
+	s.Lock()
+	s.Donghua = donghua
+	s.Unlock()
+}
+
+func (s *ShowAirTime) GetDonghua() bool {
+	s.RLock()
+	defer s.RUnlock()
+	if s == nil {
+		return false
+	}
+	return s.Donghua
 }

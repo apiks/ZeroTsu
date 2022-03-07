@@ -8,7 +8,11 @@ import (
 	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/entities"
 	"github.com/r-anime/ZeroTsu/events"
+	"github.com/servusdei2018/shards"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -35,63 +39,90 @@ func main() {
 
 	Start()
 
-	<-make(chan struct{})
-	return
+	fmt.Println("[SUCCESS] Bot is now running.  Press CTRL-C to exit.")
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	<-sc
+
+	// Cleanly close down the Manager.
+	fmt.Println("[INFO] Stopping shard manager...")
+	config.Mgr.Shutdown()
+	fmt.Println("[SUCCESS] Shard manager stopped. Bot is shut down.")
 }
 
-// Starts BOT and its Handlers
+// Start starts the BOT and its handlers
 func Start() {
+	var err error
+
 	log.Println("Starting BOT...")
-	goBot, err := discordgo.New(fmt.Sprintf("Bot %s", config.Token))
+	config.Mgr, err = shards.New(fmt.Sprintf("Bot %s", config.Token))
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("[ERROR] Error creating manager,", err)
+		return
 	}
-	goBot.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAll - discordgo.IntentsGuildPresences)
-	goBot.StateEnabled = false
+
+	config.Mgr.RegisterIntent(discordgo.MakeIntent(discordgo.IntentsAll - discordgo.IntentsGuildPresences - discordgo.IntentsGuildIntegrations -
+		discordgo.IntentsGuildBans - discordgo.IntentsGuildEmojis - discordgo.IntentsGuildWebhooks - discordgo.IntentsGuildInvites - discordgo.IntentsGuildMessageTyping -
+		discordgo.IntentsDirectMessageTyping))
 
 	// Guild join and leave listener
-	goBot.AddHandler(events.GuildCreate)
-	goBot.AddHandler(events.GuildDelete)
+	config.Mgr.AddHandler(events.GuildCreate)
+	config.Mgr.AddHandler(events.GuildDelete)
+
+	// Slash Commands
+	config.Mgr.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		if h, ok := commands.SlashCommandsHandlers[i.Data.Name]; ok {
+			h(s, i)
+		}
+	})
 
 	// Periodic events and status
-	goBot.AddHandler(events.StatusReady)
-	goBot.AddHandler(events.CommonEvents)
-	goBot.AddHandler(events.WriteEvents)
+	config.Mgr.AddHandler(events.StatusReady)
+	config.Mgr.AddHandler(events.CommonEvents)
+	config.Mgr.AddHandler(events.WriteEvents)
 
 	// React Channel Join Handler
-	goBot.AddHandler(commands.ReactJoinHandler)
+	config.Mgr.AddHandler(commands.ReactJoinHandler)
 
 	// React Channel Remove Handler
-	goBot.AddHandler(commands.ReactRemoveHandler)
-
-	//// Channel Stats
-	//goBot.AddHandler(commands.OnMessageChannel)
-	goBot.AddHandler(commands.DailyStatsTimer)
+	config.Mgr.AddHandler(commands.ReactRemoveHandler)
 
 	// Voice Role Event Handler
-	goBot.AddHandler(events.VoiceRoleHandler)
+	config.Mgr.AddHandler(events.VoiceRoleHandler)
 
 	// Bot fluff
-	goBot.AddHandler(events.OnBotPing)
+	config.Mgr.AddHandler(events.OnBotPing)
 
 	// Abstraction of a command handler
-	goBot.AddHandler(commands.HandleCommand)
+	config.Mgr.AddHandler(commands.HandleCommand)
 
 	// Raffle react handler
-	goBot.AddHandler(commands.RaffleReactJoin)
-	goBot.AddHandler(commands.RaffleReactLeave)
+	config.Mgr.AddHandler(commands.RaffleReactJoinHandler)
+	config.Mgr.AddHandler(commands.RaffleReactLeaveHandler)
 
 	// Anime subscription handler
-	goBot.AddHandler(commands.AnimeSubsTimer)
+	config.Mgr.AddHandler(commands.AnimeSubsTimer)
 
 	// Anime schedule timer
-	goBot.AddHandler(commands.ScheduleTimer)
+	config.Mgr.AddHandler(commands.ScheduleTimer)
 
-	err = goBot.Open()
+	// Daily Timer
+	config.Mgr.AddHandler(commands.DailyStatsTimer)
+
+	err = config.Mgr.Start()
 	if err != nil {
 		panic("Critical error: BOT cannot start: " + err.Error())
 	}
 
 	// Start tracking uptime from here
 	common.StartTime = time.Now()
+
+	// Register Slash Commands
+	//for _, v := range commands.SlashCommands {
+	//	err := config.Mgr.ApplicationCommandCreate("", v)
+	//	if err != nil {
+	//		log.Panicf("Cannot create '%s' command: %v", v.Name, err)
+	//	}
+	//}
+	//log.Println("Slash command registration is done.")
 }

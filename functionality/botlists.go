@@ -12,16 +12,14 @@ import (
 	"github.com/r-anime/ZeroTsu/config"
 )
 
-// Send number of servers via post request
+// SendServers sends number of servers via post request
 func SendServers(guildCountStr string, s *discordgo.Session) {
 	if s.State.User.ID != "614495694769618944" {
 		return
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
-
 	// Discord Bots
-	discordBotsGuildCount(client, guildCountStr)
+	discordBotsGuildCount(&http.Client{Timeout: 10 * time.Second}, guildCountStr)
 }
 
 // Sends guild count to discordbots.org

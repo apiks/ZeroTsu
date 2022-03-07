@@ -1,21 +1,22 @@
 package commands
 
 import (
-	"github.com/r-anime/ZeroTsu/common"
-	"github.com/r-anime/ZeroTsu/db"
-	"github.com/r-anime/ZeroTsu/entities"
 	"log"
 	"regexp"
 	"runtime/debug"
 	"strconv"
 	"strings"
 
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
+
 	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/functionality"
 )
 
-// Gives a specific role to a user if they react
+// ReactJoinHandler gives a specific role to a user if they react
 func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
@@ -92,7 +93,7 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	}
 }
 
-// Removes a role from user if they unreact
+// ReactRemoveHandler removes a role from user if they unreact
 func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove) {
 	// Saves program from panic and continues running normally without executing the command if it happens
 	defer func() {
@@ -165,12 +166,48 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 	}
 }
 
-// Sets react joins per specific message and emote
-func setReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
-	var roleExists bool
+// addReactJoinCommand adds a react autorole per specific message and emote
+func addReactJoinCommand(s *discordgo.Session, messageID, emoji string, role *discordgo.Role, channelID, guildID string) string {
+	// Checks if it's a valid messageID
+	_, err := strconv.Atoi(messageID)
+	if err != nil || len(messageID) < 17 {
+		return "Error: Invalid message ID."
+	}
+
+	// Parses if it's custom emoji or unicode emoji or animated emoji
+	re := regexp.MustCompile("<a?:+([a-zA-Z]|[0-9])+:+[0-9]+>")
+	emojiRegex := re.FindAllString(strings.ToLower(emoji), 1)
+	if emojiRegex != nil {
+
+		// Fetches emoji API name
+		re = regexp.MustCompile("([a-zA-Z]|[0-9])+:[0-9]+")
+		emojiName := re.FindAllString(emojiRegex[0], 1)[0]
+
+		// Write
+		SaveReactJoin(messageID, role.Name, emojiName, guildID)
+
+		// Reacts with the set emote if possible and gives success
+		_ = s.MessageReactionAdd(channelID, messageID, emojiName)
+
+		return "Success! Reaction autorole set."
+	}
+
+	// Write
+	SaveReactJoin(messageID, role.Name, emoji, guildID)
+
+	// Reacts with the set emote if possible
+	_ = s.MessageReactionAdd(channelID, messageID, emoji)
+	return "Success! Reaction autorole set."
+}
+
+// addReactJoinCommandHandler adds a react autorole per specific message and emote
+func addReactJoinCommandHandler(s *discordgo.Session, m *discordgo.Message) {
+	var (
+		roleExists bool
+		roleName   string
+	)
 
 	guildSettings := db.GetGuildSettings(m.GuildID)
-
 	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 4)
 
 	if len(commandStrings) != 4 {
@@ -183,9 +220,9 @@ func setReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if it's a valid messageID
-	num, err := strconv.Atoi(commandStrings[1])
-	if err != nil || num < 17 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid messageID.")
+	_, err := strconv.Atoi(commandStrings[1])
+	if err != nil || len(commandStrings[1]) < 17 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid message ID.")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
 			return
@@ -202,8 +239,9 @@ func setReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	// Checks if the role exists in the server roles
 	for _, role := range roles {
-		if strings.ToLower(role.Name) == commandStrings[3] {
+		if strings.ToLower(role.Name) == commandStrings[3] || role.ID == commandStrings[3] {
 			roleExists = true
+			roleName = role.Name
 			break
 		}
 	}
@@ -226,7 +264,7 @@ func setReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 		emojiName := re.FindAllString(emojiRegex[0], 1)[0]
 
 		// Write
-		SaveReactJoin(commandStrings[1], commandStrings[3], emojiName, m.GuildID)
+		SaveReactJoin(commandStrings[1], roleName, emojiName, m.GuildID)
 
 		// Reacts with the set emote if possible and gives success
 		_ = s.MessageReactionAdd(m.ChannelID, commandStrings[1], emojiName)
@@ -237,8 +275,6 @@ func setReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 		}
 		return
 	}
-
-	// If the above is false, it's a non-valid emoji or an unicode emoji (the latter preferably) and saves that
 
 	// Write
 	SaveReactJoin(commandStrings[1], commandStrings[3], commandStrings[2], m.GuildID)
@@ -252,8 +288,120 @@ func setReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
+func removeReactJoinCommand(messageID, emoji, guildID string) string {
+	var (
+		messageExists bool
+		validEmoji    bool
 
+		emojiRegexAPI []string
+		emojiAPI      []string
+
+		guildReactJoin = db.GetGuildReactJoin(guildID)
+	)
+
+	// Checks if it's a valid messageID
+	_, err := strconv.Atoi(messageID)
+	if err != nil || len(messageID) < 17 {
+		return "Error: Invalid message ID."
+	}
+
+	if len(guildReactJoin) == 0 {
+		return "Error: There are no set reaction autoroles."
+	}
+
+	// Checks if the messageID already exists in the map
+	for i := range guildReactJoin {
+		if messageID == i {
+			messageExists = true
+			messageID = i
+			break
+		}
+	}
+
+	if messageExists == false {
+		return "Error: No such message ID is set."
+	}
+
+	// Removes the entire message from the map and writes to storage
+	if emoji == "" {
+		delete(guildReactJoin, messageID)
+		db.SetGuildReactJoin(guildID, guildReactJoin)
+		return "Success! Removed entire message react autorole."
+	}
+
+	if guildReactJoin[messageID].GetRoleEmojiMap() == nil {
+		return ""
+	}
+
+	// Parses if it's custom emoji or unicode
+	re := regexp.MustCompile("(?i)<:+([a-zA-Z]|[0-9])+:+[0-9]+>")
+	emojiRegex := re.FindAllString(emoji, 1)
+	if emojiRegex == nil {
+		// Second parser if it's custom emoji or unicode but for emoji API name instead
+		reAPI := regexp.MustCompile("(?i)([a-zA-Z]|[0-9])+:[0-9]+")
+		emojiRegexAPI = reAPI.FindAllString(emoji, 1)
+	}
+
+	for storageMessageID := range guildReactJoin[messageID].GetRoleEmojiMap() {
+		for role, emojiSlice := range guildReactJoin[messageID].GetRoleEmojiMap()[storageMessageID] {
+			if emojiSlice == nil {
+				continue
+			}
+
+			for index, emojiLoop := range emojiSlice {
+				// Checks for unicode emoji
+				if len(emojiRegex) == 0 && len(emojiRegexAPI) == 0 {
+					if emoji == emojiLoop {
+						validEmoji = true
+					}
+					// Checks for non-unicode emoji
+				} else {
+					// Trims non-unicode emoji name to fit API emoji name
+					re = regexp.MustCompile("(?i)([a-zA-Z]|[0-9])+:[0-9]+")
+					if len(emojiRegex) == 0 {
+						if len(emojiRegexAPI) != 0 {
+							emojiAPI = re.FindAllString(emojiRegexAPI[0], 1)
+							if emojiLoop == emojiAPI[0] {
+								validEmoji = true
+							}
+						}
+					} else {
+						emojiAPI = re.FindAllString(emojiRegex[0], 1)
+						if emojiLoop == emojiAPI[0] {
+							validEmoji = true
+						}
+					}
+				}
+
+				// Delete only if it's a valid emoji in map
+				if validEmoji {
+					// Delete the entire message from map if it's the only set emoji react join
+					if len(guildReactJoin[messageID].GetRoleEmojiMap()[storageMessageID][role]) == 1 {
+						delete(guildReactJoin, messageID)
+						db.SetGuildReactJoin(guildID, guildReactJoin)
+						return "Success! Removed that emoji autorole from the message."
+
+						// Delete only that specific emoji for that specific role
+					} else {
+						a := guildReactJoin[messageID].GetRoleEmojiMap()[storageMessageID][role]
+						a = append(a[:index], a[index+1:]...)
+						guildReactJoin[messageID].GetRoleEmojiMap()[storageMessageID][role] = a
+						return "Success! Removed that emoji autorole from the message."
+					}
+				}
+			}
+		}
+	}
+
+	// If it comes this far it means it's an invalid emoji
+	if emojiRegex == nil && emojiRegexAPI == nil {
+		return "Error: Invalid emoji. Please input a valid emoji or emoji API name."
+	}
+
+	return ""
+}
+
+func removeReactJoinCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	var (
 		messageExists bool
 		validEmoji    = false
@@ -410,20 +558,6 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 							common.LogError(s, guildSettings.BotLog, err)
 							return
 						}
-						// Delete only the role from map if other set react join roles exist in the map
-					} else if len(guildReactJoin[messageID].GetRoleEmojiMap()[storageMessageID][role]) == 1 {
-						delete(guildReactJoin[messageID].GetRoleEmojiMap()[storageMessageID], role)
-						db.SetGuildReactJoin(m.GuildID, guildReactJoin)
-
-						// Returns if the bot called the func
-						if m.Author.ID == s.State.User.ID {
-							return
-						}
-						_, err = s.ChannelMessageSend(m.ChannelID, "Success! Removed emoji react join from message.")
-						if err != nil {
-							common.LogError(s, guildSettings.BotLog, err)
-							return
-						}
 						// Delete only that specific emoji for that specific role
 					} else {
 						a := guildReactJoin[commandStrings[1]].GetRoleEmojiMap()[storageMessageID][role]
@@ -463,11 +597,43 @@ func removeReactJoinCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-// Prints all currently set React Joins in memory
-func viewReactJoinsCommand(s *discordgo.Session, m *discordgo.Message) {
+func viewReactJoinsCommand(guildID string) []string {
+	var (
+		message           string
+		guildReactJoinMap = db.GetGuildReactJoin(guildID)
+	)
 
+	if len(guildReactJoinMap) == 0 {
+		return []string{"Error: There are no set react joins."}
+	}
+
+	// Iterates through all of the set channel joins and assigns them to a string
+	for messageID, value := range guildReactJoinMap {
+		if value == nil {
+			continue
+		}
+
+		// Formats message
+		message = "——————\n`MessageID: " + (messageID + "`\n")
+		for i := 0; i < len(value.GetRoleEmojiMap()); i++ {
+			for role, emoji := range value.GetRoleEmojiMap()[i] {
+				message = message + "`" + role + "` — "
+				for j := 0; j < len(emoji); j++ {
+					if j != len(emoji)-1 {
+						message = message + emoji[j] + ", "
+					} else {
+						message = message + emoji[j] + "\n"
+					}
+				}
+			}
+		}
+	}
+
+	return common.SplitLongMessage(message)
+}
+
+func viewReactJoinsCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	var line string
-
 	guildSettings := db.GetGuildSettings(m.GuildID)
 	guildReactJoinMap := db.GetGuildReactJoin(m.GuildID)
 
@@ -509,7 +675,7 @@ func viewReactJoinsCommand(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-// Saves the react channel join and parses if it already exists
+// SaveReactJoin saves the react channel join and parses if it already exists
 func SaveReactJoin(messageID string, role string, emoji string, guildID string) {
 	var (
 		emojiExists bool
@@ -557,27 +723,170 @@ func SaveReactJoin(messageID string, role string, emoji string, guildID string) 
 
 func init() {
 	Add(&Command{
-		Execute:    setReactJoinCommand,
-		Trigger:    "setreact",
-		Aliases:    []string{"setreactjoin", "addreact"},
-		Desc:       "Sets a react join on a specific message, role and emote [REACTS]",
+		Execute:    addReactJoinCommandHandler,
+		Name:       "add-react-autorole",
+		Aliases:    []string{"setreactjoin", "addreact", "setreact", "set-react", "set-react-autorole"},
+		Desc:       "Adds a react autorole on a specific message, emoji and role",
 		Permission: functionality.Mod,
 		Module:     "reacts",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "message-id",
+				Description: "The ID of the message you want to set a reaction emoji and role for.",
+				Required:    true,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "emoji",
+				Description: "The emoji you want to set as a reaction emoji.",
+				Required:    true,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionRole,
+				Name:        "role",
+				Description: "The role you want it to give and take whenever a user reacts with the specified emoji.",
+				Required:    true,
+			},
+		},
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			err := VerifySlashCommand(s, "add-react-autorole", i)
+			if err != nil {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionApplicationCommandResponseData{
+						Content: err.Error(),
+					},
+				})
+				return
+			}
+
+			var (
+				messageID string
+				emoji     string
+				role      *discordgo.Role
+			)
+			if i.Data.Options == nil {
+				return
+			}
+
+			for _, option := range i.Data.Options {
+				if option.Name == "message-id" {
+					messageID = option.StringValue()
+				} else if option.Name == "emoji" {
+					emoji = option.StringValue()
+				} else if option.Name == "role" {
+					role = option.RoleValue(s, i.GuildID)
+				}
+			}
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Content: addReactJoinCommand(s, messageID, emoji, role, i.ChannelID, i.GuildID),
+				},
+			})
+		},
 	})
 	Add(&Command{
-		Execute:    removeReactJoinCommand,
-		Trigger:    "removereact",
-		Aliases:    []string{"removereactjoin", "deletereact"},
-		Desc:       "Removes a set react join [REACTS]",
+		Execute:    removeReactJoinCommandHandler,
+		Name:       "remove-react-autorole",
+		Aliases:    []string{"removereactjoin", "deletereact", "removereact", "removereactautorole", "deletereactautorole", "delete-react-autorole"},
+		Desc:       "Removes a set react join",
 		Permission: functionality.Mod,
 		Module:     "reacts",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "message-id",
+				Description: "The ID of the message you want to remove a react autorole for.",
+				Required:    true,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "emoji",
+				Description: "The emoji you want to remove as a reaction emoji to that message.",
+				Required:    false,
+			},
+		},
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			err := VerifySlashCommand(s, "remove-react-autorole", i)
+			if err != nil {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionApplicationCommandResponseData{
+						Content: err.Error(),
+					},
+				})
+				return
+			}
+
+			var (
+				messageID string
+				emoji     string
+			)
+			if i.Data.Options == nil {
+				return
+			}
+
+			for _, option := range i.Data.Options {
+				if option.Name == "message-id" {
+					messageID = option.StringValue()
+				} else if option.Name == "emoji" {
+					emoji = option.StringValue()
+				}
+			}
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Content: removeReactJoinCommand(messageID, emoji, i.GuildID),
+				},
+			})
+		},
 	})
 	Add(&Command{
-		Execute:    viewReactJoinsCommand,
-		Trigger:    "viewreacts",
-		Aliases:    []string{"viewreactjoins", "viewreact", "viewreacts", "reacts", "react"},
-		Desc:       "Views all set react joins [REACTS]",
+		Execute:    viewReactJoinsCommandHandler,
+		Name:       "reacts-autorole",
+		Aliases:    []string{"viewreactjoins", "viewreact", "viewreacts", "reacts", "react", "viewreacts", "reactsautorole", "react-autorole"},
+		Desc:       "Prints all set reaction autoroles",
 		Permission: functionality.Mod,
 		Module:     "reacts",
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			err := VerifySlashCommand(s, "reacts-autorole", i)
+			if err != nil {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionApplicationCommandResponseData{
+						Content: err.Error(),
+					},
+				})
+				return
+			}
+
+			messages := viewReactJoinsCommand(i.GuildID)
+			if messages == nil {
+				return
+			}
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Content: messages[0],
+				},
+			})
+
+			if len(messages) > 1 {
+				for j, message := range messages {
+					if j == 0 {
+						continue
+					}
+
+					s.FollowupMessageCreate(s.State.User.ID, i.Interaction, false, &discordgo.WebhookParams{
+						Content: message,
+					})
+				}
+			}
+		},
 	})
 }
