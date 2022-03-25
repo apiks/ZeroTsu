@@ -754,7 +754,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -766,11 +766,11 @@ func init() {
 				emoji     string
 				role      *discordgo.Role
 			)
-			if i.Data.Options == nil {
+			if i.ApplicationCommandData().Options == nil {
 				return
 			}
 
-			for _, option := range i.Data.Options {
+			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "message-id" {
 					messageID = option.StringValue()
 				} else if option.Name == "emoji" {
@@ -782,7 +782,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: addReactJoinCommand(s, messageID, emoji, role, i.ChannelID, i.GuildID),
 				},
 			})
@@ -814,7 +814,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -825,11 +825,11 @@ func init() {
 				messageID string
 				emoji     string
 			)
-			if i.Data.Options == nil {
+			if i.ApplicationCommandData().Options == nil {
 				return
 			}
 
-			for _, option := range i.Data.Options {
+			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "message-id" {
 					messageID = option.StringValue()
 				} else if option.Name == "emoji" {
@@ -839,7 +839,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: removeReactJoinCommand(messageID, emoji, i.GuildID),
 				},
 			})
@@ -857,7 +857,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -871,7 +871,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: messages[0],
 				},
 			})

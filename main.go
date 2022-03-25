@@ -2,6 +2,12 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/r-anime/ZeroTsu/commands"
 	"github.com/r-anime/ZeroTsu/common"
@@ -9,11 +15,6 @@ import (
 	"github.com/r-anime/ZeroTsu/entities"
 	"github.com/r-anime/ZeroTsu/events"
 	"github.com/servusdei2018/shards"
-	"log"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 // Initializes and starts Bot
@@ -71,7 +72,7 @@ func Start() {
 
 	// Slash Commands
 	config.Mgr.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		if h, ok := commands.SlashCommandsHandlers[i.Data.Name]; ok {
+		if h, ok := commands.SlashCommandsHandlers[i.ApplicationCommandData().Name]; ok {
 			h(s, i)
 		}
 	})
@@ -118,11 +119,11 @@ func Start() {
 	common.StartTime = time.Now()
 
 	// Register Slash Commands
-	//for _, v := range commands.SlashCommands {
-	//	err := config.Mgr.ApplicationCommandCreate("", v)
-	//	if err != nil {
-	//		log.Panicf("Cannot create '%s' command: %v", v.Name, err)
-	//	}
-	//}
-	//log.Println("Slash command registration is done.")
+	for _, v := range commands.SlashCommands {
+		err := config.Mgr.ApplicationCommandCreate("", v)
+		if err != nil {
+			log.Panicf("Cannot create '%s' command: %v", v.Name, err)
+		}
+	}
+	log.Println("Slash command registration is done.")
 }

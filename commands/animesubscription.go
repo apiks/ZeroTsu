@@ -541,10 +541,13 @@ func animeSubsHandler() {
 			continue
 		}
 
-		var session *discordgo.Session
+		for subKey, userShow := range subscriptions {
+			var (
+				session       *discordgo.Session
+				guildSettings entities.GuildSettings
+			)
 
-		if len(subscriptions) > 0 {
-			if subscriptions[0].GetGuild() {
+			if userShow.GetGuild() {
 				guildIDInt, err := strconv.ParseInt(userID, 10, 64)
 				if err != nil {
 					continue
@@ -553,10 +556,7 @@ func animeSubsHandler() {
 			} else {
 				session = config.Mgr.SessionForDM()
 			}
-		}
 
-		for subKey, userShow := range subscriptions {
-			var guildSettings entities.GuildSettings
 			if userShow == nil {
 				continue
 			}
@@ -768,13 +768,13 @@ func init() {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			if i.Data.Options == nil {
+			if i.ApplicationCommandData().Options == nil {
 				return
 			}
 
 			anime := ""
-			if i.Data.Options != nil {
-				for _, option := range i.Data.Options {
+			if i.ApplicationCommandData().Options != nil {
+				for _, option := range i.ApplicationCommandData().Options {
 					if option.Name == "anime" {
 						anime = option.StringValue()
 					}
@@ -783,7 +783,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: subscribeCommand(anime, i.Member.User.ID),
 				},
 			})
@@ -805,13 +805,13 @@ func init() {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			if i.Data.Options == nil {
+			if i.ApplicationCommandData().Options == nil {
 				return
 			}
 
 			anime := ""
-			if i.Data.Options != nil {
-				for _, option := range i.Data.Options {
+			if i.ApplicationCommandData().Options != nil {
+				for _, option := range i.ApplicationCommandData().Options {
 					if option.Name == "anime" {
 						anime = option.StringValue()
 					}
@@ -820,7 +820,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: unsubscribeCommand(anime, i.Member.User.ID),
 				},
 			})
@@ -841,7 +841,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: messages[0],
 				},
 			})

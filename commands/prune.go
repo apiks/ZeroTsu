@@ -69,11 +69,7 @@ OuterLoop:
 			for i := 0; i < len(messages); i++ {
 
 				// Only save messages not older than 2 weeks
-				timestamp, err := messages[i].Timestamp.Parse()
-				if err != nil {
-					continue
-				}
-				difference := now.Sub(timestamp)
+				difference := now.Sub(messages[i].Timestamp)
 				if difference.Hours() >= 336 {
 					break OuterLoop
 				}
@@ -91,11 +87,7 @@ OuterLoop:
 		for i := 0; i < len(messages); i++ {
 
 			// Only save messages not older than 2 weeks
-			timestamp, err := messages[i].Timestamp.Parse()
-			if err != nil {
-				continue
-			}
-			difference := now.Sub(timestamp)
+			difference := now.Sub(messages[i].Timestamp)
 			if difference.Hours() >= 336 {
 				break OuterLoop
 			}
@@ -220,11 +212,7 @@ OuterLoop:
 			for i := 0; i < len(messages); i++ {
 
 				// Only save messages not older than 2 weeks
-				timestamp, err := messages[i].Timestamp.Parse()
-				if err != nil {
-					continue
-				}
-				difference := now.Sub(timestamp)
+				difference := now.Sub(messages[i].Timestamp)
 				if difference.Hours() >= 336 {
 					break OuterLoop
 				}
@@ -243,11 +231,7 @@ OuterLoop:
 		for i := 0; i < len(messages); i++ {
 
 			// Only save messages not older than 2 weeks
-			timestamp, err := messages[i].Timestamp.Parse()
-			if err != nil {
-				continue
-			}
-			difference := now.Sub(timestamp)
+			difference := now.Sub(messages[i].Timestamp)
 			if difference.Hours() >= 336 {
 				break OuterLoop
 			}
@@ -354,7 +338,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -366,12 +350,12 @@ func init() {
 				amount          int
 				targetChannelID = i.ChannelID
 			)
-			if i.Data.Options == nil {
+			if i.ApplicationCommandData().Options == nil {
 				return
 			}
 
-			if i.Data.Options != nil {
-				for _, option := range i.Data.Options {
+			if i.ApplicationCommandData().Options != nil {
+				for _, option := range i.ApplicationCommandData().Options {
 					if option.Name == "number" {
 						amount = int(option.IntValue())
 					} else if option.Name == "channel" {
@@ -389,7 +373,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: response,
 				},
 			})

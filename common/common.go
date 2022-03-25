@@ -18,7 +18,7 @@ import (
 
 // File for misc. functions, commands and variables.
 
-const UserAgent = "script:github.com/apiks/zerotsu:v2.2.0 (by /u/thechosenapiks)"
+const UserAgent = "script:github.com/apiks/zerotsu:v3.1.0 (by /u/thechosenapiks)"
 
 var StartTime time.Time
 

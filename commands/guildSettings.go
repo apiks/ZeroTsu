@@ -1067,7 +1067,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -1075,11 +1075,11 @@ func init() {
 			}
 
 			var role *discordgo.Role
-			if i.Data.Options == nil {
+			if i.ApplicationCommandData().Options == nil {
 				return
 			}
 
-			for _, option := range i.Data.Options {
+			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "role" {
 					role = option.RoleValue(s, i.GuildID)
 				}
@@ -1087,7 +1087,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: addModeratorRole(role, i.GuildID),
 				},
 			})
@@ -1113,7 +1113,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -1121,11 +1121,11 @@ func init() {
 			}
 
 			var role *discordgo.Role
-			if i.Data.Options == nil {
+			if i.ApplicationCommandData().Options == nil {
 				return
 			}
 
-			for _, option := range i.Data.Options {
+			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "role" {
 					role = option.RoleValue(s, i.GuildID)
 				}
@@ -1133,7 +1133,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: removeModeratorRole(role, i.GuildID),
 				},
 			})
@@ -1151,7 +1151,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -1165,7 +1165,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: messages[0],
 				},
 			})
@@ -1216,7 +1216,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -1225,8 +1225,8 @@ func init() {
 
 			var targetChannel *discordgo.Channel
 			enabled := true
-			if i.Data.Options != nil {
-				for _, option := range i.Data.Options {
+			if i.ApplicationCommandData().Options != nil {
+				for _, option := range i.ApplicationCommandData().Options {
 					if option.Name == "channel" {
 						targetChannel = option.ChannelValue(s)
 					} else if option.Name == "enabled" {
@@ -1237,7 +1237,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: botLogCommand(targetChannel, enabled, i.GuildID),
 				},
 			})
@@ -1269,7 +1269,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -1280,10 +1280,10 @@ func init() {
 				targetChannel *discordgo.Channel
 				targetRole    *discordgo.Role
 			)
-			if i.Data.Options == nil {
+			if i.ApplicationCommandData().Options == nil {
 				return
 			}
-			for _, option := range i.Data.Options {
+			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "channel" {
 					targetChannel = option.ChannelValue(s)
 				} else if option.Name == "role" {
@@ -1293,7 +1293,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: addVoiceChaRole(targetChannel, targetRole),
 				},
 			})
@@ -1325,7 +1325,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -1336,11 +1336,11 @@ func init() {
 				targetChannel *discordgo.Channel
 				targetRole    *discordgo.Role
 			)
-			if i.Data.Options == nil {
+			if i.ApplicationCommandData().Options == nil {
 				return
 			}
 
-			for _, option := range i.Data.Options {
+			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "channel" {
 					targetChannel = option.ChannelValue(s)
 				} else if option.Name == "role" {
@@ -1350,7 +1350,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: removeVoiceChaRole(targetChannel, targetRole),
 				},
 			})
@@ -1368,7 +1368,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -1382,7 +1382,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: messages[0],
 				},
 			})
@@ -1420,7 +1420,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -1429,8 +1429,8 @@ func init() {
 
 			enabled := true
 			printModule := true
-			if i.Data.Options != nil {
-				for _, option := range i.Data.Options {
+			if i.ApplicationCommandData().Options != nil {
+				for _, option := range i.ApplicationCommandData().Options {
 					if option.Name == "enabled" {
 						enabled = option.BoolValue()
 						printModule = false
@@ -1440,7 +1440,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: reactModuleCommand(printModule, enabled, i.GuildID),
 				},
 			})
@@ -1466,7 +1466,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -1474,8 +1474,8 @@ func init() {
 			}
 
 			var pingMsg string
-			if i.Data.Options != nil {
-				for _, option := range i.Data.Options {
+			if i.ApplicationCommandData().Options != nil {
+				for _, option := range i.ApplicationCommandData().Options {
 					if option.Name == "message" {
 						pingMsg = option.StringValue()
 					}
@@ -1484,7 +1484,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: pingMessageCommand(pingMsg, i.GuildID),
 				},
 			})
@@ -1510,7 +1510,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -1519,8 +1519,8 @@ func init() {
 
 			enabled := true
 			printModule := true
-			if i.Data.Options != nil {
-				for _, option := range i.Data.Options {
+			if i.ApplicationCommandData().Options != nil {
+				for _, option := range i.ApplicationCommandData().Options {
 					if option.Name == "enabled" {
 						enabled = option.BoolValue()
 						printModule = false
@@ -1530,7 +1530,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: modOnlyCommand(printModule, enabled, i.GuildID),
 				},
 			})

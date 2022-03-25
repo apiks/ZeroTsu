@@ -330,7 +330,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -339,8 +339,8 @@ func init() {
 
 			var targetChannel *discordgo.Channel
 			enabled := true
-			if i.Data.Options != nil {
-				for _, option := range i.Data.Options {
+			if i.ApplicationCommandData().Options != nil {
+				for _, option := range i.ApplicationCommandData().Options {
 					if option.Name == "channel" {
 						targetChannel = option.ChannelValue(s)
 					} else if option.Name == "enabled" {
@@ -351,7 +351,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: setDailyScheduleCommand(targetChannel, enabled, i.GuildID),
 				},
 			})
@@ -383,7 +383,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -392,8 +392,8 @@ func init() {
 
 			var targetChannel *discordgo.Channel
 			enabled := true
-			if i.Data.Options != nil {
-				for _, option := range i.Data.Options {
+			if i.ApplicationCommandData().Options != nil {
+				for _, option := range i.ApplicationCommandData().Options {
 					if option.Name == "channel" {
 						targetChannel = option.ChannelValue(s)
 					} else if option.Name == "enabled" {
@@ -404,7 +404,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: setNewEpisodesCommand(targetChannel, enabled, i.GuildID),
 				},
 			})
@@ -430,7 +430,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -439,8 +439,8 @@ func init() {
 
 			enabled := true
 			printModule := true
-			if i.Data.Options != nil {
-				for _, option := range i.Data.Options {
+			if i.ApplicationCommandData().Options != nil {
+				for _, option := range i.ApplicationCommandData().Options {
 					if option.Name == "enabled" {
 						enabled = option.BoolValue()
 						printModule = false
@@ -450,7 +450,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: toggleDonghuaCommand(printModule, enabled, i.GuildID),
 				},
 			})

@@ -92,8 +92,8 @@ func init() {
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			user := i.Member.User
-			if i.Data.Options != nil {
-				for _, option := range i.Data.Options {
+			if i.ApplicationCommandData().Options != nil {
+				for _, option := range i.ApplicationCommandData().Options {
 					if option.Name == "user" {
 						user = option.UserValue(s)
 					}
@@ -102,7 +102,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: avatarCommand(user),
 				},
 			})

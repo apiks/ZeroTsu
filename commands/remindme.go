@@ -397,13 +397,13 @@ func init() {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			if i.Data.Options == nil {
+			if i.ApplicationCommandData().Options == nil {
 				return
 			}
 
 			time := ""
 			message := ""
-			for _, option := range i.Data.Options {
+			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "time" {
 					time = option.StringValue()
 				} else if option.Name == "message" {
@@ -413,7 +413,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: remindMeCommand(i.ChannelID, i.Member.User.ID, time, message),
 				},
 			})
@@ -436,11 +436,11 @@ func init() {
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			var id int
-			if i.Data.Options == nil {
+			if i.ApplicationCommandData().Options == nil {
 				return
 			}
 
-			for _, option := range i.Data.Options {
+			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "id" {
 					id = int(option.IntValue())
 				}
@@ -448,7 +448,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: removeRemindMe(id, i.Member.User.ID),
 				},
 			})
@@ -469,7 +469,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: messages[0],
 				},
 			})

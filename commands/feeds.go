@@ -417,7 +417,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -432,10 +432,10 @@ func init() {
 				title         string
 				pin           bool
 			)
-			if i.Data.Options == nil {
+			if i.ApplicationCommandData().Options == nil {
 				return
 			}
-			for _, option := range i.Data.Options {
+			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "channel" {
 					targetChannel = option.ChannelValue(s)
 				} else if option.Name == "subreddit" {
@@ -453,7 +453,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: addRedditFeedCommand(targetChannel, subreddit, author, postType, title, pin),
 				},
 			})
@@ -503,7 +503,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -517,10 +517,10 @@ func init() {
 				postType      = "hot"
 				title         string
 			)
-			if i.Data.Options == nil {
+			if i.ApplicationCommandData().Options == nil {
 				return
 			}
-			for _, option := range i.Data.Options {
+			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "channel" {
 					targetChannel = option.ChannelValue(s)
 				} else if option.Name == "subreddit" {
@@ -536,7 +536,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: removeRedditFeedCommand(targetChannel, subreddit, author, postType, title),
 				},
 			})
@@ -554,7 +554,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -568,7 +568,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: messages[0],
 				},
 			})

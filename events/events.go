@@ -65,9 +65,7 @@ func StatusReady(s *discordgo.Session, _ *discordgo.Ready) {
 	}
 
 	// Sends server count to bot list sites if it's the public ZeroTsu
-	GuildIds.RLock()
-	guildCountStr := strconv.Itoa(len(GuildIds.Ids))
-	GuildIds.RUnlock()
+	guildCountStr := strconv.Itoa(config.Mgr.GuildCount())
 	functionality.SendServers(guildCountStr, s)
 }
 

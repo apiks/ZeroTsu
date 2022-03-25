@@ -117,8 +117,8 @@ func init() {
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			var max int
-			if i.Data.Options != nil {
-				for _, option := range i.Data.Options {
+			if i.ApplicationCommandData().Options != nil {
+				for _, option := range i.ApplicationCommandData().Options {
 					if option.Name == "number" {
 						max = int(option.IntValue())
 					}
@@ -127,7 +127,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: strconv.Itoa(rollCommand(max)),
 				},
 			})

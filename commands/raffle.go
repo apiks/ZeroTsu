@@ -660,11 +660,11 @@ func init() {
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			var raffleName string
-			if i.Data.Options == nil {
+			if i.ApplicationCommandData().Options == nil {
 				return
 			}
 
-			for _, option := range i.Data.Options {
+			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "raffle" {
 					raffleName = option.StringValue()
 				}
@@ -672,7 +672,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: raffleParticipateCommand(raffleName, i.Member.User.ID, i.GuildID),
 				},
 			})
@@ -694,11 +694,11 @@ func init() {
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			var raffleName string
-			if i.Data.Options == nil {
+			if i.ApplicationCommandData().Options == nil {
 				return
 			}
 
-			for _, option := range i.Data.Options {
+			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "raffle" {
 					raffleName = option.StringValue()
 				}
@@ -706,7 +706,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: raffleLeaveCommand(raffleName, i.Member.User.ID, i.GuildID),
 				},
 			})
@@ -738,7 +738,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -749,11 +749,11 @@ func init() {
 				raffleName  string
 				raffleReact bool
 			)
-			if i.Data.Options == nil {
+			if i.ApplicationCommandData().Options == nil {
 				return
 			}
 
-			for _, option := range i.Data.Options {
+			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "raffle" {
 					raffleName = option.StringValue()
 				} else if option.Name == "react" {
@@ -764,7 +764,7 @@ func init() {
 			if raffleReact {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: "Creating raffle. . .",
 					},
 				})
@@ -773,7 +773,7 @@ func init() {
 			} else {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: craffleCommand(nil, raffleName, false, "", i.GuildID),
 					},
 				})
@@ -800,7 +800,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -808,11 +808,11 @@ func init() {
 			}
 
 			var raffleName string
-			if i.Data.Options == nil {
+			if i.ApplicationCommandData().Options == nil {
 				return
 			}
 
-			for _, option := range i.Data.Options {
+			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "raffle" {
 					raffleName = option.StringValue()
 				}
@@ -820,7 +820,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: raffleWinnerCommand(raffleName, i.GuildID),
 				},
 			})
@@ -846,7 +846,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -854,11 +854,11 @@ func init() {
 			}
 
 			var raffleName string
-			if i.Data.Options == nil {
+			if i.ApplicationCommandData().Options == nil {
 				return
 			}
 
-			for _, option := range i.Data.Options {
+			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "raffle" {
 					raffleName = option.StringValue()
 				}
@@ -866,7 +866,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: removeRaffleCommand(raffleName, i.GuildID),
 				},
 			})
@@ -884,7 +884,7 @@ func init() {
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionApplicationCommandResponseData{
+					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
 					},
 				})
@@ -898,7 +898,7 @@ func init() {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionApplicationCommandResponseData{
+				Data: &discordgo.InteractionResponseData{
 					Content: messages[0],
 				},
 			})

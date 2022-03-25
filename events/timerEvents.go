@@ -52,9 +52,7 @@ func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 		}
 
 		// Sends server count to bot list sites if it's the public ZeroTsu
-		GuildIds.RLock()
 		guildCountStr := strconv.Itoa(config.Mgr.GuildCount())
-		GuildIds.RUnlock()
 		functionality.SendServers(guildCountStr, s)
 	}
 }
@@ -110,11 +108,9 @@ func remindMeHandler(s *discordgo.Session) {
 				continue
 			}
 
-			msgDM := fmt.Sprintf("RemindMe: %s", remindMe.GetMessage())
-
 			dm, err := s.UserChannelCreate(userID)
 			if err == nil {
-				_, err = s.ChannelMessageSend(dm.ID, msgDM)
+				_, err = s.ChannelMessageSend(dm.ID, fmt.Sprintf("RemindMe: %s", remindMe.GetMessage()))
 			}
 
 			writeFlag = true
@@ -181,9 +177,9 @@ func feedHandler(guildIds []string) {
 			// Parse the feed
 			feedParser, err := fp.ParseURL(fmt.Sprintf("https://www.reddit.com/r/%s/%s/.rss", feed.GetSubreddit(), feed.GetPostType()))
 			if err != nil {
-				if _, ok := err.(*gofeed.HTTPError); ok {
-					if err.(*gofeed.HTTPError).StatusCode == 429 {
-						time.Sleep(1 * time.Minute)
+				if _, ok := err.(gofeed.HTTPError); ok {
+					if err.(gofeed.HTTPError).StatusCode == 429 {
+						time.Sleep(60 * time.Minute)
 						continue
 					}
 				}
@@ -192,6 +188,7 @@ func feedHandler(guildIds []string) {
 
 			// Iterates through each feed parser item to see if it finds something that should be posted
 			for _, item := range feedParser.Items {
+				log.Println(4)
 				var (
 					skip   bool
 					exists bool
@@ -248,8 +245,8 @@ func feedHandler(guildIds []string) {
 				}
 				exists = false
 
-				// Wait some milliseconds so it doesn't hit the rate limit easily
-				time.Sleep(time.Millisecond * 200)
+				// Wait a second so it doesn't hit the rate limit easily
+				time.Sleep(time.Second * 1)
 
 				// Sends the feed item
 				message, err := embeds.Feed(s, &feed, item)
