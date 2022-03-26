@@ -1,6 +1,7 @@
 package events
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
 	"math/rand"
@@ -149,7 +150,12 @@ func feedHandler(guildIds []string) {
 			fp              = gofeed.NewParser()
 			removedCheck    bool
 		)
-		fp.Client = &http.Client{Transport: &common.UserAgentTransport{RoundTripper: http.DefaultTransport}, Timeout: time.Second * 10}
+		fp.Client = &http.Client{
+			Transport: &common.UserAgentTransport{RoundTripper: &http.Transport{
+				TLSNextProto: map[string]func(authority string, c *tls.Conn) http.RoundTripper{},
+			}},
+			Timeout: time.Second * 10}
+		fp.UserAgent = common.UserAgent
 
 		guildIDInt, err := strconv.ParseInt(guildID, 10, 64)
 		if err != nil {
@@ -174,6 +180,9 @@ func feedHandler(guildIds []string) {
 		for _, feed := range guildFeeds {
 			var pinnedItems = make(map[*gofeed.Item]bool)
 
+			// Wait a second because of reddit API rate limit
+			time.Sleep(time.Second * 2)
+
 			// Parse the feed
 			feedParser, err := fp.ParseURL(fmt.Sprintf("https://www.reddit.com/r/%s/%s/.rss", feed.GetSubreddit(), feed.GetPostType()))
 			if err != nil {
@@ -188,7 +197,6 @@ func feedHandler(guildIds []string) {
 
 			// Iterates through each feed parser item to see if it finds something that should be posted
 			for _, item := range feedParser.Items {
-				log.Println(4)
 				var (
 					skip   bool
 					exists bool
@@ -245,8 +253,8 @@ func feedHandler(guildIds []string) {
 				}
 				exists = false
 
-				// Wait a second so it doesn't hit the rate limit easily
-				time.Sleep(time.Second * 1)
+				// Wait for Discord API Rate limit
+				time.Sleep(time.Millisecond * 200)
 
 				// Sends the feed item
 				message, err := embeds.Feed(s, &feed, item)
