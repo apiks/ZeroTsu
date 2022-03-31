@@ -29,7 +29,7 @@ func Subscription(s *discordgo.Session, show *entities.ShowAirTime, channelID st
 		Author: &discordgo.MessageEmbedAuthor{
 			URL:          "https://AnimeSchedule.net",
 			Name:         "AnimeSchedule.net",
-			IconURL:      "https://cdn.animeschedule.net/production/assets/public/img/logos/as-logo-3ab78c35b0.png",
+			IconURL:      "https://cdn.animeschedule.net/production/assets/public/img/logos/as-logo-855bacd96c.png",
 			ProxyIconURL: "",
 		},
 	})
