@@ -250,9 +250,12 @@ func processEachShow(_ int, element *goquery.Selection) {
 	}
 	if element.Find(".air-type-text").Text() == "" {
 		show.SetSubbed(true)
+	} else if strings.ToLower(element.Find(".air-type-text").Text()) == "dub" {
+		return
 	} else {
 		show.SetSubbed(false)
 	}
+
 	donghua, _ := element.Attr("chinese")
 	if donghua == "true" {
 		show.SetDonghua(true)
