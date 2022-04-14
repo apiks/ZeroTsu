@@ -683,7 +683,7 @@ func AnimeSubsTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 	}
 }
 
-// ResetSubscriptions Resets anime sub notifications status on bot start
+// ResetSubscriptions Resets anime sub notifications status
 func ResetSubscriptions() {
 	var todayShows []*entities.ShowAirTime
 	now := time.Now()

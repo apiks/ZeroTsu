@@ -248,7 +248,7 @@ func processEachShow(_ int, element *goquery.Selection) {
 			show.SetImageUrl(imageUrl)
 		}
 	}
-	if element.Find(".subtitle-availability").Text() == "" {
+	if element.Find(".air-type-text").Text() == "" {
 		show.SetSubbed(true)
 	} else {
 		show.SetSubbed(false)

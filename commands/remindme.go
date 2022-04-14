@@ -53,7 +53,7 @@ func remindMeCommand(channelID, userID, time, message string) string {
 	}
 	entities.Mutex.Unlock()
 
-	return fmt.Sprintf("Success! You will be reminded of the message on _%s_. Make sure your DMs are open.", date.UTC().Format("2006-01-02 15:04 MST"))
+	return fmt.Sprintf("Success! You will be reminded of the message <t:%d:R>. Make sure your DMs are open.", date.UTC().Unix())
 }
 
 // remindMeCommandHandler sets a remindMe note for after the target time has passed to be sent to the user
@@ -130,7 +130,7 @@ func remindMeCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	}
 	entities.Mutex.Unlock()
 
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! You will be reminded of the message on _%s_.", date.UTC().Format("2006-01-02 15:04 MST")))
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! You will be reminded of the message <t:%d:R>. Make sure your DMs are open.", date.UTC().Unix()))
 	if err != nil {
 		common.LogError(s, guildSettings.BotLog, err)
 		return
@@ -283,7 +283,7 @@ func viewRemindMes(userID string) []string {
 			continue
 		}
 
-		message += fmt.Sprintf("`%s` - _%s_ - ID: %d\n", remind.GetMessage(), remind.GetDate().Format("2006-01-02 15:04"), remind.GetRemindID())
+		message += fmt.Sprintf("`%s` - <t:%d:R> - ID: %d\n", remind.GetMessage(), remind.GetDate().UTC().Unix(), remind.GetRemindID())
 	}
 	entities.Mutex.RUnlock()
 
@@ -336,7 +336,7 @@ func viewRemindMesHandler(s *discordgo.Session, m *discordgo.Message) {
 			continue
 		}
 
-		formattedMessage := fmt.Sprintf("`%s` - _%s_ - ID: %d", remind.GetMessage(), remind.GetDate().Format("2006-01-02 15:04"), remind.GetRemindID())
+		formattedMessage := fmt.Sprintf("`%s` - <t:%d:R> - ID: %d", remind.GetMessage(), remind.GetDate().UTC().Unix(), remind.GetRemindID())
 		remindMes = append(remindMes, formattedMessage)
 	}
 	entities.Mutex.RUnlock()
