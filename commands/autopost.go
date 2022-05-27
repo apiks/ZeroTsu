@@ -130,6 +130,20 @@ func setNewEpisodesCommand(targetChannel *discordgo.Channel, enabled bool, guild
 	// Write
 	db.SetGuildAutopost(guildID, "newepisodes", newEpisodes)
 
+	entities.Mutex.Lock()
+	entities.SharedInfo.Lock()
+	entities.AnimeSchedule.RLock()
+	entities.SetupGuildSub(guildID)
+	entities.AnimeSchedule.RUnlock()
+	err := entities.AnimeSubsWrite(entities.SharedInfo.AnimeSubs)
+	if err != nil {
+		entities.SharedInfo.Unlock()
+		entities.Mutex.Unlock()
+		return "Error: " + err.Error()
+	}
+	entities.SharedInfo.Unlock()
+	entities.Mutex.Unlock()
+
 	if newEpisodes == (entities.Cha{}) {
 		return "Success: New aime episodes autopost has been disabled!"
 	} else {

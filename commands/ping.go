@@ -51,7 +51,7 @@ func init() {
 				},
 			})
 			embed.Title += fmt.Sprintf(" %s", time.Since(then).Truncate(time.Millisecond).String())
-			s.InteractionResponseEdit(s.State.User.ID, i.Interaction, &discordgo.WebhookEdit{
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 				Embeds: []*discordgo.MessageEmbed{
 					embed,
 				},

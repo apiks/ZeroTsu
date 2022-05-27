@@ -1176,7 +1176,7 @@ func init() {
 						continue
 					}
 
-					s.FollowupMessageCreate(s.State.User.ID, i.Interaction, false, &discordgo.WebhookParams{
+					s.FollowupMessageCreate(i.Interaction, false, &discordgo.WebhookParams{
 						Content: message,
 					})
 				}
@@ -1393,7 +1393,7 @@ func init() {
 						continue
 					}
 
-					s.FollowupMessageCreate(s.State.User.ID, i.Interaction, false, &discordgo.WebhookParams{
+					s.FollowupMessageCreate(i.Interaction, false, &discordgo.WebhookParams{
 						Content: message,
 					})
 				}

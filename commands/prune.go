@@ -380,13 +380,13 @@ func init() {
 
 			err = pruneCommand(s, amount, targetChannelID)
 			if err != nil {
-				s.FollowupMessageCreate(s.State.User.ID, i.Interaction, false, &discordgo.WebhookParams{
+				s.FollowupMessageCreate(i.Interaction, false, &discordgo.WebhookParams{
 					Content: err.Error(),
 				})
 				return
 			}
 
-			s.FollowupMessageCreate(s.State.User.ID, i.Interaction, false, &discordgo.WebhookParams{
+			s.FollowupMessageCreate(i.Interaction, false, &discordgo.WebhookParams{
 				Content: "Success! Removed valid messages.",
 			})
 		},
