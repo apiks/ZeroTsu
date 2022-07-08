@@ -1,8 +1,6 @@
 package functionality
 
 import (
-	"strconv"
-
 	"github.com/bwmarrin/discordgo"
 	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/db"
@@ -48,12 +46,6 @@ func HasElevatedPermissions(s *discordgo.Session, userID string, guildID string)
 
 // MemberIsAdmin checks if member has admin permissions
 func MemberIsAdmin(s *discordgo.Session, guildID string, mem *discordgo.Member, permission int64) (bool, error) {
-	guildIDInt, err := strconv.ParseInt(guildID, 10, 64)
-	if err != nil {
-		return false, err
-	}
-	s = config.Mgr.SessionForGuild(guildIDInt)
-
 	guild, err := s.State.Guild(guildID)
 	if err != nil {
 		guild, err = s.Guild(guildID)
