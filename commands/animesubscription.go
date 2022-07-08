@@ -541,30 +541,31 @@ func animeSubsHandler() {
 			continue
 		}
 
-		for subKey, userShow := range subscriptions {
-			var (
-				session       *discordgo.Session
-				guildSettings entities.GuildSettings
-			)
-
-			if userShow.GetGuild() {
-				guildIDInt, err := strconv.ParseInt(userID, 10, 64)
-				if err != nil {
-					continue
-				}
-				session = config.Mgr.SessionForGuild(guildIDInt)
-			} else {
-				session = config.Mgr.SessionForDM()
+		var (
+			session       *discordgo.Session
+			guildSettings entities.GuildSettings
+			isGuild       bool
+		)
+		if len(subscriptions) >= 1 && subscriptions[0].GetGuild() {
+			isGuild = true
+		}
+		if isGuild {
+			guildIDInt, err := strconv.ParseInt(userID, 10, 64)
+			if err != nil {
+				continue
 			}
+			session = config.Mgr.SessionForGuild(guildIDInt)
+			guildSettings = db.GetGuildSettings(userID)
+		} else {
+			session = config.Mgr.SessionForDM()
+		}
 
+		for subKey, userShow := range subscriptions {
 			if userShow == nil {
 				continue
 			}
 			if userShow.GetNotified() {
 				continue
-			}
-			if userShow.GetGuild() {
-				guildSettings = db.GetGuildSettings(userID)
 			}
 
 			for _, scheduleShow := range todayShows {
