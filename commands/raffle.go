@@ -664,17 +664,29 @@ func init() {
 				return
 			}
 
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
+			userID := ""
+			if i.Member == nil {
+				userID = i.User.ID
+			} else {
+				userID = i.Member.User.ID
+			}
+
 			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "raffle" {
 					raffleName = option.StringValue()
 				}
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: raffleParticipateCommand(raffleName, i.Member.User.ID, i.GuildID),
-				},
+			respStr := raffleParticipateCommand(raffleName, userID, i.GuildID)
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &respStr,
 			})
 		},
 	})
@@ -698,17 +710,29 @@ func init() {
 				return
 			}
 
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
+			userID := ""
+			if i.Member == nil {
+				userID = i.User.ID
+			} else {
+				userID = i.Member.User.ID
+			}
+
 			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "raffle" {
 					raffleName = option.StringValue()
 				}
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: raffleLeaveCommand(raffleName, i.Member.User.ID, i.GuildID),
-				},
+			respStr := raffleLeaveCommand(raffleName, userID, i.GuildID)
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &respStr,
 			})
 		},
 	})
@@ -734,13 +758,18 @@ func init() {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "create-raffle", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
@@ -762,20 +791,15 @@ func init() {
 			}
 
 			if raffleReact {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: "Creating raffle. . .",
-					},
+				respStr := "Creating raffle..."
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &respStr,
 				})
-
 				_ = craffleCommand(s, raffleName, raffleReact, i.ChannelID, i.GuildID)
 			} else {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: craffleCommand(nil, raffleName, false, "", i.GuildID),
-					},
+				respStr := craffleCommand(nil, raffleName, false, "", i.GuildID)
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &respStr,
 				})
 			}
 		},
@@ -796,13 +820,18 @@ func init() {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "pick-raffle-winner", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
@@ -818,11 +847,9 @@ func init() {
 				}
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: raffleWinnerCommand(raffleName, i.GuildID),
-				},
+			respStr := raffleWinnerCommand(raffleName, i.GuildID)
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &respStr,
 			})
 		},
 	})
@@ -842,13 +869,18 @@ func init() {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "remove-raffle", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
@@ -864,11 +896,9 @@ func init() {
 				}
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: removeRaffleCommand(raffleName, i.GuildID),
-				},
+			respStr := removeRaffleCommand(raffleName, i.GuildID)
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &respStr,
 			})
 		},
 	})
@@ -880,13 +910,18 @@ func init() {
 		Permission: functionality.Mod,
 		Module:     "raffles",
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "show-raffles", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
@@ -896,11 +931,8 @@ func init() {
 				return
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: messages[0],
-				},
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &messages[0],
 			})
 
 			if len(messages) > 1 {

@@ -117,6 +117,13 @@ func init() {
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			var max int
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			if i.ApplicationCommandData().Options != nil {
 				for _, option := range i.ApplicationCommandData().Options {
 					if option.Name == "number" {
@@ -125,11 +132,9 @@ func init() {
 				}
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: strconv.Itoa(rollCommand(max)),
-				},
+			resultStr := strconv.Itoa(rollCommand(max))
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &resultStr,
 			})
 		},
 	})

@@ -29,30 +29,35 @@ func init() {
 		Permission: functionality.Mod,
 		Module:     "misc",
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			emptyContent := ""
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "ping", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
 
 			embed := embeds.CreatePingEmbed(s.State.User, db.GetGuildSettings(i.GuildID))
 			then := time.Now()
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Embeds: []*discordgo.MessageEmbed{
-						embed,
-					},
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &emptyContent,
+				Embeds: &[]*discordgo.MessageEmbed{
+					embed,
 				},
 			})
 			embed.Title += fmt.Sprintf(" %s", time.Since(then).Truncate(time.Millisecond).String())
 			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-				Embeds: []*discordgo.MessageEmbed{
+				Content: &emptyContent,
+				Embeds: &[]*discordgo.MessageEmbed{
 					embed,
 				},
 			})

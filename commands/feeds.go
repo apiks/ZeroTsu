@@ -413,13 +413,18 @@ func init() {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "add-reddit-feed", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
@@ -451,11 +456,9 @@ func init() {
 				}
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: addRedditFeedCommand(targetChannel, subreddit, author, postType, title, pin),
-				},
+			respStr := addRedditFeedCommand(targetChannel, subreddit, author, postType, title, pin)
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &respStr,
 			})
 		},
 	})
@@ -499,13 +502,18 @@ func init() {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "remove-reddit-feed", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
@@ -534,11 +542,9 @@ func init() {
 				}
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: removeRedditFeedCommand(targetChannel, subreddit, author, postType, title),
-				},
+			respStr := removeRedditFeedCommand(targetChannel, subreddit, author, postType, title)
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &respStr,
 			})
 		},
 	})
@@ -550,13 +556,18 @@ func init() {
 		Permission: functionality.Mod,
 		Module:     "reddit",
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "reddit-feeds", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
@@ -566,11 +577,8 @@ func init() {
 				return
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: messages[0],
-				},
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &messages[0],
 			})
 
 			if len(messages) > 1 {

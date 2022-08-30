@@ -131,6 +131,13 @@ func init() {
 				return
 			}
 
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			items := ""
 			if i.ApplicationCommandData().Options != nil {
 				for _, option := range i.ApplicationCommandData().Options {
@@ -145,11 +152,8 @@ func init() {
 				return
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: messages[0],
-				},
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &messages[0],
 			})
 
 			if len(messages) > 1 {

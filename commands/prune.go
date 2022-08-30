@@ -334,6 +334,13 @@ func init() {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "prune", i)
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -371,11 +378,8 @@ func init() {
 				response = "Error: Amount is too large. Maximum is 5000."
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: response,
-				},
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &response,
 			})
 
 			err = pruneCommand(s, amount, targetChannelID)

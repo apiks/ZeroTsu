@@ -299,13 +299,18 @@ func init() {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "say", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
@@ -324,11 +329,9 @@ func init() {
 				}
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: sayCommand(s, message, targetChannelID),
-				},
+			sayStr := sayCommand(s, message, targetChannelID)
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &sayStr,
 			})
 		},
 	})
@@ -354,13 +357,18 @@ func init() {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "embed", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
@@ -379,11 +387,9 @@ func init() {
 				}
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: sayEmbedCommand(s, message, targetChannelID),
-				},
+			sayEmbedStr := sayEmbedCommand(s, message, targetChannelID)
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &sayEmbedStr,
 			})
 		},
 	})
@@ -414,13 +420,18 @@ func init() {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "edit", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
@@ -436,23 +447,22 @@ func init() {
 				if option.Name == "channel" {
 					targetChannelID = option.ChannelValue(s).ID
 				} else if option.Name == "message-id" {
-					messageID = option.ChannelValue(s).ID
+					messageID = option.StringValue()
 				} else if option.Name == "message" {
 					message = option.StringValue()
 				}
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: editCommand(s, targetChannelID, messageID, message),
-				},
+			editStr := editCommand(s, targetChannelID, messageID, message)
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &editStr,
 			})
 		},
 	})
 	Add(&Command{
 		Execute:    editEmbedCommandHandler,
-		Name:       "editembed",
+		Name:       "edit-embed",
+		Aliases:    []string{"editembed"},
 		Desc:       "Edits a message embed sent by the bot.",
 		Permission: functionality.Mod,
 		Module:     "misc",
@@ -477,13 +487,18 @@ func init() {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			err := VerifySlashCommand(s, "editembed", i)
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
+			err := VerifySlashCommand(s, "edit-embed", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
@@ -499,17 +514,15 @@ func init() {
 				if option.Name == "channel" {
 					targetChannelID = option.ChannelValue(s).ID
 				} else if option.Name == "message-id" {
-					messageID = option.ChannelValue(s).ID
+					messageID = option.StringValue()
 				} else if option.Name == "message" {
 					message = option.StringValue()
 				}
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: editEmbedCommand(s, targetChannelID, messageID, message),
-				},
+			editEmbedStr := editEmbedCommand(s, targetChannelID, messageID, message)
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &editEmbedStr,
 			})
 		},
 	})

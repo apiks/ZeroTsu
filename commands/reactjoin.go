@@ -750,13 +750,18 @@ func init() {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "add-react-autorole", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
@@ -780,11 +785,9 @@ func init() {
 				}
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: addReactJoinCommand(s, messageID, emoji, role, i.ChannelID, i.GuildID),
-				},
+			respStr := addReactJoinCommand(s, messageID, emoji, role, i.ChannelID, i.GuildID)
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &respStr,
 			})
 		},
 	})
@@ -810,13 +813,18 @@ func init() {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "remove-react-autorole", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
@@ -837,11 +845,9 @@ func init() {
 				}
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: removeReactJoinCommand(messageID, emoji, i.GuildID),
-				},
+			respStr := removeReactJoinCommand(messageID, emoji, i.GuildID)
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &respStr,
 			})
 		},
 	})
@@ -853,13 +859,18 @@ func init() {
 		Permission: functionality.Mod,
 		Module:     "reacts",
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "reacts-autorole", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
@@ -869,11 +880,8 @@ func init() {
 				return
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: messages[0],
-				},
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &messages[0],
 			})
 
 			if len(messages) > 1 {

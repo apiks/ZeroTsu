@@ -82,8 +82,13 @@ func init() {
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: jokeCommand(),
+					Content: "Please wait...",
 				},
+			})
+
+			jokeStr := jokeCommand()
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &jokeStr,
 			})
 		},
 	})

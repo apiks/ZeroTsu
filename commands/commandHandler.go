@@ -186,7 +186,7 @@ func IsValidSlashCommand(s *discordgo.Session, cmdTrigger, authorID, guildID str
 
 func VerifySlashCommand(s *discordgo.Session, cmdTrigger string, i *discordgo.InteractionCreate) error {
 	if i.GuildID == "" {
-		return errors.New("Error: Slash commands are not supported in DMs at the moment. Use the prefix `.` instead.")
+		return errors.New("Error: This command is available only for moderators in servers, not DMs.")
 	}
 
 	if !IsValidSlashCommand(s, cmdTrigger, i.Member.User.ID, i.GuildID) {

@@ -91,7 +91,20 @@ func init() {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			user := i.Member.User
+			var user *discordgo.User
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
+			if i.Member == nil {
+				user = i.User
+			} else {
+				user = i.Member.User
+			}
+
 			if i.ApplicationCommandData().Options != nil {
 				for _, option := range i.ApplicationCommandData().Options {
 					if option.Name == "user" {
@@ -100,11 +113,9 @@ func init() {
 				}
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: avatarCommand(user),
-				},
+			avatarURL := avatarCommand(user)
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &avatarURL,
 			})
 		},
 	})

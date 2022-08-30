@@ -401,6 +401,20 @@ func init() {
 				return
 			}
 
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
+			userID := ""
+			if i.Member == nil {
+				userID = i.User.ID
+			} else {
+				userID = i.Member.User.ID
+			}
+
 			time := ""
 			message := ""
 			for _, option := range i.ApplicationCommandData().Options {
@@ -411,11 +425,9 @@ func init() {
 				}
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: remindMeCommand(i.ChannelID, i.Member.User.ID, time, message),
-				},
+			respStr := remindMeCommand(i.ChannelID, userID, time, message)
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &respStr,
 			})
 		},
 	})
@@ -440,17 +452,29 @@ func init() {
 				return
 			}
 
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
+			userID := ""
+			if i.Member == nil {
+				userID = i.User.ID
+			} else {
+				userID = i.Member.User.ID
+			}
+
 			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "id" {
 					id = int(option.IntValue())
 				}
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: removeRemindMe(id, i.Member.User.ID),
-				},
+			respStr := removeRemindMe(id, userID)
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &respStr,
 			})
 		},
 	})
@@ -462,16 +486,27 @@ func init() {
 		Module:  "normal",
 		DMAble:  true,
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			messages := viewRemindMes(i.Member.User.ID)
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
+			userID := ""
+			if i.Member == nil {
+				userID = i.User.ID
+			} else {
+				userID = i.Member.User.ID
+			}
+
+			messages := viewRemindMes(userID)
 			if messages == nil {
 				return
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: messages[0],
-				},
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &messages[0],
 			})
 
 			if len(messages) > 1 {

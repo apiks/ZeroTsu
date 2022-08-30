@@ -382,6 +382,13 @@ func init() {
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			day := ""
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			if i.ApplicationCommandData().Options != nil {
 				for _, option := range i.ApplicationCommandData().Options {
 					if option.Name == "day" {
@@ -395,11 +402,8 @@ func init() {
 				return
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: messages[0],
-				},
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &messages[0],
 			})
 
 			if len(messages) > 1 {

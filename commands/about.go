@@ -24,12 +24,18 @@ func init() {
 		Module:  "normal",
 		DMAble:  true,
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			emptyContent := ""
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Embeds: []*discordgo.MessageEmbed{
-						embeds.CreateAboutEmbed(s.State.User),
-					},
+					Content: "Please wait...",
+				},
+			})
+
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &emptyContent,
+				Embeds: &[]*discordgo.MessageEmbed{
+					embeds.CreateAboutEmbed(s.State.User),
 				},
 			})
 		},

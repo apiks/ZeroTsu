@@ -22,7 +22,7 @@ var (
 )
 
 // helpEmbedCommand prints help command
-func helpEmbedCommand(s *discordgo.Session, guildID string, author *discordgo.User) []*discordgo.MessageEmbed {
+func helpEmbedCommand(s *discordgo.Session, guildID string, author *discordgo.User, DM bool) []*discordgo.MessageEmbed {
 	var (
 		embedMess   discordgo.MessageEmbed
 		embedFooter discordgo.MessageEmbedFooter
@@ -37,28 +37,31 @@ func helpEmbedCommand(s *discordgo.Session, guildID string, author *discordgo.Us
 		// Slice for sorting
 		commands []string
 
-		elevated bool
-		admin    bool
+		elevated      bool
+		admin         bool
+		guildSettings entities.GuildSettings
 	)
 
-	guildSettings := db.GetGuildSettings(guildID)
+	if !DM {
+		guildSettings = db.GetGuildSettings(guildID)
 
-	// Checks for mod perms and handles accordingly
-	if functionality.HasElevatedPermissions(s, author.ID, guildID) {
-		elevated = true
-	}
+		// Checks for mod perms and handles accordingly
+		if functionality.HasElevatedPermissions(s, author.ID, guildID) {
+			elevated = true
+		}
 
-	// Check perms
-	mem, err := s.State.Member(guildID, author.ID)
-	if err != nil {
-		mem, err = s.GuildMember(guildID, author.ID)
+		// Check perms
+		mem, err := s.State.Member(guildID, author.ID)
+		if err != nil {
+			mem, err = s.GuildMember(guildID, author.ID)
+			if err != nil {
+				return nil
+			}
+		}
+		admin, err = functionality.MemberIsAdmin(s, guildID, mem, discordgo.PermissionAdministrator)
 		if err != nil {
 			return nil
 		}
-	}
-	admin, err = functionality.MemberIsAdmin(s, guildID, mem, discordgo.PermissionAdministrator)
-	if err != nil {
-		return nil
 	}
 
 	// Set embed color
@@ -1194,11 +1197,29 @@ func init() {
 		Module:  "normal",
 		DMAble:  true,
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			var (
+				user *discordgo.User
+				dm   bool
+			)
+			emptyContent := ""
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Embeds: helpEmbedCommand(s, i.GuildID, i.Member.User),
+					Content: "Please wait...",
 				},
+			})
+
+			if i.Member == nil {
+				dm = true
+				user = i.User
+			} else {
+				user = i.Member.User
+			}
+
+			embedsResp := helpEmbedCommand(s, i.GuildID, user, dm)
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &emptyContent,
+				Embeds:  &embedsResp,
 			})
 		},
 	})
@@ -1209,22 +1230,27 @@ func init() {
 		Desc:       "Print all miscellaneous mod commands",
 		Permission: functionality.Mod,
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			emptyContent := ""
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "help-misc", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Embeds: helpMiscEmbedCommand(),
-				},
+			embedsResp := helpMiscEmbedCommand()
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &emptyContent,
+				Embeds:  &embedsResp,
 			})
 		},
 	})
@@ -1235,22 +1261,27 @@ func init() {
 		Desc:       "Print all normal user commands",
 		Permission: functionality.Mod,
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			emptyContent := ""
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "help-normal", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Embeds: helpNormalEmbedCommand(),
-				},
+			embedsResp := helpNormalEmbedCommand()
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &emptyContent,
+				Embeds:  &embedsResp,
 			})
 		},
 	})
@@ -1261,22 +1292,27 @@ func init() {
 		Desc:       "Print all react mod commands",
 		Permission: functionality.Mod,
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			emptyContent := ""
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "help-reacts", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Embeds: helpReactsEmbedCommand(),
-				},
+			embedsResp := helpReactsEmbedCommand()
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &emptyContent,
+				Embeds:  &embedsResp,
 			})
 		},
 	})
@@ -1287,22 +1323,27 @@ func init() {
 		Desc:       "Print all Reddit feed commands",
 		Permission: functionality.Mod,
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			emptyContent := ""
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "help-reddit", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Embeds: helpRedditEmbedCommand(),
-				},
+			embedsResp := helpRedditEmbedCommand()
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &emptyContent,
+				Embeds:  &embedsResp,
 			})
 		},
 	})
@@ -1313,22 +1354,27 @@ func init() {
 		Desc:       "Print all raffle commands",
 		Permission: functionality.Mod,
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			emptyContent := ""
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "help-raffles", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Embeds: helpRaffleEmbedCommand(),
-				},
+			embedsResp := helpRaffleEmbedCommand()
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &emptyContent,
+				Embeds:  &embedsResp,
 			})
 		},
 	})
@@ -1339,22 +1385,27 @@ func init() {
 		Desc:       "Print all anime commands",
 		Permission: functionality.Mod,
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			emptyContent := ""
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "help-anime", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Embeds: helpAutopostEmbedCommand(),
-				},
+			embedsResp := helpAutopostEmbedCommand()
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &emptyContent,
+				Embeds:  &embedsResp,
 			})
 		},
 	})
@@ -1365,22 +1416,27 @@ func init() {
 		Desc:       "Print all server setting commands",
 		Permission: functionality.Admin,
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			emptyContent := ""
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
 			err := VerifySlashCommand(s, "help-settings", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Embeds: helpGuildSettingsEmbedCommand(),
-				},
+			embedsResp := helpGuildSettingsEmbedCommand()
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &emptyContent,
+				Embeds:  &embedsResp,
 			})
 		},
 	})
