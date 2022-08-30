@@ -235,12 +235,12 @@ func processEachShow(_ int, element *goquery.Selection) {
 	show.SetDelayed(strings.TrimPrefix(element.Find(".show-delay-bar").Text(), " "))
 	show.SetDelayed(strings.Trim(show.GetDelayed(), "\n"))
 	key, exists := element.Find(".show-link").Attr("href")
-	if exists == true {
+	if exists {
 		show.SetKey(key)
 		show.SetKey(strings.ToLower(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(show.GetKey(), "/anime/"), "anime/"), "/anime")))
 	}
 	imageUrl, exists := element.Find(".show-poster").Attr("data-src")
-	if exists == true {
+	if exists {
 		show.SetImageUrl(imageUrl)
 	} else {
 		imageUrl, exists = element.Find(".show-poster").Attr("src")
