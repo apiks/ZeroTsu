@@ -37,6 +37,7 @@ func init() {
 				},
 			})
 
+			then := time.Now()
 			err := VerifySlashCommand(s, "ping", i)
 			if err != nil {
 				errStr := err.Error()
@@ -47,7 +48,6 @@ func init() {
 			}
 
 			embed := embeds.CreatePingEmbed(s.State.User, db.GetGuildSettings(i.GuildID))
-			then := time.Now()
 			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 				Content: &emptyContent,
 				Embeds: &[]*discordgo.MessageEmbed{

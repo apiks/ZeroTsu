@@ -189,7 +189,14 @@ func VerifySlashCommand(s *discordgo.Session, cmdTrigger string, i *discordgo.In
 		return errors.New("Error: This command is available only for moderators in servers, not DMs.")
 	}
 
-	if !IsValidSlashCommand(s, cmdTrigger, i.Member.User.ID, i.GuildID) {
+	userID := ""
+	if i.Member == nil {
+		userID = i.User.ID
+	} else {
+		userID = i.Member.User.ID
+	}
+
+	if !IsValidSlashCommand(s, cmdTrigger, userID, i.GuildID) {
 		return errors.New("Error: You do not have permissions to do this command.")
 	}
 

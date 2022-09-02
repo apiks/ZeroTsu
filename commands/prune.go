@@ -343,11 +343,9 @@ func init() {
 
 			err := VerifySlashCommand(s, "prune", i)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: err.Error(),
-					},
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
@@ -384,15 +382,19 @@ func init() {
 
 			err = pruneCommand(s, amount, targetChannelID)
 			if err != nil {
-				s.FollowupMessageCreate(i.Interaction, false, &discordgo.WebhookParams{
-					Content: err.Error(),
+				errStr := err.Error()
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &errStr,
 				})
 				return
 			}
 
-			s.FollowupMessageCreate(i.Interaction, false, &discordgo.WebhookParams{
-				Content: "Success! Removed valid messages.",
+			resp := fmt.Sprintf("Success! Removed the past %d valid messages in this channel. Deleting the command message in 3 seconds...", amount)
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &resp,
 			})
+			time.Sleep(3 * time.Second)
+			s.InteractionResponseDelete(i.Interaction)
 		},
 	})
 }

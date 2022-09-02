@@ -62,9 +62,7 @@ func Start() {
 		return
 	}
 
-	config.Mgr.RegisterIntent(discordgo.MakeIntent(discordgo.IntentsAll - discordgo.IntentsGuildPresences - discordgo.IntentsGuildIntegrations -
-		discordgo.IntentsGuildBans - discordgo.IntentsGuildEmojis - discordgo.IntentsGuildWebhooks - discordgo.IntentsGuildInvites - discordgo.IntentsGuildMessageTyping -
-		discordgo.IntentsDirectMessageTyping))
+	config.Mgr.RegisterIntent(discordgo.MakeIntent(discordgo.IntentsAllWithoutPrivileged + discordgo.IntentGuildMembers))
 
 	// Guild join and leave listener
 	config.Mgr.AddHandler(events.GuildCreate)
@@ -118,12 +116,12 @@ func Start() {
 	// Start tracking uptime from here
 	common.StartTime = time.Now()
 
-	//// Register Slash Commands
-	// for _, v := range commands.SlashCommands {
-	// 	err := config.Mgr.ApplicationCommandCreate("", v)
-	// 	if err != nil {
-	// 		log.Panicf("Cannot create '%s' command: %v", v.Name, err)
-	// 	}
-	// }
-	// log.Println("Slash command registration is done.")
+	// Register Slash Commands
+	for _, v := range commands.SlashCommands {
+		err := config.Mgr.ApplicationCommandCreate("", v)
+		if err != nil {
+			log.Panicf("Cannot create '%s' command: %v", v.Name, err)
+		}
+	}
+	log.Println("Slash command registration is done.")
 }
