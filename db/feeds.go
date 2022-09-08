@@ -38,7 +38,8 @@ func SetGuildFeed(guildID string, feed entities.Feed, delete ...bool) error {
 		var exists bool
 		for _, guildFeed := range entities.Guilds.DB[guildID].GetFeeds() {
 			if guildFeed.GetSubreddit() == feed.GetSubreddit() &&
-				guildFeed.GetChannelID() == feed.GetChannelID() {
+				guildFeed.GetChannelID() == feed.GetChannelID() &&
+				guildFeed.GetPostType() == feed.GetPostType() {
 				exists = true
 				break
 			}

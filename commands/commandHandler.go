@@ -58,8 +58,6 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			log.Println("Recovery in HandleCommand with message: " + m.Content)
 			if m.GuildID != "" {
 				log.Println("Guild ID: " + m.GuildID)
-				guildSettings := db.GetGuildSettings(m.GuildID)
-				log.Println(guildSettings.GetPrefix())
 			}
 		}
 	}()

@@ -138,16 +138,22 @@ func removeRedditFeedCommand(targetChannel *discordgo.Channel, subreddit, author
 		author = strings.TrimPrefix(author, "/u/")
 		author = strings.TrimPrefix(author, "u/")
 	}
-	if postType != "hot" && postType != "rising" && postType != "new" {
+	if postType != "hot" && postType != "rising" && postType != "new" && postType != "" {
 		return "Error: Invalid post type."
 	}
 
 	// Write
+	if postType == "" {
+		_ = db.SetGuildFeed(targetChannel.GuildID, entities.NewFeed(subreddit, title, author, false, "hot", targetChannel.ID), true)
+		_ = db.SetGuildFeed(targetChannel.GuildID, entities.NewFeed(subreddit, title, author, false, "rising", targetChannel.ID), true)
+		_ = db.SetGuildFeed(targetChannel.GuildID, entities.NewFeed(subreddit, title, author, false, "new", targetChannel.ID), true)
+		return "Success! This reddit feed has been removed if it existed."
+	}
+
 	err := db.SetGuildFeed(targetChannel.GuildID, entities.NewFeed(subreddit, title, author, false, postType, targetChannel.ID), true)
 	if err != nil {
 		return err.Error()
 	}
-
 	return "Success! This reddit feed has been removed."
 }
 
@@ -413,6 +419,10 @@ func init() {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			if i.ApplicationCommandData().Options == nil {
+				return
+			}
+
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -437,9 +447,7 @@ func init() {
 				title         string
 				pin           bool
 			)
-			if i.ApplicationCommandData().Options == nil {
-				return
-			}
+
 			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "channel" {
 					targetChannel = option.ChannelValue(s)
@@ -502,6 +510,10 @@ func init() {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			if i.ApplicationCommandData().Options == nil {
+				return
+			}
+
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -522,12 +534,10 @@ func init() {
 				targetChannel *discordgo.Channel
 				subreddit     string
 				author        string
-				postType      = "hot"
+				postType      string
 				title         string
 			)
-			if i.ApplicationCommandData().Options == nil {
-				return
-			}
+
 			for _, option := range i.ApplicationCommandData().Options {
 				if option.Name == "channel" {
 					targetChannel = option.ChannelValue(s)
