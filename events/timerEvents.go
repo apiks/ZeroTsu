@@ -26,6 +26,7 @@ import (
 const feedCheckLifespanHours = 720
 
 var redditFeedBlock Block
+var remindMesFeedBlock Block
 
 type Block struct {
 	sync.RWMutex
@@ -79,8 +80,15 @@ func CommonEvents(_ *discordgo.Session, _ *discordgo.Ready) {
 }
 
 // remindMeHandler handles sending remindMe messages when called if it's time.
-// Sends either a DM, or, failing that, a ping in the channel the remindMe was set.
 func remindMeHandler(s *discordgo.Session) {
+	remindMesFeedBlock.Lock()
+	if remindMesFeedBlock.Block {
+		remindMesFeedBlock.Unlock()
+		return
+	}
+	remindMesFeedBlock.Block = true
+	remindMesFeedBlock.Unlock()
+
 	var (
 		writeFlag bool
 		t         = time.Now()
@@ -111,7 +119,7 @@ func remindMeHandler(s *discordgo.Session) {
 
 			dm, err := s.UserChannelCreate(userID)
 			if err == nil {
-				_, err = s.ChannelMessageSend(dm.ID, fmt.Sprintf("RemindMe: %s", remindMe.GetMessage()))
+				_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("RemindMe: %s", remindMe.GetMessage()))
 			}
 
 			writeFlag = true
@@ -120,14 +128,21 @@ func remindMeHandler(s *discordgo.Session) {
 	}
 
 	if !writeFlag {
+		remindMesFeedBlock.Lock()
+		remindMesFeedBlock.Block = false
+		remindMesFeedBlock.Unlock()
+
 		return
 	}
 
 	err := entities.RemindMeWrite(entities.SharedInfo.GetRemindMesMap())
 	if err != nil {
 		log.Println(err)
-		return
 	}
+
+	remindMesFeedBlock.Lock()
+	remindMesFeedBlock.Block = false
+	remindMesFeedBlock.Unlock()
 }
 
 // Fetches reddit feeds and returns the feeds that need to posted for all guilds
