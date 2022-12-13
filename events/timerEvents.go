@@ -195,7 +195,7 @@ func feedHandler(guildIds []string) {
 		for _, feed := range guildFeeds {
 			var pinnedItems = make(map[*gofeed.Item]bool)
 
-			// Wait a second because of reddit API rate limit
+			// Wait seconds because of reddit API rate limit
 			time.Sleep(time.Second * 2)
 
 			// Parse the feed
@@ -269,7 +269,7 @@ func feedHandler(guildIds []string) {
 				exists = false
 
 				// Wait for Discord API Rate limit
-				time.Sleep(time.Millisecond * 200)
+				time.Sleep(time.Millisecond * 250)
 
 				// Sends the feed item
 				message, err := embeds.Feed(s, &feed, item)

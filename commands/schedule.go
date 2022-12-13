@@ -16,16 +16,27 @@ import (
 )
 
 // scheduleCommand Prints out the target day's airing anime times, fetched from AnimeSchedule.net
-func scheduleCommand(targetDay string) []string {
+func scheduleCommand(targetDay, guildID string) []string {
 	var (
-		currentDay = int(time.Now().Weekday())
-		day        = -1
-		message    string
-		messages   []string
+		currentDay    = int(time.Now().Weekday())
+		day           = -1
+		message       string
+		messages      []string
+		guildSettings entities.GuildSettings
+		donghua       = true
 	)
+
+	// Disable donghuas if disabled in the target guild
+	if guildID != "" {
+		guildSettings = db.GetGuildSettings(guildID)
+		if !guildSettings.GetDonghua() {
+			donghua = false
+		}
+	}
+
 	if targetDay == "" {
 		// Get the current day's schedule in print format
-		message = getDaySchedule(currentDay, true)
+		message = getDaySchedule(currentDay, donghua)
 	} else {
 		// Else get the target day's schedule in print format
 		switch targetDay {
@@ -50,10 +61,10 @@ func scheduleCommand(targetDay string) []string {
 			return []string{"Error: Cannot parse that day."}
 		}
 
-		message = getDaySchedule(day, true)
+		message = getDaySchedule(day, donghua)
 	}
 
-	message += "\n\n**Full Week:** <https://AnimeSchedule.net>"
+	message += "\n**Full Week:** <https://AnimeSchedule.net>"
 
 	// Splits the message if it's too big into multiple ones
 	if len(message) > 1900 {
@@ -115,7 +126,7 @@ func scheduleCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 		printMessage = getDaySchedule(day, guildSettings.GetDonghua())
 	}
 
-	printMessage += "\n\n**Full Week:** <https://AnimeSchedule.net>"
+	printMessage += "\n**Full Week:** <https://AnimeSchedule.net>"
 
 	// Print the daily schedule
 	_, _ = s.ChannelMessageSend(m.ChannelID, printMessage)
@@ -125,21 +136,8 @@ func scheduleCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 func getDaySchedule(weekday int, donghua bool) string {
 	var (
 		printMessage = fmt.Sprintf("**__%s:__**\n\n", time.Weekday(weekday).String())
-		DST          = isTimeDST(time.Now())
-		JST          *time.Location
-		BST          *time.Location
-		PDT          *time.Location
-		PST          *time.Location
+		now          = time.Now()
 	)
-
-	// Set timezones based on DST
-	JST = time.FixedZone("JST", +9*3600)
-	if DST {
-		BST = time.FixedZone("BST", +1*3600)
-		PDT = time.FixedZone("PDT", -7*3600)
-	} else {
-		PST = time.FixedZone("PST", -8*3600)
-	}
 
 	entities.AnimeSchedule.RLock()
 	defer entities.AnimeSchedule.RUnlock()
@@ -162,40 +160,20 @@ func getDaySchedule(weekday int, donghua bool) string {
 			}
 
 			// Parses the time in a proper time object
+			var realTime time.Time
 			t, err := time.Parse("3:04 PM", show.GetAirTime())
 			if err != nil {
 				log.Println(err)
 				continue
 			}
-
-			// Format print message for show's air times and timezones
-			jstTimezoneString, _ := t.In(JST).Zone()
-			if DST {
-				ukTimezoneString, _ := t.In(BST).Zone()
-				westAmericanTimezoneString, _ := t.In(PDT).Zone()
-
-				if show.GetDelayed() == "" {
-					printMessage += fmt.Sprintf("**%s %s** - %s %s **|** %s %s **|** %s %s\n\n", show.GetName(), show.GetEpisode(), t.UTC().In(BST).Format("15:04"), ukTimezoneString,
-						t.UTC().In(PDT).Format("15:04"), westAmericanTimezoneString,
-						t.UTC().In(JST).Format("15:04"), jstTimezoneString)
-				} else {
-					printMessage += fmt.Sprintf("**%s %s** __%s__ - %s %s **|** %s %s **|** %s %s\n\n", show.GetName(), show.GetEpisode(), show.GetDelayed(), t.UTC().In(BST).Format("15:04"), ukTimezoneString,
-						t.UTC().In(PDT).Format("15:04"), westAmericanTimezoneString,
-						t.UTC().In(JST).Format("15:04"), jstTimezoneString)
-				}
+			londonTZ, err := time.LoadLocation("Europe/London")
+			if err != nil {
+				realTime = time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
 			} else {
-				westAmericanTimezoneString, _ := t.In(PST).Zone()
-
-				if show.GetDelayed() == "" {
-					printMessage += fmt.Sprintf("**%s %s** - %s GMT **|** %s %s **|** %s %s\n\n", show.GetName(), show.GetEpisode(), t.UTC().Format("15:04"),
-						t.UTC().In(PST).Format("15:04"), westAmericanTimezoneString,
-						t.UTC().In(JST).Format("15:04"), jstTimezoneString)
-				} else {
-					printMessage += fmt.Sprintf("**%s %s** __%s__ - %s GMT **|** %s %s **|** %s %s\n\n", show.GetName(), show.GetEpisode(), show.GetDelayed(), t.UTC().Format("15:04"),
-						t.UTC().In(PST).Format("15:04"), westAmericanTimezoneString,
-						t.UTC().In(JST).Format("15:04"), jstTimezoneString)
-				}
+				realTime = time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, londonTZ)
 			}
+
+			printMessage += fmt.Sprintf("**%s** - %s - <t:%d:t>\n\n", show.GetName(), show.GetEpisode(), realTime.UTC().Unix())
 		}
 		break
 	}
@@ -397,7 +375,7 @@ func init() {
 				}
 			}
 
-			messages := scheduleCommand(day)
+			messages := scheduleCommand(day, i.GuildID)
 			if messages == nil {
 				return
 			}

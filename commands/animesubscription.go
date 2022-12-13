@@ -604,7 +604,7 @@ func animeSubsHandler() {
 				}
 
 				// Wait some milliseconds so it doesn't hit the rate limit easily
-				time.Sleep(time.Millisecond * 50)
+				time.Sleep(time.Millisecond * 100)
 
 				uid := userID
 				us := userShow
@@ -652,7 +652,7 @@ func animeSubsHandler() {
 				})
 
 				// Wait some milliseconds so it doesn't hit the rate limit easily
-				time.Sleep(time.Millisecond * 50)
+				time.Sleep(time.Millisecond * 100)
 			}
 		}
 	}
