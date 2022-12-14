@@ -136,8 +136,11 @@ func scheduleCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 func getDaySchedule(weekday int, donghua bool) string {
 	var (
 		printMessage = fmt.Sprintf("**__%s:__**\n\n", time.Weekday(weekday).String())
-		now          = time.Now()
+		targetDay    = common.WeekStart(time.Now().ISOWeek())
 	)
+	for int(targetDay.Weekday()) != weekday {
+		targetDay = targetDay.AddDate(0, 0, 1)
+	}
 
 	entities.AnimeSchedule.RLock()
 	defer entities.AnimeSchedule.RUnlock()
@@ -168,9 +171,9 @@ func getDaySchedule(weekday int, donghua bool) string {
 			}
 			londonTZ, err := time.LoadLocation("Europe/London")
 			if err != nil {
-				realTime = time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
+				realTime = time.Date(targetDay.Year(), targetDay.Month(), targetDay.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
 			} else {
-				realTime = time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, londonTZ)
+				realTime = time.Date(targetDay.Year(), targetDay.Month(), targetDay.Day(), t.Hour(), t.Minute(), 0, 0, londonTZ)
 			}
 
 			printMessage += fmt.Sprintf("**%s** - %s - <t:%d:t>\n\n", show.GetName(), show.GetEpisode(), realTime.UTC().Unix())

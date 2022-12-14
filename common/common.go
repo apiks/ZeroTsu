@@ -62,7 +62,7 @@ func (r SortRoleByAlphabet) Swap(i, j int) {
 	r[i], r[j] = r[j], r[i]
 }
 
-//Sorts channels alphabetically
+// Sorts channels alphabetically
 type SortChannelByAlphabet []*discordgo.Channel
 
 func (r SortChannelByAlphabet) Len() int {
@@ -389,4 +389,22 @@ func RoleParser(s *discordgo.Session, role string, guildID string) (string, stri
 
 func Uptime() time.Duration {
 	return time.Since(StartTime)
+}
+
+func WeekStart(year, week int) time.Time {
+	// Start from the middle of the year:
+	t := time.Date(year, 7, 1, 0, 0, 0, 0, time.UTC)
+
+	// Roll back to Monday:
+	if wd := t.Weekday(); wd == time.Sunday {
+		t = t.AddDate(0, 0, -6)
+	} else {
+		t = t.AddDate(0, 0, -int(wd)+1)
+	}
+
+	// Difference in weeks:
+	_, w := t.ISOWeek()
+	t = t.AddDate(0, 0, (week-w)*7)
+
+	return t
 }
