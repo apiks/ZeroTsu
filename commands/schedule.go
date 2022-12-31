@@ -176,7 +176,12 @@ func getDaySchedule(weekday int, donghua bool) string {
 				realTime = time.Date(targetDay.Year(), targetDay.Month(), targetDay.Day(), t.Hour(), t.Minute(), 0, 0, londonTZ)
 			}
 
-			printMessage += fmt.Sprintf("**%s** - %s - <t:%d:t>\n\n", show.GetName(), show.GetEpisode(), realTime.UTC().Unix())
+			if show.GetDelayed() != "" {
+				printMessage += fmt.Sprintf("**%s** - %s %s - <t:%d:t>\n\n", show.GetName(), show.GetEpisode(), show.GetDelayed(), realTime.UTC().Unix())
+			} else {
+				printMessage += fmt.Sprintf("**%s** - %s - <t:%d:t>\n\n", show.GetName(), show.GetEpisode(), realTime.UTC().Unix())
+			}
+
 		}
 		break
 	}
