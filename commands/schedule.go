@@ -1,13 +1,16 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/entities"
 
@@ -250,20 +253,24 @@ func processEachShow(_ int, element *goquery.Selection) {
 	entities.AnimeSchedule.AnimeSchedule[day] = append(entities.AnimeSchedule.AnimeSchedule[day], &show)
 }
 
-// UpdateAnimeSchedule Scrapes https://AnimeSchedule.net for air times subbed
+// UpdateAnimeSchedule fetches animeschedule.net timetable
 func UpdateAnimeSchedule() {
+	var timetableAnime []entities.ASAnime
+	var subAnimeExists = make(map[string]bool)
+
 	// Create HTTP client with timeout
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 	}
 
 	// Create and modify HTTP request before sending
-	request, err := http.NewRequest("GET", "https://animeschedule.net", nil)
+	request, err := http.NewRequest("GET", "https://animeschedule.net/api/v3/timetables", nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	request.Header.Set("User-Agent", common.UserAgent)
+	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", config.AnimeScheduleAppSecret))
 
 	// Make request
 	response, err := client.Do(request)
@@ -273,14 +280,13 @@ func UpdateAnimeSchedule() {
 	}
 	defer response.Body.Close()
 
-	// Create a goquery document from the HTTP response
-	document, err := goquery.NewDocumentFromReader(response.Body)
+	err = json.NewDecoder(response.Body).Decode(&timetableAnime)
 	if err != nil {
-		log.Println("Error loading HTTP response body. ", err)
+		log.Println(err)
 		return
 	}
 
-	// Find all airing shows and process them after resetting map
+	// Reset map
 	entities.AnimeSchedule.Lock()
 	defer entities.AnimeSchedule.Unlock()
 	for dayInt := range entities.AnimeSchedule.AnimeSchedule {
@@ -294,7 +300,59 @@ func UpdateAnimeSchedule() {
 		}
 		delete(entities.AnimeSchedule.AnimeSchedule, dayInt)
 	}
-	document.Find(".timetable-column .timetable-column-show").Each(processEachShow)
+
+	// Check all sub anime for later filtering
+	for _, anime := range timetableAnime {
+		if anime.GetAirType() != "sub" {
+			continue
+		}
+		subAnimeExists[anime.GetRoute()] = true
+	}
+
+	// Add timetable anime
+	for _, anime := range timetableAnime {
+		if anime.GetAirType() == "dub" {
+			continue
+		}
+		if anime.GetAirType() == "raw" {
+			if _, ok := subAnimeExists[anime.GetRoute()]; ok {
+				continue
+			}
+		}
+
+		episodeStr := fmt.Sprintf("Ep %s", strconv.Itoa(anime.GetEpisodeNumber()))
+		if anime.GetEpisodes() == anime.GetEpisodeNumber() {
+			episodeStr = fmt.Sprintf("Ep %sF", strconv.Itoa(anime.GetEpisodeNumber()))
+		}
+
+		delayedText := ""
+		if anime.GetDelayedFrom() != (time.Time{}) && anime.GetDelayedUntil() != (time.Time{}) {
+			if entities.InTimeSpan(anime.GetDelayedFrom(), anime.GetDelayedUntil(), anime.GetEpisodeDate()) {
+				delayedText = "Delayed"
+			}
+		}
+
+		isSubbed := false
+		if anime.GetAirType() == "sub" {
+			isSubbed = true
+		}
+
+		isDonghua := false
+		if anime.GetDonghua() {
+			isDonghua = true
+		}
+
+		entities.AnimeSchedule.AnimeSchedule[int(anime.EpisodeDate.Weekday())] = append(entities.AnimeSchedule.AnimeSchedule[int(anime.EpisodeDate.Weekday())], entities.NewShowAirTime(
+			anime.GetTitle(),
+			anime.GetEpisodeDate().Format("03:04 PM"),
+			episodeStr,
+			delayedText,
+			anime.GetRoute(),
+			fmt.Sprintf("https://cdn.animeschedule.net/production/assets/public/img/%s", anime.GetImageVersionRoute()),
+			isSubbed,
+			isDonghua,
+		))
+	}
 }
 
 // isTimeDST returns true if time t occurs within daylight saving time

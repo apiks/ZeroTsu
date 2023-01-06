@@ -189,3 +189,7 @@ func SetupGuildSub(guildID string) {
 
 	SharedInfo.AnimeSubs[guildID] = shows
 }
+
+func InTimeSpan(start, end, check time.Time) bool {
+	return check.After(start) && check.Before(end)
+}

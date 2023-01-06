@@ -17,9 +17,10 @@ var (
 	OwnerID    string
 	PlayingMsg []string
 
-	DiscordBotsSecret   string
-	DiscordBoatsSecret  string
-	BotsOnDiscordSecret string
+	AnimeScheduleAppSecret string
+	DiscordBotsSecret      string
+	DiscordBoatsSecret     string
+	BotsOnDiscordSecret    string
 
 	config        *configStruct
 	configsecrets *configSecrets
@@ -38,9 +39,10 @@ type configStruct struct {
 }
 
 type configSecrets struct {
-	DiscordBotsSecret   string `json:"DiscordBotsSecret"`
-	DiscordBoatsSecret  string `json:"DiscordBoatsSecret"`
-	BotsOnDiscordSecret string `json:"BotsOnDiscordSecret"`
+	AnimeScheduleAppSecret string `json:"AnimeScheduleAppSecret"`
+	DiscordBotsSecret      string `json:"DiscordBotsSecret"`
+	DiscordBoatsSecret     string `json:"DiscordBoatsSecret"`
+	BotsOnDiscordSecret    string `json:"BotsOnDiscordSecret"`
 }
 
 // Loads config.json values
@@ -85,6 +87,7 @@ func ReadConfigSecrets() error {
 		panic(err)
 	}
 
+	AnimeScheduleAppSecret = configsecrets.AnimeScheduleAppSecret
 	DiscordBotsSecret = configsecrets.DiscordBotsSecret
 	DiscordBoatsSecret = configsecrets.DiscordBoatsSecret
 	BotsOnDiscordSecret = configsecrets.BotsOnDiscordSecret

@@ -15,8 +15,8 @@ type ShowAirTime struct {
 	Donghua  bool
 }
 
-func NewShowAirTime(name string, airTime string, episode string, delayed string, key string) *ShowAirTime {
-	return &ShowAirTime{Name: name, AirTime: airTime, Episode: episode, Delayed: delayed, Key: key}
+func NewShowAirTime(name, airTime, episode, delayed, key, imageUrl string, subbed, donghua bool) *ShowAirTime {
+	return &ShowAirTime{Name: name, AirTime: airTime, Episode: episode, Delayed: delayed, Key: key, ImageUrl: imageUrl, Subbed: subbed, Donghua: donghua}
 }
 
 func (s *ShowAirTime) SetName(name string) {
