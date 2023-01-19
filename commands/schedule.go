@@ -379,6 +379,29 @@ func isTimeDST(t time.Time) bool {
 	return false
 }
 
+// DailyScheduleWebhook posts the schedule in a target channel if a guild has enabled it via webhook
+func DailyScheduleWebhook(s *discordgo.Session, guildID string) {
+	var (
+		message discordgo.Message
+		author  discordgo.User
+	)
+
+	dailyschedule := db.GetGuildAutopost(guildID, "dailyschedule")
+	if dailyschedule == (entities.Cha{}) || dailyschedule.GetID() == "" {
+		return
+	}
+
+	guildSettings := db.GetGuildSettings(guildID)
+
+	author.ID = s.State.User.ID
+	message.GuildID = guildID
+	message.Author = &author
+	message.Content = fmt.Sprintf("%sschedule", guildSettings.GetPrefix())
+	message.ChannelID = dailyschedule.GetID()
+
+	scheduleCommandHandler(s, &message)
+}
+
 // DailySchedule posts the schedule in a target channel if a guild has enabled it
 func DailySchedule(s *discordgo.Session, guildID string) {
 	var (

@@ -46,12 +46,6 @@ func StatusReady(s *discordgo.Session, _ *discordgo.Ready) {
 		fixGuildSubsCommand(guildID)
 	}
 
-	// Handles Reddit Feeds
-	feedHandler(guildIds)
-
-	// Handles RemindMes
-	remindMeHandler(config.Mgr.SessionForDM())
-
 	// Updates playing status
 	var randomPlayingMsg string
 	rand.Seed(time.Now().UnixNano())
@@ -89,6 +83,18 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 
 	// Goes through each guild voice channel and removes/adds roles
 	for _, cha := range guildSettings.GetVoiceChas() {
+		// Check if the BOT has the necessary permissions
+		perms, err := s.State.UserChannelPermissions(s.State.User.ID, cha.GetID())
+		if err != nil {
+			continue
+		}
+		if perms&discordgo.PermissionViewChannel != discordgo.PermissionViewChannel {
+			continue
+		}
+		if perms&discordgo.PermissionManageRoles != discordgo.PermissionManageRoles {
+			continue
+		}
+
 		for _, chaRole := range cha.GetRoles() {
 
 			// Resets value
@@ -324,7 +330,7 @@ func GuildCreate(s *discordgo.Session, g *discordgo.GuildCreate) {
 	GuildIds.Lock()
 	GuildIds.Ids[g.Guild.ID] = true
 	GuildIds.Unlock()
-	log.Println(fmt.Sprintf("Joined guild %s", g.Guild.Name))
+	// log.Println(fmt.Sprintf("Joined guild %s", g.Guild.Name))
 }
 
 // GuildDelete logs BOT leaving a server

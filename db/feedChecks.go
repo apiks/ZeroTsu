@@ -14,11 +14,40 @@ func GetGuildFeedChecks(guildID string) []entities.FeedCheck {
 	return entities.Guilds.DB[guildID].GetFeedChecks()
 }
 
+// AddGuildFeedChecks adds a target guild's feed checks in-memory
+func AddGuildFeedChecks(guildID string, feedChecks []entities.FeedCheck, delete ...bool) {
+	entities.HandleNewGuild(guildID)
+
+	entities.Guilds.Lock()
+	defer entities.Guilds.Unlock()
+	if len(delete) == 0 {
+		var exists bool
+		for _, feedCheck := range feedChecks {
+			for i, guildFeedCheck := range entities.Guilds.DB[guildID].GetFeedChecks() {
+				if guildFeedCheck == feedCheck {
+					entities.Guilds.DB[guildID].AssignToFeedChecks(i, feedCheck)
+					exists = true
+					break
+				}
+			}
+
+			if !exists {
+				entities.Guilds.DB[guildID].AppendToFeedChecks(feedCheck)
+			}
+		}
+	} else {
+		deleteGuildFeedChecks(guildID, feedChecks)
+	}
+
+	entities.Guilds.DB[guildID].WriteData("rssThreadCheck", entities.Guilds.DB[guildID].GetFeedChecks())
+}
+
 // AddGuildFeedCheck adds a target guild's feed check in-memory
 func AddGuildFeedCheck(guildID string, feedCheck entities.FeedCheck, delete ...bool) {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
+	defer entities.Guilds.Unlock()
 	if len(delete) == 0 {
 		var exists bool
 		for i, guildFeedCheck := range entities.Guilds.DB[guildID].GetFeedChecks() {
@@ -35,7 +64,6 @@ func AddGuildFeedCheck(guildID string, feedCheck entities.FeedCheck, delete ...b
 	} else {
 		deleteGuildFeedCheck(guildID, feedCheck)
 	}
-	entities.Guilds.Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("rssThreadCheck", entities.Guilds.DB[guildID].GetFeedChecks())
 }
@@ -45,6 +73,7 @@ func SetGuildFeedCheck(guildID string, feedCheck entities.FeedCheck, delete ...b
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
+	defer entities.Guilds.Unlock()
 	if len(delete) == 0 {
 		var exists bool
 		for i, guildFeedCheck := range entities.Guilds.DB[guildID].GetFeedChecks() {
@@ -61,12 +90,23 @@ func SetGuildFeedCheck(guildID string, feedCheck entities.FeedCheck, delete ...b
 	} else {
 		deleteGuildFeedCheck(guildID, feedCheck)
 	}
-	entities.Guilds.Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("rssThreadCheck", entities.Guilds.DB[guildID].GetFeedChecks())
 }
 
-// deleteGuildFeedCheck safely deletes a feed Check from the feedChecks slice
+// deleteGuildFeedChecks safely deletes multiple feed checks from the feedChecks slice
+func deleteGuildFeedChecks(guildID string, feedChecks []entities.FeedCheck) {
+	for _, feedCheck := range feedChecks {
+		for i, guildFeedCheck := range entities.Guilds.DB[guildID].GetFeedChecks() {
+			if guildFeedCheck == feedCheck {
+				entities.Guilds.DB[guildID].RemoveFromFeedChecks(i)
+				break
+			}
+		}
+	}
+}
+
+// deleteGuildFeedCheck safely deletes a feed check from the feedChecks slice
 func deleteGuildFeedCheck(guildID string, feedCheck entities.FeedCheck) {
 	for i, guildFeedCheck := range entities.Guilds.DB[guildID].GetFeedChecks() {
 		if guildFeedCheck == feedCheck {

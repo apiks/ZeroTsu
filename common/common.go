@@ -1,7 +1,11 @@
 package common
 
 import (
+	"context"
+	"crypto/tls"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"net/http"
 	"regexp"
@@ -10,15 +14,18 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/mmcdole/gofeed"
+	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/entities"
+	"github.com/vartanbeno/go-reddit/reddit"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 // File for misc. functions, commands and variables.
 
-const UserAgent = "script:github.com/apiks/zerotsu:v3.1.5 (by /u/thechosenapiks)"
+const UserAgent = "script:github.com/apiks/zerotsu:v3.4.1 (by /u/thechosenapiks)"
 
 var StartTime time.Time
 
@@ -407,4 +414,68 @@ func WeekStart(year, week int) time.Time {
 	t = t.AddDate(0, 0, (week-w)*7)
 
 	return t
+}
+
+// GetRedditRSSFeed parses a reddit uri for an RSS feed and returns it
+func GetRedditRSSFeed(uri string, retryTimes int) (*gofeed.Feed, int, error) {
+	var (
+		fp         = gofeed.NewParser()
+		httpClient = http.Client{
+			Transport: &http.Transport{
+				TLSNextProto: map[string]func(authority string, c *tls.Conn) http.RoundTripper{},
+			},
+			Timeout: 10 * time.Second,
+		}
+		credentials = reddit.Credentials{ID: config.RedditID, Secret: config.RedditSecret, Username: config.RedditUsername, Password: config.RedditPassword}
+	)
+	client, err := reddit.NewClient(&httpClient, &credentials)
+	if err != nil {
+		return nil, 500, err
+	}
+
+	req, err := client.NewRequest("GET", uri, nil)
+	if err != nil {
+		return nil, 500, err
+	}
+	req.Header.Set("User-Agent", UserAgent)
+	resp, err := client.Do(context.TODO(), req, nil)
+	if err != nil {
+		if resp != nil {
+			return nil, resp.StatusCode, err
+		}
+		return nil, 500, err
+	}
+	defer resp.Body.Close()
+
+	// Use ratelimit headers to retry x times after x time
+	if resp.StatusCode == 429 && retryTimes > 0 {
+		retryAfter := resp.Header.Get("x-ratelimit-reset")
+		retryAfterInt, err := strconv.Atoi(retryAfter)
+		if err != nil {
+			retryAfter = resp.Header.Get("retry-after")
+			retryAfterInt, err = strconv.Atoi(retryAfter)
+			if err != nil {
+				return nil, 500, err
+			}
+		}
+		if retryAfterInt == 0 {
+			return nil, resp.StatusCode, err
+		}
+		time.Sleep(time.Duration(retryAfterInt) * time.Second)
+		return GetRedditRSSFeed(uri, retryTimes-1)
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, resp.StatusCode, errors.New(resp.Status)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, 500, err
+	}
+	feed, err := fp.ParseString(string(body))
+	if err != nil {
+		return nil, 500, err
+	}
+
+	return feed, resp.StatusCode, nil
 }

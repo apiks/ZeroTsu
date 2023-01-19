@@ -4,10 +4,18 @@ go 1.19
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.0
-	github.com/bwmarrin/discordgo v0.26.1
+	github.com/bwmarrin/discordgo v0.27.0
 	github.com/mmcdole/gofeed v1.1.3
 	github.com/servusdei2018/shards v1.2.6
 	golang.org/x/sync v0.1.0
+)
+
+require (
+	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/vartanbeno/go-reddit/v2 v2.0.1 // indirect
+	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
 )
 
 require (
@@ -17,8 +25,10 @@ require (
 	github.com/mmcdole/goxpp v1.0.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	golang.org/x/crypto v0.4.0 // indirect
-	golang.org/x/net v0.4.0 // indirect
-	golang.org/x/sys v0.3.0 // indirect
-	golang.org/x/text v0.5.0 // indirect
+	github.com/vartanbeno/go-reddit v1.0.0
+	golang.org/x/crypto v0.5.0 // indirect
+	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/oauth2 v0.4.0
+	golang.org/x/sys v0.4.0 // indirect
+	golang.org/x/text v0.6.0 // indirect
 )

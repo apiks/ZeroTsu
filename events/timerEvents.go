@@ -1,8 +1,11 @@
 package events
 
 import (
+	"bytes"
 	"crypto/tls"
+	"encoding/base64"
 	"fmt"
+	"image/png"
 	"log"
 	"math/rand"
 	"net/http"
@@ -16,6 +19,7 @@ import (
 	"github.com/r-anime/ZeroTsu/embeds"
 	"github.com/r-anime/ZeroTsu/entities"
 	"github.com/r-anime/ZeroTsu/functionality"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mmcdole/gofeed"
@@ -25,12 +29,121 @@ import (
 
 const feedCheckLifespanHours = 720
 
-var redditFeedBlock Block
-var remindMesFeedBlock Block
+var (
+	DailyScheduleWebhooksMap = &safeWebhooksMap{WebhooksMap: make(map[string]*discordgo.Webhook)}
+
+	dailyScheduleWebhooksMapBlock Block
+	redditFeedBlock               Block
+	redditFeedWebhookBlock        Block
+	remindMesFeedBlock            Block
+)
 
 type Block struct {
 	sync.RWMutex
 	Block bool
+}
+
+type safeWebhooksMap struct {
+	sync.RWMutex
+	WebhooksMap map[string]*discordgo.Webhook
+}
+
+func UpdateDailyScheduleWebhooks(s *discordgo.Session, _ *discordgo.Ready) {
+	dailyScheduleWebhooksMapBlock.Lock()
+	if dailyScheduleWebhooksMapBlock.Block {
+		dailyScheduleWebhooksMapBlock.Unlock()
+		return
+	}
+	dailyScheduleWebhooksMapBlock.Block = true
+	dailyScheduleWebhooksMapBlock.Unlock()
+
+	// Store all of the valid guilds' valid webhooks in a map
+	tempWebhooksMap := make(map[string]*discordgo.Webhook)
+	for guildID, subs := range entities.SharedInfo.GetAnimeSubsMap() {
+		if subs == nil {
+			continue
+		}
+		isGuild := false
+		if len(subs) >= 1 && subs[0].GetGuild() {
+			isGuild = true
+		}
+		if !isGuild {
+			continue
+		}
+
+		guildIDInt, err := strconv.ParseInt(guildID, 10, 64)
+		if err != nil {
+			continue
+		}
+		s := config.Mgr.SessionForGuild(guildIDInt)
+
+		// Checks if bot is in target guild
+		_, err = s.State.Guild(guildID)
+		if err != nil {
+			continue
+		}
+
+		// Check if bot has required permissions for the daily schedule channel
+		newepisodes := db.GetGuildAutopost(guildID, "dailyschedule")
+		if newepisodes == (entities.Cha{}) {
+			continue
+		}
+		perms, err := s.State.UserChannelPermissions(s.State.User.ID, newepisodes.GetID())
+		if err != nil {
+			continue
+		}
+		if perms&discordgo.PermissionManageWebhooks != discordgo.PermissionManageWebhooks {
+			continue
+		}
+		if perms&discordgo.PermissionViewChannel != discordgo.PermissionViewChannel {
+			continue
+		}
+		if perms&discordgo.PermissionSendMessages != discordgo.PermissionSendMessages {
+			continue
+		}
+
+		// Get valid webhook
+		ws, err := s.ChannelWebhooks(newepisodes.GetID())
+		if err != nil {
+			continue
+		}
+		for _, w := range ws {
+			if w.User.ID != s.State.User.ID ||
+				w.ChannelID != newepisodes.GetID() {
+				continue
+			}
+			tempWebhooksMap[guildID] = w
+			break
+		}
+
+		if _, ok := tempWebhooksMap[guildID]; ok {
+			continue
+		}
+
+		// Create the webhook if it doesn't exist
+		avatar, err := s.UserAvatarDecode(s.State.User)
+		if err != nil {
+			continue
+		}
+		out := new(bytes.Buffer)
+		err = png.Encode(out, avatar)
+		if err != nil {
+			continue
+		}
+		base64Img := base64.StdEncoding.EncodeToString(out.Bytes())
+		wh, err := s.WebhookCreate(newepisodes.GetID(), s.State.User.Username, fmt.Sprintf("data:image/png;base64,%s", base64Img))
+		if err != nil {
+			continue
+		}
+		tempWebhooksMap[guildID] = wh
+	}
+
+	DailyScheduleWebhooksMap.Lock()
+	defer DailyScheduleWebhooksMap.Unlock()
+	DailyScheduleWebhooksMap.WebhooksMap = make(map[string]*discordgo.Webhook)
+	for guid, w := range tempWebhooksMap {
+		DailyScheduleWebhooksMap.WebhooksMap[guid] = w
+	}
 }
 
 func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
@@ -72,7 +185,8 @@ func CommonEvents(_ *discordgo.Session, _ *discordgo.Ready) {
 		// Handles RemindMes
 		remindMeHandler(config.Mgr.SessionForDM())
 
-		// Handles Reddit Feeds
+		// // Handles Reddit Feeds
+		feedWebhookHandler(guildIds)
 		feedHandler(guildIds)
 
 		guildIds = []string{}
@@ -89,15 +203,11 @@ func remindMeHandler(s *discordgo.Session) {
 	remindMesFeedBlock.Block = true
 	remindMesFeedBlock.Unlock()
 
-	var (
-		writeFlag bool
-		t         = time.Now()
-	)
-
 	if entities.SharedInfo.GetRemindMesMap() == nil || len(entities.SharedInfo.GetRemindMesMap()) == 0 {
 		return
 	}
 
+	var writeFlag bool
 	for userID, remindMeSlice := range entities.SharedInfo.GetRemindMesMap() {
 		if remindMeSlice == nil || remindMeSlice.GetRemindMeSlice() == nil || len(remindMeSlice.GetRemindMeSlice()) == 0 {
 			continue
@@ -111,15 +221,19 @@ func remindMeHandler(s *discordgo.Session) {
 			}
 
 			// Checks if it's time to send message/ping the user
-			if t.Sub(remindMe.GetDate()) <= 0 {
+			if time.Now().Sub(remindMe.GetDate()) <= 0 {
 				remindMeSlice.GetRemindMeSlice()[i] = remindMe
 				i++
 				continue
 			}
 
 			dm, err := s.UserChannelCreate(userID)
-			if err == nil {
-				_, _ = s.ChannelMessageSend(dm.ID, fmt.Sprintf("RemindMe: %s", remindMe.GetMessage()))
+			if err != nil {
+				break
+			}
+			_, err = s.ChannelMessageSend(dm.ID, fmt.Sprintf("RemindMe: %s", remindMe.GetMessage()))
+			if err != nil {
+				continue
 			}
 
 			writeFlag = true
@@ -145,7 +259,314 @@ func remindMeHandler(s *discordgo.Session) {
 	remindMesFeedBlock.Unlock()
 }
 
-// Fetches reddit feeds and returns the feeds that need to posted for all guilds
+// Fetches reddit feeds and returns the feeds that need to posted for all guilds with webhook
+func feedWebhookHandler(guildIds []string) {
+	redditFeedWebhookBlock.Lock()
+	if redditFeedWebhookBlock.Block {
+		redditFeedWebhookBlock.Unlock()
+		return
+	}
+	redditFeedWebhookBlock.Block = true
+	redditFeedWebhookBlock.Unlock()
+
+	// Remove expired checks
+	for _, guildID := range guildIds {
+		var guildFeedChecks = db.GetGuildFeedChecks(guildID)
+
+		// Removes a check if more than its allowed lifespan hours have passed
+		for _, feedCheck := range guildFeedChecks {
+			dateRemoval := feedCheck.GetDate().Add(feedCheckLifespanHours)
+			if time.Now().Sub(dateRemoval) > 0 {
+				continue
+			}
+
+			db.SetGuildFeedCheck(guildID, feedCheck, true)
+		}
+	}
+
+	var (
+		feedsMap       = make(map[string][]entities.Feed)
+		parsedFeedsMap = make(map[string]*gofeed.Feed)
+		webhooksMap    = make(map[string]*discordgo.Webhook)
+	)
+
+	// Get webhooks and feeds
+	for _, guildID := range guildIds {
+		var guildFeeds = db.GetGuildFeeds(guildID)
+		guildIDInt, err := strconv.ParseInt(guildID, 10, 64)
+		if err != nil {
+			continue
+		}
+		s := config.Mgr.SessionForGuild(guildIDInt)
+
+		for _, feed := range guildFeeds {
+			perms, err := s.State.UserChannelPermissions(s.State.User.ID, feed.GetChannelID())
+			if err != nil {
+				continue
+			}
+			if perms&discordgo.PermissionManageWebhooks != discordgo.PermissionManageWebhooks {
+				continue
+			}
+			if perms&discordgo.PermissionViewChannel != discordgo.PermissionViewChannel {
+				continue
+			}
+			if perms&discordgo.PermissionSendMessages != discordgo.PermissionSendMessages {
+				continue
+			}
+
+			feedsMap[feed.GetChannelID()] = append(feedsMap[feed.GetChannelID()], feed)
+			if _, ok := webhooksMap[feed.GetChannelID()]; ok {
+				continue
+			}
+
+			ws, err := s.ChannelWebhooks(feed.GetChannelID())
+			if err != nil {
+				continue
+			}
+			for _, w := range ws {
+				if w.User.ID != s.State.User.ID ||
+					w.ChannelID != feed.GetChannelID() {
+					continue
+				}
+				webhooksMap[feed.GetChannelID()] = w
+				break
+			}
+
+			// Create webhook if it doesn't exist and is needed
+			if _, ok := webhooksMap[feed.GetChannelID()]; ok {
+				continue
+			}
+
+			avatar, err := s.UserAvatarDecode(s.State.User)
+			if err != nil {
+				continue
+			}
+			out := new(bytes.Buffer)
+			err = png.Encode(out, avatar)
+			if err != nil {
+				continue
+			}
+			base64Img := base64.StdEncoding.EncodeToString(out.Bytes())
+			w, err := s.WebhookCreate(feed.GetChannelID(), s.State.User.Username, fmt.Sprintf("data:image/png;base64,%s", base64Img))
+			if err == nil {
+				webhooksMap[feed.GetChannelID()] = w
+			}
+		}
+	}
+	if len(webhooksMap) == 0 {
+		return
+	}
+
+	feedParseMap := make(map[string]bool)
+	for k, feeds := range feedsMap {
+		if _, ok := webhooksMap[k]; !ok {
+			continue
+		}
+		for _, feed := range feeds {
+			feedParseMap[fmt.Sprintf("%s/%s", feed.GetSubreddit(), feed.GetPostType())] = true
+		}
+	}
+
+	for len(feedParseMap) > 0 {
+		i := 0
+		if len(parsedFeedsMap) == 0 {
+			for k := range feedParseMap {
+				if i > 14 {
+					break
+				}
+
+				// Parse the feed
+				time.Sleep(time.Second * 2)
+				key := strings.TrimSuffix(k, "/")
+				key = strings.TrimPrefix(key, "https://www.reddit.com/r/")
+				key = strings.TrimPrefix(key, "/")
+				feedParser, statusCode, err := common.GetRedditRSSFeed(fmt.Sprintf("https://www.reddit.com/r/%s/.rss", key), 1)
+				if err != nil {
+					if statusCode == 429 {
+						log.Println("HIT REDDIT RATE LIMIT feedWebhookHandler!")
+						time.Sleep(10 * time.Minute)
+					} else {
+						delete(feedParseMap, k)
+					}
+					continue
+				}
+
+				parsedFeedsMap[k] = feedParser
+				delete(feedParseMap, k)
+				i++
+			}
+		}
+
+		var (
+			parsedFeedsMapCopy = make(map[string]*gofeed.Feed)
+
+			eg            errgroup.Group
+			maxGoroutines = 16
+			guard         = make(chan struct{}, maxGoroutines)
+		)
+		for k, v := range parsedFeedsMap {
+			parsedFeedsMapCopy[k] = v
+		}
+
+		i = 0
+		parsedFeedsMap = make(map[string]*gofeed.Feed)
+		guard <- struct{}{}
+		eg.Go(func() error {
+			for k := range feedParseMap {
+				if i > 14 {
+					break
+				}
+
+				// Parse the feed
+				time.Sleep(time.Second * 2)
+				key := strings.TrimSuffix(k, "/")
+				key = strings.TrimPrefix(key, "https://www.reddit.com/r/")
+				key = strings.TrimPrefix(key, "/")
+				feedParser, statusCode, err := common.GetRedditRSSFeed(fmt.Sprintf("https://www.reddit.com/r/%s/.rss", key), 1)
+				if err != nil {
+					if statusCode == 429 {
+						log.Println("HIT REDDIT RATE LIMIT feedWebhookHandler!")
+						time.Sleep(10 * time.Minute)
+					} else {
+						delete(feedParseMap, k)
+					}
+					continue
+				}
+
+				parsedFeedsMap[k] = feedParser
+				delete(feedParseMap, k)
+				i++
+			}
+
+			<-guard
+			return nil
+		})
+
+		for _, guildID := range guildIds {
+			guid := guildID
+
+			guard <- struct{}{}
+			eg.Go(func() error {
+				guildFeeds := db.GetGuildFeeds(guid)
+				if len(guildFeeds) == 0 {
+					<-guard
+					return nil
+				}
+
+				guildFeedChecks := db.GetGuildFeedChecks(guid)
+				guildIDInt, err := strconv.ParseInt(guid, 10, 64)
+				if err != nil {
+					<-guard
+					return err
+				}
+				s := config.Mgr.SessionForGuild(guildIDInt)
+
+				for k, w := range webhooksMap {
+					if w.GuildID != guid {
+						continue
+					}
+					breakFromWebhook := false
+
+					var (
+						newFeedChecks []entities.FeedCheck
+						embedsSlice   []*discordgo.MessageEmbed
+					)
+
+					for _, feed := range feedsMap[k] {
+						if _, ok := parsedFeedsMapCopy[fmt.Sprintf("%s/%s", feed.GetSubreddit(), feed.GetPostType())]; !ok {
+							continue
+						}
+
+						// Iterates through each feed parser item to see if it finds something that should be posted
+						// var pinnedItems = make(map[*gofeed.Item]bool)
+						for _, item := range parsedFeedsMapCopy[fmt.Sprintf("%s/%s", feed.GetSubreddit(), feed.GetPostType())].Items {
+							var skip bool
+
+							// Checks if the item has already been posted
+							for _, feedCheck := range guildFeedChecks {
+								if feedCheck.GetGUID() == item.GUID &&
+									feedCheck.GetFeed().GetChannelID() == feed.GetChannelID() {
+									skip = true
+									break
+								}
+							}
+							if skip {
+								continue
+							}
+
+							// Check if author is same and skip if not true
+							if feed.GetAuthor() != "" && item.Author != nil && strings.ToLower(item.Author.Name) != fmt.Sprintf("/u/%s", feed.GetAuthor()) {
+								continue
+							}
+
+							// Check if the item title starts with the set feed title
+							if feed.GetTitle() != "" && !strings.HasPrefix(strings.ToLower(item.Title), feed.GetTitle()) {
+								continue
+							}
+
+							// Save embed
+							embedsSlice = append(embedsSlice, embeds.FeedEmbed(&feed, item))
+							newFeedChecks = append(newFeedChecks, entities.NewFeedCheck(feed, time.Now(), item.GUID))
+
+							// Use webhook to post embeds if necessary
+							if len(embedsSlice) >= 10 {
+								_, err := s.WebhookExecute(w.ID, w.Token, false, &discordgo.WebhookParams{
+									Embeds: embedsSlice,
+								})
+								embedsSlice = nil
+								if err != nil {
+									log.Println("Failed webhookExecute in feedWebhookHandler:", err)
+									breakFromWebhook = true
+								}
+								if breakFromWebhook {
+									break
+								}
+
+								// Adds that the feeds have been posted
+								db.AddGuildFeedChecks(guid, newFeedChecks)
+							}
+						}
+					}
+					if breakFromWebhook {
+						continue
+					}
+
+					// Use webhook to post last embeds available
+					if len(embedsSlice) > 0 && len(embedsSlice) <= 10 {
+						// Use webhook to post last embeds available
+						_, err := s.WebhookExecute(w.ID, w.Token, false, &discordgo.WebhookParams{
+							Embeds: embedsSlice,
+						})
+						if err != nil {
+							log.Println("Failed webhookExecute in feedWebhookHandler:", err)
+							breakFromWebhook = true
+						}
+
+						// Adds that the feeds have been posted
+						db.AddGuildFeedChecks(guid, newFeedChecks)
+					}
+					if breakFromWebhook {
+						continue
+					}
+				}
+
+				<-guard
+				return nil
+			})
+		}
+
+		err := eg.Wait()
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
+	redditFeedWebhookBlock.Lock()
+	redditFeedWebhookBlock.Block = false
+	redditFeedWebhookBlock.Unlock()
+}
+
+// Fetches reddit feeds and returns the feeds that need to posted for all guilds no webhook
 func feedHandler(guildIds []string) {
 	redditFeedBlock.Lock()
 	if redditFeedBlock.Block {
@@ -163,7 +584,6 @@ func feedHandler(guildIds []string) {
 			guildFeeds      = db.GetGuildFeeds(guildID)
 			guildFeedChecks = db.GetGuildFeedChecks(guildID)
 			fp              = gofeed.NewParser()
-			removedCheck    bool
 		)
 		fp.Client = &http.Client{
 			Transport: &common.UserAgentTransport{RoundTripper: &http.Transport{
@@ -178,34 +598,31 @@ func feedHandler(guildIds []string) {
 		}
 		s := config.Mgr.SessionForGuild(guildIDInt)
 
-		// Removes a check if more than its allowed lifespan hours have passed
-		for _, feedCheck := range guildFeedChecks {
-			dateRemoval := feedCheck.GetDate().Add(feedCheckLifespanHours)
-			if t.Sub(dateRemoval) > 0 {
+		for _, feed := range guildFeeds {
+			// Check if bot has required permissions for this channel
+			perms, err := s.State.UserChannelPermissions(s.State.User.ID, feed.GetChannelID())
+			if err != nil {
+				continue
+			}
+			if perms&discordgo.PermissionManageWebhooks == discordgo.PermissionManageWebhooks {
+				continue
+			}
+			if perms&discordgo.PermissionViewChannel != discordgo.PermissionViewChannel {
+				continue
+			}
+			if perms&discordgo.PermissionSendMessages != discordgo.PermissionSendMessages {
 				continue
 			}
 
-			db.SetGuildFeedCheck(guildID, feedCheck, true)
-			removedCheck = true
-		}
-		if removedCheck {
-			guildFeedChecks = db.GetGuildFeedChecks(guildID)
-		}
-
-		for _, feed := range guildFeeds {
 			var pinnedItems = make(map[*gofeed.Item]bool)
 
-			// Wait seconds because of reddit API rate limit
-			time.Sleep(time.Second * 2)
-
-			// Parse the feed
-			feedParser, err := fp.ParseURL(fmt.Sprintf("https://www.reddit.com/r/%s/%s/.rss", feed.GetSubreddit(), feed.GetPostType()))
+			// Get the RSS feed
+			time.Sleep(4 * time.Second)
+			feedParser, statusCode, err := common.GetRedditRSSFeed(fmt.Sprintf("https://www.reddit.com/r/%s/%s/.rss", feed.GetSubreddit(), feed.GetPostType()), 1)
 			if err != nil {
-				if _, ok := err.(gofeed.HTTPError); ok {
-					if err.(gofeed.HTTPError).StatusCode == 429 {
-						time.Sleep(60 * time.Minute)
-						continue
-					}
+				if statusCode == 429 {
+					log.Println("HIT REDDIT RATE LIMIT feedWebhookHandler!")
+					time.Sleep(10 * time.Minute)
 				}
 				continue
 			}
@@ -283,6 +700,9 @@ func feedHandler(guildIds []string) {
 
 				// Pins/unpins the feed items if necessary
 				if !feed.GetPin() {
+					continue
+				}
+				if perms&discordgo.PermissionManageMessages != discordgo.PermissionManageMessages {
 					continue
 				}
 				if _, ok := pinnedItems[item]; ok {

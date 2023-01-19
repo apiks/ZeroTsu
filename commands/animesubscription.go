@@ -1,10 +1,14 @@
 package commands
 
 import (
+	"bytes"
+	"encoding/base64"
 	"fmt"
+	"image/png"
 	"log"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/r-anime/ZeroTsu/common"
@@ -18,7 +22,18 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-var animeSubFeedBlock events.Block
+type safeWebhooksMap struct {
+	sync.RWMutex
+	webhooksMap map[string]*discordgo.Webhook
+}
+
+var (
+	newEpisodesWebhooksMap = &safeWebhooksMap{webhooksMap: make(map[string]*discordgo.Webhook)}
+
+	newEpisodeswebhooksMapBlock events.Block
+	animeSubFeedWebhookBlock    events.Block
+	animeSubFeedBlock           events.Block
+)
 
 // subscribeCommand subscribes to notifications for anime episode releases SUBBED
 func subscribeCommand(title, authorID string) string {
@@ -499,6 +514,269 @@ func viewSubscriptionsHandler(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
+// webhooksMapHandler updates the anime subs guilds' webhooks map
+func webhooksMapHandler() {
+	newEpisodeswebhooksMapBlock.Lock()
+	if newEpisodeswebhooksMapBlock.Block {
+		newEpisodeswebhooksMapBlock.Unlock()
+		return
+	}
+	newEpisodeswebhooksMapBlock.Block = true
+	newEpisodeswebhooksMapBlock.Unlock()
+
+	// Store all of the valid guilds' valid webhooks in a map
+	tempWebhooksMap := make(map[string]*discordgo.Webhook)
+	for guildID, subs := range entities.SharedInfo.GetAnimeSubsMap() {
+		if subs == nil {
+			continue
+		}
+		isGuild := false
+		if len(subs) >= 1 && subs[0].GetGuild() {
+			isGuild = true
+		}
+		if !isGuild {
+			continue
+		}
+
+		guildIDInt, err := strconv.ParseInt(guildID, 10, 64)
+		if err != nil {
+			continue
+		}
+		s := config.Mgr.SessionForGuild(guildIDInt)
+
+		// Checks if bot is in target guild
+		_, err = s.State.Guild(guildID)
+		if err != nil {
+			continue
+		}
+
+		// Check if bot has required permissions for the new episodes channel
+		newepisodes := db.GetGuildAutopost(guildID, "newepisodes")
+		if newepisodes == (entities.Cha{}) {
+			continue
+		}
+		perms, err := s.State.UserChannelPermissions(s.State.User.ID, newepisodes.GetID())
+		if err != nil {
+			continue
+		}
+		if perms&discordgo.PermissionManageWebhooks != discordgo.PermissionManageWebhooks {
+			continue
+		}
+		if perms&discordgo.PermissionViewChannel != discordgo.PermissionViewChannel {
+			continue
+		}
+		if perms&discordgo.PermissionSendMessages != discordgo.PermissionSendMessages {
+			continue
+		}
+
+		// Get valid webhook
+		ws, err := s.ChannelWebhooks(newepisodes.GetID())
+		if err != nil {
+			continue
+		}
+		for _, w := range ws {
+			if w.User.ID != s.State.User.ID ||
+				w.ChannelID != newepisodes.GetID() {
+				continue
+			}
+			tempWebhooksMap[guildID] = w
+			break
+		}
+
+		if _, ok := tempWebhooksMap[guildID]; ok {
+			continue
+		}
+
+		// Create the webhook if it doesn't exist
+		avatar, err := s.UserAvatarDecode(s.State.User)
+		if err != nil {
+			continue
+		}
+		out := new(bytes.Buffer)
+		err = png.Encode(out, avatar)
+		if err != nil {
+			continue
+		}
+		base64Img := base64.StdEncoding.EncodeToString(out.Bytes())
+		wh, err := s.WebhookCreate(newepisodes.GetID(), s.State.User.Username, fmt.Sprintf("data:image/png;base64,%s", base64Img))
+		if err != nil {
+			continue
+		}
+		tempWebhooksMap[guildID] = wh
+	}
+
+	newEpisodesWebhooksMap.Lock()
+	defer newEpisodesWebhooksMap.Unlock()
+	newEpisodesWebhooksMap.webhooksMap = make(map[string]*discordgo.Webhook)
+	for guid, w := range tempWebhooksMap {
+		newEpisodesWebhooksMap.webhooksMap[guid] = w
+	}
+}
+
+// animeSubsWebhookHandler handles sending notifications to users when it's time with webhooks
+func animeSubsWebhookHandler() {
+	var (
+		now        = time.Now()
+		todayShows []*entities.ShowAirTime
+	)
+
+	Today.RLock()
+	if int(Today.Time.Weekday()) != int(now.Weekday()) {
+		Today.RUnlock()
+		return
+	}
+	Today.RUnlock()
+
+	animeSubFeedWebhookBlock.Lock()
+	if animeSubFeedWebhookBlock.Block {
+		animeSubFeedWebhookBlock.Unlock()
+		return
+	}
+	animeSubFeedWebhookBlock.Block = true
+	animeSubFeedWebhookBlock.Unlock()
+
+	// Fetches today's shows
+	entities.AnimeSchedule.RLock()
+	for _, show := range entities.AnimeSchedule.AnimeSchedule[int(now.Weekday())] {
+		todayShows = append(todayShows, show)
+	}
+	entities.AnimeSchedule.RUnlock()
+
+	var (
+		eg            errgroup.Group
+		maxGoroutines = 32
+		guard         = make(chan struct{}, maxGoroutines)
+	)
+	location, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		return
+	}
+	now = now.In(location)
+
+	// Iterates over all guilds and sends notifications if necessary
+	for guildID, subscriptions := range entities.SharedInfo.GetAnimeSubsMap() {
+		if subscriptions == nil {
+			continue
+		}
+		isGuild := false
+		if len(subscriptions) >= 1 && subscriptions[0].GetGuild() {
+			isGuild = true
+		}
+		if !isGuild {
+			continue
+		}
+
+		guid := guildID
+		subs := subscriptions
+
+		guard <- struct{}{}
+		eg.Go(func() error {
+			guildIDInt, err := strconv.ParseInt(guid, 10, 64)
+			if err != nil {
+				<-guard
+				return err
+			}
+			s := config.Mgr.SessionForGuild(guildIDInt)
+
+			// Checks if bot is in target guild
+			_, err = s.State.Guild(guid)
+			if err != nil {
+				<-guard
+				return nil
+			}
+
+			// Get valid webhook
+			newEpisodesWebhooksMap.RLock()
+			if _, ok := newEpisodesWebhooksMap.webhooksMap[guid]; !ok {
+				newEpisodesWebhooksMap.RUnlock()
+				<-guard
+				return nil
+			}
+			w := newEpisodesWebhooksMap.webhooksMap[guid]
+			newEpisodesWebhooksMap.RUnlock()
+
+			guildSettings := db.GetGuildSettings(guid)
+			for subKey, guildShow := range subs {
+				if guildShow == nil {
+					continue
+				}
+				if guildShow.GetNotified() {
+					continue
+				}
+
+				for _, scheduleShow := range todayShows {
+					if scheduleShow == nil {
+						continue
+					}
+					if scheduleShow.GetDelayed() != "" {
+						continue
+					}
+					if strings.ToLower(guildShow.GetShow()) != strings.ToLower(scheduleShow.GetName()) {
+						continue
+					}
+					if guildShow.GetNotified() {
+						continue
+					}
+					if guildShow.GetGuild() {
+						if !guildSettings.GetDonghua() && scheduleShow.GetDonghua() {
+							continue
+						}
+					}
+
+					// Parse the air hour and minute
+					t, err := time.Parse("3:04 PM", scheduleShow.GetAirTime())
+					if err != nil {
+						log.Println(err)
+						continue
+					}
+
+					// Form the air date for today
+					scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, now.Location())
+
+					if guildShow.GetShow() == "Kanojo, Okarishimasu 2: Kanokari Call" {
+						log.Println(scheduleDate)
+						log.Println(now)
+					}
+
+					// Checks whether the show has already aired today
+					if now.Before(scheduleDate) {
+						continue
+					}
+
+					// Use webhook to post if available
+					_, err = s.WebhookExecute(w.ID, w.Token, false, &discordgo.WebhookParams{
+						Embeds: []*discordgo.MessageEmbed{embeds.SubscriptionEmbed(scheduleShow)},
+					})
+					if err != nil {
+						log.Println("Failed webhookExecute in feedWebhookHandler: ", err)
+						continue
+					}
+
+					// Sets the show as notified for that guild
+					entities.SharedInfo.Lock()
+					entities.SharedInfo.AnimeSubs[guid][subKey].SetNotified(true)
+					entities.SharedInfo.Unlock()
+				}
+			}
+
+			<-guard
+			return nil
+		})
+	}
+
+	err = eg.Wait()
+	if err != nil {
+		log.Println(err)
+	}
+
+	// Write to shared AnimeSubs DB
+	_ = entities.AnimeSubsWrite(entities.SharedInfo.GetAnimeSubsMap())
+
+	animeSubFeedWebhookBlock.Lock()
+	animeSubFeedWebhookBlock.Block = false
+	animeSubFeedWebhookBlock.Unlock()
+}
+
 // animeSubsHandler handles sending notifications to users when it's time
 func animeSubsHandler() {
 	var (
@@ -528,7 +806,7 @@ func animeSubsHandler() {
 	}
 	now = now.In(location)
 
-	// Fetches Today's shows
+	// Fetches today's shows
 	entities.AnimeSchedule.RLock()
 	for _, show := range entities.AnimeSchedule.AnimeSchedule[int(now.Weekday())] {
 		todayShows = append(todayShows, show)
@@ -555,9 +833,39 @@ func animeSubsHandler() {
 				continue
 			}
 			session = config.Mgr.SessionForGuild(guildIDInt)
-			guildSettings = db.GetGuildSettings(userID)
+
+			// Checks if bot is in target guild
+			_, err = session.State.Guild(userID)
+			if err != nil {
+				continue
+			}
+
 		} else {
 			session = config.Mgr.SessionForDM()
+		}
+
+		if isGuild {
+			newepisodes := db.GetGuildAutopost(userID, "newepisodes")
+			if newepisodes == (entities.Cha{}) {
+				continue
+			}
+
+			// Check if bot has required permissions for this channel
+			perms, err := session.State.UserChannelPermissions(session.State.User.ID, newepisodes.GetID())
+			if err != nil {
+				continue
+			}
+			if perms&discordgo.PermissionManageWebhooks == discordgo.PermissionManageWebhooks {
+				continue
+			}
+			if perms&discordgo.PermissionViewChannel != discordgo.PermissionViewChannel {
+				continue
+			}
+			if perms&discordgo.PermissionSendMessages != discordgo.PermissionSendMessages {
+				continue
+			}
+
+			guildSettings = db.GetGuildSettings(userID)
 		}
 
 		for subKey, userShow := range subscriptions {
@@ -595,11 +903,10 @@ func animeSubsHandler() {
 				}
 
 				// Form the air date for Today
-				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), now.Second(), now.Nanosecond(), now.Location())
+				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, now.Location())
 
-				// Calculates whether the show has already aired today
-				difference := now.Sub(scheduleDate)
-				if difference <= 0 {
+				// Checks whether the show has already aired today
+				if now.Before(scheduleDate) {
 					continue
 				}
 
@@ -636,7 +943,7 @@ func animeSubsHandler() {
 					// Sends embed in DMs
 					dm, err := s.UserChannelCreate(uid)
 					if err != nil {
-						return err
+						return nil
 					}
 					err = embeds.Subscription(s, ss, dm.ID)
 					if err != nil {
@@ -681,6 +988,33 @@ func AnimeSubsTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 
 		// Anime Episodes subscription
 		animeSubsHandler()
+	}
+}
+
+func AnimeSubsWebhookTimer(_ *discordgo.Session, _ *discordgo.Ready) {
+	for range time.NewTicker(10 * time.Second).C {
+		animeSubFeedWebhookBlock.RLock()
+		if animeSubFeedWebhookBlock.Block {
+			animeSubFeedWebhookBlock.RUnlock()
+			return
+		}
+		animeSubFeedWebhookBlock.RUnlock()
+
+		// Anime Episodes subscription
+		animeSubsWebhookHandler()
+	}
+}
+
+func AnimeSubsWebhooksMapTimer(_ *discordgo.Session, _ *discordgo.Ready) {
+	for range time.NewTicker(1 * time.Minute).C {
+		newEpisodeswebhooksMapBlock.RLock()
+		if newEpisodeswebhooksMapBlock.Block {
+			newEpisodeswebhooksMapBlock.RUnlock()
+			return
+		}
+		newEpisodeswebhooksMapBlock.RUnlock()
+
+		webhooksMapHandler()
 	}
 }
 
@@ -733,15 +1067,14 @@ func ResetSubscriptions() {
 				}
 
 				// Form the air date for Today
-				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), nowUTC.Second(), nowUTC.Nanosecond(), nowUTC.Location())
+				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, nowUTC.Location())
 
 				// Calculates whether the show has already aired today
-				difference := now.Sub(scheduleDate)
 				entities.SharedInfo.Lock()
-				if difference >= 0 {
-					entities.SharedInfo.AnimeSubs[userID][subKey].SetNotified(true)
-				} else {
+				if now.After(scheduleDate) {
 					entities.SharedInfo.AnimeSubs[userID][subKey].SetNotified(false)
+				} else {
+					entities.SharedInfo.AnimeSubs[userID][subKey].SetNotified(true)
 				}
 				entities.SharedInfo.Unlock()
 			}
