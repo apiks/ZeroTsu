@@ -733,11 +733,6 @@ func animeSubsWebhookHandler() {
 					// Form the air date for today
 					scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, now.Location())
 
-					if guildShow.GetShow() == "Kanojo, Okarishimasu 2: Kanokari Call" {
-						log.Println(scheduleDate)
-						log.Println(now)
-					}
-
 					// Checks whether the show has already aired today
 					if now.Before(scheduleDate) {
 						continue
@@ -780,9 +775,11 @@ func animeSubsWebhookHandler() {
 // animeSubsHandler handles sending notifications to users when it's time
 func animeSubsHandler() {
 	var (
-		now        = time.Now()
-		todayShows []*entities.ShowAirTime
-		eg         errgroup.Group
+		now           = time.Now()
+		todayShows    []*entities.ShowAirTime
+		eg            errgroup.Group
+		maxGoroutines = 32
+		guard         = make(chan struct{}, maxGoroutines)
 	)
 
 	Today.RLock()
@@ -911,24 +908,27 @@ func animeSubsHandler() {
 				}
 
 				// Wait some milliseconds so it doesn't hit the rate limit easily
-				time.Sleep(time.Millisecond * 100)
+				time.Sleep(time.Millisecond * 150)
 
 				uid := userID
 				us := userShow
 				ss := scheduleShow
 				sk := subKey
 				s := session
+				guard <- struct{}{}
 				eg.Go(func() error {
 					// Sends notification to user DMs if possible, or to guild autopost channel
 					if us.GetGuild() {
 						newepisodes := db.GetGuildAutopost(uid, "newepisodes")
 						if newepisodes == (entities.Cha{}) {
+							<-guard
 							return nil
 						}
 
 						// Sends embed in Guild
 						err = embeds.Subscription(s, ss, newepisodes.GetID())
 						if err != nil {
+							<-guard
 							return err
 						}
 
@@ -937,16 +937,19 @@ func animeSubsHandler() {
 						entities.SharedInfo.AnimeSubs[uid][sk].SetNotified(true)
 						entities.SharedInfo.Unlock()
 
+						<-guard
 						return nil
 					}
 
 					// Sends embed in DMs
 					dm, err := s.UserChannelCreate(uid)
 					if err != nil {
+						<-guard
 						return nil
 					}
 					err = embeds.Subscription(s, ss, dm.ID)
 					if err != nil {
+						<-guard
 						return err
 					}
 
@@ -955,11 +958,12 @@ func animeSubsHandler() {
 					entities.SharedInfo.AnimeSubs[uid][sk].SetNotified(true)
 					entities.SharedInfo.Unlock()
 
+					<-guard
 					return nil
 				})
 
 				// Wait some milliseconds so it doesn't hit the rate limit easily
-				time.Sleep(time.Millisecond * 100)
+				time.Sleep(time.Millisecond * 150)
 			}
 		}
 	}

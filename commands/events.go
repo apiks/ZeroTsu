@@ -61,11 +61,13 @@ func dailyEvents() {
 			guildID := f.Name()
 			guildIDInt, err := strconv.ParseInt(guildID, 10, 64)
 			if err != nil {
+				<-guard
 				return nil
 			}
 
 			// Sends daily schedule via webhook
 			if _, ok := events.DailyScheduleWebhooksMap.WebhooksMap[guildID]; !ok {
+				<-guard
 				return nil
 			}
 
@@ -81,9 +83,11 @@ func dailyEvents() {
 			if err != nil {
 				guildSettings := db.GetGuildSettings(guildID)
 				common.LogError(s, guildSettings.BotLog, err)
+				<-guard
 				return nil
 			}
 
+			<-guard
 			return nil
 		})
 	}
