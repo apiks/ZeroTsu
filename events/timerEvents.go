@@ -144,6 +144,10 @@ func UpdateDailyScheduleWebhooks(s *discordgo.Session, _ *discordgo.Ready) {
 	for guid, w := range tempWebhooksMap {
 		DailyScheduleWebhooksMap.WebhooksMap[guid] = w
 	}
+
+	dailyScheduleWebhooksMapBlock.Lock()
+	dailyScheduleWebhooksMapBlock.Block = false
+	dailyScheduleWebhooksMapBlock.Unlock()
 }
 
 func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
