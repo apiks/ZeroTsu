@@ -139,11 +139,11 @@ func UpdateDailyScheduleWebhooks(s *discordgo.Session, _ *discordgo.Ready) {
 	}
 
 	DailyScheduleWebhooksMap.Lock()
-	defer DailyScheduleWebhooksMap.Unlock()
 	DailyScheduleWebhooksMap.WebhooksMap = make(map[string]*discordgo.Webhook)
 	for guid, w := range tempWebhooksMap {
 		DailyScheduleWebhooksMap.WebhooksMap[guid] = w
 	}
+	DailyScheduleWebhooksMap.Unlock()
 
 	dailyScheduleWebhooksMapBlock.Lock()
 	dailyScheduleWebhooksMapBlock.Block = false

@@ -23,7 +23,6 @@ type SafeTime struct {
 
 var Today = &SafeTime{Time: time.Now()}
 
-// dailyEvents is Daily events
 func dailyEvents() {
 	t := time.Now()
 
@@ -55,10 +54,10 @@ func dailyEvents() {
 		if !f.IsDir() {
 			continue
 		}
+		guildID := f.Name()
 
 		guard <- struct{}{}
 		eg.Go(func() error {
-			guildID := f.Name()
 			guildIDInt, err := strconv.ParseInt(guildID, 10, 64)
 			if err != nil {
 				<-guard
