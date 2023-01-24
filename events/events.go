@@ -153,7 +153,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if (m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID)) && m.Author.ID == "128312718779219968" {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Professor!\n\nPrefix: `%v`", guildSettings.GetPrefix()))
+		_, err := s.ChannelMessageSend(m.ChannelID, "Professor!")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
 			return
@@ -162,10 +162,9 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if (m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID)) && m.Author.ID == "66207186417627136" {
-
 		randomNum := rand.Intn(5)
 		if randomNum == 0 {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Bug hunter!\n\nPrefix: `%v`", guildSettings.GetPrefix()))
+			_, err := s.ChannelMessageSend(m.ChannelID, "Bug hunter!")
 			if err != nil {
 				common.LogError(s, guildSettings.BotLog, err)
 				return
@@ -173,7 +172,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		if randomNum == 1 {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Player!\n\nPrefix: `%v`", guildSettings.GetPrefix()))
+			_, err := s.ChannelMessageSend(m.ChannelID, "Player!")
 			if err != nil {
 				common.LogError(s, guildSettings.BotLog, err)
 				return
@@ -181,7 +180,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		if randomNum == 2 {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Big brain!\n\nPrefix: `%v`", guildSettings.GetPrefix()))
+			_, err := s.ChannelMessageSend(m.ChannelID, "Big brain!")
 			if err != nil {
 				common.LogError(s, guildSettings.BotLog, err)
 				return
@@ -189,7 +188,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		if randomNum == 3 {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Poster expert!\n\nPrefix: `%v`", guildSettings.GetPrefix()))
+			_, err := s.ChannelMessageSend(m.ChannelID, "Poster expert!")
 			if err != nil {
 				common.LogError(s, guildSettings.BotLog, err)
 				return
@@ -197,7 +196,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		if randomNum == 4 {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Idiot!\n\nPrefix: `%v`", guildSettings.GetPrefix()))
+			_, err := s.ChannelMessageSend(m.ChannelID, "Idiot!")
 			if err != nil {
 				common.LogError(s, guildSettings.BotLog, err)
 				return
@@ -208,10 +207,9 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if (m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID)) && m.Author.ID == "365245718866427904" {
-
 		randomNum := rand.Intn(5)
 		if randomNum == 0 {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Begone ethot.\n\nPrefix: `%v`", guildSettings.GetPrefix()))
+			_, err := s.ChannelMessageSend(m.ChannelID, "Begone ethot.")
 			if err != nil {
 				common.LogError(s, guildSettings.BotLog, err)
 				return
@@ -219,7 +217,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		if randomNum == 1 {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Humph!\n\nPrefix: `%v`", guildSettings.GetPrefix()))
+			_, err := s.ChannelMessageSend(m.ChannelID, "Humph!")
 			if err != nil {
 				common.LogError(s, guildSettings.BotLog, err)
 				return
@@ -227,7 +225,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		if randomNum == 2 {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Wannabe ethot!\n\nPrefix: `%v`", guildSettings.GetPrefix()))
+			_, err := s.ChannelMessageSend(m.ChannelID, "Wannabe ethot!")
 			if err != nil {
 				common.LogError(s, guildSettings.BotLog, err)
 				return
@@ -235,7 +233,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		if randomNum == 3 {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Not even worth my time.\n\nPrefix: `%v`", guildSettings.GetPrefix()))
+			_, err := s.ChannelMessageSend(m.ChannelID, "Not even worth my time.")
 			if err != nil {
 				common.LogError(s, guildSettings.BotLog, err)
 				return
@@ -243,7 +241,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		if randomNum == 4 {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Okay, maybe you're not that bad.\n\nPrefix: `%v`", guildSettings.GetPrefix()))
+			_, err := s.ChannelMessageSend(m.ChannelID, "Okay, maybe you're not that bad.")
 			if err != nil {
 				common.LogError(s, guildSettings.BotLog, err)
 				return
@@ -254,10 +252,9 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if (m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID)) && m.Author.ID == "315201054377771009" {
-
 		randomNum := rand.Intn(5)
 		if randomNum == 0 {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("https://cdn.discordapp.com/attachments/618463738504151086/619090216329674800/uiz31mhq12k11.gif\n\nPrefix: `%v`", guildSettings.GetPrefix()))
+			_, err := s.ChannelMessageSend(m.ChannelID, "https://cdn.discordapp.com/attachments/618463738504151086/619090216329674800/uiz31mhq12k11.gif")
 			if err != nil {
 				common.LogError(s, guildSettings.BotLog, err)
 				return
@@ -265,7 +262,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		if randomNum == 1 {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Onii-chan no ecchi!\n\nPrefix: `%v`", guildSettings.GetPrefix()))
+			_, err := s.ChannelMessageSend(m.ChannelID, "Onii-chan no ecchi!")
 			if err != nil {
 				common.LogError(s, guildSettings.BotLog, err)
 				return
@@ -273,7 +270,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		if randomNum == 2 {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Kusuguttai Neiru-kun.\n\nPrefix: `%v`", guildSettings.GetPrefix()))
+			_, err := s.ChannelMessageSend(m.ChannelID, "Kusuguttai Neiru-kun.")
 			if err != nil {
 				common.LogError(s, guildSettings.BotLog, err)
 				return
@@ -281,7 +278,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		if randomNum == 3 {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Liking lolis isn't a crime, but I'll still visit you in prison.\n\nPrefix: `%v`", guildSettings.GetPrefix()))
+			_, err := s.ChannelMessageSend(m.ChannelID, "Liking lolis isn't a crime, but I'll still visit you in prison.")
 			if err != nil {
 				common.LogError(s, guildSettings.BotLog, err)
 				return
@@ -289,7 +286,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		if randomNum == 4 {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Iris told me you wanted her to meow at you while she was still young.\n\nPrefix: `%v`", guildSettings.GetPrefix()))
+			_, err := s.ChannelMessageSend(m.ChannelID, "Iris told me you wanted her to meow at you while she was still young.")
 			if err != nil {
 				common.LogError(s, guildSettings.BotLog, err)
 				return
@@ -300,7 +297,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if (m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID)) && darlingTrigger > 10 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Daaarling~\n\nPrefix: `%v`", guildSettings.GetPrefix()))
+		_, err := s.ChannelMessageSend(m.ChannelID, "Daaarling~")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
 			return
@@ -310,7 +307,7 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if m.Content == fmt.Sprintf("<@%v>", s.State.User.ID) || m.Content == fmt.Sprintf("<@!%v>", s.State.User.ID) {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Baka!\n\nPrefix: `%v`", guildSettings.GetPrefix()))
+		_, err := s.ChannelMessageSend(m.ChannelID, "Baka!")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
 			return
