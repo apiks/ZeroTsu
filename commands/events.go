@@ -35,6 +35,7 @@ func dailyEvents() {
 	Today.Unlock()
 
 	// Update daily anime schedule
+	events.UpdateDailyScheduleWebhooks()
 	UpdateAnimeSchedule()
 	ResetSubscriptions()
 
@@ -65,7 +66,9 @@ func dailyEvents() {
 			}
 
 			// Sends daily schedule via webhook
+			events.DailyScheduleWebhooksMap.RLock()
 			if _, ok := events.DailyScheduleWebhooksMap.WebhooksMap[guildID]; !ok {
+				events.DailyScheduleWebhooksMap.RUnlock()
 				<-guard
 				return nil
 			}
@@ -80,12 +83,14 @@ func dailyEvents() {
 				Content: content,
 			})
 			if err != nil {
+				events.DailyScheduleWebhooksMap.RUnlock()
 				guildSettings := db.GetGuildSettings(guildID)
 				common.LogError(s, guildSettings.BotLog, err)
 				<-guard
 				return nil
 			}
 
+			events.DailyScheduleWebhooksMap.RUnlock()
 			<-guard
 			return nil
 		})
@@ -107,7 +112,9 @@ func dailyEvents() {
 			continue
 		}
 
+		events.DailyScheduleWebhooksMap.RLock()
 		if _, ok := events.DailyScheduleWebhooksMap.WebhooksMap[guildID]; ok {
+			events.DailyScheduleWebhooksMap.RUnlock()
 			continue
 		}
 

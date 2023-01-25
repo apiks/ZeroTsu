@@ -48,7 +48,7 @@ type safeWebhooksMap struct {
 	WebhooksMap map[string]*discordgo.Webhook
 }
 
-func UpdateDailyScheduleWebhooks(s *discordgo.Session, _ *discordgo.Ready) {
+func UpdateDailyScheduleWebhooks() {
 	dailyScheduleWebhooksMapBlock.Lock()
 	if dailyScheduleWebhooksMapBlock.Block {
 		dailyScheduleWebhooksMapBlock.Unlock()
