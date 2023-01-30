@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/bwmarrin/discordgo v0.27.0
-	github.com/mmcdole/gofeed v1.1.3
+	github.com/mmcdole/gofeed v1.2.0
 	github.com/servusdei2018/shards v1.2.6
 	golang.org/x/sync v0.1.0
 )

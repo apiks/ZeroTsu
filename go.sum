@@ -37,6 +37,8 @@ github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnr
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/mmcdole/gofeed v1.1.3 h1:pdrvMb18jMSLidGp8j0pLvc9IGziX4vbmvVqmLH6z8o=
 github.com/mmcdole/gofeed v1.1.3/go.mod h1:QQO3maftbOu+hiVOGOZDRLymqGQCos4zxbA4j89gMrE=
+github.com/mmcdole/gofeed v1.2.0 h1:kuq7tJnDf0pnsDzF820ukuySHxFimAcizpG15gYHIns=
+github.com/mmcdole/gofeed v1.2.0/go.mod h1:TEyTG4gw4Q5Co+Hgahx/Oi3E0JHLM8BXtWC+mkJtRsw=
 github.com/mmcdole/goxpp v0.0.0-20181012175147-0068e33feabf h1:sWGE2v+hO0Nd4yFU/S/mDBM5plIU8v/Qhfz41hkDIAI=
 github.com/mmcdole/goxpp v0.0.0-20181012175147-0068e33feabf/go.mod h1:pasqhqstspkosTneA62Nc+2p9SOBBYAPbnmRRWPQ0V8=
 github.com/mmcdole/goxpp v0.0.0-20200921145534-2f3784f67354 h1:Z6i7ND25ixRtXFBylIUggqpvLMV1I15yprcqMVB7WZA=

@@ -523,16 +523,15 @@ func feedWebhookHandler(guildIds []string) {
 									breakFromWebhook = true
 								}
 								if breakFromWebhook {
+									// Adds that the feeds have been posted
+									db.AddGuildFeedChecks(guid, newFeedChecks)
 									break
 								}
-
-								// Adds that the feeds have been posted
-								db.AddGuildFeedChecks(guid, newFeedChecks)
 							}
 						}
 					}
 					if breakFromWebhook {
-						continue
+						break
 					}
 
 					// Use webhook to post last embeds available
@@ -550,7 +549,7 @@ func feedWebhookHandler(guildIds []string) {
 						db.AddGuildFeedChecks(guid, newFeedChecks)
 					}
 					if breakFromWebhook {
-						continue
+						break
 					}
 				}
 
