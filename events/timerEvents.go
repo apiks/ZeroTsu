@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/r-anime/ZeroTsu/common"
@@ -19,6 +18,7 @@ import (
 	"github.com/r-anime/ZeroTsu/embeds"
 	"github.com/r-anime/ZeroTsu/entities"
 	"github.com/r-anime/ZeroTsu/functionality"
+	"github.com/sasha-s/go-deadlock"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/bwmarrin/discordgo"
@@ -39,12 +39,12 @@ var (
 )
 
 type Block struct {
-	sync.RWMutex
+	deadlock.RWMutex
 	Block bool
 }
 
 type safeWebhooksMap struct {
-	sync.RWMutex
+	deadlock.RWMutex
 	WebhooksMap map[string]*discordgo.Webhook
 }
 

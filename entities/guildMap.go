@@ -5,7 +5,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"sync"
+
+	"github.com/sasha-s/go-deadlock"
 )
 
 const DBPath = "database/guilds"
@@ -19,7 +20,7 @@ var (
 
 // GuildMap is a mutex-safe map of GuildInfo
 type GuildMap struct {
-	sync.RWMutex
+	deadlock.RWMutex
 
 	DB map[string]*GuildInfo
 }
@@ -56,6 +57,7 @@ func (g *GuildMap) Init(guildID string) bool {
 	}
 
 	g.Lock()
+	defer g.Unlock()
 	g.DB[guildID] = &GuildInfo{
 		ID: guildID,
 		GuildSettings: GuildSettings{
@@ -66,11 +68,8 @@ func (g *GuildMap) Init(guildID string) bool {
 		ReactJoinMap: make(map[string]*ReactJoin),
 		Autoposts:    make(map[string]Cha),
 	}
-	g.Unlock()
 
-	Guilds.Lock()
 	Guilds.DB[guildID] = g.DB[guildID]
-	Guilds.Unlock()
 
 	return isNew
 }
@@ -79,10 +78,9 @@ func (g *GuildMap) Init(guildID string) bool {
 func (g *GuildMap) Load(guildID string) (bool, error) {
 	isNew := g.Init(guildID)
 
-	g.Lock()
-	defer g.Unlock()
-
+	g.RLock()
 	guild := g.DB[guildID]
+	g.RUnlock()
 
 	files, err := IOReadDir(fmt.Sprintf("%s/%s/", DBPath, guildID))
 	if err != nil {
@@ -108,10 +106,12 @@ func (g *GuildMap) Load(guildID string) (bool, error) {
 	}
 
 	// Init default settings
+	g.Lock()
 	if _, ok := g.DB[guildID].Autoposts["newepisodes"]; ok {
 		SetupGuildSub(guildID)
 	}
 	*g.DB[guildID] = *guild
+	g.Unlock()
 
 	return isNew, nil
 }

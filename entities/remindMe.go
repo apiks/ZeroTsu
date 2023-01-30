@@ -1,12 +1,13 @@
 package entities
 
 import (
-	"sync"
 	"time"
+
+	"github.com/sasha-s/go-deadlock"
 )
 
 type RemindMe struct {
-	sync.RWMutex
+	deadlock.RWMutex
 
 	Message        string
 	Date           time.Time

@@ -1,9 +1,9 @@
 package entities
 
-import "sync"
+import "github.com/sasha-s/go-deadlock"
 
 type ShowSub struct {
-	sync.RWMutex
+	deadlock.RWMutex
 
 	Show     string `json:"Show"`
 	Notified bool   `json:"Notified"`

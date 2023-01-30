@@ -4,20 +4,20 @@ import (
 	"io/ioutil"
 	"log"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/events"
+	"github.com/sasha-s/go-deadlock"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 type SafeTime struct {
-	sync.RWMutex
+	deadlock.RWMutex
 	Time time.Time
 }
 

@@ -1,9 +1,9 @@
 package entities
 
-import "sync"
+import "github.com/sasha-s/go-deadlock"
 
 type ShowAirTime struct {
-	sync.RWMutex
+	deadlock.RWMutex
 
 	Name     string
 	AirTime  string

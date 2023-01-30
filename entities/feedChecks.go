@@ -1,12 +1,13 @@
 package entities
 
 import (
-	"sync"
 	"time"
+
+	"github.com/sasha-s/go-deadlock"
 )
 
 type FeedCheck struct {
-	sync.RWMutex
+	deadlock.RWMutex
 
 	Feed Feed      `json:"Thread"`
 	Date time.Time `json:"Date"`

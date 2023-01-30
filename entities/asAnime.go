@@ -1,12 +1,13 @@
 package entities
 
 import (
-	"sync"
 	"time"
+
+	"github.com/sasha-s/go-deadlock"
 )
 
 type ASAnime struct {
-	sync.RWMutex
+	deadlock.RWMutex
 
 	Title             string    `json:"title"`
 	Route             string    `json:"route"`

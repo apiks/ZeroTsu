@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"sync"
+
+	"github.com/sasha-s/go-deadlock"
 )
 
 // GuildInfo contains all the data a guild can contain
 type GuildInfo struct {
-	sync.RWMutex
+	deadlock.RWMutex
 
 	ID            string
 	GuildSettings GuildSettings

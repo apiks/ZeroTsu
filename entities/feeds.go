@@ -1,9 +1,9 @@
 package entities
 
-import "sync"
+import "github.com/sasha-s/go-deadlock"
 
 type Feed struct {
-	sync.RWMutex
+	deadlock.RWMutex
 
 	Subreddit string `json:"Subreddit"`
 	Title     string `json:"Title"`

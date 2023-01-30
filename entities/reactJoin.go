@@ -1,9 +1,9 @@
 package entities
 
-import "sync"
+import "github.com/sasha-s/go-deadlock"
 
 type ReactJoin struct {
-	sync.RWMutex
+	deadlock.RWMutex
 
 	RoleEmojiMap []map[string][]string `json:"roleEmoji"`
 }

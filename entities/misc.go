@@ -6,18 +6,19 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"sync"
 	"time"
+
+	"github.com/sasha-s/go-deadlock"
 )
 
 var (
-	Mutex         sync.RWMutex
+	Mutex         deadlock.RWMutex
 	SharedInfo    *sharedInfo
 	AnimeSchedule = &AnimeScheduleMap{AnimeSchedule: make(map[int][]*ShowAirTime)}
 )
 
 type AnimeScheduleMap struct {
-	sync.RWMutex
+	deadlock.RWMutex
 	AnimeSchedule map[int][]*ShowAirTime
 }
 

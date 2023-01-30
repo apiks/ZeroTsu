@@ -1,10 +1,10 @@
 package entities
 
-import "sync"
+import "github.com/sasha-s/go-deadlock"
 
 // GuildSettings contains the guild-specific settings and toggled modules
 type GuildSettings struct {
-	sync.RWMutex
+	deadlock.RWMutex
 
 	Prefix       string     `json:"Prefix"`
 	BotLog       Cha        `json:"BotLogID"`

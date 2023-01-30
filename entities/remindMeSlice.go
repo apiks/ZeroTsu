@@ -1,9 +1,9 @@
 package entities
 
-import "sync"
+import "github.com/sasha-s/go-deadlock"
 
 type RemindMeSlice struct {
-	sync.RWMutex
+	deadlock.RWMutex
 
 	RemindMeSlice []*RemindMe
 	Premium       bool

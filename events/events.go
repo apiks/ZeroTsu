@@ -6,13 +6,13 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/entities"
 	"github.com/r-anime/ZeroTsu/functionality"
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/bwmarrin/discordgo"
 
@@ -25,7 +25,7 @@ var GuildIds = &GuildIdsStruct{
 }
 
 type GuildIdsStruct struct {
-	sync.RWMutex
+	deadlock.RWMutex
 	Ids map[string]bool
 }
 
