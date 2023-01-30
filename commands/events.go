@@ -23,7 +23,7 @@ type SafeTime struct {
 
 var Today = &SafeTime{Time: time.Now()}
 
-func dailyEvents() {
+func dailyScheduleEvents() {
 	t := time.Now()
 
 	Today.Lock()
@@ -33,6 +33,13 @@ func dailyEvents() {
 	}
 	Today.Time = t
 	Today.Unlock()
+
+	events.DailyScheduleWebhooksMapBlock.RLock()
+	if events.DailyScheduleWebhooksMapBlock.Block {
+		events.DailyScheduleWebhooksMapBlock.RUnlock()
+		return
+	}
+	events.DailyScheduleWebhooksMapBlock.RUnlock()
 
 	// Update daily anime schedule
 	events.UpdateDailyScheduleWebhooks()
@@ -140,6 +147,6 @@ func DailyStatsTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 	//log.Println("Slash command registration is done.")
 
 	for range time.NewTicker(15 * time.Second).C {
-		dailyEvents()
+		dailyScheduleEvents()
 	}
 }

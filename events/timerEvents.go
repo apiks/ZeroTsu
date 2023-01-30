@@ -32,7 +32,7 @@ const feedCheckLifespanHours = 720
 var (
 	DailyScheduleWebhooksMap = &safeWebhooksMap{WebhooksMap: make(map[string]*discordgo.Webhook)}
 
-	dailyScheduleWebhooksMapBlock Block
+	DailyScheduleWebhooksMapBlock Block
 	redditFeedBlock               Block
 	redditFeedWebhookBlock        Block
 	remindMesFeedBlock            Block
@@ -49,16 +49,17 @@ type safeWebhooksMap struct {
 }
 
 func UpdateDailyScheduleWebhooks() {
-	dailyScheduleWebhooksMapBlock.Lock()
-	if dailyScheduleWebhooksMapBlock.Block {
-		dailyScheduleWebhooksMapBlock.Unlock()
+	DailyScheduleWebhooksMapBlock.Lock()
+	if DailyScheduleWebhooksMapBlock.Block {
+		DailyScheduleWebhooksMapBlock.Unlock()
 		return
 	}
-	dailyScheduleWebhooksMapBlock.Block = true
-	dailyScheduleWebhooksMapBlock.Unlock()
+	DailyScheduleWebhooksMapBlock.Block = true
+	DailyScheduleWebhooksMapBlock.Unlock()
 
 	// Store all of the valid guilds' valid webhooks in a map
 	tempWebhooksMap := make(map[string]*discordgo.Webhook)
+	entities.SharedInfo.RLock()
 	for guildID, subs := range entities.SharedInfo.GetAnimeSubsMap() {
 		if subs == nil {
 			continue
@@ -137,6 +138,7 @@ func UpdateDailyScheduleWebhooks() {
 		}
 		tempWebhooksMap[guildID] = wh
 	}
+	entities.SharedInfo.RUnlock()
 
 	DailyScheduleWebhooksMap.Lock()
 	DailyScheduleWebhooksMap.WebhooksMap = make(map[string]*discordgo.Webhook)
@@ -145,9 +147,9 @@ func UpdateDailyScheduleWebhooks() {
 	}
 	DailyScheduleWebhooksMap.Unlock()
 
-	dailyScheduleWebhooksMapBlock.Lock()
-	dailyScheduleWebhooksMapBlock.Block = false
-	dailyScheduleWebhooksMapBlock.Unlock()
+	DailyScheduleWebhooksMapBlock.Lock()
+	DailyScheduleWebhooksMapBlock.Block = false
+	DailyScheduleWebhooksMapBlock.Unlock()
 }
 
 func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
@@ -189,7 +191,7 @@ func CommonEvents(_ *discordgo.Session, _ *discordgo.Ready) {
 		// Handles RemindMes
 		remindMeHandler(config.Mgr.SessionForDM())
 
-		// // Handles Reddit Feeds
+		// Handles Reddit Feeds
 		feedWebhookHandler(guildIds)
 		feedHandler(guildIds)
 
