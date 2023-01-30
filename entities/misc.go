@@ -44,7 +44,7 @@ func LoadSharedDB() {
 		log.Panicln(err)
 	}
 
-	if SharedInfo == nil {
+	if SharedInfo != nil {
 		SharedInfo.Lock()
 		defer SharedInfo.Unlock()
 		SharedInfo = newSharedInfo(make(map[string]*RemindMeSlice), make(map[string][]*ShowSub))
