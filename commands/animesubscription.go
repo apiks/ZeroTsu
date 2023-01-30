@@ -516,14 +516,6 @@ func viewSubscriptionsHandler(s *discordgo.Session, m *discordgo.Message) {
 
 // webhooksMapHandler updates the anime subs guilds' webhooks map
 func webhooksMapHandler() {
-	newEpisodeswebhooksMapBlock.Lock()
-	if newEpisodeswebhooksMapBlock.Block {
-		newEpisodeswebhooksMapBlock.Unlock()
-		return
-	}
-	newEpisodeswebhooksMapBlock.Block = true
-	newEpisodeswebhooksMapBlock.Unlock()
-
 	// Store all of the valid guilds' valid webhooks in a map
 	tempWebhooksMap := make(map[string]*discordgo.Webhook)
 	for guildID, subs := range entities.SharedInfo.GetAnimeSubsMap() {
@@ -611,6 +603,10 @@ func webhooksMapHandler() {
 	for guid, w := range tempWebhooksMap {
 		newEpisodesWebhooksMap.webhooksMap[guid] = w
 	}
+
+	newEpisodeswebhooksMapBlock.Lock()
+	newEpisodeswebhooksMapBlock.Block = false
+	newEpisodeswebhooksMapBlock.Unlock()
 }
 
 // animeSubsWebhookHandler handles sending notifications to users when it's time with webhooks
@@ -980,13 +976,6 @@ func AnimeSubsWebhookTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 		animeSubFeedWebhookBlock.Block = true
 		animeSubFeedWebhookBlock.Unlock()
 
-		animeSubFeedWebhookBlock.RLock()
-		if animeSubFeedWebhookBlock.Block {
-			animeSubFeedWebhookBlock.RUnlock()
-			return
-		}
-		animeSubFeedWebhookBlock.RUnlock()
-
 		// Anime Episodes subscription
 		animeSubsWebhookHandler()
 	}
@@ -994,20 +983,13 @@ func AnimeSubsWebhookTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 
 func AnimeSubsWebhooksMapTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 	for range time.NewTicker(1 * time.Minute).C {
-		animeSubFeedWebhookBlock.RLock()
-		if animeSubFeedWebhookBlock.Block {
-			animeSubFeedWebhookBlock.RUnlock()
-			return
-		}
-		animeSubFeedWebhookBlock.RUnlock()
-
-		newEpisodeswebhooksMapBlock.RLock()
+		newEpisodeswebhooksMapBlock.Lock()
 		if newEpisodeswebhooksMapBlock.Block {
-			newEpisodeswebhooksMapBlock.RUnlock()
+			newEpisodeswebhooksMapBlock.Unlock()
 			return
 		}
-		newEpisodeswebhooksMapBlock.RUnlock()
-
+		newEpisodeswebhooksMapBlock.Block = true
+		newEpisodeswebhooksMapBlock.Unlock()
 		webhooksMapHandler()
 	}
 }
