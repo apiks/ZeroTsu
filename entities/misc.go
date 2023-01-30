@@ -44,11 +44,20 @@ func LoadSharedDB() {
 		log.Panicln(err)
 	}
 
-	SharedInfo.Lock()
-	defer SharedInfo.Unlock()
-	SharedInfo = newSharedInfo(make(map[string]*RemindMeSlice), make(map[string][]*ShowSub))
-	for _, file := range files {
-		LoadSharedDBFile(file)
+	if SharedInfo == nil {
+		SharedInfo.Lock()
+		defer SharedInfo.Unlock()
+		SharedInfo = newSharedInfo(make(map[string]*RemindMeSlice), make(map[string][]*ShowSub))
+		for _, file := range files {
+			LoadSharedDBFile(file)
+		}
+	} else {
+		SharedInfo = newSharedInfo(make(map[string]*RemindMeSlice), make(map[string][]*ShowSub))
+		SharedInfo.Lock()
+		defer SharedInfo.Unlock()
+		for _, file := range files {
+			LoadSharedDBFile(file)
+		}
 	}
 }
 
