@@ -642,8 +642,7 @@ func animeSubsWebhookHandler() {
 	now = now.In(location)
 
 	// Iterates over all guilds and sends notifications if necessary
-	entities.SharedInfo.Lock()
-	for guildID, subscriptions := range entities.SharedInfo.AnimeSubs {
+	for guildID, subscriptions := range entities.SharedInfo.GetAnimeSubsMap() {
 		if subscriptions == nil {
 			continue
 		}
@@ -732,11 +731,14 @@ func animeSubsWebhookHandler() {
 						Embeds: []*discordgo.MessageEmbed{embeds.SubscriptionEmbed(scheduleShow)},
 					})
 					// Sets the show as notified for that guild
+					entities.SharedInfo.Lock()
 					entities.SharedInfo.AnimeSubs[guid][subKey].SetNotified(true)
 					if err != nil {
+						entities.SharedInfo.Unlock()
 						log.Println("Failed webhookExecute in animeSubsWebhookHandler: ", err)
 						continue
 					}
+					entities.SharedInfo.Unlock()
 				}
 			}
 
@@ -749,7 +751,6 @@ func animeSubsWebhookHandler() {
 	if err != nil {
 		log.Println(err)
 	}
-	entities.SharedInfo.Unlock()
 
 	// Write to shared AnimeSubs DB
 	_ = entities.AnimeSubsWrite(entities.SharedInfo.GetAnimeSubsMap())

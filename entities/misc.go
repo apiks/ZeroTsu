@@ -81,9 +81,6 @@ func LoadSharedDBFile(file string) {
 
 // RemindMeWrite writes RemindMes to remindMes.json
 func RemindMeWrite(remindMe map[string]*RemindMeSlice) error {
-	SharedInfo.RLock()
-	defer SharedInfo.RUnlock()
-
 	// Checks if the user has hit the db limit
 	for _, remindMeSlice := range remindMe {
 		if remindMeSlice == nil {
@@ -114,9 +111,6 @@ func RemindMeWrite(remindMe map[string]*RemindMeSlice) error {
 
 // Writes anime notfication subscription to animeSubs.json
 func AnimeSubsWrite(animeSubs map[string][]*ShowSub) error {
-	SharedInfo.RLock()
-	defer SharedInfo.RUnlock()
-
 	// Turns that slice into bytes to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(animeSubs, "", "    ")
 	if err != nil {
@@ -202,7 +196,6 @@ func SetupGuildSub(guildID string) {
 			addedShows[show.GetKey()] = true
 		}
 	}
-
 	AnimeSchedule.RUnlock()
 
 	SharedInfo.Lock()
