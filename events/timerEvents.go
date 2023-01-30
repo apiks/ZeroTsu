@@ -522,11 +522,13 @@ func feedWebhookHandler(guildIds []string) {
 									log.Println("Failed webhookExecute in feedWebhookHandler:", err)
 									breakFromWebhook = true
 								}
+
 								if breakFromWebhook {
-									// Adds that the feeds have been posted
-									db.AddGuildFeedChecks(guid, newFeedChecks)
 									break
 								}
+
+								// Adds that the feeds have been posted
+								db.AddGuildFeedChecks(guid, newFeedChecks)
 							}
 						}
 					}
