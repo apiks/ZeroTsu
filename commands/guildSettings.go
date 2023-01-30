@@ -7,7 +7,6 @@ import (
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/entities"
-	"github.com/r-anime/ZeroTsu/events"
 
 	"github.com/bwmarrin/discordgo"
 
@@ -279,8 +278,6 @@ func prefixCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	// Changes and writes new prefix to storage
 	guildSettings = guildSettings.SetPrefix(commandStrings[1])
 	db.SetGuildSettings(m.GuildID, guildSettings)
-
-	events.DynamicNicknameChange(s, m.GuildID)
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New prefix is: `%s`", guildSettings.GetPrefix()))
 	if err != nil {

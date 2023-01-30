@@ -341,33 +341,6 @@ func GuildDelete(_ *discordgo.Session, g *discordgo.GuildDelete) {
 	log.Println(fmt.Sprintf("Left guild with ID: %s", g.Guild.ID))
 }
 
-// DynamicNicknameChange Changes the BOT's nickname dynamically to a `prefix username` format if there is no existing custom nickname
-func DynamicNicknameChange(s *discordgo.Session, guildID string) {
-	guildSettings := db.GetGuildSettings(guildID)
-
-	// Set custom nickname based on guild prefix if there is no existing nickname
-	bot, err := s.GuildMember(guildID, s.State.User.ID)
-	if err != nil {
-		return
-	}
-
-	if bot.Nick != "" {
-		return
-	}
-	if bot.Nick != fmt.Sprintf("%s %s", guildSettings.GetPrefix(), s.State.User.Username) {
-		return
-	}
-
-	err = s.GuildMemberNickname(guildID, "@me", fmt.Sprintf("%s %s", guildSettings.GetPrefix(), s.State.User.Username))
-	if err != nil {
-		if _, ok := err.(*discordgo.RESTError); ok {
-			if err.(*discordgo.RESTError).Response.Status == "400 Bad Request" {
-				_ = s.GuildMemberNickname(guildID, "@me", fmt.Sprintf("%s", s.State.User.Username))
-			}
-		}
-	}
-}
-
 // Fixes broken anime guild subs that are null
 func fixGuildSubsCommand(guildID string) {
 	entities.Mutex.Lock()
