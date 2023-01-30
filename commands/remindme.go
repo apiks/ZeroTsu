@@ -30,7 +30,6 @@ func remindMeCommand(channelID, userID, time, message string) string {
 	}
 
 	// Saves the remindMe data to an object of type remindMe
-	entities.Mutex.Lock()
 	remindMeObject.SetCommandChannel(channelID)
 	if _, ok := entities.SharedInfo.GetRemindMesMap()[userID]; ok {
 		remindMeObject.SetRemindID(len(entities.SharedInfo.GetRemindMesMap()[userID].GetRemindMeSlice()) + 1)
@@ -42,16 +41,17 @@ func remindMeCommand(channelID, userID, time, message string) string {
 	remindMeObject.SetMessage(message)
 
 	// Adds the above object to the remindMe map where all of the remindMes are kept and writes them to disk
+	entities.SharedInfo.Lock()
 	if !flag {
-		entities.SharedInfo.GetRemindMesMap()[userID] = &dummySlice
+		entities.SharedInfo.RemindMes[userID] = &dummySlice
 	}
-	entities.SharedInfo.GetRemindMesMap()[userID].AppendToRemindMeSlice(&remindMeObject)
+	entities.SharedInfo.RemindMes[userID].AppendToRemindMeSlice(&remindMeObject)
+	entities.SharedInfo.Unlock()
+
 	err = entities.RemindMeWrite(entities.SharedInfo.GetRemindMesMap())
 	if err != nil {
-		entities.Mutex.Unlock()
 		return err.Error()
 	}
-	entities.Mutex.Unlock()
 
 	return fmt.Sprintf("Success! You will be reminded of the message <t:%d:R>. Make sure your DMs are open.", date.UTC().Unix())
 }
@@ -106,7 +106,6 @@ func remindMeCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	userID = m.Author.ID
 
 	// Saves the remindMe data to an object of type remindMe
-	entities.Mutex.Lock()
 	remindMeObject.SetCommandChannel(m.ChannelID)
 	if _, ok := entities.SharedInfo.GetRemindMesMap()[userID]; ok {
 		remindMeObject.SetRemindID(len(entities.SharedInfo.GetRemindMesMap()[userID].GetRemindMeSlice()) + 1)
@@ -118,17 +117,18 @@ func remindMeCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	remindMeObject.SetMessage(commandStrings[2])
 
 	// Adds the above object to the remindMe map where all of the remindMes are kept and writes them to disk
+	entities.SharedInfo.Lock()
 	if !flag {
-		entities.SharedInfo.GetRemindMesMap()[userID] = &dummySlice
+		entities.SharedInfo.RemindMes[userID] = &dummySlice
 	}
-	entities.SharedInfo.GetRemindMesMap()[userID].AppendToRemindMeSlice(&remindMeObject)
+	entities.SharedInfo.RemindMes[userID].AppendToRemindMeSlice(&remindMeObject)
+	entities.SharedInfo.Unlock()
+
 	err = entities.RemindMeWrite(entities.SharedInfo.GetRemindMesMap())
 	if err != nil {
-		entities.Mutex.Unlock()
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
-	entities.Mutex.Unlock()
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! You will be reminded of the message <t:%d:R>. Make sure your DMs are open.", date.UTC().Unix()))
 	if err != nil {
@@ -139,15 +139,12 @@ func remindMeCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 
 func removeRemindMe(id int, userID string) string {
 	// Checks if the user has any reminds
-	entities.Mutex.Lock()
 	_, ok := entities.SharedInfo.GetRemindMesMap()[userID]
 	if !ok {
-		entities.Mutex.Unlock()
 		return "Error: No saved reminds found for you to delete."
 	}
 
 	if id <= 0 {
-		entities.Mutex.Unlock()
 		return "Error: Invalid ID."
 	}
 
@@ -159,18 +156,18 @@ func removeRemindMe(id int, userID string) string {
 		}
 
 		if remind.GetRemindID() == id {
-			entities.SharedInfo.GetRemindMesMap()[userID].RemoveFromRemindMeSlice(i)
+			entities.SharedInfo.Lock()
+			entities.SharedInfo.RemindMes[userID].RemoveFromRemindMeSlice(i)
+			entities.SharedInfo.Unlock()
 			flag = true
 
 			err := entities.RemindMeWrite(entities.SharedInfo.GetRemindMesMap())
 			if err != nil {
-				entities.Mutex.Unlock()
 				return err.Error()
 			}
 			break
 		}
 	}
-	entities.Mutex.Unlock()
 
 	if !flag {
 		return "Error: No such remind with that ID found."
@@ -195,19 +192,15 @@ func removeRemindMeHandler(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Checks if the user has any reminds
-	entities.Mutex.RLock()
 	_, ok := entities.SharedInfo.GetRemindMesMap()[userID]
 	if !ok {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No saved reminds found for you to delete.")
 		if err != nil {
-			entities.Mutex.RUnlock()
 			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		entities.Mutex.RUnlock()
 		return
 	}
-	entities.Mutex.RUnlock()
 
 	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
@@ -224,35 +217,32 @@ func removeRemindMeHandler(s *discordgo.Session, m *discordgo.Message) {
 	if err != nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Please input only a number as the second parameter.")
 		if err != nil {
-			entities.Mutex.Unlock()
 			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		entities.Mutex.Unlock()
 		return
 	}
 
 	// Deletes the remind from the map and writes to disk
-	entities.Mutex.Lock()
 	for i, remind := range entities.SharedInfo.GetRemindMesMap()[userID].GetRemindMeSlice() {
 		if remind == nil {
 			continue
 		}
 
 		if remind.GetRemindID() == remindID {
-			entities.SharedInfo.GetRemindMesMap()[userID].RemoveFromRemindMeSlice(i)
+			entities.SharedInfo.Lock()
+			entities.SharedInfo.RemindMes[userID].RemoveFromRemindMeSlice(i)
+			entities.SharedInfo.Unlock()
 			flag = true
 
 			err := entities.RemindMeWrite(entities.SharedInfo.GetRemindMesMap())
 			if err != nil {
-				entities.Mutex.Unlock()
 				common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 				return
 			}
 			break
 		}
 	}
-	entities.Mutex.Unlock()
 
 	// Prints success or error based on whether it deleted anything above
 	if flag {
@@ -272,9 +262,7 @@ func removeRemindMeHandler(s *discordgo.Session, m *discordgo.Message) {
 func viewRemindMes(userID string) []string {
 	var message string
 
-	entities.Mutex.RLock()
 	if entities.SharedInfo.GetRemindMesMap()[userID] == nil || len(entities.SharedInfo.GetRemindMesMap()[userID].GetRemindMeSlice()) == 0 {
-		entities.Mutex.RUnlock()
 		return []string{"No saved reminds for you found."}
 	}
 
@@ -285,7 +273,6 @@ func viewRemindMes(userID string) []string {
 
 		message += fmt.Sprintf("`%s` - <t:%d:R> - ID: %d\n", remind.GetMessage(), remind.GetDate().UTC().Unix(), remind.GetRemindID())
 	}
-	entities.Mutex.RUnlock()
 
 	return common.SplitLongMessage(message)
 }
@@ -306,18 +293,14 @@ func viewRemindMesHandler(s *discordgo.Session, m *discordgo.Message) {
 		guildSettings = db.GetGuildSettings(m.GuildID)
 	}
 
-	entities.Mutex.RLock()
 	if entities.SharedInfo.GetRemindMesMap()[userID] == nil || len(entities.SharedInfo.GetRemindMesMap()[userID].GetRemindMeSlice()) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No saved reminds for you found.")
 		if err != nil {
-			entities.Mutex.RUnlock()
 			common.LogError(s, guildSettings.BotLog, err)
 			return
 		}
-		entities.Mutex.RUnlock()
 		return
 	}
-	entities.Mutex.RUnlock()
 
 	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
@@ -330,7 +313,6 @@ func viewRemindMesHandler(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	entities.Mutex.RLock()
 	for _, remind := range entities.SharedInfo.GetRemindMesMap()[userID].GetRemindMeSlice() {
 		if remind == nil {
 			continue
@@ -339,7 +321,6 @@ func viewRemindMesHandler(s *discordgo.Session, m *discordgo.Message) {
 		formattedMessage := fmt.Sprintf("`%s` - <t:%d:R> - ID: %d", remind.GetMessage(), remind.GetDate().UTC().Unix(), remind.GetRemindID())
 		remindMes = append(remindMes, formattedMessage)
 	}
-	entities.Mutex.RUnlock()
 
 	// Splits the message objects into multiple messages if it's too big
 	remindMes, message = splitRemindsMessages(remindMes, message)

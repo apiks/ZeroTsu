@@ -33,9 +33,7 @@ func main() {
 	commands.UpdateAnimeSchedule()
 
 	// Load all guild and shared info
-	entities.Mutex.Lock()
 	entities.LoadSharedDB()
-	entities.Mutex.Unlock()
 	commands.ResetSubscriptions()
 
 	Start()

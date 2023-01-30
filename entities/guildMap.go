@@ -56,7 +56,6 @@ func (g *GuildMap) Init(guildID string) bool {
 	}
 
 	g.Lock()
-	defer g.Unlock()
 	g.DB[guildID] = &GuildInfo{
 		ID: guildID,
 		GuildSettings: GuildSettings{
@@ -67,6 +66,11 @@ func (g *GuildMap) Init(guildID string) bool {
 		ReactJoinMap: make(map[string]*ReactJoin),
 		Autoposts:    make(map[string]Cha),
 	}
+	g.Unlock()
+
+	Guilds.Lock()
+	Guilds.DB[guildID] = g.DB[guildID]
+	Guilds.Unlock()
 
 	return isNew
 }
@@ -75,9 +79,10 @@ func (g *GuildMap) Init(guildID string) bool {
 func (g *GuildMap) Load(guildID string) (bool, error) {
 	isNew := g.Init(guildID)
 
-	g.RLock()
+	g.Lock()
+	defer g.Unlock()
+
 	guild := g.DB[guildID]
-	g.RUnlock()
 
 	files, err := IOReadDir(fmt.Sprintf("%s/%s/", DBPath, guildID))
 	if err != nil {
@@ -103,19 +108,10 @@ func (g *GuildMap) Load(guildID string) (bool, error) {
 	}
 
 	// Init default settings
-	g.Lock()
 	if _, ok := g.DB[guildID].Autoposts["newepisodes"]; ok {
-		Mutex.Lock()
-		SharedInfo.Lock()
-		AnimeSchedule.RLock()
 		SetupGuildSub(guildID)
-		AnimeSchedule.RUnlock()
-		SharedInfo.Unlock()
-		Mutex.Unlock()
 	}
-
 	*g.DB[guildID] = *guild
-	g.Unlock()
 
 	return isNew, nil
 }
@@ -155,11 +151,7 @@ func (g *GuildMap) LoadAll() {
 	}
 
 	// Write to shared AnimeSubs DB
-	Mutex.Lock()
-	defer Mutex.Unlock()
-	SharedInfo.Lock()
-	defer SharedInfo.Unlock()
-	_ = AnimeSubsWrite(SharedInfo.AnimeSubs)
+	_ = AnimeSubsWrite(SharedInfo.GetAnimeSubsMap())
 }
 
 // HandleNewGuild initializes a guild if it's not in memory

@@ -59,7 +59,6 @@ func UpdateDailyScheduleWebhooks() {
 
 	// Store all of the valid guilds' valid webhooks in a map
 	tempWebhooksMap := make(map[string]*discordgo.Webhook)
-	entities.SharedInfo.RLock()
 	for guildID, subs := range entities.SharedInfo.GetAnimeSubsMap() {
 		if subs == nil {
 			continue
@@ -138,7 +137,6 @@ func UpdateDailyScheduleWebhooks() {
 		}
 		tempWebhooksMap[guildID] = wh
 	}
-	entities.SharedInfo.RUnlock()
 
 	DailyScheduleWebhooksMap.Lock()
 	DailyScheduleWebhooksMap.WebhooksMap = make(map[string]*discordgo.Webhook)

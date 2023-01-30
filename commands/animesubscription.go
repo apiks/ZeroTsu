@@ -627,14 +627,6 @@ func animeSubsWebhookHandler() {
 	}
 	Today.RUnlock()
 
-	animeSubFeedWebhookBlock.Lock()
-	if animeSubFeedWebhookBlock.Block {
-		animeSubFeedWebhookBlock.Unlock()
-		return
-	}
-	animeSubFeedWebhookBlock.Block = true
-	animeSubFeedWebhookBlock.Unlock()
-
 	// Fetches today's shows
 	entities.AnimeSchedule.RLock()
 	for _, show := range entities.AnimeSchedule.AnimeSchedule[int(now.Weekday())] {
@@ -654,7 +646,8 @@ func animeSubsWebhookHandler() {
 	now = now.In(location)
 
 	// Iterates over all guilds and sends notifications if necessary
-	for guildID, subscriptions := range entities.SharedInfo.GetAnimeSubsMap() {
+	entities.SharedInfo.Lock()
+	for guildID, subscriptions := range entities.SharedInfo.AnimeSubs {
 		if subscriptions == nil {
 			continue
 		}
@@ -742,15 +735,12 @@ func animeSubsWebhookHandler() {
 					_, err = s.WebhookExecute(w.ID, w.Token, false, &discordgo.WebhookParams{
 						Embeds: []*discordgo.MessageEmbed{embeds.SubscriptionEmbed(scheduleShow)},
 					})
+					// Sets the show as notified for that guild
+					entities.SharedInfo.AnimeSubs[guid][subKey].SetNotified(true)
 					if err != nil {
-						log.Println("Failed webhookExecute in feedWebhookHandler: ", err)
+						log.Println("Failed webhookExecute in animeSubsWebhookHandler: ", err)
 						continue
 					}
-
-					// Sets the show as notified for that guild
-					entities.SharedInfo.Lock()
-					entities.SharedInfo.AnimeSubs[guid][subKey].SetNotified(true)
-					entities.SharedInfo.Unlock()
 				}
 			}
 
@@ -763,6 +753,7 @@ func animeSubsWebhookHandler() {
 	if err != nil {
 		log.Println(err)
 	}
+	entities.SharedInfo.Unlock()
 
 	// Write to shared AnimeSubs DB
 	_ = entities.AnimeSubsWrite(entities.SharedInfo.GetAnimeSubsMap())
@@ -775,11 +766,8 @@ func animeSubsWebhookHandler() {
 // animeSubsHandler handles sending notifications to users when it's time
 func animeSubsHandler() {
 	var (
-		now           = time.Now()
-		todayShows    []*entities.ShowAirTime
-		eg            errgroup.Group
-		maxGoroutines = 32
-		guard         = make(chan struct{}, maxGoroutines)
+		now        = time.Now()
+		todayShows []*entities.ShowAirTime
 	)
 
 	Today.RLock()
@@ -915,62 +903,49 @@ func animeSubsHandler() {
 				ss := scheduleShow
 				sk := subKey
 				s := session
-				guard <- struct{}{}
-				eg.Go(func() error {
-					// Sends notification to user DMs if possible, or to guild autopost channel
-					if us.GetGuild() {
-						newepisodes := db.GetGuildAutopost(uid, "newepisodes")
-						if newepisodes == (entities.Cha{}) {
-							<-guard
-							return nil
-						}
-
-						// Sends embed in Guild
-						err = embeds.Subscription(s, ss, newepisodes.GetID())
-						if err != nil {
-							<-guard
-							return err
-						}
-
-						// Sets the show as notified for that guild
-						entities.SharedInfo.Lock()
-						entities.SharedInfo.AnimeSubs[uid][sk].SetNotified(true)
-						entities.SharedInfo.Unlock()
-
-						<-guard
-						return nil
+				// Sends notification to user DMs if possible, or to guild autopost channel
+				if us.GetGuild() {
+					newepisodes := db.GetGuildAutopost(uid, "newepisodes")
+					if newepisodes == (entities.Cha{}) {
+						continue
 					}
 
-					// Sends embed in DMs
-					dm, err := s.UserChannelCreate(uid)
+					// Sends embed in Guild
+					err = embeds.Subscription(s, ss, newepisodes.GetID())
 					if err != nil {
-						<-guard
-						return nil
-					}
-					err = embeds.Subscription(s, ss, dm.ID)
-					if err != nil {
-						<-guard
-						return err
+						log.Println(err)
+						continue
 					}
 
-					// Sets the show as notified for that user
+					// Sets the show as notified for that guild
 					entities.SharedInfo.Lock()
 					entities.SharedInfo.AnimeSubs[uid][sk].SetNotified(true)
 					entities.SharedInfo.Unlock()
 
-					<-guard
-					return nil
-				})
+					continue
+				}
+
+				// Sends embed in DMs
+				dm, err := s.UserChannelCreate(uid)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				err = embeds.Subscription(s, ss, dm.ID)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+
+				// Sets the show as notified for that user
+				entities.SharedInfo.Lock()
+				entities.SharedInfo.AnimeSubs[uid][sk].SetNotified(true)
+				entities.SharedInfo.Unlock()
 
 				// Wait some milliseconds so it doesn't hit the rate limit easily
 				time.Sleep(time.Millisecond * 150)
 			}
 		}
-	}
-
-	err = eg.Wait()
-	if err != nil {
-		log.Println(err)
 	}
 
 	// Write to shared AnimeSubs DB
@@ -997,6 +972,14 @@ func AnimeSubsTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 
 func AnimeSubsWebhookTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 	for range time.NewTicker(10 * time.Second).C {
+		animeSubFeedWebhookBlock.Lock()
+		if animeSubFeedWebhookBlock.Block {
+			animeSubFeedWebhookBlock.Unlock()
+			return
+		}
+		animeSubFeedWebhookBlock.Block = true
+		animeSubFeedWebhookBlock.Unlock()
+
 		animeSubFeedWebhookBlock.RLock()
 		if animeSubFeedWebhookBlock.Block {
 			animeSubFeedWebhookBlock.RUnlock()
@@ -1011,6 +994,13 @@ func AnimeSubsWebhookTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 
 func AnimeSubsWebhooksMapTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 	for range time.NewTicker(1 * time.Minute).C {
+		animeSubFeedWebhookBlock.RLock()
+		if animeSubFeedWebhookBlock.Block {
+			animeSubFeedWebhookBlock.RUnlock()
+			return
+		}
+		animeSubFeedWebhookBlock.RUnlock()
+
 		newEpisodeswebhooksMapBlock.RLock()
 		if newEpisodeswebhooksMapBlock.Block {
 			newEpisodeswebhooksMapBlock.RUnlock()

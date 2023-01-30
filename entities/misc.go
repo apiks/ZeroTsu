@@ -44,8 +44,9 @@ func LoadSharedDB() {
 		log.Panicln(err)
 	}
 
+	SharedInfo.Lock()
+	defer SharedInfo.Unlock()
 	SharedInfo = newSharedInfo(make(map[string]*RemindMeSlice), make(map[string][]*ShowSub))
-
 	for _, file := range files {
 		LoadSharedDBFile(file)
 	}
@@ -70,6 +71,8 @@ func LoadSharedDBFile(file string) {
 
 // RemindMeWrite writes RemindMes to remindMes.json
 func RemindMeWrite(remindMe map[string]*RemindMeSlice) error {
+	SharedInfo.RLock()
+	defer SharedInfo.RUnlock()
 
 	// Checks if the user has hit the db limit
 	for _, remindMeSlice := range remindMe {
@@ -101,6 +104,8 @@ func RemindMeWrite(remindMe map[string]*RemindMeSlice) error {
 
 // Writes anime notfication subscription to animeSubs.json
 func AnimeSubsWrite(animeSubs map[string][]*ShowSub) error {
+	SharedInfo.RLock()
+	defer SharedInfo.RUnlock()
 
 	// Turns that slice into bytes to be ready to written to file
 	marshaledStruct, err := json.MarshalIndent(animeSubs, "", "    ")
@@ -139,6 +144,7 @@ func SetupGuildSub(guildID string) {
 	)
 
 	// Adds every single non-duplicate show as a guild subscription
+	AnimeSchedule.RLock()
 	for dayInt, scheduleShows := range AnimeSchedule.AnimeSchedule {
 		if scheduleShows == nil {
 			continue
@@ -187,7 +193,11 @@ func SetupGuildSub(guildID string) {
 		}
 	}
 
+	AnimeSchedule.RUnlock()
+
+	SharedInfo.Lock()
 	SharedInfo.AnimeSubs[guildID] = shows
+	SharedInfo.Unlock()
 }
 
 func InTimeSpan(start, end, check time.Time) bool {

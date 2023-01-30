@@ -343,20 +343,13 @@ func GuildDelete(_ *discordgo.Session, g *discordgo.GuildDelete) {
 
 // Fixes broken anime guild subs that are null
 func fixGuildSubsCommand(guildID string) {
-	entities.Mutex.Lock()
-	defer entities.Mutex.Unlock()
-	entities.SharedInfo.Lock()
-	defer entities.SharedInfo.Unlock()
-	entities.AnimeSchedule.RLock()
-	defer entities.AnimeSchedule.RUnlock()
-
-	for ID, subs := range entities.SharedInfo.AnimeSubs {
+	for ID, subs := range entities.SharedInfo.GetAnimeSubsMap() {
 		if subs != nil || ID != guildID {
 			continue
 		}
 
 		entities.SetupGuildSub(guildID)
-		_ = entities.AnimeSubsWrite(entities.SharedInfo.AnimeSubs)
+		_ = entities.AnimeSubsWrite(entities.SharedInfo.GetAnimeSubsMap())
 		break
 	}
 }

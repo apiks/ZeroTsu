@@ -79,8 +79,9 @@ func dailyScheduleEvents() {
 				<-guard
 				return nil
 			}
-
 			w := events.DailyScheduleWebhooksMap.WebhooksMap[guildID]
+			events.DailyScheduleWebhooksMap.RUnlock()
+
 			s := config.Mgr.SessionForGuild(guildIDInt)
 			guildSettings := db.GetGuildSettings(guildID)
 			content := getDaySchedule(int(time.Now().Weekday()), guildSettings.GetDonghua())
@@ -90,14 +91,11 @@ func dailyScheduleEvents() {
 				Content: content,
 			})
 			if err != nil {
-				events.DailyScheduleWebhooksMap.RUnlock()
-				guildSettings := db.GetGuildSettings(guildID)
 				common.LogError(s, guildSettings.BotLog, err)
 				<-guard
 				return nil
 			}
 
-			events.DailyScheduleWebhooksMap.RUnlock()
 			<-guard
 			return nil
 		})
