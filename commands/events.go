@@ -122,6 +122,7 @@ func dailyScheduleEvents() {
 			events.DailyScheduleWebhooksMap.RUnlock()
 			continue
 		}
+		events.DailyScheduleWebhooksMap.RUnlock()
 
 		// Wait some milliseconds so it doesn't hit the rate limit easily
 		time.Sleep(time.Millisecond * 300)

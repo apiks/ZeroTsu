@@ -910,7 +910,6 @@ func animeSubsHandler() {
 					// Sends embed in Guild
 					err = embeds.Subscription(s, ss, newepisodes.GetID())
 					if err != nil {
-						log.Println(err)
 						continue
 					}
 
@@ -925,12 +924,10 @@ func animeSubsHandler() {
 				// Sends embed in DMs
 				dm, err := s.UserChannelCreate(uid)
 				if err != nil {
-					log.Println(err)
 					continue
 				}
 				err = embeds.Subscription(s, ss, dm.ID)
 				if err != nil {
-					log.Println(err)
 					continue
 				}
 
