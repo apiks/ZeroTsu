@@ -516,6 +516,14 @@ func viewSubscriptionsHandler(s *discordgo.Session, m *discordgo.Message) {
 
 // webhooksMapHandler updates the anime subs guilds' webhooks map
 func webhooksMapHandler() {
+	newEpisodeswebhooksMapBlock.Lock()
+	if newEpisodeswebhooksMapBlock.Block {
+		newEpisodeswebhooksMapBlock.Unlock()
+		return
+	}
+	newEpisodeswebhooksMapBlock.Block = true
+	newEpisodeswebhooksMapBlock.Unlock()
+
 	// Store all of the valid guilds' valid webhooks in a map
 	tempWebhooksMap := make(map[string]*discordgo.Webhook)
 	for guildID, subs := range entities.SharedInfo.GetAnimeSubsMap() {
@@ -615,6 +623,14 @@ func animeSubsWebhookHandler() {
 		now        = time.Now()
 		todayShows []*entities.ShowAirTime
 	)
+
+	animeSubFeedWebhookBlock.Lock()
+	if animeSubFeedWebhookBlock.Block {
+		animeSubFeedWebhookBlock.Unlock()
+		return
+	}
+	animeSubFeedWebhookBlock.Block = true
+	animeSubFeedWebhookBlock.Unlock()
 
 	Today.RLock()
 	if int(Today.Time.Weekday()) != int(now.Weekday()) {
@@ -766,6 +782,13 @@ func animeSubsHandler() {
 		now        = time.Now()
 		todayShows []*entities.ShowAirTime
 	)
+
+	animeSubFeedBlock.RLock()
+	if animeSubFeedBlock.Block {
+		animeSubFeedBlock.RUnlock()
+		return
+	}
+	animeSubFeedBlock.RUnlock()
 
 	Today.RLock()
 	if int(Today.Time.Weekday()) != int(now.Weekday()) {
@@ -952,42 +975,18 @@ func animeSubsHandler() {
 
 func AnimeSubsTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 	for range time.NewTicker(1 * time.Minute).C {
-		animeSubFeedBlock.RLock()
-		if animeSubFeedBlock.Block {
-			animeSubFeedBlock.RUnlock()
-			return
-		}
-		animeSubFeedBlock.RUnlock()
-
-		// Anime Episodes subscription
 		animeSubsHandler()
 	}
 }
 
 func AnimeSubsWebhookTimer(_ *discordgo.Session, _ *discordgo.Ready) {
-	for range time.NewTicker(10 * time.Second).C {
-		animeSubFeedWebhookBlock.Lock()
-		if animeSubFeedWebhookBlock.Block {
-			animeSubFeedWebhookBlock.Unlock()
-			return
-		}
-		animeSubFeedWebhookBlock.Block = true
-		animeSubFeedWebhookBlock.Unlock()
-
-		// Anime Episodes subscription
+	for range time.NewTicker(15 * time.Second).C {
 		animeSubsWebhookHandler()
 	}
 }
 
 func AnimeSubsWebhooksMapTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 	for range time.NewTicker(1 * time.Minute).C {
-		newEpisodeswebhooksMapBlock.Lock()
-		if newEpisodeswebhooksMapBlock.Block {
-			newEpisodeswebhooksMapBlock.Unlock()
-			return
-		}
-		newEpisodeswebhooksMapBlock.Block = true
-		newEpisodeswebhooksMapBlock.Unlock()
 		webhooksMapHandler()
 	}
 }
