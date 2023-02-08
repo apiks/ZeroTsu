@@ -343,7 +343,8 @@ func GuildDelete(_ *discordgo.Session, g *discordgo.GuildDelete) {
 
 // Fixes broken anime guild subs that are null
 func fixGuildSubsCommand(guildID string) {
-	for ID, subs := range entities.SharedInfo.GetAnimeSubsMap() {
+	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
+	for ID, subs := range animeSubsMap {
 		if subs != nil || ID != guildID {
 			continue
 		}

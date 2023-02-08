@@ -271,8 +271,9 @@ func unsubscribeCommand(title, authorID string) string {
 	var isDeleted bool
 
 	// Iterate over all of the user's subscriptions and remove the target one if it finds it
+	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
 LoopShowRemoval:
-	for userID, userSubs := range entities.SharedInfo.GetAnimeSubsMap() {
+	for userID, userSubs := range animeSubsMap {
 
 		// Skip users that are not the message author so they don't delete everyone's subscriptions
 		if userID != authorID {
@@ -288,6 +289,9 @@ LoopShowRemoval:
 
 				// Delete either the entire object or remove just one item from it
 				entities.SharedInfo.Lock()
+				if _, ok := entities.SharedInfo.AnimeSubs[userID]; !ok {
+					continue
+				}
 				if len(userSubs) == 1 {
 					delete(entities.SharedInfo.AnimeSubs, userID)
 				} else {
@@ -344,8 +348,9 @@ func unsubscribeCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Iterate over all of the user's subscriptions and remove the target one if it finds it
+	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
 LoopShowRemoval:
-	for userID, userSubs := range entities.SharedInfo.GetAnimeSubsMap() {
+	for userID, userSubs := range animeSubsMap {
 
 		// Skip users that are not the message author so they don't delete everyone's subscriptions
 		if userID != m.Author.ID {
@@ -361,6 +366,9 @@ LoopShowRemoval:
 
 				// Delete either the entire object or remove just one item from it
 				entities.SharedInfo.Lock()
+				if _, ok := entities.SharedInfo.AnimeSubs[userID]; !ok {
+					continue
+				}
 				if len(userSubs) == 1 {
 					delete(entities.SharedInfo.AnimeSubs, userID)
 				} else {
@@ -409,7 +417,8 @@ func viewSubscriptions(authorID string) []string {
 	)
 
 	// Iterates over all of a user's subscribed shows and adds them to the message string
-	for userID, shows := range entities.SharedInfo.GetAnimeSubsMap() {
+	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
+	for userID, shows := range animeSubsMap {
 		if shows == nil {
 			continue
 		}
@@ -464,7 +473,8 @@ func viewSubscriptionsHandler(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	// Iterates over all of a user's subscribed shows and adds them to the message string
-	for userID, shows := range entities.SharedInfo.GetAnimeSubsMap() {
+	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
+	for userID, shows := range animeSubsMap {
 		if shows == nil {
 			continue
 		}
@@ -658,7 +668,8 @@ func animeSubsWebhookHandler() {
 	now = now.In(location)
 
 	// Iterates over all guilds and sends notifications if necessary
-	for guildID, subscriptions := range entities.SharedInfo.GetAnimeSubsMap() {
+	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
+	for guildID, subscriptions := range animeSubsMap {
 		if subscriptions == nil {
 			continue
 		}
@@ -748,11 +759,13 @@ func animeSubsWebhookHandler() {
 					})
 					// Sets the show as notified for that guild
 					entities.SharedInfo.Lock()
-					entities.SharedInfo.AnimeSubs[guid][subKey].SetNotified(true)
-					if err != nil {
-						entities.SharedInfo.Unlock()
-						log.Println("Failed webhookExecute in animeSubsWebhookHandler: ", err)
-						continue
+					if _, ok := entities.SharedInfo.AnimeSubs[guid]; ok {
+						entities.SharedInfo.AnimeSubs[guid][subKey].SetNotified(true)
+						if err != nil {
+							entities.SharedInfo.Unlock()
+							log.Println("Failed webhookExecute in animeSubsWebhookHandler: ", err)
+							continue
+						}
 					}
 					entities.SharedInfo.Unlock()
 				}
@@ -819,7 +832,8 @@ func animeSubsHandler() {
 	entities.AnimeSchedule.RUnlock()
 
 	// Iterates over all users and their shows and sends notifications if need be
-	for userID, subscriptions := range entities.SharedInfo.GetAnimeSubsMap() {
+	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
+	for userID, subscriptions := range animeSubsMap {
 		if subscriptions == nil {
 			continue
 		}
@@ -938,7 +952,9 @@ func animeSubsHandler() {
 
 					// Sets the show as notified for that guild
 					entities.SharedInfo.Lock()
-					entities.SharedInfo.AnimeSubs[uid][sk].SetNotified(true)
+					if _, ok := entities.SharedInfo.AnimeSubs[uid]; ok {
+						entities.SharedInfo.AnimeSubs[uid][sk].SetNotified(true)
+					}
 					entities.SharedInfo.Unlock()
 
 					continue
@@ -956,7 +972,9 @@ func animeSubsHandler() {
 
 				// Sets the show as notified for that user
 				entities.SharedInfo.Lock()
-				entities.SharedInfo.AnimeSubs[uid][sk].SetNotified(true)
+				if _, ok := entities.SharedInfo.AnimeSubs[uid]; ok {
+					entities.SharedInfo.AnimeSubs[uid][sk].SetNotified(true)
+				}
 				entities.SharedInfo.Unlock()
 
 				// Wait some milliseconds so it doesn't hit the rate limit easily
@@ -995,6 +1013,7 @@ func AnimeSubsWebhooksMapTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 func ResetSubscriptions() {
 	var todayShows []*entities.ShowAirTime
 	now := time.Now()
+	nowUTC := now.UTC()
 
 	// Fetches Today's shows
 	entities.AnimeSchedule.RLock()
@@ -1010,9 +1029,8 @@ func ResetSubscriptions() {
 	}
 	entities.AnimeSchedule.RUnlock()
 
-	nowUTC := now.UTC()
-
-	for userID, subscriptions := range entities.SharedInfo.GetAnimeSubsMap() {
+	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
+	for userID, subscriptions := range animeSubsMap {
 		if subscriptions == nil {
 			continue
 		}
@@ -1044,10 +1062,12 @@ func ResetSubscriptions() {
 
 				// Calculates whether the show has already aired today
 				entities.SharedInfo.Lock()
-				if now.After(scheduleDate) {
-					entities.SharedInfo.AnimeSubs[userID][subKey].SetNotified(false)
-				} else {
-					entities.SharedInfo.AnimeSubs[userID][subKey].SetNotified(true)
+				if _, ok := entities.SharedInfo.AnimeSubs[userID]; ok {
+					if now.After(scheduleDate) {
+						entities.SharedInfo.AnimeSubs[userID][subKey].SetNotified(false)
+					} else {
+						entities.SharedInfo.AnimeSubs[userID][subKey].SetNotified(true)
+					}
 				}
 				entities.SharedInfo.Unlock()
 			}

@@ -48,3 +48,17 @@ func (s *sharedInfo) GetAnimeSubsMap() map[string][]*ShowSub {
 	defer s.RUnlock()
 	return s.AnimeSubs
 }
+
+// GetAnimeSubsMapCopy returns a safe copy of the anime subs map
+func (s *sharedInfo) GetAnimeSubsMapCopy() map[string][]*ShowSub {
+	if s == nil {
+		return nil
+	}
+	s.RLock()
+	defer s.RUnlock()
+	m := make(map[string][]*ShowSub)
+	for k, v := range s.AnimeSubs {
+		m[k] = v
+	}
+	return m
+}
