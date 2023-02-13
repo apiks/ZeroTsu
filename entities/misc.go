@@ -46,16 +46,12 @@ func LoadSharedDB() {
 	}
 
 	if SharedInfo != nil {
-		SharedInfo.Lock()
-		defer SharedInfo.Unlock()
 		SharedInfo = newSharedInfo(make(map[string]*RemindMeSlice), make(map[string][]*ShowSub))
 		for _, file := range files {
 			LoadSharedDBFile(file)
 		}
 	} else {
 		SharedInfo = newSharedInfo(make(map[string]*RemindMeSlice), make(map[string][]*ShowSub))
-		SharedInfo.Lock()
-		defer SharedInfo.Unlock()
 		for _, file := range files {
 			LoadSharedDBFile(file)
 		}
@@ -71,6 +67,8 @@ func LoadSharedDBFile(file string) {
 	}
 
 	// Takes the data and puts it into the appropriate field
+	SharedInfo.Lock()
+	defer SharedInfo.Unlock()
 	switch file {
 	case "remindMes.json":
 		_ = json.Unmarshal(infoByte, &SharedInfo.RemindMes)
@@ -101,6 +99,8 @@ func RemindMeWrite(remindMe map[string]*RemindMeSlice) error {
 	}
 
 	// Writes to file
+	SharedInfo.Lock()
+	defer SharedInfo.Unlock()
 	err = ioutil.WriteFile("database/shared/remindMes.json", marshaledStruct, 0644)
 	if err != nil {
 		return err
@@ -118,6 +118,8 @@ func AnimeSubsWrite(animeSubs map[string][]*ShowSub) error {
 	}
 
 	// Writes to file
+	SharedInfo.Lock()
+	defer SharedInfo.Unlock()
 	err = ioutil.WriteFile("database/shared/animeSubs.json", marshaledStruct, 0644)
 	if err != nil {
 		return err

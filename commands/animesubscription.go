@@ -616,11 +616,11 @@ func webhooksMapHandler() {
 	}
 
 	newEpisodesWebhooksMap.Lock()
-	defer newEpisodesWebhooksMap.Unlock()
 	newEpisodesWebhooksMap.webhooksMap = make(map[string]*discordgo.Webhook)
 	for guid, w := range tempWebhooksMap {
 		newEpisodesWebhooksMap.webhooksMap[guid] = w
 	}
+	newEpisodesWebhooksMap.Unlock()
 
 	newEpisodeswebhooksMapBlock.Lock()
 	newEpisodeswebhooksMapBlock.Block = false
@@ -796,20 +796,6 @@ func animeSubsHandler() {
 		todayShows []*entities.ShowAirTime
 	)
 
-	animeSubFeedBlock.RLock()
-	if animeSubFeedBlock.Block {
-		animeSubFeedBlock.RUnlock()
-		return
-	}
-	animeSubFeedBlock.RUnlock()
-
-	Today.RLock()
-	if int(Today.Time.Weekday()) != int(now.Weekday()) {
-		Today.RUnlock()
-		return
-	}
-	Today.RUnlock()
-
 	animeSubFeedBlock.Lock()
 	if animeSubFeedBlock.Block {
 		animeSubFeedBlock.Unlock()
@@ -817,6 +803,13 @@ func animeSubsHandler() {
 	}
 	animeSubFeedBlock.Block = true
 	animeSubFeedBlock.Unlock()
+
+	Today.RLock()
+	if int(Today.Time.Weekday()) != int(now.Weekday()) {
+		Today.RUnlock()
+		return
+	}
+	Today.RUnlock()
 
 	location, err := time.LoadLocation("Europe/London")
 	if err != nil {
