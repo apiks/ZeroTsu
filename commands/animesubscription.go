@@ -668,6 +668,7 @@ func animeSubsWebhookHandler() {
 
 	// Iterates over all guilds and sends notifications if necessary
 	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
+	newEpisodesWebhooksMap.RLock()
 	for guildID, subscriptions := range animeSubsMap {
 		if subscriptions == nil {
 			continue
@@ -701,14 +702,11 @@ func animeSubsWebhookHandler() {
 			guildSettings := db.GetGuildSettings(guid)
 
 			// Get valid webhook
-			newEpisodesWebhooksMap.RLock()
 			if _, ok := newEpisodesWebhooksMap.webhooksMap[guid]; !ok {
-				newEpisodesWebhooksMap.RUnlock()
 				<-guard
 				return nil
 			}
 			w := newEpisodesWebhooksMap.webhooksMap[guid]
-			newEpisodesWebhooksMap.RUnlock()
 
 			for subKey, guildShow := range subs {
 				if guildShow == nil {
@@ -775,6 +773,7 @@ func animeSubsWebhookHandler() {
 	if err != nil {
 		log.Println(err)
 	}
+	newEpisodesWebhooksMap.RUnlock()
 
 	// Write to shared AnimeSubs DB
 	_ = entities.AnimeSubsWrite(entities.SharedInfo.GetAnimeSubsMap())
