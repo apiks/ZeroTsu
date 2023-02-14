@@ -536,7 +536,8 @@ func webhooksMapHandler() {
 
 	// Store all of the valid guilds' valid webhooks in a map
 	tempWebhooksMap := make(map[string]*discordgo.Webhook)
-	for guildID, subs := range entities.SharedInfo.GetAnimeSubsMap() {
+	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
+	for guildID, subs := range animeSubsMap {
 		if subs == nil {
 			continue
 		}
