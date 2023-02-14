@@ -651,14 +651,12 @@ func animeSubsWebhookHandler() {
 
 	// Fetches today's shows
 	entities.AnimeSchedule.RLock()
-	for _, show := range entities.AnimeSchedule.AnimeSchedule[int(now.Weekday())] {
-		todayShows = append(todayShows, show)
-	}
+	todayShows = append(todayShows, entities.AnimeSchedule.AnimeSchedule[int(now.Weekday())]...)
 	entities.AnimeSchedule.RUnlock()
 
 	var (
 		eg            errgroup.Group
-		maxGoroutines = 32
+		maxGoroutines = 16
 		guard         = make(chan struct{}, maxGoroutines)
 	)
 	location, err := time.LoadLocation("Europe/London")
@@ -699,6 +697,7 @@ func animeSubsWebhookHandler() {
 				<-guard
 				return nil
 			}
+			guildSettings := db.GetGuildSettings(guid)
 
 			// Get valid webhook
 			newEpisodesWebhooksMap.RLock()
@@ -710,7 +709,6 @@ func animeSubsWebhookHandler() {
 			w := newEpisodesWebhooksMap.webhooksMap[guid]
 			newEpisodesWebhooksMap.RUnlock()
 
-			guildSettings := db.GetGuildSettings(guid)
 			for subKey, guildShow := range subs {
 				if guildShow == nil {
 					continue
@@ -726,16 +724,11 @@ func animeSubsWebhookHandler() {
 					if scheduleShow.GetDelayed() != "" {
 						continue
 					}
-					if strings.ToLower(guildShow.GetShow()) != strings.ToLower(scheduleShow.GetName()) {
+					if !strings.EqualFold(guildShow.GetShow(), scheduleShow.GetName()) {
 						continue
 					}
-					if guildShow.GetNotified() {
+					if !guildSettings.GetDonghua() && scheduleShow.GetDonghua() {
 						continue
-					}
-					if guildShow.GetGuild() {
-						if !guildSettings.GetDonghua() && scheduleShow.GetDonghua() {
-							continue
-						}
 					}
 
 					// Parse the air hour and minute
@@ -764,7 +757,8 @@ func animeSubsWebhookHandler() {
 						if err != nil {
 							entities.SharedInfo.Unlock()
 							log.Println("Failed webhookExecute in animeSubsWebhookHandler: ", err)
-							continue
+							<-guard
+							return nil
 						}
 					}
 					entities.SharedInfo.Unlock()

@@ -249,6 +249,8 @@ func (g *GuildInfo) WriteData(fileName string, data interface{}) {
 		return
 	}
 
+	Guilds.Lock()
+	defer Guilds.Unlock()
 	err = ioutil.WriteFile(fmt.Sprintf(DBPath+"/%s/%s.json", g.ID, fileName), marshaledData, 0644)
 	if err != nil {
 		log.Println(err)
