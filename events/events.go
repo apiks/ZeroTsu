@@ -333,12 +333,14 @@ func GuildCreate(s *discordgo.Session, g *discordgo.GuildCreate) {
 // GuildDelete logs BOT leaving a server
 func GuildDelete(_ *discordgo.Session, g *discordgo.GuildDelete) {
 	GuildIds.Lock()
+	defer GuildIds.Unlock()
 	entities.Guilds.Lock()
+	defer entities.Guilds.Unlock()
+
 	delete(GuildIds.Ids, g.Guild.ID)
 	delete(entities.Guilds.DB, g.Guild.ID)
-	entities.Guilds.Unlock()
-	GuildIds.Unlock()
-	log.Println(fmt.Sprintf("Left guild with ID: %s", g.Guild.ID))
+
+	log.Printf("Left guild with ID: %s", g.Guild.ID)
 }
 
 // Fixes broken anime guild subs that are null
