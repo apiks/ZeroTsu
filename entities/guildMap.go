@@ -56,8 +56,6 @@ func (g *GuildMap) Init(guildID string) bool {
 		}
 	}
 
-	g.Lock()
-	defer g.Unlock()
 	g.DB[guildID] = &GuildInfo{
 		ID: guildID,
 		GuildSettings: GuildSettings{
@@ -76,11 +74,11 @@ func (g *GuildMap) Init(guildID string) bool {
 
 // Load loads a preexisting guild
 func (g *GuildMap) Load(guildID string) (bool, error) {
-	isNew := g.Init(guildID)
+	g.Lock()
+	defer g.Unlock()
 
-	g.RLock()
+	isNew := g.Init(guildID)
 	guild := g.DB[guildID]
-	g.RUnlock()
 
 	files, err := IOReadDir(fmt.Sprintf("%s/%s/", DBPath, guildID))
 	if err != nil {
@@ -106,12 +104,11 @@ func (g *GuildMap) Load(guildID string) (bool, error) {
 	}
 
 	// Init default settings
-	g.Lock()
-	if _, ok := g.DB[guildID].Autoposts["newepisodes"]; ok {
+	if _, ok := guild.Autoposts["newepisodes"]; ok {
 		SetupGuildSub(guildID)
 	}
-	*g.DB[guildID] = *guild
-	g.Unlock()
+
+	g.DB[guildID] = guild
 
 	return isNew, nil
 }
@@ -156,11 +153,11 @@ func (g *GuildMap) LoadAll() {
 
 // HandleNewGuild initializes a guild if it's not in memory
 func HandleNewGuild(guildID string) {
-	Guilds.RLock()
+	Guilds.Lock()
+	defer Guilds.Unlock()
+
 	if _, ok := Guilds.DB[guildID]; !ok {
-		Guilds.RUnlock()
 		_ = Guilds.Init(guildID)
 		return
 	}
-	Guilds.RUnlock()
 }
