@@ -657,7 +657,7 @@ func animeSubsWebhookHandler() {
 
 	var (
 		eg            errgroup.Group
-		maxGoroutines = 16
+		maxGoroutines = 32
 		guard         = make(chan struct{}, maxGoroutines)
 	)
 	location, err := time.LoadLocation("Europe/London")
@@ -668,7 +668,6 @@ func animeSubsWebhookHandler() {
 
 	// Iterates over all guilds and sends notifications if necessary
 	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
-	newEpisodesWebhooksMap.RLock()
 	for guildID, subscriptions := range animeSubsMap {
 		if subscriptions == nil {
 			continue
@@ -702,11 +701,15 @@ func animeSubsWebhookHandler() {
 			guildSettings := db.GetGuildSettings(guid)
 
 			// Get valid webhook
+			newEpisodesWebhooksMap.RLock()
 			if _, ok := newEpisodesWebhooksMap.webhooksMap[guid]; !ok {
+				newEpisodesWebhooksMap.RUnlock()
 				<-guard
 				return nil
 			}
-			w := newEpisodesWebhooksMap.webhooksMap[guid]
+			wID := newEpisodesWebhooksMap.webhooksMap[guid].ID
+			wToken := newEpisodesWebhooksMap.webhooksMap[guid].Token
+			newEpisodesWebhooksMap.RUnlock()
 
 			for subKey, guildShow := range subs {
 				if guildShow == nil {
@@ -746,7 +749,7 @@ func animeSubsWebhookHandler() {
 					}
 
 					// Use webhook to post if available
-					_, err = s.WebhookExecute(w.ID, w.Token, false, &discordgo.WebhookParams{
+					_, err = s.WebhookExecute(wID, wToken, false, &discordgo.WebhookParams{
 						Embeds: []*discordgo.MessageEmbed{embeds.SubscriptionEmbed(scheduleShow)},
 					})
 					// Sets the show as notified for that guild
@@ -773,7 +776,6 @@ func animeSubsWebhookHandler() {
 	if err != nil {
 		log.Println(err)
 	}
-	newEpisodesWebhooksMap.RUnlock()
 
 	// Write to shared AnimeSubs DB
 	_ = entities.AnimeSubsWrite(entities.SharedInfo.GetAnimeSubsMap())
@@ -985,13 +987,14 @@ func AnimeSubsTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 }
 
 func AnimeSubsWebhookTimer(_ *discordgo.Session, _ *discordgo.Ready) {
-	for range time.NewTicker(15 * time.Second).C {
+	for range time.NewTicker(30 * time.Second).C {
 		animeSubsWebhookHandler()
 	}
 }
 
 func AnimeSubsWebhooksMapTimer(_ *discordgo.Session, _ *discordgo.Ready) {
-	for range time.NewTicker(1 * time.Minute).C {
+	webhooksMapHandler()
+	for range time.NewTicker(30 * time.Second).C {
 		webhooksMapHandler()
 	}
 }
