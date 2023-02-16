@@ -67,7 +67,7 @@ func (g *GuildMap) Init(guildID string) bool {
 		Autoposts:    make(map[string]Cha),
 	}
 
-	Guilds.DB[guildID] = g.DB[guildID]
+	*Guilds.DB[guildID] = *g.DB[guildID]
 
 	return isNew
 }
@@ -108,7 +108,7 @@ func (g *GuildMap) Load(guildID string) (bool, error) {
 		SetupGuildSub(guildID)
 	}
 
-	g.DB[guildID] = guild
+	*g.DB[guildID] = *guild
 
 	return isNew, nil
 }

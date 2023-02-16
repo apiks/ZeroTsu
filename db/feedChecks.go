@@ -9,9 +9,10 @@ func GetGuildFeedChecks(guildID string) []entities.FeedCheck {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.RLock()
-	defer entities.Guilds.RUnlock()
+	g := entities.Guilds.DB[guildID]
+	entities.Guilds.RUnlock()
 
-	return entities.Guilds.DB[guildID].GetFeedChecks()
+	return g.GetFeedChecks()
 }
 
 // AddGuildFeedChecks adds a target guild's feed checks in-memory
@@ -37,9 +38,10 @@ func AddGuildFeedChecks(guildID string, feedChecks []entities.FeedCheck, delete 
 	} else {
 		deleteGuildFeedChecks(guildID, feedChecks)
 	}
+	g := entities.Guilds.DB[guildID]
 	entities.Guilds.Unlock()
 
-	entities.Guilds.DB[guildID].WriteData("rssThreadCheck", entities.Guilds.DB[guildID].GetFeedChecks())
+	g.WriteData("rssThreadCheck", g.GetFeedChecks())
 }
 
 // AddGuildFeedCheck adds a target guild's feed check in-memory
@@ -63,9 +65,10 @@ func AddGuildFeedCheck(guildID string, feedCheck entities.FeedCheck, delete ...b
 	} else {
 		deleteGuildFeedCheck(guildID, feedCheck)
 	}
+	g := entities.Guilds.DB[guildID]
 	entities.Guilds.Unlock()
 
-	entities.Guilds.DB[guildID].WriteData("rssThreadCheck", entities.Guilds.DB[guildID].GetFeedChecks())
+	g.WriteData("rssThreadCheck", g.GetFeedChecks())
 }
 
 // SetGuildFeedCheck sets a target guild's feed check in-memory
@@ -89,9 +92,10 @@ func SetGuildFeedCheck(guildID string, feedCheck entities.FeedCheck, delete ...b
 	} else {
 		deleteGuildFeedCheck(guildID, feedCheck)
 	}
+	g := entities.Guilds.DB[guildID]
 	entities.Guilds.Unlock()
 
-	entities.Guilds.DB[guildID].WriteData("rssThreadCheck", entities.Guilds.DB[guildID].GetFeedChecks())
+	g.WriteData("rssThreadCheck", g.GetFeedChecks())
 }
 
 // deleteGuildFeedChecks safely deletes multiple feed checks from the feedChecks slice

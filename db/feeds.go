@@ -12,9 +12,10 @@ func GetGuildFeeds(guildID string) []entities.Feed {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.RLock()
-	defer entities.Guilds.RUnlock()
+	g := entities.Guilds.DB[guildID]
+	entities.Guilds.RUnlock()
 
-	return entities.Guilds.DB[guildID].GetFeeds()
+	return g.GetFeeds()
 }
 
 // SetGuildFeed sets a guild's feed in-memory
@@ -58,9 +59,10 @@ func SetGuildFeed(guildID string, feed entities.Feed, delete ...bool) error {
 			return err
 		}
 	}
+	g := entities.Guilds.DB[guildID]
 	entities.Guilds.Unlock()
 
-	entities.Guilds.DB[guildID].WriteData("rssThreads", entities.Guilds.DB[guildID].GetFeeds())
+	g.WriteData("rssThreads", g.GetFeeds())
 	return nil
 }
 
