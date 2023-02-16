@@ -14,11 +14,14 @@ import (
 	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/entities"
 	"github.com/r-anime/ZeroTsu/events"
+	"github.com/sasha-s/go-deadlock"
 	"github.com/servusdei2018/shards"
 )
 
 // Initializes and starts Bot
 func main() {
+	deadlock.Opts.DeadlockTimeout = 0
+
 	// Initialize Config values
 	err := config.ReadConfig()
 	if err != nil {
