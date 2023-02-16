@@ -281,7 +281,7 @@ func feedWebhookHandler(guildIds []string) {
 		// Removes a check if more than its allowed lifespan hours have passed
 		for _, feedCheck := range guildFeedChecks {
 			dateRemoval := feedCheck.GetDate().Add(feedCheckLifespanHours)
-			if time.Now().Sub(dateRemoval) > 0 {
+			if time.Since(dateRemoval) > 0 {
 				continue
 			}
 
@@ -582,9 +582,6 @@ func feedHandler(guildIds []string) {
 	redditFeedBlock.Block = true
 	redditFeedBlock.Unlock()
 
-	// Store current time
-	t := time.Now()
-
 	for _, guildID := range guildIds {
 		var (
 			guildFeeds      = db.GetGuildFeeds(guildID)
@@ -701,8 +698,7 @@ func feedHandler(guildIds []string) {
 				}
 
 				// Adds that the feed has been posted
-				t = time.Now()
-				db.AddGuildFeedCheck(guildID, entities.NewFeedCheck(feed, t, item.GUID))
+				db.AddGuildFeedCheck(guildID, entities.NewFeedCheck(feed, time.Now(), item.GUID))
 
 				// Pins/unpins the feed items if necessary
 				if !feed.GetPin() {
