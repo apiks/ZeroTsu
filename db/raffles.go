@@ -22,12 +22,12 @@ func SetGuildRaffle(guildID string, raffle *entities.Raffle, delete ...bool) err
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
+	defer entities.Guilds.Unlock()
+
 	if len(delete) == 0 {
 		if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetRaffles()) >= 200 {
-			entities.Guilds.Unlock()
 			return fmt.Errorf("Error: You have reached the raffle limit (200) for this premium server.")
 		} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetRaffles()) >= 50 {
-			entities.Guilds.Unlock()
 			return fmt.Errorf("Error: You have reached the raffle limit (50) for this server. Please remove some or increase them to 200 by upgrading to a premium server at <https://patreon.com/animeschedule>")
 		}
 	}
@@ -46,17 +46,14 @@ func SetGuildRaffle(guildID string, raffle *entities.Raffle, delete ...bool) err
 		if !exists {
 			entities.Guilds.DB[guildID].AppendToRaffles(raffle)
 		} else {
-			entities.Guilds.Unlock()
 			return fmt.Errorf("Error: That raffle already exists.")
 		}
 	} else {
 		err := deleteGuildRaffle(guildID, raffle)
 		if err != nil {
-			entities.Guilds.Unlock()
 			return err
 		}
 	}
-	entities.Guilds.Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("raffles", entities.Guilds.DB[guildID].GetRaffles())
 
@@ -91,6 +88,7 @@ func SetGuildRaffleParticipant(guildID, userID string, raffle *entities.Raffle, 
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
+	defer entities.Guilds.Unlock()
 
 	raffle.SetName(strings.ToLower(raffle.GetName()))
 
@@ -109,8 +107,6 @@ func SetGuildRaffleParticipant(guildID, userID string, raffle *entities.Raffle, 
 	} else {
 		deleteGuildRaffleParticipant(userID, raffle)
 	}
-
-	entities.Guilds.Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("raffles", entities.Guilds.DB[guildID].GetRaffles())
 

@@ -19,8 +19,9 @@ func SetGuildSettings(guildID string, guildSettings entities.GuildSettings) {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
+	defer entities.Guilds.Unlock()
+
 	entities.Guilds.DB[guildID].SetGuildSettings(guildSettings)
-	entities.Guilds.Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("guildSettings", entities.Guilds.DB[guildID].GetGuildSettings())
 }

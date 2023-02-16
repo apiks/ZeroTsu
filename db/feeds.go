@@ -11,11 +11,10 @@ import (
 func GetGuildFeeds(guildID string) []entities.Feed {
 	entities.HandleNewGuild(guildID)
 
-	entities.Guilds.RLock()
-	g := entities.Guilds.DB[guildID]
-	entities.Guilds.RUnlock()
+	entities.Guilds.Lock()
+	defer entities.Guilds.Unlock()
 
-	return g.GetFeeds()
+	return entities.Guilds.DB[guildID].GetFeeds()
 }
 
 // SetGuildFeed sets a guild's feed in-memory
@@ -23,12 +22,12 @@ func SetGuildFeed(guildID string, feed entities.Feed, delete ...bool) error {
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
+	defer entities.Guilds.Unlock()
+
 	if len(delete) == 0 {
 		if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetFeeds()) >= 400 {
-			entities.Guilds.Unlock()
 			return fmt.Errorf("Error: You have reached the reddit feed autopost limit (400) for this server.")
 		} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetFeeds()) >= 50 {
-			entities.Guilds.Unlock()
 			return fmt.Errorf("Error: You have reached the reddit feed autopost limit (50) for this server. Please remove some or increase them to 400 by upgrading to a premium server at <https://patreon.com/animeschedule>")
 		}
 	}
@@ -49,20 +48,16 @@ func SetGuildFeed(guildID string, feed entities.Feed, delete ...bool) error {
 		if !exists {
 			entities.Guilds.DB[guildID].AppendToFeeds(feed)
 		} else {
-			entities.Guilds.Unlock()
 			return fmt.Errorf("Error: That feed already exists.")
 		}
 	} else {
 		err := deleteGuildFeed(guildID, feed)
 		if err != nil {
-			entities.Guilds.Unlock()
 			return err
 		}
 	}
-	g := entities.Guilds.DB[guildID]
-	entities.Guilds.Unlock()
 
-	g.WriteData("rssThreads", g.GetFeeds())
+	entities.Guilds.DB[guildID].WriteData("rssThreads", entities.Guilds.DB[guildID].GetFeeds())
 	return nil
 }
 

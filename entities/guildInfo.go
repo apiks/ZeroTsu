@@ -237,7 +237,6 @@ func (g *GuildInfo) Load(file, guildID string) error {
 
 // WriteData writes some kind of guild data to the target guild file
 func (g *GuildInfo) WriteData(fileName string, data interface{}) {
-	gID := g.GetID()
 	marshaledData, err := json.MarshalIndent(&data, "", "    ")
 	if err != nil {
 		log.Println(err)
@@ -247,9 +246,7 @@ func (g *GuildInfo) WriteData(fileName string, data interface{}) {
 		return
 	}
 
-	Guilds.Lock()
-	defer Guilds.Unlock()
-	err = ioutil.WriteFile(fmt.Sprintf(DBPath+"/%s/%s.json", gID, fileName), marshaledData, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf(DBPath+"/%s/%s.json", g.GetID(), fileName), marshaledData, 0644)
 	if err != nil {
 		log.Println(err)
 		return

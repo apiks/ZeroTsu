@@ -20,6 +20,8 @@ func AddGuildFeedChecks(guildID string, feedChecks []entities.FeedCheck, delete 
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
+	defer entities.Guilds.Unlock()
+
 	if len(delete) == 0 {
 		var exists bool
 		for _, feedCheck := range feedChecks {
@@ -38,10 +40,8 @@ func AddGuildFeedChecks(guildID string, feedChecks []entities.FeedCheck, delete 
 	} else {
 		deleteGuildFeedChecks(guildID, feedChecks)
 	}
-	g := entities.Guilds.DB[guildID]
-	entities.Guilds.Unlock()
 
-	g.WriteData("rssThreadCheck", g.GetFeedChecks())
+	entities.Guilds.DB[guildID].WriteData("rssThreadCheck", entities.Guilds.DB[guildID].GetFeedChecks())
 }
 
 // AddGuildFeedCheck adds a target guild's feed check in-memory
@@ -49,6 +49,8 @@ func AddGuildFeedCheck(guildID string, feedCheck entities.FeedCheck, delete ...b
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
+	defer entities.Guilds.Unlock()
+
 	if len(delete) == 0 {
 		var exists bool
 		for i, guildFeedCheck := range entities.Guilds.DB[guildID].GetFeedChecks() {
@@ -65,10 +67,8 @@ func AddGuildFeedCheck(guildID string, feedCheck entities.FeedCheck, delete ...b
 	} else {
 		deleteGuildFeedCheck(guildID, feedCheck)
 	}
-	g := entities.Guilds.DB[guildID]
-	entities.Guilds.Unlock()
 
-	g.WriteData("rssThreadCheck", g.GetFeedChecks())
+	entities.Guilds.DB[guildID].WriteData("rssThreadCheck", entities.Guilds.DB[guildID].GetFeedChecks())
 }
 
 // SetGuildFeedCheck sets a target guild's feed check in-memory
@@ -76,6 +76,8 @@ func SetGuildFeedCheck(guildID string, feedCheck entities.FeedCheck, delete ...b
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
+	defer entities.Guilds.Unlock()
+
 	if len(delete) == 0 {
 		var exists bool
 		for i, guildFeedCheck := range entities.Guilds.DB[guildID].GetFeedChecks() {
@@ -92,10 +94,8 @@ func SetGuildFeedCheck(guildID string, feedCheck entities.FeedCheck, delete ...b
 	} else {
 		deleteGuildFeedCheck(guildID, feedCheck)
 	}
-	g := entities.Guilds.DB[guildID]
-	entities.Guilds.Unlock()
 
-	g.WriteData("rssThreadCheck", g.GetFeedChecks())
+	entities.Guilds.DB[guildID].WriteData("rssThreadCheck", entities.Guilds.DB[guildID].GetFeedChecks())
 }
 
 // deleteGuildFeedChecks safely deletes multiple feed checks from the feedChecks slice

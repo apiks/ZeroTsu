@@ -458,7 +458,6 @@ func feedWebhookHandler(guildIds []string) {
 					return nil
 				}
 
-				guildFeedChecks := db.GetGuildFeedChecks(guid)
 				guildIDInt, err := strconv.ParseInt(guid, 10, 64)
 				if err != nil {
 					<-guard
@@ -488,6 +487,7 @@ func feedWebhookHandler(guildIds []string) {
 							var skip bool
 
 							// Checks if the item has already been posted
+							guildFeedChecks := db.GetGuildFeedChecks(guid)
 							for _, feedCheck := range guildFeedChecks {
 								if feedCheck.GetGUID() == item.GUID &&
 									feedCheck.GetFeed().GetChannelID() == feed.GetChannelID() {
@@ -524,17 +524,18 @@ func feedWebhookHandler(guildIds []string) {
 									breakFromWebhook = true
 								}
 
-								if breakFromWebhook {
-									break
-								}
-
 								// Adds that the feeds have been posted
 								db.AddGuildFeedChecks(guid, newFeedChecks)
+								newFeedChecks = nil
+							}
+
+							if breakFromWebhook {
+								break
 							}
 						}
 					}
 					if breakFromWebhook {
-						break
+						continue
 					}
 
 					// Use webhook to post last embeds available
@@ -550,9 +551,10 @@ func feedWebhookHandler(guildIds []string) {
 
 						// Adds that the feeds have been posted
 						db.AddGuildFeedChecks(guid, newFeedChecks)
+						newFeedChecks = nil
 					}
 					if breakFromWebhook {
-						break
+						continue
 					}
 				}
 

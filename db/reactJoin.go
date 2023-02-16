@@ -19,8 +19,9 @@ func SetGuildReactJoin(guildID string, reactJoin map[string]*entities.ReactJoin)
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
+	defer entities.Guilds.Unlock()
+
 	entities.Guilds.DB[guildID].SetReactJoinMap(reactJoin)
-	entities.Guilds.Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("reactJoin", reactJoin)
 }
@@ -30,8 +31,9 @@ func SetGuildReactJoinEmoji(guildID, messageID string, reactJoinEmoji *entities.
 	entities.HandleNewGuild(guildID)
 
 	entities.Guilds.Lock()
+	defer entities.Guilds.Unlock()
+
 	entities.Guilds.DB[guildID].AssignToReactJoinMap(messageID, reactJoinEmoji)
-	entities.Guilds.Unlock()
 
 	entities.Guilds.DB[guildID].WriteData("reactJoin", entities.Guilds.DB[guildID].GetReactJoinMap())
 }
