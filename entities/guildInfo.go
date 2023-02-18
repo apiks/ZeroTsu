@@ -29,11 +29,11 @@ func (g *GuildInfo) SetID(id string) {
 }
 
 func (g *GuildInfo) GetID() string {
-	g.RLock()
-	defer g.RUnlock()
 	if g == nil {
 		return ""
 	}
+	g.RLock()
+	defer g.RUnlock()
 	return g.ID
 }
 
@@ -44,11 +44,11 @@ func (g *GuildInfo) SetGuildSettings(guildSettings GuildSettings) {
 }
 
 func (g *GuildInfo) GetGuildSettings() GuildSettings {
-	g.RLock()
-	defer g.RUnlock()
 	if g == nil {
 		return GuildSettings{}
 	}
+	g.RLock()
+	defer g.RUnlock()
 	return g.GuildSettings
 }
 
@@ -77,11 +77,11 @@ func (g *GuildInfo) SetFeeds(feeds []Feed) {
 }
 
 func (g *GuildInfo) GetFeeds() []Feed {
-	g.RLock()
-	defer g.RUnlock()
 	if g == nil {
 		return nil
 	}
+	g.RLock()
+	defer g.RUnlock()
 	return g.Feeds
 }
 
@@ -110,11 +110,11 @@ func (g *GuildInfo) SetFeedChecks(feedChecks []FeedCheck) {
 }
 
 func (g *GuildInfo) GetFeedChecks() []FeedCheck {
-	g.RLock()
-	defer g.RUnlock()
 	if g == nil {
 		return nil
 	}
+	g.RLock()
+	defer g.RUnlock()
 	return g.FeedChecks
 }
 
@@ -141,11 +141,11 @@ func (g *GuildInfo) SetRaffles(raffles []*Raffle) {
 }
 
 func (g *GuildInfo) GetRaffles() []*Raffle {
-	g.RLock()
-	defer g.RUnlock()
 	if g == nil {
 		return nil
 	}
+	g.RLock()
+	defer g.RUnlock()
 	return g.Raffles
 }
 
@@ -168,11 +168,11 @@ func (g *GuildInfo) SetReactJoinMap(reactJoinMap map[string]*ReactJoin) {
 }
 
 func (g *GuildInfo) GetReactJoinMap() map[string]*ReactJoin {
-	g.RLock()
-	defer g.RUnlock()
 	if g == nil {
 		return nil
 	}
+	g.RLock()
+	defer g.RUnlock()
 	return g.ReactJoinMap
 }
 
@@ -195,11 +195,11 @@ func (g *GuildInfo) SetAutoposts(autoposts map[string]Cha) {
 }
 
 func (g *GuildInfo) GetAutoposts() map[string]Cha {
-	g.RLock()
-	defer g.RUnlock()
 	if g == nil {
 		return nil
 	}
+	g.RLock()
+	defer g.RUnlock()
 	return g.Autoposts
 }
 
