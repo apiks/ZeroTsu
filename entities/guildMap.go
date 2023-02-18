@@ -67,8 +67,6 @@ func (g *GuildMap) Init(guildID string) bool {
 		Autoposts:    make(map[string]Cha),
 	}
 
-	*Guilds.DB[guildID] = *g.DB[guildID]
-
 	return isNew
 }
 
@@ -78,7 +76,6 @@ func (g *GuildMap) Load(guildID string) (bool, error) {
 	defer g.Unlock()
 
 	isNew := g.Init(guildID)
-	guild := g.DB[guildID]
 
 	files, err := IOReadDir(fmt.Sprintf("%s/%s/", DBPath, guildID))
 	if err != nil {
@@ -86,9 +83,9 @@ func (g *GuildMap) Load(guildID string) (bool, error) {
 	}
 
 	// Load guild settings first because some files check against bools in the settings
-	err = guild.Load("guildSettings.json", guildID)
+	err = g.DB[guildID].Load("guildSettings.json", guildID)
 	if err != nil {
-		log.Println("error in loading guild settings")
+		log.Println("error in loading guild settings:", err)
 		return isNew, err
 	}
 
@@ -97,18 +94,16 @@ func (g *GuildMap) Load(guildID string) (bool, error) {
 		if file == "guildSettings.json" {
 			continue
 		}
-		err = guild.Load(file, guildID)
+		err = g.DB[guildID].Load(file, guildID)
 		if err != nil {
 			return isNew, err
 		}
 	}
 
 	// Init default settings
-	if _, ok := guild.Autoposts["newepisodes"]; ok {
+	if _, ok := g.DB[guildID].Autoposts["newepisodes"]; ok {
 		SetupGuildSub(guildID)
 	}
-
-	*g.DB[guildID] = *guild
 
 	return isNew, nil
 }

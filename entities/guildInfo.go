@@ -220,8 +220,7 @@ func (g *GuildInfo) Load(file, guildID string) error {
 	case "guildSettings.json":
 		return json.Unmarshal(fileData, &g.GuildSettings)
 	case "rssThreads.json":
-		_ = json.Unmarshal(fileData, &g.Feeds)
-		return nil
+		return json.Unmarshal(fileData, &g.Feeds)
 	case "rssThreadCheck.json":
 		return json.Unmarshal(fileData, &g.FeedChecks)
 	case "raffles.json":
@@ -248,7 +247,7 @@ func (g *GuildInfo) WriteData(fileName string, data interface{}) {
 
 	err = ioutil.WriteFile(fmt.Sprintf(DBPath+"/%s/%s.json", g.GetID(), fileName), marshaledData, 0644)
 	if err != nil {
-		log.Println(err)
+		log.Println("WriteData error:", err)
 		return
 	}
 }
