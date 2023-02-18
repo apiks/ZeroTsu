@@ -271,6 +271,7 @@ func UpdateAnimeSchedule() {
 	}
 	request.Header.Set("User-Agent", common.UserAgent)
 	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", config.AnimeScheduleAppSecret))
+	request.Close = true
 
 	// Make request
 	response, err := client.Do(request)
