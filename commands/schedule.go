@@ -260,7 +260,7 @@ func UpdateAnimeSchedule() {
 
 	// Create HTTP client with timeout
 	client := &http.Client{
-		Timeout: 30 * time.Second,
+		Timeout: 300 * time.Second,
 	}
 
 	// Create and modify HTTP request before sending
