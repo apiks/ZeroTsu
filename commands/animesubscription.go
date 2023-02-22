@@ -646,6 +646,8 @@ func animeSubsWebhookHandler() {
 	Today.RLock()
 	if int(Today.Time.Weekday()) != int(now.Weekday()) {
 		Today.RUnlock()
+		animeSubFeedWebhookBlock.Block = false
+		animeSubFeedWebhookBlock.Unlock()
 		return
 	}
 	Today.RUnlock()
@@ -662,6 +664,8 @@ func animeSubsWebhookHandler() {
 	)
 	location, err := time.LoadLocation("Europe/London")
 	if err != nil {
+		animeSubFeedWebhookBlock.Block = false
+		animeSubFeedWebhookBlock.Unlock()
 		return
 	}
 	now = now.In(location)
@@ -803,12 +807,16 @@ func animeSubsHandler() {
 	Today.RLock()
 	if int(Today.Time.Weekday()) != int(now.Weekday()) {
 		Today.RUnlock()
+		animeSubFeedBlock.Block = false
+		animeSubFeedBlock.Unlock()
 		return
 	}
 	Today.RUnlock()
 
 	location, err := time.LoadLocation("Europe/London")
 	if err != nil {
+		animeSubFeedBlock.Block = false
+		animeSubFeedBlock.Unlock()
 		return
 	}
 	now = now.In(location)
@@ -993,7 +1001,6 @@ func AnimeSubsWebhookTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 }
 
 func AnimeSubsWebhooksMapTimer(_ *discordgo.Session, _ *discordgo.Ready) {
-	webhooksMapHandler()
 	for range time.NewTicker(30 * time.Second).C {
 		webhooksMapHandler()
 	}
