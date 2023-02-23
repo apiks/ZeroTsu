@@ -172,8 +172,7 @@ func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 		}
 
 		// Sends server count to bot list sites if it's the public ZeroTsu
-		guildCountStr := strconv.Itoa(config.Mgr.GuildCount())
-		functionality.SendServers(guildCountStr, s)
+		functionality.SendServers(strconv.Itoa(config.Mgr.GuildCount()), s)
 	}
 }
 

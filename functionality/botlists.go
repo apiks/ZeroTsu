@@ -20,7 +20,7 @@ func SendServers(guildCountStr string, s *discordgo.Session) {
 	}
 
 	// Discord Bots
-	discordBotsGuildCount(&http.Client{Timeout: 30 * time.Second}, guildCountStr, strconv.Itoa(s.ShardCount))
+	discordBotsGuildCount(&http.Client{Timeout: 120 * time.Second}, guildCountStr, strconv.Itoa(s.ShardCount))
 }
 
 // Sends guild count to top.gg

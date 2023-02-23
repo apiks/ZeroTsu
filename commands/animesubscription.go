@@ -646,6 +646,7 @@ func animeSubsWebhookHandler() {
 	Today.RLock()
 	if int(Today.Time.Weekday()) != int(now.Weekday()) {
 		Today.RUnlock()
+		animeSubFeedWebhookBlock.Lock()
 		animeSubFeedWebhookBlock.Block = false
 		animeSubFeedWebhookBlock.Unlock()
 		return
@@ -664,6 +665,7 @@ func animeSubsWebhookHandler() {
 	)
 	location, err := time.LoadLocation("Europe/London")
 	if err != nil {
+		animeSubFeedWebhookBlock.Lock()
 		animeSubFeedWebhookBlock.Block = false
 		animeSubFeedWebhookBlock.Unlock()
 		return
@@ -807,6 +809,7 @@ func animeSubsHandler() {
 	Today.RLock()
 	if int(Today.Time.Weekday()) != int(now.Weekday()) {
 		Today.RUnlock()
+		animeSubFeedBlock.Lock()
 		animeSubFeedBlock.Block = false
 		animeSubFeedBlock.Unlock()
 		return
@@ -815,6 +818,7 @@ func animeSubsHandler() {
 
 	location, err := time.LoadLocation("Europe/London")
 	if err != nil {
+		animeSubFeedBlock.Lock()
 		animeSubFeedBlock.Block = false
 		animeSubFeedBlock.Unlock()
 		return
@@ -823,9 +827,7 @@ func animeSubsHandler() {
 
 	// Fetches today's shows
 	entities.AnimeSchedule.RLock()
-	for _, show := range entities.AnimeSchedule.AnimeSchedule[int(now.Weekday())] {
-		todayShows = append(todayShows, show)
-	}
+	todayShows = append(todayShows, entities.AnimeSchedule.AnimeSchedule[int(now.Weekday())]...)
 	entities.AnimeSchedule.RUnlock()
 
 	// Iterates over all users and their shows and sends notifications if need be
@@ -995,13 +997,13 @@ func AnimeSubsTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 }
 
 func AnimeSubsWebhookTimer(_ *discordgo.Session, _ *discordgo.Ready) {
-	for range time.NewTicker(30 * time.Second).C {
+	for range time.NewTicker(1 * time.Minute).C {
 		animeSubsWebhookHandler()
 	}
 }
 
 func AnimeSubsWebhooksMapTimer(_ *discordgo.Session, _ *discordgo.Ready) {
-	for range time.NewTicker(30 * time.Second).C {
+	for range time.NewTicker(1 * time.Minute).C {
 		webhooksMapHandler()
 	}
 }
@@ -1015,7 +1017,7 @@ func ResetSubscriptions() {
 	// Fetches Today's shows
 	entities.AnimeSchedule.RLock()
 	for dayInt, scheduleShows := range entities.AnimeSchedule.AnimeSchedule {
-		// Checks if the target schedule day is Today or not
+		// Checks if the target schedule day is today or not
 		if int(now.Weekday()) != dayInt {
 			continue
 		}
