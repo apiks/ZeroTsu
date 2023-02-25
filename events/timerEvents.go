@@ -405,7 +405,7 @@ func feedWebhookHandler(guildIds []string) {
 			parsedFeedsMapCopy = make(map[string]*gofeed.Feed)
 
 			eg            errgroup.Group
-			maxGoroutines = 16
+			maxGoroutines = 11
 			guard         = make(chan struct{}, maxGoroutines)
 		)
 		for k, v := range parsedFeedsMap {
@@ -417,7 +417,7 @@ func feedWebhookHandler(guildIds []string) {
 		guard <- struct{}{}
 		eg.Go(func() error {
 			for k := range feedParseMap {
-				if i > 14 {
+				if i > 9 {
 					break
 				}
 

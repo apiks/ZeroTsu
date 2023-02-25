@@ -41,5 +41,5 @@ func discordBotsGuildCount(client *http.Client, guildCount, shardCount string) {
 		log.Println("top.gg Err:", err)
 		return
 	}
-	response.Body.Close()
+	defer response.Body.Close()
 }

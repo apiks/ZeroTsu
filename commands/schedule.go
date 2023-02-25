@@ -326,9 +326,15 @@ func UpdateAnimeSchedule() {
 		}
 
 		delayedText := ""
-		if anime.GetDelayedFrom() != (time.Time{}) && anime.GetDelayedUntil() != (time.Time{}) {
-			if entities.InTimeSpan(anime.GetDelayedFrom(), anime.GetDelayedUntil(), anime.GetEpisodeDate()) {
-				delayedText = "Delayed"
+		if anime.GetDelayedFrom() != (time.Time{}) || anime.GetDelayedUntil() != (time.Time{}) {
+			if anime.GetDelayedUntil() == (time.Time{}) {
+				if !anime.GetEpisodeDate().Before(anime.GetDelayedFrom()) {
+					delayedText = "Delayed"
+				}
+			} else if anime.GetDelayedFrom() == (time.Time{}) {
+				if !anime.GetEpisodeDate().After(anime.GetDelayedUntil()) {
+					delayedText = "Delayed"
+				}
 			}
 		}
 
