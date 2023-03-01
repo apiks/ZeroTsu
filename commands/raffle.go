@@ -476,7 +476,6 @@ func raffleWinnerCommand(raffleName, guildID string) string {
 	)
 
 	entities.Guilds.RLock()
-	entities.Guilds.DB[guildID].RLock()
 	for raffleIndex, raffle := range entities.Guilds.DB[guildID].GetRaffles() {
 		if raffle == nil {
 			continue
@@ -494,7 +493,6 @@ func raffleWinnerCommand(raffleName, guildID string) string {
 		}
 	}
 	entities.Guilds.RUnlock()
-	entities.Guilds.DB[guildID].RUnlock()
 
 	if winnerID == "" {
 		return "Error: No such raffle exists."
