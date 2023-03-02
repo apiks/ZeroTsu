@@ -524,7 +524,6 @@ func raffleWinnerCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	entities.Guilds.RLock()
-	entities.Guilds.DB[m.GuildID].RLock()
 	for raffleIndex, raffle := range entities.Guilds.DB[m.GuildID].GetRaffles() {
 		if raffle == nil {
 			continue
@@ -542,7 +541,6 @@ func raffleWinnerCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 		}
 	}
 	entities.Guilds.RUnlock()
-	entities.Guilds.DB[m.GuildID].RUnlock()
 
 	if winnerID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such raffle exists.")
