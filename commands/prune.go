@@ -351,7 +351,7 @@ func init() {
 			}
 
 			var (
-				response        = "Fetching messages and beginning pruning. This might take a while."
+				response        = "Fetching messages and beginning pruning. This might take a while. It may take up to a minute for the change to be reflected afterwards."
 				amount          int
 				targetChannelID = i.ChannelID
 			)
