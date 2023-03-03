@@ -630,10 +630,7 @@ func webhooksMapHandler() {
 
 // animeSubsWebhookHandler handles sending notifications to users when it's time with webhooks
 func animeSubsWebhookHandler() {
-	var (
-		now        = time.Now()
-		todayShows []*entities.ShowAirTime
-	)
+	var todayShows []*entities.ShowAirTime
 
 	animeSubFeedWebhookBlock.Lock()
 	if animeSubFeedWebhookBlock.Block {
@@ -643,6 +640,17 @@ func animeSubsWebhookHandler() {
 	animeSubFeedWebhookBlock.Block = true
 	animeSubFeedWebhookBlock.Unlock()
 
+	DailyScheduleEventsBlock.RLock()
+	if DailyScheduleEventsBlock.Block {
+		DailyScheduleEventsBlock.RUnlock()
+		animeSubFeedWebhookBlock.Lock()
+		animeSubFeedWebhookBlock.Block = false
+		animeSubFeedWebhookBlock.Unlock()
+		return
+	}
+	DailyScheduleEventsBlock.RUnlock()
+
+	now := time.Now()
 	Today.RLock()
 	if int(Today.Time.Weekday()) != int(now.Weekday()) {
 		Today.RUnlock()
@@ -793,10 +801,7 @@ func animeSubsWebhookHandler() {
 
 // animeSubsHandler handles sending notifications to users when it's time
 func animeSubsHandler() {
-	var (
-		now        = time.Now()
-		todayShows []*entities.ShowAirTime
-	)
+	var todayShows []*entities.ShowAirTime
 
 	animeSubFeedBlock.Lock()
 	if animeSubFeedBlock.Block {
@@ -806,6 +811,17 @@ func animeSubsHandler() {
 	animeSubFeedBlock.Block = true
 	animeSubFeedBlock.Unlock()
 
+	DailyScheduleEventsBlock.RLock()
+	if DailyScheduleEventsBlock.Block {
+		DailyScheduleEventsBlock.RUnlock()
+		animeSubFeedBlock.Lock()
+		animeSubFeedBlock.Block = false
+		animeSubFeedBlock.Unlock()
+		return
+	}
+	DailyScheduleEventsBlock.RUnlock()
+
+	now := time.Now()
 	Today.RLock()
 	if int(Today.Time.Weekday()) != int(now.Weekday()) {
 		Today.RUnlock()

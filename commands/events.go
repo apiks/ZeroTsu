@@ -21,25 +21,36 @@ type SafeTime struct {
 	Time time.Time
 }
 
+var DailyScheduleEventsBlock events.Block
 var Today = &SafeTime{Time: time.Now()}
 
 func dailyScheduleEvents() {
-	t := time.Now()
-
-	Today.Lock()
-	if int(Today.Time.Weekday()) == int(t.Weekday()) {
-		Today.Unlock()
-		return
-	}
-	Today.Time = t
-	Today.Unlock()
-
 	events.DailyScheduleWebhooksMapBlock.RLock()
 	if events.DailyScheduleWebhooksMapBlock.Block {
 		events.DailyScheduleWebhooksMapBlock.RUnlock()
 		return
 	}
 	events.DailyScheduleWebhooksMapBlock.RUnlock()
+
+	DailyScheduleEventsBlock.Lock()
+	if DailyScheduleEventsBlock.Block {
+		DailyScheduleEventsBlock.Unlock()
+		return
+	}
+	DailyScheduleEventsBlock.Block = true
+	DailyScheduleEventsBlock.Unlock()
+
+	t := time.Now()
+	Today.Lock()
+	if int(Today.Time.Weekday()) == int(t.Weekday()) {
+		Today.Unlock()
+		DailyScheduleEventsBlock.Lock()
+		DailyScheduleEventsBlock.Block = false
+		DailyScheduleEventsBlock.Unlock()
+		return
+	}
+	Today.Time = t
+	Today.Unlock()
 
 	// Update daily anime schedule
 	events.UpdateDailyScheduleWebhooks()
@@ -48,9 +59,16 @@ func dailyScheduleEvents() {
 
 	folders, err := ioutil.ReadDir("database/guilds")
 	if err != nil {
+		DailyScheduleEventsBlock.Lock()
+		DailyScheduleEventsBlock.Block = false
+		DailyScheduleEventsBlock.Unlock()
 		log.Panicln(err)
 		return
 	}
+
+	DailyScheduleEventsBlock.Lock()
+	DailyScheduleEventsBlock.Block = false
+	DailyScheduleEventsBlock.Unlock()
 
 	var (
 		eg            errgroup.Group
@@ -132,20 +150,20 @@ func dailyScheduleEvents() {
 	}
 }
 
-func DailyStatsTimer(_ *discordgo.Session, _ *discordgo.Ready) {
+func DailyStatsTimer(_ *discordgo.Session, e *discordgo.Ready) {
 	// Register slash commands per guild.
 	// Used for testing purposes since propagation is faster.
-	//for _, guild := range e.Guilds {
-	//	for _, v := range SlashCommands {
-	//		err := config.Mgr.ApplicationCommandCreate(guild.ID, v)
-	//		if err != nil {
-	//			log.Panicf("Cannot create '%v' command: %v", v.Name, err)
-	//		}
-	//	}
-	//}
-	//log.Println("Slash command registration is done.")
+	// for _, guild := range e.Guilds {
+	// 	for _, v := range SlashCommands {
+	// 		err := config.Mgr.ApplicationCommandCreate(guild.ID, v)
+	// 		if err != nil {
+	// 			log.Panicf("Cannot create '%v' command: %v", v.Name, err)
+	// 		}
+	// 	}
+	// }
+	// log.Println("Slash command registration is done.")
 
-	for range time.NewTicker(15 * time.Second).C {
+	for range time.NewTicker(1 * time.Minute).C {
 		dailyScheduleEvents()
 	}
 }

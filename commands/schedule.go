@@ -385,7 +385,7 @@ func isTimeDST(t time.Time) bool {
 	return false
 }
 
-// DailyScheduleWebhook posts the schedule in a target channel if a guild has enabled it via webhook
+// TODO: DailyScheduleWebhook posts the schedule in a target channel if a guild has enabled it via webhook
 func DailyScheduleWebhook(s *discordgo.Session, guildID string) {
 	var (
 		message discordgo.Message
@@ -432,7 +432,7 @@ func DailySchedule(s *discordgo.Session, guildID string) {
 }
 
 func ScheduleTimer(_ *discordgo.Session, _ *discordgo.Ready) {
-	for range time.NewTicker(30 * time.Minute).C {
+	for range time.NewTicker(15 * time.Minute).C {
 		UpdateAnimeSchedule()
 	}
 }
