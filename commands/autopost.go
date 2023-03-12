@@ -130,7 +130,7 @@ func setNewEpisodesCommand(targetChannel *discordgo.Channel, enabled bool, guild
 	// Write
 	db.SetGuildAutopost(guildID, "newepisodes", newEpisodes)
 	entities.SetupGuildSub(guildID)
-	err := entities.AnimeSubsWrite(entities.SharedInfo.AnimeSubs)
+	err := entities.AnimeSubsWrite(entities.SharedInfo.GetAnimeSubsMap())
 	if err != nil {
 		return "Error: " + err.Error()
 	}
@@ -199,7 +199,7 @@ func setNewEpisodesCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	entities.SetupGuildSub(m.GuildID)
-	err := entities.AnimeSubsWrite(entities.SharedInfo.AnimeSubs)
+	err := entities.AnimeSubsWrite(entities.SharedInfo.GetAnimeSubsMap())
 	if err != nil {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return

@@ -184,7 +184,7 @@ func IsValidSlashCommand(s *discordgo.Session, cmdTrigger, authorID, guildID str
 
 func VerifySlashCommand(s *discordgo.Session, cmdTrigger string, i *discordgo.InteractionCreate) error {
 	if i.GuildID == "" {
-		return errors.New("Error: This command is available only for moderators in servers, not DMs.")
+		return errors.New("Error: This command is available only for moderators or admins in servers, not DMs.")
 	}
 
 	userID := ""

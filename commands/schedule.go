@@ -335,6 +335,8 @@ func UpdateAnimeSchedule() {
 				if !anime.GetEpisodeDate().After(anime.GetDelayedUntil()) {
 					delayedText = "Delayed"
 				}
+			} else if anime.GetEpisodeDate().After(anime.GetDelayedFrom()) && anime.GetEpisodeDate().Before(anime.GetDelayedUntil()) {
+				delayedText = "Delayed"
 			}
 		}
 
