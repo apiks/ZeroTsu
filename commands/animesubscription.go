@@ -873,7 +873,6 @@ func animeSubsHandler() {
 			if err != nil {
 				continue
 			}
-
 		} else {
 			session = config.Mgr.SessionForDM()
 		}
@@ -883,7 +882,6 @@ func animeSubsHandler() {
 			if newepisodes == (entities.Cha{}) {
 				continue
 			}
-
 			// Check if bot has required permissions for this channel
 			perms, err := session.State.UserChannelPermissions(session.State.User.ID, newepisodes.GetID())
 			if err != nil {
@@ -896,6 +894,9 @@ func animeSubsHandler() {
 				continue
 			}
 			if perms&discordgo.PermissionSendMessages != discordgo.PermissionSendMessages {
+				continue
+			}
+			if perms&discordgo.PermissionEmbedLinks != discordgo.PermissionEmbedLinks {
 				continue
 			}
 
@@ -917,12 +918,14 @@ func animeSubsHandler() {
 				if scheduleShow.GetDelayed() != "" {
 					continue
 				}
+
 				if strings.ToLower(userShow.GetShow()) != strings.ToLower(scheduleShow.GetName()) {
 					continue
 				}
 				if userShow.GetNotified() {
 					continue
 				}
+
 				if userShow.GetGuild() {
 					if !guildSettings.GetDonghua() && scheduleShow.GetDonghua() {
 						continue
@@ -972,6 +975,9 @@ func animeSubsHandler() {
 					}
 					entities.SharedInfo.Unlock()
 
+					// Wait some milliseconds so it doesn't hit the rate limit easily
+					time.Sleep(time.Millisecond * 150)
+
 					continue
 				}
 
@@ -1007,19 +1013,19 @@ func animeSubsHandler() {
 }
 
 func AnimeSubsTimer(_ *discordgo.Session, _ *discordgo.Ready) {
-	for range time.NewTicker(2 * time.Minute).C {
+	for range time.NewTicker(1 * time.Minute).C {
 		animeSubsHandler()
 	}
 }
 
 func AnimeSubsWebhookTimer(_ *discordgo.Session, _ *discordgo.Ready) {
-	for range time.NewTicker(2 * time.Minute).C {
+	for range time.NewTicker(1 * time.Minute).C {
 		animeSubsWebhookHandler()
 	}
 }
 
 func AnimeSubsWebhooksMapTimer(_ *discordgo.Session, _ *discordgo.Ready) {
-	for range time.NewTicker(10 * time.Minute).C {
+	for range time.NewTicker(1 * time.Minute).C {
 		webhooksMapHandler()
 	}
 }
