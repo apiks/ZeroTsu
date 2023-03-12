@@ -100,16 +100,16 @@ func Start() {
 	config.Mgr.AddHandler(commands.RaffleReactJoinHandler)
 	config.Mgr.AddHandler(commands.RaffleReactLeaveHandler)
 
-	// Anime subscription handler
-	config.Mgr.AddHandler(commands.AnimeSubsTimer)
-	config.Mgr.AddHandler(commands.AnimeSubsWebhookTimer)
-	config.Mgr.AddHandler(commands.AnimeSubsWebhooksMapTimer)
-
 	// Anime schedule timer
 	config.Mgr.AddHandler(commands.ScheduleTimer)
 
 	// Daily Timer
 	config.Mgr.AddHandler(commands.DailyStatsTimer)
+
+	// Anime subscription handler
+	config.Mgr.AddHandler(commands.AnimeSubsTimer)
+	config.Mgr.AddHandler(commands.AnimeSubsWebhookTimer)
+	config.Mgr.AddHandler(commands.AnimeSubsWebhooksMapTimer)
 
 	err = config.Mgr.Start()
 	if err != nil {

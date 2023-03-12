@@ -1007,19 +1007,19 @@ func animeSubsHandler() {
 }
 
 func AnimeSubsTimer(_ *discordgo.Session, _ *discordgo.Ready) {
-	for range time.NewTicker(1 * time.Minute).C {
+	for range time.NewTicker(2 * time.Minute).C {
 		animeSubsHandler()
 	}
 }
 
 func AnimeSubsWebhookTimer(_ *discordgo.Session, _ *discordgo.Ready) {
-	for range time.NewTicker(1 * time.Minute).C {
+	for range time.NewTicker(2 * time.Minute).C {
 		animeSubsWebhookHandler()
 	}
 }
 
 func AnimeSubsWebhooksMapTimer(_ *discordgo.Session, _ *discordgo.Ready) {
-	for range time.NewTicker(1 * time.Minute).C {
+	for range time.NewTicker(10 * time.Minute).C {
 		webhooksMapHandler()
 	}
 }
