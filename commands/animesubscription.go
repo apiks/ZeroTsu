@@ -661,6 +661,16 @@ func animeSubsWebhookHandler() {
 	}
 	Today.RUnlock()
 
+	newEpisodeswebhooksMapBlock.RLock()
+	if newEpisodeswebhooksMapBlock.Block {
+		newEpisodeswebhooksMapBlock.RUnlock()
+		animeSubFeedWebhookBlock.Lock()
+		animeSubFeedWebhookBlock.Block = false
+		animeSubFeedWebhookBlock.Unlock()
+		return
+	}
+	newEpisodeswebhooksMapBlock.RUnlock()
+
 	// Fetches today's shows
 	entities.AnimeSchedule.RLock()
 	todayShows = append(todayShows, entities.AnimeSchedule.AnimeSchedule[int(now.Weekday())]...)
