@@ -45,6 +45,8 @@ func LoadSharedDB() {
 		log.Panicln(err)
 	}
 
+	SharedInfo.Lock()
+	defer SharedInfo.Unlock()
 	SharedInfo = newSharedInfo(make(map[string]*RemindMeSlice), make(map[string][]*ShowSub))
 	for _, file := range files {
 		LoadSharedDBFile(file)
@@ -60,8 +62,6 @@ func LoadSharedDBFile(file string) {
 	}
 
 	// Takes the data and puts it into the appropriate field
-	SharedInfo.Lock()
-	defer SharedInfo.Unlock()
 	switch file {
 	case "remindMes.json":
 		err = json.Unmarshal(infoByte, &SharedInfo.RemindMes)

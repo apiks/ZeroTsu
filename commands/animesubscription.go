@@ -1043,8 +1043,8 @@ func AnimeSubsWebhooksMapTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 // ResetSubscriptions Resets anime sub notifications status
 func ResetSubscriptions() {
 	var todayShows []*entities.ShowAirTime
+
 	now := time.Now()
-	nowUTC := now.UTC()
 
 	// Fetches Today's shows
 	entities.AnimeSchedule.RLock()
@@ -1054,11 +1054,20 @@ func ResetSubscriptions() {
 			continue
 		}
 
-		// Saves Today's shows
+		// Saves today's anime
 		todayShows = scheduleShows
 		break
 	}
 	entities.AnimeSchedule.RUnlock()
+
+	location, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		animeSubFeedWebhookBlock.Lock()
+		animeSubFeedWebhookBlock.Block = false
+		animeSubFeedWebhookBlock.Unlock()
+		return
+	}
+	now = now.In(location)
 
 	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
 	for userID, subscriptions := range animeSubsMap {
@@ -1077,7 +1086,7 @@ func ResetSubscriptions() {
 				}
 
 				// Checks if the target show matches
-				if strings.ToLower(userShow.GetShow()) != strings.ToLower(scheduleShow.GetName()) {
+				if !strings.EqualFold(userShow.GetShow(), scheduleShow.GetName()) {
 					continue
 				}
 
@@ -1088,13 +1097,13 @@ func ResetSubscriptions() {
 					continue
 				}
 
-				// Form the air date for Today
-				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, nowUTC.Location())
+				// Form the air date for today
+				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, now.Location())
 
 				// Calculates whether the show has already aired today
 				entities.SharedInfo.Lock()
 				if _, ok := entities.SharedInfo.AnimeSubs[userID]; ok {
-					if now.After(scheduleDate) {
+					if now.Before(scheduleDate) {
 						entities.SharedInfo.AnimeSubs[userID][subKey].SetNotified(false)
 					} else {
 						entities.SharedInfo.AnimeSubs[userID][subKey].SetNotified(true)

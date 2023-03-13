@@ -286,21 +286,6 @@ func UpdateAnimeSchedule() {
 		return
 	}
 
-	// Reset map
-	entities.AnimeSchedule.Lock()
-	defer entities.AnimeSchedule.Unlock()
-	for dayInt := range entities.AnimeSchedule.AnimeSchedule {
-		for len(entities.AnimeSchedule.AnimeSchedule[dayInt]) > 0 {
-			for i := range entities.AnimeSchedule.AnimeSchedule[dayInt] {
-				copy(entities.AnimeSchedule.AnimeSchedule[dayInt][i:], entities.AnimeSchedule.AnimeSchedule[dayInt][i+1:])
-				entities.AnimeSchedule.AnimeSchedule[dayInt][len(entities.AnimeSchedule.AnimeSchedule[dayInt])-1] = nil
-				entities.AnimeSchedule.AnimeSchedule[dayInt] = entities.AnimeSchedule.AnimeSchedule[dayInt][:len(entities.AnimeSchedule.AnimeSchedule[dayInt])-1]
-				break
-			}
-		}
-		delete(entities.AnimeSchedule.AnimeSchedule, dayInt)
-	}
-
 	// Check all sub anime for later filtering
 	for _, anime := range timetableAnime {
 		if anime.GetAirType() != "sub" {
@@ -308,6 +293,11 @@ func UpdateAnimeSchedule() {
 		}
 		subAnimeExists[anime.GetRoute()] = true
 	}
+
+	// Reset map
+	entities.AnimeSchedule.Lock()
+	defer entities.AnimeSchedule.Unlock()
+	entities.AnimeSchedule.AnimeSchedule = make(map[int][]*entities.ShowAirTime)
 
 	// Add timetable anime
 	for _, anime := range timetableAnime {

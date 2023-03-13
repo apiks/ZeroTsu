@@ -25,13 +25,6 @@ var DailyScheduleEventsBlock events.Block
 var Today = &SafeTime{Time: time.Now()}
 
 func dailyScheduleEvents() {
-	events.DailyScheduleWebhooksMapBlock.RLock()
-	if events.DailyScheduleWebhooksMapBlock.Block {
-		events.DailyScheduleWebhooksMapBlock.RUnlock()
-		return
-	}
-	events.DailyScheduleWebhooksMapBlock.RUnlock()
-
 	DailyScheduleEventsBlock.Lock()
 	if DailyScheduleEventsBlock.Block {
 		DailyScheduleEventsBlock.Unlock()
