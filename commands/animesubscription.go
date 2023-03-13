@@ -1045,6 +1045,14 @@ func ResetSubscriptions() {
 	var todayShows []*entities.ShowAirTime
 
 	now := time.Now()
+	location, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		animeSubFeedWebhookBlock.Lock()
+		animeSubFeedWebhookBlock.Block = false
+		animeSubFeedWebhookBlock.Unlock()
+		return
+	}
+	now = now.In(location)
 
 	// Fetches Today's shows
 	entities.AnimeSchedule.RLock()
@@ -1059,15 +1067,6 @@ func ResetSubscriptions() {
 		break
 	}
 	entities.AnimeSchedule.RUnlock()
-
-	location, err := time.LoadLocation("Europe/London")
-	if err != nil {
-		animeSubFeedWebhookBlock.Lock()
-		animeSubFeedWebhookBlock.Block = false
-		animeSubFeedWebhookBlock.Unlock()
-		return
-	}
-	now = now.In(location)
 
 	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
 	for userID, subscriptions := range animeSubsMap {
