@@ -568,15 +568,27 @@ func webhooksMapHandler() {
 		}
 		perms, err := s.State.UserChannelPermissions(s.State.User.ID, newepisodes.GetID())
 		if err != nil {
+			if guildIDInt == 382382769302536194 {
+				log.Println("webhooksMapHandler err: ", err)
+			}
 			continue
 		}
 		if perms&discordgo.PermissionManageWebhooks != discordgo.PermissionManageWebhooks {
+			if guildIDInt == 382382769302536194 {
+				log.Println("webhooksMapHandler err: PermissionManageWebhooks permission missing")
+			}
 			continue
 		}
 		if perms&discordgo.PermissionViewChannel != discordgo.PermissionViewChannel {
+			if guildIDInt == 382382769302536194 {
+				log.Println("webhooksMapHandler err: PermissionViewChannel permission missing")
+			}
 			continue
 		}
 		if perms&discordgo.PermissionSendMessages != discordgo.PermissionSendMessages {
+			if guildIDInt == 382382769302536194 {
+				log.Println("webhooksMapHandler err: PermissionSendMessages permission missing")
+			}
 			continue
 		}
 
@@ -706,6 +718,10 @@ func animeSubsWebhookHandler() {
 
 		guid := guildID
 		subs := subscriptions
+
+		if guid == "382382769302536194" {
+			log.Println("in: ", now)
+		}
 
 		guard <- struct{}{}
 		eg.Go(func() error {
@@ -1047,9 +1063,6 @@ func ResetSubscriptions() {
 	now := time.Now()
 	location, err := time.LoadLocation("Europe/London")
 	if err != nil {
-		animeSubFeedWebhookBlock.Lock()
-		animeSubFeedWebhookBlock.Block = false
-		animeSubFeedWebhookBlock.Unlock()
 		return
 	}
 	now = now.In(location)
