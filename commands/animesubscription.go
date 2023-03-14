@@ -524,8 +524,8 @@ func viewSubscriptionsHandler(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
-// webhooksMapHandler updates the anime subs guilds' webhooks map
-func webhooksMapHandler() {
+// WebhooksMapHandler updates the anime subs guilds' webhooks map
+func WebhooksMapHandler() {
 	newEpisodeswebhooksMapBlock.Lock()
 	if newEpisodeswebhooksMapBlock.Block {
 		newEpisodeswebhooksMapBlock.Unlock()
@@ -1052,7 +1052,7 @@ func AnimeSubsWebhookTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 
 func AnimeSubsWebhooksMapTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 	for range time.NewTicker(15 * time.Minute).C {
-		webhooksMapHandler()
+		WebhooksMapHandler()
 	}
 }
 

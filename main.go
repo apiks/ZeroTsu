@@ -42,6 +42,7 @@ func main() {
 	Start()
 
 	fmt.Println("[SUCCESS] Bot is now running.  Press CTRL-C to exit.")
+	commands.WebhooksMapHandler()
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
