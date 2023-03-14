@@ -1051,7 +1051,7 @@ func AnimeSubsWebhookTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 }
 
 func AnimeSubsWebhooksMapTimer(_ *discordgo.Session, _ *discordgo.Ready) {
-	for range time.NewTicker(1 * time.Minute).C {
+	for range time.NewTicker(15 * time.Minute).C {
 		webhooksMapHandler()
 	}
 }

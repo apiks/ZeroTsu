@@ -156,7 +156,7 @@ func DailyStatsTimer(_ *discordgo.Session, e *discordgo.Ready) {
 	// }
 	// log.Println("Slash command registration is done.")
 
-	for range time.NewTicker(1 * time.Minute).C {
+	for range time.NewTicker(15 * time.Second).C {
 		dailyScheduleEvents()
 	}
 }
