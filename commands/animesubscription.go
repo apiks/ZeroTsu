@@ -97,7 +97,7 @@ Loop:
 					}
 
 					// Form the air date for Today
-					scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), now.Second(), now.Nanosecond(), now.Location())
+					scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), now.Second(), now.Nanosecond(), time.UTC)
 
 					// Calculates whether the show has already aired Today
 					difference := now.Sub(scheduleDate)
@@ -208,7 +208,6 @@ Loop:
 
 				// Checks if the show is from Today and whether it has already passed (to avoid notifying the user Today if it has passed)
 				if int(now.Weekday()) == dayInt {
-
 					// Reset bool
 					hasAiredToday = false
 
@@ -220,7 +219,7 @@ Loop:
 					}
 
 					// Form the air date for Today
-					scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), now.Second(), now.Nanosecond(), now.Location())
+					scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), now.Second(), now.Nanosecond(), time.UTC)
 
 					// Calculates whether the show has already aired Today
 					difference := now.Sub(scheduleDate)
@@ -765,7 +764,7 @@ func animeSubsWebhookHandler() {
 					}
 
 					// Form the air date for today
-					scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, now.Location())
+					scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
 
 					// Checks whether the show has already aired today
 					if now.Before(scheduleDate) {
@@ -950,7 +949,7 @@ func animeSubsHandler() {
 				}
 
 				// Form the air date for Today
-				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, now.Location())
+				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
 
 				// Checks whether the show has already aired today
 				if now.Before(scheduleDate) {
@@ -1094,7 +1093,7 @@ func ResetSubscriptions() {
 				}
 
 				// Form the air date for today
-				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, now.Location())
+				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
 
 				// Calculates whether the show has already aired today
 				entities.SharedInfo.Lock()

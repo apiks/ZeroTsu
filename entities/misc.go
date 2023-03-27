@@ -182,7 +182,7 @@ func SetupGuildSub(guildID string) {
 				}
 
 				// Form the air date for today
-				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), now.Second(), now.Nanosecond(), now.Location())
+				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), now.Second(), now.Nanosecond(), time.UTC)
 				scheduleDate = scheduleDate.UTC()
 
 				// Calculates whether the show has already aired today
