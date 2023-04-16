@@ -172,12 +172,7 @@ func getDaySchedule(weekday int, donghua bool) string {
 				log.Println(err)
 				continue
 			}
-			londonTZ, err := time.LoadLocation("Europe/London")
-			if err != nil {
-				realTime = time.Date(targetDay.Year(), targetDay.Month(), targetDay.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
-			} else {
-				realTime = time.Date(targetDay.Year(), targetDay.Month(), targetDay.Day(), t.Hour(), t.Minute(), 0, 0, londonTZ)
-			}
+			realTime = time.Date(targetDay.Year(), targetDay.Month(), targetDay.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
 
 			if show.GetDelayed() != "" {
 				printMessage += fmt.Sprintf("**%s** - %s %s - <t:%d:t>\n\n", show.GetName(), show.GetEpisode(), show.GetDelayed(), realTime.UTC().Unix())
@@ -351,30 +346,6 @@ func UpdateAnimeSchedule() {
 			isDonghua,
 		))
 	}
-}
-
-// isTimeDST returns true if time t occurs within daylight saving time
-// for its time zone.
-func isTimeDST(t time.Time) bool {
-	// If the most recent (within the last year) clock change
-	// was forward then assume the change was from std to dst.
-	hh, mm, _ := t.UTC().Clock()
-	tClock := hh*60 + mm
-	for m := -1; m > -12; m-- {
-		// assume dst lasts for least one month
-		hh, mm, _ := t.AddDate(0, m, 0).UTC().Clock()
-		clock := hh*60 + mm
-		if clock != tClock {
-			if clock > tClock {
-				// std to dst
-				return true
-			}
-			// dst to std
-			return false
-		}
-	}
-	// assume no dst
-	return false
 }
 
 // TODO: DailyScheduleWebhook posts the schedule in a target channel if a guild has enabled it via webhook
