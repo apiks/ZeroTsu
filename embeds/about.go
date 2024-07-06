@@ -13,14 +13,14 @@ func CreateAboutEmbed(botUser *discordgo.User) *discordgo.MessageEmbed {
 
 		supporterPerksEmbedField = &discordgo.MessageEmbedField{
 			Name:  "**Supporter Perks:**",
-			Value: "Consider becoming a [Patron](https://patreon.com/animeschedule) if you want to support me and get: \n**-** Increased database limits for you and a server of your choice\n**-** Development Updates\n**-** Be in the BOT Status",
+			Value: "Consider becoming a [Patron](https://patreon.com/animeschedule) if you want to support me!",
 		}
 	)
 
 	embed := &discordgo.MessageEmbed{
 		URL:         "https://discordbots.org/bot/614495694769618944",
 		Title:       botUser.Username,
-		Description: "Written in **Go** by _Apiks#8969_",
+		Description: "Written in **Go** by _apiks_. For questions or help please jon the [support server](https://discord.gg/BDT8Twv).",
 		Color:       lightPinkColor,
 		Thumbnail:   &discordgo.MessageEmbedThumbnail{URL: botUser.AvatarURL("256")},
 		Fields: []*discordgo.MessageEmbedField{{
@@ -42,7 +42,7 @@ func About(s *discordgo.Session, m *discordgo.Message) error {
 	var embed = &discordgo.MessageEmbed{
 		URL:         "https://discordbots.org/bot/614495694769618944",
 		Title:       s.State.User.Username,
-		Description: "Written in **Go** by _Apiks#8969_",
+		Description: "Written in **Go** by _apiks_. For questions or help please jon the [support server](https://discord.gg/BDT8Twv).",
 		Color:       lightPinkColor,
 		Thumbnail:   &discordgo.MessageEmbedThumbnail{URL: s.State.User.AvatarURL("256")},
 		Fields: []*discordgo.MessageEmbedField{{
@@ -62,7 +62,7 @@ func About(s *discordgo.Session, m *discordgo.Message) error {
 
 			supporterPerksEmbedField = &discordgo.MessageEmbedField{
 				Name:  "**Supporter Perks:**",
-				Value: "Consider becoming a [Patron](https://patreon.com/animeschedule) if you want to support me and get: \n**-** Increased database limits for you and a server of your choice\n**-** Development Updates\n**-** Be in the BOT Status",
+				Value: "Consider becoming a [Patron](https://patreon.com/animeschedule) if you want to support me!",
 			}
 		)
 

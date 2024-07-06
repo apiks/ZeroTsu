@@ -49,7 +49,7 @@ func subscribeCommand(title, authorID string) string {
 		hasAiredToday bool
 	)
 
-	// Iterates over all of the anime shows saved from AnimeSchedule and checks if it finds one
+	// Iterates over all the anime shows saved from AnimeSchedule and checks if it finds one
 	entities.AnimeSchedule.RLock()
 Loop:
 	for dayInt, dailyShows := range entities.AnimeSchedule.AnimeSchedule {
@@ -275,12 +275,12 @@ Loop:
 func unsubscribeCommand(title, authorID string) string {
 	var isDeleted bool
 
-	// Iterate over all of the user's subscriptions and remove the target one if it finds it
+	// Iterate over all the user's subscriptions and remove the target one if it finds it
 	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
 LoopShowRemoval:
 	for userID, userSubs := range animeSubsMap {
 
-		// Skip users that are not the message author so they don't delete everyone's subscriptions
+		// Skip users that are not the message author, so they don't delete everyone's subscriptions
 		if userID != authorID {
 			continue
 		}
@@ -769,6 +769,10 @@ func animeSubsWebhookHandler() {
 			}
 			guildSettings := db.GetGuildSettings(guid)
 
+			// Get pingable role ID
+			newepisodes := db.GetGuildAutopost(guid, "newepisodes")
+			pingableRoleId := newepisodes.GetRoleID()
+
 			// Get valid webhook
 			newEpisodesWebhooksMap.RLock()
 			if _, ok := newEpisodesWebhooksMap.webhooksMap[guid]; !ok {
@@ -825,13 +829,19 @@ func animeSubsWebhookHandler() {
 					}
 
 					// Use webhook to post if available
+					var pingableRoleStr string
+					if pingableRoleId != "" {
+						pingableRoleStr = fmt.Sprintf("<@&%s>", pingableRoleId)
+					}
 					if threadID != "" {
 						_, err = s.WebhookThreadExecute(wID, wToken, false, threadID, &discordgo.WebhookParams{
-							Embeds: []*discordgo.MessageEmbed{embeds.SubscriptionEmbed(scheduleShow)},
+							Content: pingableRoleStr,
+							Embeds:  []*discordgo.MessageEmbed{embeds.SubscriptionEmbed(scheduleShow)},
 						})
 					} else {
 						_, err = s.WebhookExecute(wID, wToken, false, &discordgo.WebhookParams{
-							Embeds: []*discordgo.MessageEmbed{embeds.SubscriptionEmbed(scheduleShow)},
+							Content: pingableRoleStr,
+							Embeds:  []*discordgo.MessageEmbed{embeds.SubscriptionEmbed(scheduleShow)},
 						})
 					}
 
@@ -1053,7 +1063,7 @@ func animeSubsHandler() {
 					}
 
 					// Sends embed in Guild
-					err = embeds.Subscription(s, ss, newepisodes.GetID())
+					err = embeds.Subscription(s, ss, newepisodes.GetID(), newepisodes.GetRoleID())
 					if err != nil {
 						continue
 					}
@@ -1065,7 +1075,7 @@ func animeSubsHandler() {
 					}
 					entities.SharedInfo.Unlock()
 
-					// Wait some milliseconds so it doesn't hit the rate limit easily
+					// Wait some milliseconds, so it doesn't hit the rate limit easily
 					time.Sleep(time.Millisecond * 150)
 
 					continue
@@ -1076,7 +1086,7 @@ func animeSubsHandler() {
 				if err != nil {
 					continue
 				}
-				err = embeds.Subscription(s, ss, dm.ID)
+				err = embeds.Subscription(s, ss, dm.ID, "")
 				if err != nil {
 					continue
 				}

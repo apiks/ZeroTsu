@@ -304,14 +304,14 @@ func botLogCommand(targetChannel *discordgo.Channel, enabled bool, guildID strin
 	}
 
 	if guildBotLog == (entities.Cha{}) {
-		guildBotLog = entities.NewCha("", "")
+		guildBotLog = entities.NewCha("", "", "")
 	}
 
 	// Parse and save the target channel
 	if !enabled {
 		guildBotLog = entities.Cha{}
 	} else {
-		guildBotLog = entities.NewCha(targetChannel.Name, targetChannel.ID)
+		guildBotLog = entities.NewCha(targetChannel.Name, targetChannel.ID, "")
 	}
 
 	// Write
@@ -370,7 +370,7 @@ func botLogCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 			}
 			return
 		}
-		guildBotLog = entities.NewCha(channelName, channelID)
+		guildBotLog = entities.NewCha(channelName, channelID, "")
 	}
 
 	// Changes and writes new bot log to storage

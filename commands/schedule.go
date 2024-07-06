@@ -14,7 +14,6 @@ import (
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/entities"
 
-	"github.com/PuerkitoBio/goquery"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -67,7 +66,7 @@ func scheduleCommand(targetDay, guildID string) []string {
 		message = getDaySchedule(day, donghua)
 	}
 
-	message += "\n**Full Week:** <https://AnimeSchedule.net>"
+	message += "\n\n**Full Week:** <https://AnimeSchedule.net>"
 
 	// Splits the message if it's too big into multiple ones
 	if len(message) > 1900 {
@@ -129,7 +128,7 @@ func scheduleCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 		printMessage = getDaySchedule(day, guildSettings.GetDonghua())
 	}
 
-	printMessage += "\n**Full Week:** <https://AnimeSchedule.net>"
+	printMessage += "\n\n**Full Week:** <https://AnimeSchedule.net>"
 
 	// Print the daily schedule
 	_, _ = s.ChannelMessageSend(m.ChannelID, printMessage)
@@ -175,9 +174,9 @@ func getDaySchedule(weekday int, donghua bool) string {
 			realTime = time.Date(targetDay.Year(), targetDay.Month(), targetDay.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
 
 			if show.GetDelayed() != "" {
-				printMessage += fmt.Sprintf("**%s** - %s %s - <t:%d:t>\n\n", show.GetName(), show.GetEpisode(), show.GetDelayed(), realTime.UTC().Unix())
+				printMessage += fmt.Sprintf("- **%s** - %s %s - <t:%d:t>\n", show.GetName(), show.GetEpisode(), show.GetDelayed(), realTime.UTC().Unix())
 			} else {
-				printMessage += fmt.Sprintf("**%s** - %s - <t:%d:t>\n\n", show.GetName(), show.GetEpisode(), realTime.UTC().Unix())
+				printMessage += fmt.Sprintf("- **%s** - %s - <t:%d:t>\n", show.GetName(), show.GetEpisode(), realTime.UTC().Unix())
 			}
 
 		}
@@ -187,68 +186,7 @@ func getDaySchedule(weekday int, donghua bool) string {
 	return printMessage
 }
 
-// Updates the anime schedule map
-func processEachShow(_ int, element *goquery.Selection) {
-	var (
-		day  int
-		show entities.ShowAirTime
-	)
-
-	date := strings.ToLower(element.SiblingsFiltered(".timetable-column-date").Find(".timetable-column-day").Text())
-	if strings.Contains(date, "sunday") {
-		day = 0
-	} else if strings.Contains(date, "monday") {
-		day = 1
-	} else if strings.Contains(date, "tuesday") {
-		day = 2
-	} else if strings.Contains(date, "wednesday") {
-		day = 3
-	} else if strings.Contains(date, "thursday") {
-		day = 4
-	} else if strings.Contains(date, "friday") {
-		day = 5
-	} else if strings.Contains(date, "saturday") {
-		day = 6
-	}
-
-	show.SetName(element.Find(".show-title-bar").Text())
-	show.SetEpisode(element.Find(".show-episode").Text())
-	show.SetEpisode(strings.Replace(show.GetEpisode(), "\n", "", -1))
-	show.SetAirTime(element.Find(".show-air-time").Text())
-	show.SetAirTime(strings.TrimSuffix(strings.TrimPrefix(strings.Replace(show.GetAirTime(), "\n", "", -1), " "), " "))
-	show.SetDelayed(strings.TrimPrefix(element.Find(".show-delay-bar").Text(), " "))
-	show.SetDelayed(strings.Trim(show.GetDelayed(), "\n"))
-	key, exists := element.Find(".show-link").Attr("href")
-	if exists {
-		show.SetKey(key)
-		show.SetKey(strings.ToLower(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(show.GetKey(), "/anime/"), "anime/"), "/anime")))
-	}
-	imageUrl, exists := element.Find(".show-poster").Attr("data-src")
-	if exists {
-		show.SetImageUrl(imageUrl)
-	} else {
-		imageUrl, exists = element.Find(".show-poster").Attr("src")
-		if exists {
-			show.SetImageUrl(imageUrl)
-		}
-	}
-	if element.Find(".air-type-text").Text() == "" {
-		show.SetSubbed(true)
-	} else if strings.ToLower(element.Find(".air-type-text").Text()) == "dub" {
-		return
-	} else {
-		show.SetSubbed(false)
-	}
-
-	donghua, _ := element.Attr("chinese")
-	if donghua == "true" {
-		show.SetDonghua(true)
-	}
-
-	entities.AnimeSchedule.AnimeSchedule[day] = append(entities.AnimeSchedule.AnimeSchedule[day], &show)
-}
-
-// UpdateAnimeSchedule fetches animeschedule.net timetable
+// UpdateAnimeSchedule fetches the AnimeSchedule.net timetable via scraping
 func UpdateAnimeSchedule() {
 	var timetableAnime []entities.ASAnime
 	var subAnimeExists = make(map[string]bool)
@@ -428,7 +366,7 @@ func init() {
 			if i.ApplicationCommandData().Options != nil {
 				for _, option := range i.ApplicationCommandData().Options {
 					if option.Name == "day" {
-						day = option.StringValue()
+						day = strings.ToLower(option.StringValue())
 					}
 				}
 			}

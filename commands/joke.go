@@ -12,15 +12,16 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-const jokeURL = "https://official-joke-api.herokuapp.com/random_joke"
+const jokeURL = "https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit"
 
 var myClient = &http.Client{Timeout: 10 * time.Second}
 
 type Joke struct {
-	ID        int    `json:"id"`
-	JokeType  string `json:"type"`
-	Setup     string `json:"setup"`
-	Punchline string `json:"punchline"`
+	ID       int    `json:"id"`
+	JokeType string `json:"type"`
+	Joke     string `json:"joke"`
+	Setup    string `json:"setup"`
+	Delivery string `json:"delivery"`
 }
 
 // Gets json from url body
@@ -39,10 +40,17 @@ func jokeCommand() string {
 	joke := new(Joke)
 	err := getJson(jokeURL, joke)
 	if err != nil {
-		return "Error: Joke website is not working properly. Please notify Apiks#8969 about it."
+		return "Error: Joke website is not working properly. Please notify apiks about it."
 	}
 
-	return fmt.Sprintf("%s\n\n%s", joke.Setup, joke.Punchline)
+	jokeStr := ""
+	if joke.JokeType == "single" {
+		jokeStr = joke.Joke
+	} else if joke.JokeType == "twopart" {
+		jokeStr = fmt.Sprintf("%s\n\n%s", joke.Setup, joke.Delivery)
+	}
+
+	return jokeStr
 }
 
 // jokeCommandHandler prints a random joke
@@ -50,7 +58,7 @@ func jokeCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	joke := new(Joke)
 	err := getJson(jokeURL, joke)
 	if err != nil {
-		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Joke website is not working properly. Please notify Apiks#8969 about it.")
+		_, err = s.ChannelMessageSend(m.ChannelID, "Error: Joke website is not working properly. Please notify apiks about it.")
 		if err != nil {
 			if m.GuildID != "" {
 				guildSettings := db.GetGuildSettings(m.GuildID)
@@ -62,7 +70,14 @@ func jokeCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 		return
 	}
 
-	_, err = s.ChannelMessageSend(m.ChannelID, joke.Setup+"\n\n"+joke.Punchline)
+	jokeStr := ""
+	if joke.JokeType == "single" {
+		jokeStr = joke.Joke
+	} else if joke.JokeType == "twopart" {
+		jokeStr = fmt.Sprintf("%s\n\n%s", joke.Setup, joke.Delivery)
+	}
+
+	_, err = s.ChannelMessageSend(m.ChannelID, jokeStr)
 	if err != nil {
 		if m.GuildID != "" {
 			guildSettings := db.GetGuildSettings(m.GuildID)
@@ -75,7 +90,7 @@ func init() {
 	Add(&Command{
 		Execute: jokeCommandHandler,
 		Name:    "joke",
-		Desc:    "Prints a (bad) joke",
+		Desc:    "Prints a joke",
 		Module:  "normal",
 		DMAble:  true,
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {

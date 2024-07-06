@@ -18,9 +18,9 @@ import (
 	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/entities"
-	"github.com/vartanbeno/go-reddit/reddit"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/vartanbeno/go-reddit/reddit"
 )
 
 // File for misc. functions, commands and variables.
@@ -29,7 +29,7 @@ const UserAgent = "script:github.com/apiks/zerotsu:v3.4.2 (by /u/thechosenapiks)
 
 var StartTime time.Time
 
-// Sorts roles alphabetically
+// SortRoleByAlphabet sorts roles alphabetically
 type SortRoleByAlphabet []*discordgo.Role
 
 func (r SortRoleByAlphabet) Len() int {

@@ -380,12 +380,13 @@ func feedWebhookHandler(guildIds []string) {
 				}
 
 				// Parse the feed
-				time.Sleep(time.Second * 2)
+				time.Sleep(time.Second * 10)
 				key := strings.TrimSuffix(k, "/")
 				key = strings.TrimPrefix(key, "https://www.reddit.com/r/")
 				key = strings.TrimPrefix(key, "/")
 				feedParser, statusCode, err := common.GetRedditRSSFeed(fmt.Sprintf("https://www.reddit.com/r/%s/.rss", key), 1)
 				if err != nil {
+					log.Println(err)
 					if statusCode == 429 {
 						log.Println("HIT REDDIT RATE LIMIT feedWebhookHandler!")
 						time.Sleep(10 * time.Minute)
@@ -422,7 +423,7 @@ func feedWebhookHandler(guildIds []string) {
 				}
 
 				// Parse the feed
-				time.Sleep(time.Second * 2)
+				time.Sleep(time.Second * 5)
 				key := strings.TrimSuffix(k, "/")
 				key = strings.TrimPrefix(key, "https://www.reddit.com/r/")
 				key = strings.TrimPrefix(key, "/")

@@ -146,15 +146,15 @@ func dailyScheduleEvents() {
 func DailyStatsTimer(_ *discordgo.Session, e *discordgo.Ready) {
 	// Register slash commands per guild.
 	// Used for testing purposes since propagation is faster.
-	// for _, guild := range e.Guilds {
-	// 	for _, v := range SlashCommands {
-	// 		err := config.Mgr.ApplicationCommandCreate(guild.ID, v)
-	// 		if err != nil {
-	// 			log.Panicf("Cannot create '%v' command: %v", v.Name, err)
-	// 		}
-	// 	}
-	// }
-	// log.Println("Slash command registration is done.")
+	//for _, guild := range e.Guilds {
+	//	for _, v := range SlashCommands {
+	//		err := config.Mgr.ApplicationCommandCreate(guild.ID, v)
+	//		if err != nil {
+	//			log.Panicf("Cannot create '%v' command: %v", v.Name, err)
+	//		}
+	//	}
+	//}
+	//log.Println("Slash command registration is done.")
 
 	for range time.NewTicker(15 * time.Second).C {
 		dailyScheduleEvents()

@@ -30,13 +30,21 @@ func remindMeCommand(channelID, userID, time, message string) string {
 	}
 
 	// Saves the remindMe data to an object of type remindMe
-	remindMeObject.SetCommandChannel(channelID)
+	maxId := 1
 	if _, ok := entities.SharedInfo.GetRemindMesMap()[userID]; ok {
-		remindMeObject.SetRemindID(len(entities.SharedInfo.GetRemindMesMap()[userID].GetRemindMeSlice()) + 1)
-		flag = true
-	} else {
-		remindMeObject.AddToRemindID(1)
+		for _, remind := range entities.SharedInfo.GetRemindMesMap()[userID].GetRemindMeSlice() {
+			if remind.GetRemindID() <= maxId {
+				continue
+			}
+			maxId = remind.GetRemindID()
+		}
 	}
+	if _, ok := entities.SharedInfo.GetRemindMesMap()[userID]; ok {
+		maxId++
+		flag = true
+	}
+	remindMeObject.SetCommandChannel(channelID)
+	remindMeObject.SetRemindID(maxId)
 	remindMeObject.SetDate(date)
 	remindMeObject.SetMessage(message)
 
@@ -106,13 +114,21 @@ func remindMeCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	userID = m.Author.ID
 
 	// Saves the remindMe data to an object of type remindMe
-	remindMeObject.SetCommandChannel(m.ChannelID)
+	maxId := 1
 	if _, ok := entities.SharedInfo.GetRemindMesMap()[userID]; ok {
-		remindMeObject.SetRemindID(len(entities.SharedInfo.GetRemindMesMap()[userID].GetRemindMeSlice()) + 1)
-		flag = true
-	} else {
-		remindMeObject.AddToRemindID(1)
+		for _, remind := range entities.SharedInfo.GetRemindMesMap()[userID].GetRemindMeSlice() {
+			if remind.GetRemindID() <= maxId {
+				continue
+			}
+			maxId = remind.GetRemindID()
+		}
 	}
+	if _, ok := entities.SharedInfo.GetRemindMesMap()[userID]; ok {
+		maxId++
+		flag = true
+	}
+	remindMeObject.SetCommandChannel(m.ChannelID)
+	remindMeObject.SetRemindID(maxId)
 	remindMeObject.SetDate(date)
 	remindMeObject.SetMessage(commandStrings[2])
 

@@ -24,14 +24,14 @@ func setDailyScheduleCommand(targetChannel *discordgo.Channel, enabled bool, gui
 	}
 
 	if dailySchedule == (entities.Cha{}) {
-		dailySchedule = entities.NewCha("", "")
+		dailySchedule = entities.NewCha("", "", "")
 	}
 
 	// Parse and save the target channel
 	if !enabled {
 		dailySchedule = entities.Cha{}
 	} else {
-		dailySchedule = entities.NewCha(targetChannel.Name, targetChannel.ID)
+		dailySchedule = entities.NewCha(targetChannel.Name, targetChannel.ID, "")
 	}
 
 	// Write
@@ -77,7 +77,7 @@ func setDailyScheduleCommandHandler(s *discordgo.Session, m *discordgo.Message) 
 	}
 
 	if dailySchedule == (entities.Cha{}) {
-		dailySchedule = entities.NewCha("", "")
+		dailySchedule = entities.NewCha("", "", "")
 	}
 
 	// Parse and save the target channel
@@ -85,7 +85,7 @@ func setDailyScheduleCommandHandler(s *discordgo.Session, m *discordgo.Message) 
 		dailySchedule = entities.Cha{}
 	} else {
 		channelID, channelName := common.ChannelParser(s, commandStrings[1], m.GuildID)
-		dailySchedule = entities.NewCha(channelName, channelID)
+		dailySchedule = entities.NewCha(channelName, channelID, "")
 	}
 
 	// Write
@@ -107,24 +107,31 @@ func setDailyScheduleCommandHandler(s *discordgo.Session, m *discordgo.Message) 
 }
 
 // setNewEpisodesCommand sets a channel ID as the autopost new airing anime episodes target channel
-func setNewEpisodesCommand(targetChannel *discordgo.Channel, enabled bool, guildID string) string {
+func setNewEpisodesCommand(targetChannel *discordgo.Channel, enabled bool, role *discordgo.Role, guildID string) string {
 	var newEpisodes = db.GetGuildAutopost(guildID, "newepisodes")
 
 	if targetChannel == nil && newEpisodes == (entities.Cha{}) {
 		return "Error: New anime episodes autopost is currently not set."
 	} else if targetChannel == nil && newEpisodes != (entities.Cha{}) && enabled {
-		return fmt.Sprintf("Current New anime episodes autopost channel is: `%s - %s`", newEpisodes.GetName(), newEpisodes.GetID())
+		if newEpisodes.GetRoleID() != "" {
+			return fmt.Sprintf("Current New anime episodes autopost channel is: `%s - Channel ID: %s- Role ID: %s`", newEpisodes.GetName(), newEpisodes.GetID(), newEpisodes.GetRoleID())
+		} else {
+			return fmt.Sprintf("Current New anime episodes autopost channel is: `%s - Channel ID: %s`", newEpisodes.GetName(), newEpisodes.GetID())
+		}
 	}
 
 	if newEpisodes == (entities.Cha{}) {
-		newEpisodes = entities.NewCha("", "")
+		newEpisodes = entities.NewCha("", "", "")
 	}
 
 	// Parse and save the target channel
-	if !enabled {
-		newEpisodes = entities.Cha{}
-	} else {
-		newEpisodes = entities.NewCha(targetChannel.Name, targetChannel.ID)
+	newEpisodes = entities.Cha{}
+	if enabled {
+		newEpisodes = entities.NewCha(targetChannel.Name, targetChannel.ID, "")
+	}
+
+	if role != nil {
+		newEpisodes = newEpisodes.SetRoleID(role.ID)
 	}
 
 	// Write
@@ -136,9 +143,13 @@ func setNewEpisodesCommand(targetChannel *discordgo.Channel, enabled bool, guild
 	}
 
 	if newEpisodes == (entities.Cha{}) {
-		return "Success: New aime episodes autopost has been disabled!"
+		return "Success: New anime episodes autopost has been disabled!"
 	} else {
-		return fmt.Sprintf("Success: New anime episodes autopost channel is: `%s - %s`", newEpisodes.GetName(), newEpisodes.GetID())
+		if newEpisodes.GetRoleID() != "" {
+			return fmt.Sprintf("Success: New anime episodes autopost channel is: `%s - Channel ID: %s- Role ID: %s`", newEpisodes.GetName(), newEpisodes.GetID(), newEpisodes.GetRoleID())
+		} else {
+			return fmt.Sprintf("Success: New anime episodes autopost channel is: `%s - Channel ID: %s`", newEpisodes.GetName(), newEpisodes.GetID())
+		}
 	}
 }
 
@@ -175,7 +186,7 @@ func setNewEpisodesCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	}
 
 	if newEpisodes == (entities.Cha{}) {
-		newEpisodes = entities.NewCha("", "")
+		newEpisodes = entities.NewCha("", "", "")
 	}
 
 	// Parse and save the target channel
@@ -183,7 +194,7 @@ func setNewEpisodesCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 		newEpisodes = entities.Cha{}
 	} else {
 		channelID, channelName := common.ChannelParser(s, commandStrings[1], m.GuildID)
-		newEpisodes = entities.NewCha(channelName, channelID)
+		newEpisodes = entities.NewCha(channelName, channelID, "")
 	}
 
 	// Write
@@ -377,6 +388,12 @@ func init() {
 				Description: "Whether the new anime episodes autopost should be enabled or disabled.",
 				Required:    false,
 			},
+			{
+				Type:        discordgo.ApplicationCommandOptionRole,
+				Name:        "role",
+				Description: "Which role to ping every time an episode is released.",
+				Required:    false,
+			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -395,19 +412,25 @@ func init() {
 				return
 			}
 
-			var targetChannel *discordgo.Channel
-			enabled := true
+			var (
+				targetChannel *discordgo.Channel
+				role          *discordgo.Role
+				enabled       = true
+			)
+
 			if i.ApplicationCommandData().Options != nil {
 				for _, option := range i.ApplicationCommandData().Options {
 					if option.Name == "channel" {
 						targetChannel = option.ChannelValue(s)
 					} else if option.Name == "enabled" {
 						enabled = option.BoolValue()
+					} else if option.Name == "role" {
+						role = option.RoleValue(s, i.GuildID)
 					}
 				}
 			}
 
-			respStr := setNewEpisodesCommand(targetChannel, enabled, i.GuildID)
+			respStr := setNewEpisodesCommand(targetChannel, enabled, role, i.GuildID)
 			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 				Content: &respStr,
 			})
