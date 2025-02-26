@@ -32,11 +32,15 @@ func main() {
 		panic(err)
 	}
 
-	// Load animeschedule data
 	commands.UpdateAnimeSchedule()
 
-	// Load all guild and shared info
-	entities.LoadSharedDB()
+	entities.InitMongoDB("mongodb://localhost:27017")
+
+	// Enable to migrate from JSON database to MongoDB
+	//entities.MigrateGuilds()
+	//entities.MigrateReminders()
+	//entities.MigrateAnimeSubs()
+
 	commands.ResetSubscriptions()
 
 	Start()
@@ -46,6 +50,8 @@ func main() {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
+
+	entities.CloseMongoDB()
 
 	// Cleanly close down the Manager.
 	fmt.Println("[INFO] Stopping shard manager...")
@@ -121,11 +127,11 @@ func Start() {
 	common.StartTime = time.Now()
 
 	// Register Slash Commands
-	for _, v := range commands.SlashCommands {
-		err := config.Mgr.ApplicationCommandCreate("", v)
-		if err != nil {
-			log.Panicf("Cannot create '%s' command: %v", v.Name, err)
-		}
-	}
-	log.Println("Slash command registration is done.")
+	//for _, v := range commands.SlashCommands {
+	//	err := config.Mgr.ApplicationCommandCreate("", v)
+	//	if err != nil {
+	//		log.Panicf("Cannot create '%s' command: %v", v.Name, err)
+	//	}
+	//}
+	//log.Println("Slash command registration is done.")
 }

@@ -51,6 +51,8 @@ func subscribeCommand(title, authorID string) string {
 
 	// Iterates over all the anime shows saved from AnimeSchedule and checks if it finds one
 	entities.AnimeSchedule.RLock()
+	defer entities.AnimeSchedule.RUnlock()
+
 Loop:
 	for dayInt, dailyShows := range entities.AnimeSchedule.AnimeSchedule {
 		if dailyShows == nil {
@@ -65,33 +67,16 @@ Loop:
 			if strings.ToLower(show.GetName()) == strings.ToLower(title) {
 				showExists = true
 
-				// Iterate over existing anime subscription users to see if he's already subbed to this show
-				for userID, subscriptions := range entities.SharedInfo.GetAnimeSubsMap() {
-					if subscriptions == nil {
-						continue
-					}
-
-					// Skip users that are not the author
-					if userID != authorID {
-						continue
-					}
-
-					// Check if user is already subscribed to that show and throw an error if so
-					for _, userShow := range subscriptions {
-						if userShow == nil {
-							continue
-						}
-
-						if strings.ToLower(userShow.GetShow()) == strings.ToLower(show.GetName()) {
-							entities.AnimeSchedule.RUnlock()
-							return fmt.Sprintf("Error: You are already subscribed to `%s`", show.GetName())
-						}
+				// Check if user is already subscribed
+				userSubs := db.GetAnimeSubs(authorID)
+				for _, sub := range userSubs {
+					if sub.GetShow() == show.GetName() {
+						return fmt.Sprintf("Error: You are already subscribed to `%s`", show.GetName())
 					}
 				}
 
 				// Checks if the show is from Today and whether it has already passed (to avoid notifying the user Today if it has passed)
 				if int(now.Weekday()) == dayInt {
-
 					// Reset bool
 					hasAiredToday = false
 
@@ -103,37 +88,24 @@ Loop:
 					}
 
 					// Form the air date for Today
-					scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), now.Second(), now.Nanosecond(), time.UTC)
+					scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
 
 					// Calculates whether the show has already aired Today
-					difference := now.Sub(scheduleDate)
-					if difference > 0 {
+					if now.After(scheduleDate) {
 						hasAiredToday = true
 					}
 				}
 
-				// Add that show to the user anime subs list and break out of loops
-				entities.SharedInfo.Lock()
-				if hasAiredToday {
-					entities.SharedInfo.AnimeSubs[authorID] = append(entities.SharedInfo.AnimeSubs[authorID], entities.NewShowSub(show.GetName(), true, false))
-				} else {
-					entities.SharedInfo.AnimeSubs[authorID] = append(entities.SharedInfo.AnimeSubs[authorID], entities.NewShowSub(show.GetName(), false, false))
-				}
-				entities.SharedInfo.Unlock()
+				// Add the new anime subscription to MongoDB
+				newSub := entities.NewShowSub(show.GetName(), hasAiredToday, false)
+				db.AddAnimeSub(authorID, newSub, false)
 				break Loop
 			}
 		}
 	}
-	entities.AnimeSchedule.RUnlock()
 
 	if !showExists {
 		return "Error: That is not a valid airing show name. It has to be airing. Make sure you're using the exact romaji anime title from `/schedule` or AnimeSchedule.net."
-	}
-
-	// Write to shared AnimeSubs DB
-	err := entities.AnimeSubsWrite(entities.SharedInfo.GetAnimeSubsMap())
-	if err != nil {
-		return err.Error()
 	}
 
 	return fmt.Sprintf("Success! You have subscribed to DM notifications for `%s`", title)
@@ -144,7 +116,6 @@ func subscribeCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	var (
 		showName      string
 		hasAiredToday bool
-
 		err           error
 		guildSettings = entities.GuildSettings{Prefix: "."}
 	)
@@ -159,15 +130,14 @@ func subscribeCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%ssub [anime]`\n\nAnime is the anime name from <https://AnimeSchedule.net> or the schedule command", guildSettings.GetPrefix()))
 		if err != nil {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-			return
 		}
 		return
 	}
 
 	now := time.Now().UTC()
-
-	// Iterates over all of the anime shows saved from AnimeSchedule and checks if it finds one
 	entities.AnimeSchedule.RLock()
+	defer entities.AnimeSchedule.RUnlock()
+
 Loop:
 	for dayInt, dailyShows := range entities.AnimeSchedule.AnimeSchedule {
 		if dailyShows == nil {
@@ -182,41 +152,20 @@ Loop:
 			if strings.ToLower(show.GetName()) == commandStrings[1] {
 				showName = show.GetName()
 
-				// Iterate over existing anime subscription users to see if he's already subbed to this show
-				for userID, subscriptions := range entities.SharedInfo.GetAnimeSubsMap() {
-					if subscriptions == nil {
-						continue
-					}
-
-					// Skip users that are not this user for performance
-					if userID != m.Author.ID {
-						continue
-					}
-
-					// Check if user is already subscribed to that show and throw an error if so
-					for _, userShows := range subscriptions {
-						if userShows == nil {
-							continue
+				// Check if user is already subscribed
+				userSubs := db.GetAnimeSubs(m.Author.ID)
+				for _, sub := range userSubs {
+					if sub.GetShow() == show.GetName() {
+						_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: You are already subscribed to `%s`", show.GetName()))
+						if err != nil {
+							common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 						}
-
-						if strings.ToLower(userShows.GetShow()) == strings.ToLower(show.GetName()) {
-							name := show.GetName()
-							entities.AnimeSchedule.RUnlock()
-							_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: You are already subscribed to `%s`", name))
-							if err != nil {
-								common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-								return
-							}
-							return
-						}
+						return
 					}
 				}
 
-				// Checks if the show is from Today and whether it has already passed (to avoid notifying the user Today if it has passed)
+				// Check if the show aired today
 				if int(now.Weekday()) == dayInt {
-					// Reset bool
-					hasAiredToday = false
-
 					// Parse the air hour and minute
 					t, err := time.Parse("3:04 PM", show.GetAirTime())
 					if err != nil {
@@ -224,93 +173,53 @@ Loop:
 						continue
 					}
 
-					// Form the air date for Today
-					scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), now.Second(), now.Nanosecond(), time.UTC)
+					// Form the air date for today
+					scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
 
-					// Calculates whether the show has already aired Today
-					difference := now.Sub(scheduleDate)
-					if difference > 0 {
+					// Determines if the show has aired today
+					if now.After(scheduleDate) {
 						hasAiredToday = true
 					}
 				}
 
-				// Add that show to the user anime subs list and break out of loops
-				entities.SharedInfo.Lock()
-				if hasAiredToday {
-					entities.SharedInfo.AnimeSubs[m.Author.ID] = append(entities.SharedInfo.AnimeSubs[m.Author.ID], entities.NewShowSub(show.GetName(), true, false))
-				} else {
-					entities.SharedInfo.AnimeSubs[m.Author.ID] = append(entities.SharedInfo.AnimeSubs[m.Author.ID], entities.NewShowSub(show.GetName(), false, false))
-				}
-				entities.SharedInfo.Unlock()
+				// Add subscription to MongoDB
+				newSub := entities.NewShowSub(show.GetName(), hasAiredToday, false)
+				db.AddAnimeSub(m.Author.ID, newSub, false)
 				break Loop
 			}
 		}
 	}
-	entities.AnimeSchedule.RUnlock()
 
 	if showName == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: That is not a valid airing show name. It has to be airing. Make sure you're using the exact show name from `"+guildSettings.GetPrefix()+"schedule`")
 		if err != nil {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-			return
 		}
-		return
-	}
-
-	// Write to shared AnimeSubs DB
-	err = entities.AnimeSubsWrite(entities.SharedInfo.GetAnimeSubsMap())
-	if err != nil {
-		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
 		return
 	}
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! You have subscribed to notifications for `%s`", showName))
 	if err != nil {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
 	}
 }
 
-// unsubscribeCommand removes a subscription for notifications for anime episode releases SUBBED
 func unsubscribeCommand(title, authorID string) string {
+	// Fetch user subscriptions from MongoDB
+	userSubs := db.GetAnimeSubs(authorID)
+
+	// Check if user has any subscriptions
+	if len(userSubs) == 0 {
+		return fmt.Sprintf("Error: You are not subscribed to `%s`", title)
+	}
+
+	// Try to remove the subscription
 	var isDeleted bool
-
-	// Iterate over all the user's subscriptions and remove the target one if it finds it
-	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
-LoopShowRemoval:
-	for userID, userSubs := range animeSubsMap {
-
-		// Skip users that are not the message author, so they don't delete everyone's subscriptions
-		if userID != authorID {
-			continue
-		}
-
-		for i, show := range userSubs {
-			if show == nil {
-				continue
-			}
-
-			if strings.ToLower(show.GetShow()) == strings.ToLower(title) {
-
-				// Delete either the entire object or remove just one item from it
-				entities.SharedInfo.Lock()
-				if _, ok := entities.SharedInfo.AnimeSubs[userID]; !ok {
-					continue
-				}
-				if len(userSubs) == 1 {
-					delete(entities.SharedInfo.AnimeSubs, userID)
-				} else {
-					if i < len(entities.SharedInfo.AnimeSubs[userID])-1 {
-						copy(entities.SharedInfo.AnimeSubs[userID][i:], entities.SharedInfo.AnimeSubs[userID][i+1:])
-					}
-					entities.SharedInfo.AnimeSubs[userID][len(entities.SharedInfo.AnimeSubs[userID])-1] = nil
-					entities.SharedInfo.AnimeSubs[userID] = entities.SharedInfo.AnimeSubs[userID][:len(entities.SharedInfo.AnimeSubs[userID])-1]
-				}
-				entities.SharedInfo.Unlock()
-
-				isDeleted = true
-				break LoopShowRemoval
-			}
+	for _, show := range userSubs {
+		if strings.ToLower(show.GetShow()) == strings.ToLower(title) {
+			db.RemoveAnimeSub(authorID, title)
+			isDeleted = true
+			break
 		}
 	}
 
@@ -319,146 +228,84 @@ LoopShowRemoval:
 		return fmt.Sprintf("Error: You are not subscribed to `%s`", title)
 	}
 
-	// Write to shared AnimeSubs DB
-	err := entities.AnimeSubsWrite(entities.SharedInfo.GetAnimeSubsMap())
-	if err != nil {
-		return err.Error()
-	}
-
 	return fmt.Sprintf("Success! You have unsubscribed from `%s`", title)
 }
 
 // unsubscribeCommandHandler removes a subscription for notifications for anime episode releases SUBBED
 func unsubscribeCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	var (
-		isDeleted bool
-
 		err           error
 		guildSettings = entities.GuildSettings{Prefix: "."}
 	)
 
+	// Fetch guild settings if in a server
 	if m.GuildID != "" {
 		guildSettings = db.GetGuildSettings(m.GuildID)
 	}
 
-	commandStrings := strings.SplitN(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ", 2)
-
+	// Parse the command arguments
+	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
 	if len(commandStrings) == 1 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%vunsub [anime]`\n\nAnime is the anime name from <https://AnimeSchedule.net> or the schedule command", guildSettings.GetPrefix()))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(
+			"Usage: `%sunsub [anime]`\n\nAnime is the anime name from <https://AnimeSchedule.net> or the schedule command",
+			guildSettings.GetPrefix(),
+		))
 		if err != nil {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-			return
 		}
 		return
 	}
 
-	// Iterate over all of the user's subscriptions and remove the target one if it finds it
-	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
-LoopShowRemoval:
-	for userID, userSubs := range animeSubsMap {
+	showName := commandStrings[1]
 
-		// Skip users that are not the message author so they don't delete everyone's subscriptions
-		if userID != m.Author.ID {
-			continue
-		}
-
-		for i, show := range userSubs {
-			if show == nil {
-				continue
-			}
-
-			if strings.ToLower(show.GetShow()) == strings.ToLower(commandStrings[1]) {
-
-				// Delete either the entire object or remove just one item from it
-				entities.SharedInfo.Lock()
-				if _, ok := entities.SharedInfo.AnimeSubs[userID]; !ok {
-					continue
-				}
-				if len(userSubs) == 1 {
-					delete(entities.SharedInfo.AnimeSubs, userID)
-				} else {
-					if i < len(entities.SharedInfo.AnimeSubs[userID])-1 {
-						copy(entities.SharedInfo.AnimeSubs[userID][i:], entities.SharedInfo.AnimeSubs[userID][i+1:])
-					}
-					entities.SharedInfo.AnimeSubs[userID][len(entities.SharedInfo.AnimeSubs[userID])-1] = nil
-					entities.SharedInfo.AnimeSubs[userID] = entities.SharedInfo.AnimeSubs[userID][:len(entities.SharedInfo.AnimeSubs[userID])-1]
-				}
-				entities.SharedInfo.Unlock()
-
-				isDeleted = true
-				break LoopShowRemoval
-			}
-		}
-	}
-
-	// Send an error if the target show is not one the user is subscribed to
-	if !isDeleted {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: You are not subscribed to `%s`", commandStrings[1]))
+	// Check if user is subscribed to the anime
+	subscribedShows := db.GetAnimeSubs(m.Author.ID)
+	if subscribedShows == nil {
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: You are not subscribed to `%s`", showName))
 		if err != nil {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-			return
 		}
 		return
 	}
 
-	err = entities.AnimeSubsWrite(entities.SharedInfo.GetAnimeSubsMap())
-	if err != nil {
-		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
-	}
+	// Remove the subscription
+	db.RemoveAnimeSub(m.Author.ID, showName)
 
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! You have unsubscribed from `%s`", commandStrings[1]))
+	// Confirmation message
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! You have unsubscribed from `%s`", showName))
 	if err != nil {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
 	}
 }
 
 // viewSubscriptions prints out all the anime the user is subscribed to
 func viewSubscriptions(authorID string) []string {
-	var (
-		message  string
-		messages []string
-	)
+	var message string
 
-	// Iterates over all of a user's subscribed shows and adds them to the message string
-	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
-	for userID, shows := range animeSubsMap {
-		if shows == nil {
-			continue
-		}
-
-		if userID != authorID {
-			continue
-		}
-
-		for i := 0; i < len(shows); i++ {
-			message += fmt.Sprintf("**%d.** %s\n", i+1, shows[i].GetShow())
-		}
-	}
-
-	if len(message) == 0 {
+	// Fetch user's anime subscriptions from MongoDB
+	subscribedShows := db.GetAnimeSubs(authorID)
+	if subscribedShows == nil || len(subscribedShows) == 0 {
 		return []string{"Error: You have no active anime subscriptions."}
 	}
 
-	// Splits the message if it's too big into multiple ones
+	// Format the subscription list
+	for i, show := range subscribedShows {
+		message += fmt.Sprintf("**%d.** %s\n", i+1, show.GetShow())
+	}
+
+	// Split long messages if necessary
 	if len(message) > 1900 {
-		messages = common.SplitLongMessage(message)
+		return common.SplitLongMessage(message)
 	}
 
-	if messages == nil {
-		return []string{message}
-	}
-
-	return messages
+	return []string{message}
 }
 
 // viewSubscriptionsHandler prints out all the anime the user is subscribed to
 func viewSubscriptionsHandler(s *discordgo.Session, m *discordgo.Message) {
 	var (
-		message  string
-		messages []string
-
+		message       string
+		messages      []string
 		guildSettings = entities.GuildSettings{Prefix: "."}
 	)
 
@@ -472,58 +319,37 @@ func viewSubscriptionsHandler(s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%ssubs`", guildSettings.GetPrefix()))
 		if err != nil {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-			return
 		}
 		return
 	}
 
-	// Iterates over all of a user's subscribed shows and adds them to the message string
-	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
-	for userID, shows := range animeSubsMap {
-		if shows == nil {
-			continue
-		}
-
-		if userID != m.Author.ID {
-			continue
-		}
-
-		for i := 0; i < len(shows); i++ {
-			message += fmt.Sprintf("**%d.** %s\n", i+1, shows[i].GetShow())
-		}
-	}
-
-	if len(message) == 0 {
+	// Fetch user's anime subscriptions from MongoDB
+	subscribedShows := db.GetAnimeSubs(m.Author.ID)
+	if subscribedShows == nil || len(subscribedShows) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You have no active show subscriptions.")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
-			return
 		}
 		return
 	}
 
-	// Splits the message if it's too big into multiple ones
+	// Format subscription list
+	for i, show := range subscribedShows {
+		message += fmt.Sprintf("**%d.** %s\n", i+1, show.GetShow())
+	}
+
+	// Split the message if too long
 	if len(message) > 1900 {
 		messages = common.SplitLongMessage(message)
+	} else {
+		messages = []string{message}
 	}
 
-	if messages == nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, message)
+	// Send messages to the user
+	for _, msg := range messages {
+		_, err := s.ChannelMessageSend(m.ChannelID, msg)
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
-			return
-		}
-		return
-	}
-
-	for i := 0; i < len(messages); i++ {
-		_, err := s.ChannelMessageSend(m.ChannelID, messages[i])
-		if err != nil {
-			_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot send anime notification subscriptions message.")
-			if err != nil {
-				common.LogError(s, guildSettings.BotLog, err)
-				return
-			}
 			return
 		}
 	}
@@ -539,18 +365,20 @@ func WebhooksMapHandler() {
 	newEpisodeswebhooksMapBlock.Block = true
 	newEpisodeswebhooksMapBlock.Unlock()
 
-	// Store all of the valid guilds' valid webhooks in a map
+	// Store all valid guilds' webhooks in a temporary map
 	tempWebhooksMap := make(map[string]*discordgo.Webhook)
 	tempThreadWebhooksMap := make(map[string]string)
-	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
+
+	// Fetch anime subscriptions from MongoDB
+	animeSubsMap := db.GetAllAnimeSubs()
+
 	for guildID, subs := range animeSubsMap {
-		if subs == nil {
+		if subs == nil || len(subs) == 0 {
 			continue
 		}
-		isGuild := false
-		if len(subs) >= 1 && subs[0].GetGuild() {
-			isGuild = true
-		}
+
+		// Determine if the subscription is for a guild
+		isGuild := subs[0].GetGuild()
 		if !isGuild {
 			continue
 		}
@@ -561,7 +389,7 @@ func WebhooksMapHandler() {
 		}
 		s := config.Mgr.SessionForGuild(guildIDInt)
 
-		// Checks if bot is in target guild
+		// Check if the bot is in the target guild
 		_, err = s.State.Guild(guildID)
 		if err != nil {
 			continue
@@ -569,45 +397,36 @@ func WebhooksMapHandler() {
 
 		// Check if bot has required permissions for the new episodes channel
 		isThread := false
-		newepisodes := db.GetGuildAutopost(guildID, "newepisodes")
-		if newepisodes == (entities.Cha{}) {
+		newEpisodes := db.GetGuildAutopost(guildID, "newepisodes")
+		if newEpisodes == (entities.Cha{}) {
 			continue
 		}
-		perms, err := s.State.UserChannelPermissions(s.State.User.ID, newepisodes.GetID())
+		perms, err := s.State.UserChannelPermissions(s.State.User.ID, newEpisodes.GetID())
 		if err != nil {
 			continue
 		}
-		if perms&discordgo.PermissionManageWebhooks != discordgo.PermissionManageWebhooks {
-			continue
-		}
-		if perms&discordgo.PermissionViewChannel != discordgo.PermissionViewChannel {
-			continue
-		}
-		if perms&discordgo.PermissionSendMessages != discordgo.PermissionSendMessages {
+		if perms&discordgo.PermissionManageWebhooks != discordgo.PermissionManageWebhooks ||
+			perms&discordgo.PermissionViewChannel != discordgo.PermissionViewChannel ||
+			perms&discordgo.PermissionSendMessages != discordgo.PermissionSendMessages {
 			continue
 		}
 
 		// Handle threads
-		newEpisodesChannel, err := s.State.Channel(newepisodes.GetID())
+		newEpisodesChannel, err := s.State.Channel(newEpisodes.GetID())
 		if err != nil {
-			newEpisodesChannel, err = s.Channel(newepisodes.GetID())
-			if err == nil {
-				if newEpisodesChannel.IsThread() {
-					isThread = true
-				}
-				if isThread && perms&discordgo.PermissionSendMessagesInThreads != discordgo.PermissionSendMessagesInThreads {
-					continue
-				}
-			}
-		} else {
-			if newEpisodesChannel.IsThread() {
+			newEpisodesChannel, err = s.Channel(newEpisodes.GetID())
+			if err == nil && newEpisodesChannel.IsThread() {
 				isThread = true
 			}
-			if isThread && perms&discordgo.PermissionSendMessagesInThreads != discordgo.PermissionSendMessagesInThreads {
-				continue
-			}
+		} else if newEpisodesChannel.IsThread() {
+			isThread = true
 		}
-		channelID := newepisodes.GetID()
+
+		if isThread && perms&discordgo.PermissionSendMessagesInThreads != discordgo.PermissionSendMessagesInThreads {
+			continue
+		}
+
+		channelID := newEpisodes.GetID()
 		if isThread {
 			channelID = newEpisodesChannel.ParentID
 		}
@@ -617,16 +436,15 @@ func WebhooksMapHandler() {
 		if err != nil {
 			continue
 		}
+
 		for _, w := range ws {
-			if w.User.ID != s.State.User.ID ||
-				w.ChannelID != channelID {
-				continue
+			if w.User.ID == s.State.User.ID && w.ChannelID == channelID {
+				tempWebhooksMap[guildID] = w
+				if isThread {
+					tempThreadWebhooksMap[guildID] = newEpisodes.GetID()
+				}
+				break
 			}
-			tempWebhooksMap[guildID] = w
-			if isThread {
-				tempThreadWebhooksMap[guildID] = newepisodes.GetID()
-			}
-			break
 		}
 
 		if _, ok := tempWebhooksMap[guildID]; ok {
@@ -648,26 +466,23 @@ func WebhooksMapHandler() {
 		if err != nil {
 			continue
 		}
+
 		tempWebhooksMap[guildID] = wh
 		if isThread {
-			tempThreadWebhooksMap[guildID] = newepisodes.GetID()
+			tempThreadWebhooksMap[guildID] = newEpisodes.GetID()
 		}
 	}
 
+	// Update webhooks map with validated data
 	newEpisodesWebhooksMap.Lock()
-	newEpisodesWebhooksMap.webhooksMap = make(map[string]*discordgo.Webhook)
-	for guid, w := range tempWebhooksMap {
-		newEpisodesWebhooksMap.webhooksMap[guid] = w
-	}
+	newEpisodesWebhooksMap.webhooksMap = tempWebhooksMap
 	newEpisodesWebhooksMap.Unlock()
 
 	newEpisodesThreadWebhooksMap.Lock()
-	newEpisodesThreadWebhooksMap.webhooksMap = make(map[string]string)
-	for guid, threadID := range tempThreadWebhooksMap {
-		newEpisodesThreadWebhooksMap.webhooksMap[guid] = threadID
-	}
+	newEpisodesThreadWebhooksMap.webhooksMap = tempThreadWebhooksMap
 	newEpisodesThreadWebhooksMap.Unlock()
 
+	// Unlock webhook block
 	newEpisodeswebhooksMapBlock.Lock()
 	newEpisodeswebhooksMapBlock.Block = false
 	newEpisodeswebhooksMapBlock.Unlock()
@@ -716,7 +531,7 @@ func animeSubsWebhookHandler() {
 	}
 	newEpisodeswebhooksMapBlock.RUnlock()
 
-	// Fetches today's shows
+	// Fetch today's shows
 	entities.AnimeSchedule.RLock()
 	todayShows = append(todayShows, entities.AnimeSchedule.AnimeSchedule[int(now.Weekday())]...)
 	entities.AnimeSchedule.RUnlock()
@@ -735,17 +550,17 @@ func animeSubsWebhookHandler() {
 	}
 	now = now.In(location)
 
-	// Iterates over all guilds and sends notifications if necessary
-	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
+	// Fetch anime subscriptions from MongoDB
+	animeSubsMap := db.GetAllAnimeSubs()
+
+	// Iterate over guilds and send notifications
 	for guildID, subscriptions := range animeSubsMap {
-		if subscriptions == nil {
+		if subscriptions == nil || len(subscriptions) == 0 {
 			continue
 		}
-		isGuild := false
-		if len(subscriptions) >= 1 && subscriptions[0].GetGuild() {
-			isGuild = true
-		}
-		if !isGuild {
+
+		// Ensure this is a guild subscription
+		if !subscriptions[0].GetGuild() {
 			continue
 		}
 
@@ -754,35 +569,32 @@ func animeSubsWebhookHandler() {
 
 		guard <- struct{}{}
 		eg.Go(func() error {
+			defer func() { <-guard }()
+
 			guildIDInt, err := strconv.ParseInt(guid, 10, 64)
 			if err != nil {
-				<-guard
-				return err
+				return nil
 			}
 			s := config.Mgr.SessionForGuild(guildIDInt)
 
-			// Checks if bot is in target guild
+			// Check if bot is in target guild
 			_, err = s.State.Guild(guid)
 			if err != nil {
-				<-guard
 				return nil
 			}
 			guildSettings := db.GetGuildSettings(guid)
 
 			// Get pingable role ID
-			newepisodes := db.GetGuildAutopost(guid, "newepisodes")
-			pingableRoleId := newepisodes.GetRoleID()
+			newEpisodes := db.GetGuildAutopost(guid, "newepisodes")
+			pingableRoleID := newEpisodes.GetRoleID()
 
 			// Get valid webhook
 			newEpisodesWebhooksMap.RLock()
-			if _, ok := newEpisodesWebhooksMap.webhooksMap[guid]; !ok {
-				newEpisodesWebhooksMap.RUnlock()
-				<-guard
+			w, exists := newEpisodesWebhooksMap.webhooksMap[guid]
+			newEpisodesWebhooksMap.RUnlock()
+			if !exists {
 				return nil
 			}
-			wID := newEpisodesWebhooksMap.webhooksMap[guid].ID
-			wToken := newEpisodesWebhooksMap.webhooksMap[guid].Token
-			newEpisodesWebhooksMap.RUnlock()
 
 			threadID := ""
 			newEpisodesThreadWebhooksMap.RLock()
@@ -791,19 +603,19 @@ func animeSubsWebhookHandler() {
 			}
 			newEpisodesThreadWebhooksMap.RUnlock()
 
-			for subKey, guildShow := range subs {
+			var updatedSubs []*entities.ShowSub
+			for _, guildShow := range subs {
 				if guildShow == nil {
 					continue
 				}
+
 				if guildShow.GetNotified() {
+					updatedSubs = append(updatedSubs, guildShow) // Preserve existing notified shows
 					continue
 				}
 
 				for _, scheduleShow := range todayShows {
-					if scheduleShow == nil {
-						continue
-					}
-					if scheduleShow.GetDelayed() != "" {
+					if scheduleShow == nil || scheduleShow.GetDelayed() != "" {
 						continue
 					}
 					if !strings.EqualFold(guildShow.GetShow(), scheduleShow.GetName()) {
@@ -823,55 +635,50 @@ func animeSubsWebhookHandler() {
 					// Form the air date for today
 					scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
 
-					// Checks whether the show has already aired today
+					// Check whether the show has already aired today
 					if now.Before(scheduleDate) {
 						continue
 					}
 
 					// Use webhook to post if available
 					var pingableRoleStr string
-					if pingableRoleId != "" {
-						pingableRoleStr = fmt.Sprintf("<@&%s>", pingableRoleId)
+					if pingableRoleID != "" {
+						pingableRoleStr = fmt.Sprintf("<@&%s>", pingableRoleID)
+					}
+					params := &discordgo.WebhookParams{
+						Content: pingableRoleStr,
+						Embeds:  []*discordgo.MessageEmbed{embeds.SubscriptionEmbed(scheduleShow)},
 					}
 					if threadID != "" {
-						_, err = s.WebhookThreadExecute(wID, wToken, false, threadID, &discordgo.WebhookParams{
-							Content: pingableRoleStr,
-							Embeds:  []*discordgo.MessageEmbed{embeds.SubscriptionEmbed(scheduleShow)},
-						})
+						_, err = s.WebhookThreadExecute(w.ID, w.Token, false, threadID, params)
 					} else {
-						_, err = s.WebhookExecute(wID, wToken, false, &discordgo.WebhookParams{
-							Content: pingableRoleStr,
-							Embeds:  []*discordgo.MessageEmbed{embeds.SubscriptionEmbed(scheduleShow)},
-						})
+						_, err = s.WebhookExecute(w.ID, w.Token, false, params)
 					}
 
-					// Sets the show as notified for that guild
-					entities.SharedInfo.Lock()
-					if _, ok := entities.SharedInfo.AnimeSubs[guid]; ok {
-						entities.SharedInfo.AnimeSubs[guid][subKey].SetNotified(true)
-						if err != nil {
-							entities.SharedInfo.Unlock()
-							log.Println("Failed webhookExecute in animeSubsWebhookHandler: ", err)
-							<-guard
-							return nil
-						}
+					if err != nil {
+						log.Println("Failed webhookExecute in animeSubsWebhookHandler: ", err)
+						break
 					}
-					entities.SharedInfo.Unlock()
+
+					// Mark as notified
+					guildShow.SetNotified(true)
+					break
 				}
+
+				updatedSubs = append(updatedSubs, guildShow)
 			}
 
-			<-guard
+			// Save updated subscriptions to MongoDB
+			db.SetAnimeSubs(guid, updatedSubs, true)
+
 			return nil
 		})
 	}
 
 	err = eg.Wait()
 	if err != nil {
-		log.Println(err)
+		log.Printf("anime subs webhook handler: %s", err)
 	}
-
-	// Write to shared AnimeSubs DB
-	_ = entities.AnimeSubsWrite(entities.SharedInfo.GetAnimeSubsMap())
 
 	animeSubFeedWebhookBlock.Lock()
 	animeSubFeedWebhookBlock.Block = false
@@ -920,15 +727,17 @@ func animeSubsHandler() {
 	}
 	now = now.In(location)
 
-	// Fetches today's shows
+	// Fetch today's shows
 	entities.AnimeSchedule.RLock()
 	todayShows = append(todayShows, entities.AnimeSchedule.AnimeSchedule[int(now.Weekday())]...)
 	entities.AnimeSchedule.RUnlock()
 
-	// Iterates over all users and their shows and sends notifications if need be
-	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
+	// Fetch all anime subscriptions from the database
+	animeSubsMap := db.GetAllAnimeSubs()
+
+	// Iterate over all users and their subscriptions
 	for userID, subscriptions := range animeSubsMap {
-		if subscriptions == nil {
+		if len(subscriptions) == 0 {
 			continue
 		}
 
@@ -938,9 +747,10 @@ func animeSubsHandler() {
 			isGuild       bool
 			isThread      bool
 		)
-		if len(subscriptions) >= 1 && subscriptions[0].GetGuild() {
+		if subscriptions[0].GetGuild() {
 			isGuild = true
 		}
+
 		if isGuild {
 			guildIDInt, err := strconv.ParseInt(userID, 10, 64)
 			if err != nil {
@@ -948,7 +758,7 @@ func animeSubsHandler() {
 			}
 			session = config.Mgr.SessionForGuild(guildIDInt)
 
-			// Checks if bot is in target guild
+			// Check if bot is in target guild
 			_, err = session.State.Guild(userID)
 			if err != nil {
 				continue
@@ -962,74 +772,60 @@ func animeSubsHandler() {
 			if newepisodes == (entities.Cha{}) {
 				continue
 			}
-			// Check if bot has required permissions for this channel
+
+			// Check if bot has required permissions
 			perms, err := session.State.UserChannelPermissions(session.State.User.ID, newepisodes.GetID())
 			if err != nil {
 				continue
 			}
-			if perms&discordgo.PermissionManageWebhooks == discordgo.PermissionManageWebhooks {
-				continue
-			}
-			if perms&discordgo.PermissionViewChannel != discordgo.PermissionViewChannel {
-				continue
-			}
-			if perms&discordgo.PermissionSendMessages != discordgo.PermissionSendMessages {
-				continue
-			}
-			if perms&discordgo.PermissionEmbedLinks != discordgo.PermissionEmbedLinks {
+			if perms&discordgo.PermissionManageWebhooks == discordgo.PermissionManageWebhooks ||
+				perms&discordgo.PermissionViewChannel != discordgo.PermissionViewChannel ||
+				perms&discordgo.PermissionSendMessages != discordgo.PermissionSendMessages ||
+				perms&discordgo.PermissionEmbedLinks != discordgo.PermissionEmbedLinks {
 				continue
 			}
 
 			newEpisodesChannel, err := session.State.Channel(newepisodes.ID)
 			if err != nil {
 				newEpisodesChannel, err = session.Channel(newepisodes.GetID())
-				if err == nil {
-					if newEpisodesChannel.IsThread() {
-						isThread = true
-					}
-					if isThread && perms&discordgo.PermissionSendMessagesInThreads != discordgo.PermissionSendMessagesInThreads {
-						continue
-					}
-				}
-			} else {
-				if newEpisodesChannel.IsThread() {
+				if err == nil && newEpisodesChannel.IsThread() {
 					isThread = true
 				}
-				if isThread && perms&discordgo.PermissionSendMessagesInThreads != discordgo.PermissionSendMessagesInThreads {
-					continue
-				}
+			} else if newEpisodesChannel.IsThread() {
+				isThread = true
+			}
+
+			if isThread && perms&discordgo.PermissionSendMessagesInThreads != discordgo.PermissionSendMessagesInThreads {
+				continue
 			}
 
 			guildSettings = db.GetGuildSettings(userID)
 		}
 
-		for subKey, userShow := range subscriptions {
+		// Process subscriptions
+		var updatedSubs []*entities.ShowSub
+
+		for _, userShow := range subscriptions {
 			if userShow == nil {
 				continue
 			}
+
 			if userShow.GetNotified() {
+				updatedSubs = append(updatedSubs, userShow) // Preserve existing notified shows
 				continue
 			}
 
 			for _, scheduleShow := range todayShows {
-				if scheduleShow == nil {
-					continue
-				}
-				if scheduleShow.GetDelayed() != "" {
+				if scheduleShow == nil || scheduleShow.GetDelayed() != "" {
 					continue
 				}
 
-				if strings.ToLower(userShow.GetShow()) != strings.ToLower(scheduleShow.GetName()) {
-					continue
-				}
-				if userShow.GetNotified() {
+				if !strings.EqualFold(userShow.GetShow(), scheduleShow.GetName()) {
 					continue
 				}
 
-				if userShow.GetGuild() {
-					if !guildSettings.GetDonghua() && scheduleShow.GetDonghua() {
-						continue
-					}
+				if userShow.GetGuild() && !guildSettings.GetDonghua() && scheduleShow.GetDonghua() {
+					continue
 				}
 
 				// Parse the air hour and minute
@@ -1042,70 +838,46 @@ func animeSubsHandler() {
 				// Form the air date for Today
 				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
 
-				// Checks whether the show has already aired today
+				// Skip if it's not time yet
 				if now.Before(scheduleDate) {
 					continue
 				}
 
-				// Wait some milliseconds so it doesn't hit the rate limit easily
+				// Wait to avoid rate limit
 				time.Sleep(time.Millisecond * 150)
 
-				uid := userID
-				us := userShow
-				ss := scheduleShow
-				sk := subKey
-				s := session
-				// Sends notification to user DMs if possible, or to guild autopost channel
-				if us.GetGuild() {
-					newepisodes := db.GetGuildAutopost(uid, "newepisodes")
+				// Send notifications
+				if userShow.GetGuild() {
+					newepisodes := db.GetGuildAutopost(userID, "newepisodes")
 					if newepisodes == (entities.Cha{}) {
 						continue
 					}
 
-					// Sends embed in Guild
-					err = embeds.Subscription(s, ss, newepisodes.GetID(), newepisodes.GetRoleID())
+					err = embeds.Subscription(session, scheduleShow, newepisodes.GetID(), newepisodes.GetRoleID())
 					if err != nil {
 						continue
 					}
-
-					// Sets the show as notified for that guild
-					entities.SharedInfo.Lock()
-					if _, ok := entities.SharedInfo.AnimeSubs[uid]; ok {
-						entities.SharedInfo.AnimeSubs[uid][sk].SetNotified(true)
+				} else {
+					dm, err := session.UserChannelCreate(userID)
+					if err != nil {
+						continue
 					}
-					entities.SharedInfo.Unlock()
-
-					// Wait some milliseconds, so it doesn't hit the rate limit easily
-					time.Sleep(time.Millisecond * 150)
-
-					continue
+					err = embeds.Subscription(session, scheduleShow, dm.ID, "")
+					if err != nil {
+						continue
+					}
 				}
 
-				// Sends embed in DMs
-				dm, err := s.UserChannelCreate(uid)
-				if err != nil {
-					continue
-				}
-				err = embeds.Subscription(s, ss, dm.ID, "")
-				if err != nil {
-					continue
-				}
-
-				// Sets the show as notified for that user
-				entities.SharedInfo.Lock()
-				if _, ok := entities.SharedInfo.AnimeSubs[uid]; ok {
-					entities.SharedInfo.AnimeSubs[uid][sk].SetNotified(true)
-				}
-				entities.SharedInfo.Unlock()
-
-				// Wait some milliseconds so it doesn't hit the rate limit easily
-				time.Sleep(time.Millisecond * 150)
+				// Mark as notified
+				userShow.SetNotified(true)
+				break
 			}
-		}
-	}
 
-	// Write to shared AnimeSubs DB
-	_ = entities.AnimeSubsWrite(entities.SharedInfo.GetAnimeSubsMap())
+			updatedSubs = append(updatedSubs, userShow)
+		}
+
+		db.SetAnimeSubs(userID, updatedSubs, isGuild)
+	}
 
 	animeSubFeedBlock.Lock()
 	animeSubFeedBlock.Block = false
@@ -1130,7 +902,7 @@ func AnimeSubsWebhooksMapTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 	}
 }
 
-// ResetSubscriptions Resets anime sub notifications status
+// ResetSubscriptions resets anime sub notifications status
 func ResetSubscriptions() {
 	var todayShows []*entities.ShowAirTime
 
@@ -1141,40 +913,37 @@ func ResetSubscriptions() {
 	}
 	now = now.In(location)
 
-	// Fetches Today's shows
+	// Fetch today's shows
 	entities.AnimeSchedule.RLock()
-	for dayInt, scheduleShows := range entities.AnimeSchedule.AnimeSchedule {
-		// Checks if the target schedule day is today or not
-		if int(now.Weekday()) != dayInt {
-			continue
-		}
-
-		// Saves today's anime
-		todayShows = scheduleShows
-		break
-	}
+	todayShows = entities.AnimeSchedule.AnimeSchedule[int(now.Weekday())]
 	entities.AnimeSchedule.RUnlock()
 
-	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
+	// Fetch all anime subscriptions from the database
+	animeSubsMap := db.GetAllAnimeSubs()
+
 	for userID, subscriptions := range animeSubsMap {
-		if subscriptions == nil {
+		if len(subscriptions) == 0 {
 			continue
 		}
 
-		for subKey, userShow := range subscriptions {
-			if userShow == nil {
-				continue
-			}
+		updated := false
+		var updatedSubs []*entities.ShowSub
 
-			for _, scheduleShow := range todayShows {
+		// Check if this is a guild (Discord server)
+		isGuild := subscriptions[0].GetGuild()
+
+		if isGuild {
+			// **Guilds are always subscribed to all shows**
+			updatedSubs = make([]*entities.ShowSub, len(todayShows))
+			for i, scheduleShow := range todayShows {
 				if scheduleShow == nil {
 					continue
 				}
 
-				// Checks if the target show matches
-				if !strings.EqualFold(userShow.GetShow(), scheduleShow.GetName()) {
-					continue
-				}
+				// Create a new ShowSub for the guild
+				newGuildShow := &entities.ShowSub{}
+				newGuildShow.SetShow(scheduleShow.GetName())
+				newGuildShow.SetGuild(true)
 
 				// Parse the air hour and minute
 				t, err := time.Parse("3:04 PM", scheduleShow.GetAirTime())
@@ -1186,22 +955,61 @@ func ResetSubscriptions() {
 				// Form the air date for today
 				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
 
-				// Calculates whether the show has already aired today
-				entities.SharedInfo.Lock()
-				if _, ok := entities.SharedInfo.AnimeSubs[userID]; ok {
-					if now.Before(scheduleDate) {
-						entities.SharedInfo.AnimeSubs[userID][subKey].SetNotified(false)
-					} else {
-						entities.SharedInfo.AnimeSubs[userID][subKey].SetNotified(true)
-					}
+				// Reset notification status based on the time
+				if now.Before(scheduleDate) {
+					newGuildShow.SetNotified(false)
+				} else {
+					newGuildShow.SetNotified(true)
 				}
-				entities.SharedInfo.Unlock()
+
+				updatedSubs[i] = newGuildShow
+			}
+			updated = true
+		} else {
+			// **Process regular user subscriptions**
+			for _, userShow := range subscriptions {
+				if userShow == nil {
+					continue
+				}
+
+				for _, scheduleShow := range todayShows {
+					if scheduleShow == nil {
+						continue
+					}
+
+					// Check if the show matches
+					if !strings.EqualFold(userShow.GetShow(), scheduleShow.GetName()) {
+						continue
+					}
+
+					// Parse the air hour and minute
+					t, err := time.Parse("3:04 PM", scheduleShow.GetAirTime())
+					if err != nil {
+						log.Println(err)
+						continue
+					}
+
+					// Form the air date for today
+					scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
+
+					// Reset notification status based on the time
+					if now.Before(scheduleDate) {
+						userShow.SetNotified(false)
+					} else {
+						userShow.SetNotified(true)
+					}
+
+					updatedSubs = append(updatedSubs, userShow)
+					updated = true
+				}
 			}
 		}
-	}
 
-	// Write to shared AnimeSubs DB
-	_ = entities.AnimeSubsWrite(entities.SharedInfo.GetAnimeSubsMap())
+		// Save the updated subscriptions to MongoDB
+		if updated {
+			db.SetAnimeSubs(userID, updatedSubs, isGuild)
+		}
+	}
 }
 
 func init() {

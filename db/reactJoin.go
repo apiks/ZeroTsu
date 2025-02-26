@@ -2,38 +2,63 @@ package db
 
 import (
 	"github.com/r-anime/ZeroTsu/entities"
+	"log"
 )
 
-// GetGuildReactJoin returns a guild's react join map from in-memory
+// GetGuildReactJoin retrieves the ReactJoin map from MongoDB
 func GetGuildReactJoin(guildID string) map[string]*entities.ReactJoin {
-	entities.HandleNewGuild(guildID)
+	err := entities.InitGuildIfNotExists(guildID)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
 
-	entities.Guilds.RLock()
-	defer entities.Guilds.RUnlock()
+	reactJoinMap, err := entities.LoadReactJoinMap(guildID)
+	if err != nil {
+		return nil
+	}
 
-	return entities.Guilds.DB[guildID].GetReactJoinMap()
+	return reactJoinMap
 }
 
-// SetGuildReactJoin sets a guild's react join map in-memory
-func SetGuildReactJoin(guildID string, reactJoin map[string]*entities.ReactJoin) {
-	entities.HandleNewGuild(guildID)
+// SetGuildReactJoin saves or deletes a guild's ReactJoin map in MongoDB
+func SetGuildReactJoin(guildID string, reactJoin map[string]*entities.ReactJoin, delete ...bool) {
+	err := entities.InitGuildIfNotExists(guildID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
-	entities.Guilds.Lock()
-	defer entities.Guilds.Unlock()
-
-	entities.Guilds.DB[guildID].SetReactJoinMap(reactJoin)
-
-	entities.Guilds.DB[guildID].WriteData("reactJoin", reactJoin)
+	if len(delete) == 0 {
+		err := entities.SaveReactJoinMap(guildID, reactJoin)
+		if err != nil {
+			log.Printf("Error saving react join map for guild %s: %v\n", guildID, err)
+		}
+	} else {
+		err := entities.DeleteReactJoinMap(guildID)
+		if err != nil {
+			log.Printf("Error deleting react join map for guild %s: %v\n", guildID, err)
+		}
+	}
 }
 
-// SetGuildReactJoinEmoji sets a guild's react join emoji map in-memory
-func SetGuildReactJoinEmoji(guildID, messageID string, reactJoinEmoji *entities.ReactJoin) {
-	entities.HandleNewGuild(guildID)
+// SetGuildReactJoinEmoji saves or removes a ReactJoin emoji entry in MongoDB
+func SetGuildReactJoinEmoji(guildID, messageID string, reactJoinEmoji *entities.ReactJoin, delete ...bool) {
+	err := entities.InitGuildIfNotExists(guildID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
-	entities.Guilds.Lock()
-	defer entities.Guilds.Unlock()
-
-	entities.Guilds.DB[guildID].AssignToReactJoinMap(messageID, reactJoinEmoji)
-
-	entities.Guilds.DB[guildID].WriteData("reactJoin", entities.Guilds.DB[guildID].GetReactJoinMap())
+	if len(delete) == 0 {
+		err := entities.SaveReactJoinEntry(guildID, messageID, reactJoinEmoji)
+		if err != nil {
+			log.Printf("Error saving react join emoji for guild %s: %v\n", guildID, err)
+		}
+	} else {
+		err := entities.DeleteReactJoinEntry(guildID, messageID)
+		if err != nil {
+			log.Printf("Error deleting react join emoji for guild %s: %v\n", guildID, err)
+		}
+	}
 }

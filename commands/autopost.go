@@ -108,47 +108,55 @@ func setDailyScheduleCommandHandler(s *discordgo.Session, m *discordgo.Message) 
 
 // setNewEpisodesCommand sets a channel ID as the autopost new airing anime episodes target channel
 func setNewEpisodesCommand(targetChannel *discordgo.Channel, enabled bool, role *discordgo.Role, guildID string) string {
-	var newEpisodes = db.GetGuildAutopost(guildID, "newepisodes")
+	// Retrieve the current new episodes autopost configuration
+	newEpisodes := db.GetGuildAutopost(guildID, "newepisodes")
 
+	// If no target channel is provided and autopost is already disabled
 	if targetChannel == nil && newEpisodes == (entities.Cha{}) {
 		return "Error: New anime episodes autopost is currently not set."
 	} else if targetChannel == nil && newEpisodes != (entities.Cha{}) && enabled {
 		if newEpisodes.GetRoleID() != "" {
-			return fmt.Sprintf("Current New anime episodes autopost channel is: `%s - Channel ID: %s- Role ID: %s`", newEpisodes.GetName(), newEpisodes.GetID(), newEpisodes.GetRoleID())
+			return fmt.Sprintf("Current New anime episodes autopost channel is: `%s - Channel ID: %s - Role ID: %s`",
+				newEpisodes.GetName(), newEpisodes.GetID(), newEpisodes.GetRoleID())
 		} else {
-			return fmt.Sprintf("Current New anime episodes autopost channel is: `%s - Channel ID: %s`", newEpisodes.GetName(), newEpisodes.GetID())
+			return fmt.Sprintf("Current New anime episodes autopost channel is: `%s - Channel ID: %s`",
+				newEpisodes.GetName(), newEpisodes.GetID())
 		}
 	}
 
-	if newEpisodes == (entities.Cha{}) {
-		newEpisodes = entities.NewCha("", "", "")
-	}
-
-	// Parse and save the target channel
-	newEpisodes = entities.Cha{}
+	// Create new `newEpisodes` object
 	if enabled {
 		newEpisodes = entities.NewCha(targetChannel.Name, targetChannel.ID, "")
+	} else {
+		newEpisodes = entities.Cha{}
 	}
 
+	// Set role ID if provided
 	if role != nil {
 		newEpisodes = newEpisodes.SetRoleID(role.ID)
 	}
 
-	// Write
+	// Save to database
 	db.SetGuildAutopost(guildID, "newepisodes", newEpisodes)
-	entities.SetupGuildSub(guildID)
-	err := entities.AnimeSubsWrite(entities.SharedInfo.GetAnimeSubsMap())
-	if err != nil {
-		return "Error: " + err.Error()
+
+	// Update anime subscriptions in MongoDB only if enabled
+	if enabled {
+		animeSubs := db.GetAllAnimeSubs()
+		if subs, exists := animeSubs[guildID]; exists {
+			db.SetAnimeSubs(guildID, subs, true)
+		}
 	}
 
+	// Return success message
 	if newEpisodes == (entities.Cha{}) {
 		return "Success: New anime episodes autopost has been disabled!"
 	} else {
 		if newEpisodes.GetRoleID() != "" {
-			return fmt.Sprintf("Success: New anime episodes autopost channel is: `%s - Channel ID: %s- Role ID: %s`", newEpisodes.GetName(), newEpisodes.GetID(), newEpisodes.GetRoleID())
+			return fmt.Sprintf("Success: New anime episodes autopost channel is: `%s - Channel ID: %s - Role ID: %s`",
+				newEpisodes.GetName(), newEpisodes.GetID(), newEpisodes.GetRoleID())
 		} else {
-			return fmt.Sprintf("Success: New anime episodes autopost channel is: `%s - Channel ID: %s`", newEpisodes.GetName(), newEpisodes.GetID())
+			return fmt.Sprintf("Success: New anime episodes autopost channel is: `%s - Channel ID: %s`",
+				newEpisodes.GetName(), newEpisodes.GetID())
 		}
 	}
 }
@@ -159,67 +167,74 @@ func setNewEpisodesCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	newEpisodes := db.GetGuildAutopost(m.GuildID, "newepisodes")
 	commandStrings := strings.Split(strings.Replace(strings.ToLower(m.Content), "  ", " ", -1), " ")
 
-	// Displays current new episodes channel
+	// Displays current autopost channel
 	if len(commandStrings) == 1 {
 		if newEpisodes == (entities.Cha{}) {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: Autopost channel for new airing anime episodes is currently not set. Please use `%snewepisodes [channel]`", guildSettings.GetPrefix()))
+			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(
+				"Error: Autopost channel for new airing anime episodes is currently not set. "+
+					"Please use `%snewepisodes [channel]`", guildSettings.GetPrefix()))
 			if err != nil {
 				common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-				return
 			}
 			return
 		}
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Current Autopost channel for new airing anime episodes is: `%s - %s` \n\n To change it please use `%snewepisodes [channel]`\nTo disable it please use `%snewepisodes disable`", newEpisodes.GetName(), newEpisodes.GetID(), guildSettings.GetPrefix(), guildSettings.GetPrefix()))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(
+			"Current Autopost channel for new airing anime episodes is: `%s - %s`\n\n"+
+				"To change it, please use `%snewepisodes [channel]`\n"+
+				"To disable it, please use `%snewepisodes disable`",
+			newEpisodes.GetName(), newEpisodes.GetID(), guildSettings.GetPrefix(), guildSettings.GetPrefix()))
 		if err != nil {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-			return
 		}
 		return
 	}
+
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%snewepisodes [channel]`\nTo disable it please use `%snewepisodes disable`", guildSettings.GetPrefix(), guildSettings.GetPrefix()))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(
+			"Usage: `%snewepisodes [channel]`\nTo disable it, please use `%snewepisodes disable`",
+			guildSettings.GetPrefix(), guildSettings.GetPrefix()))
 		if err != nil {
 			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-			return
 		}
 		return
 	}
 
-	if newEpisodes == (entities.Cha{}) {
-		newEpisodes = entities.NewCha("", "", "")
-	}
-
-	// Parse and save the target channel
+	// Handle disabling the autopost
 	if commandStrings[1] == "disable" || commandStrings[1] == "0" || commandStrings[1] == "false" {
-		newEpisodes = entities.Cha{}
-	} else {
-		channelID, channelName := common.ChannelParser(s, commandStrings[1], m.GuildID)
-		newEpisodes = entities.NewCha(channelName, channelID, "")
+		db.SetGuildAutopost(m.GuildID, "newepisodes", entities.Cha{})
+		_, err := s.ChannelMessageSend(m.ChannelID, "Success! Autopost for new airing anime episodes has been disabled.")
+		if err != nil {
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		}
+		return
 	}
 
-	// Write
+	// Parse the channel
+	channelID, channelName := common.ChannelParser(s, commandStrings[1], m.GuildID)
+	if channelID == "" {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid channel specified.")
+		if err != nil {
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		}
+		return
+	}
+
+	// Set the new autopost channel
+	newEpisodes = entities.NewCha(channelName, channelID, "")
 	db.SetGuildAutopost(m.GuildID, "newepisodes", newEpisodes)
 
-	if newEpisodes == (entities.Cha{}) {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Success! Autopost for new airing anime episodes has been disabled! If this was not intentional please verify the channel ID.")
-		if err != nil {
-			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-			return
-		}
-		return
+	// Update anime subscriptions only if enabled
+	animeSubs := db.GetAllAnimeSubs()
+	if subs, exists := animeSubs[m.GuildID]; exists {
+		db.SetAnimeSubs(m.GuildID, subs, true)
 	}
 
-	entities.SetupGuildSub(m.GuildID)
-	err := entities.AnimeSubsWrite(entities.SharedInfo.GetAnimeSubsMap())
+	// Confirmation message
+	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(
+		"Success! New Autopost channel for new airing anime episodes is: `%s - %s`",
+		newEpisodes.GetName(), newEpisodes.GetID()))
 	if err != nil {
 		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
-	}
-
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! New Autopost channel for new airing anime episodes is: `%s - %s`", newEpisodes.GetName(), newEpisodes.GetID()))
-	if err != nil {
-		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
 	}
 }
 

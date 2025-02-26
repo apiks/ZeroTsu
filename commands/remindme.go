@@ -13,15 +13,9 @@ import (
 )
 
 // remindMeCommand sets a remindMe note for after the target time has passed to be sent to the user
-func remindMeCommand(channelID, userID, time, message string) string {
-	var (
-		remindMeObject entities.RemindMe
-		flag           bool
-		dummySlice     entities.RemindMeSlice
-	)
-
-	// Figures out the date to show the message
-	date, perma, err := common.ResolveTimeFromString(time)
+func remindMeCommand(channelID, userID, timeStr, message string, isGuild bool, premium bool) string {
+	// Parse the reminder time
+	date, perma, err := common.ResolveTimeFromString(timeStr)
 	if err != nil {
 		return "Error: Invalid time given."
 	}
@@ -29,247 +23,172 @@ func remindMeCommand(channelID, userID, time, message string) string {
 		return "Error: Cannot use that time. Please use another."
 	}
 
-	// Saves the remindMe data to an object of type remindMe
+	// Load existing reminders for this user/guild
+	remindMeSlice := db.GetReminders(userID)
+	if remindMeSlice == nil {
+		remindMeSlice = &entities.RemindMeSlice{
+			RemindMeSlice: []*entities.RemindMe{},
+			Guild:         isGuild,
+			Premium:       premium,
+		}
+	}
+
+	// Determine ID for the new reminder
 	maxId := 1
-	if _, ok := entities.SharedInfo.GetRemindMesMap()[userID]; ok {
-		for _, remind := range entities.SharedInfo.GetRemindMesMap()[userID].GetRemindMeSlice() {
-			if remind.GetRemindID() <= maxId {
-				continue
-			}
+	for _, remind := range remindMeSlice.GetRemindMeSlice() {
+		if remind.GetRemindID() > maxId {
 			maxId = remind.GetRemindID()
 		}
 	}
-	if _, ok := entities.SharedInfo.GetRemindMesMap()[userID]; ok {
-		maxId++
-		flag = true
-	}
-	remindMeObject.SetCommandChannel(channelID)
-	remindMeObject.SetRemindID(maxId)
-	remindMeObject.SetDate(date)
-	remindMeObject.SetMessage(message)
+	maxId++
 
-	// Adds the above object to the remindMe map where all of the remindMes are kept and writes them to disk
-	entities.SharedInfo.Lock()
-	if !flag {
-		entities.SharedInfo.RemindMes[userID] = &dummySlice
+	// Create new reminder object
+	remindMeObject := &entities.RemindMe{
+		Message:        message,
+		Date:           date,
+		CommandChannel: channelID,
+		RemindID:       maxId,
 	}
-	entities.SharedInfo.RemindMes[userID].AppendToRemindMeSlice(&remindMeObject)
-	entities.SharedInfo.Unlock()
 
-	err = entities.RemindMeWrite(entities.SharedInfo.GetRemindMesMap())
-	if err != nil {
-		return err.Error()
-	}
+	db.SetReminder(userID, remindMeObject, isGuild, premium)
 
 	return fmt.Sprintf("Success! You will be reminded of the message <t:%d:R>. Make sure your DMs are open.", date.UTC().Unix())
 }
 
 // remindMeCommandHandler sets a remindMe note for after the target time has passed to be sent to the user
 func remindMeCommandHandler(s *discordgo.Session, m *discordgo.Message) {
-	var (
-		remindMeObject entities.RemindMe
-		userID         string
-		flag           bool
-		dummySlice     entities.RemindMeSlice
+	var guildSettings = entities.GuildSettings{Prefix: "."}
 
-		guildSettings = entities.GuildSettings{Prefix: "."}
-	)
-
+	// Fetch guild settings if the message is from a guild
 	if m.GuildID != "" {
 		guildSettings = db.GetGuildSettings(m.GuildID)
 	}
 
 	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 3)
-
 	if len(commandStrings) < 3 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.GetPrefix()+"remindme [time] [message]`\n\n"+
 			"Time is in #w#d#h#m format, such as 2w1d12h30m for 2 weeks, 1 day, 12 hours, 30 minutes.")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
-			return
 		}
 		return
 	}
 
-	// Figures out the date to show the message
+	// Parse the reminder time
 	date, perma, err := common.ResolveTimeFromString(commandStrings[1])
 	if err != nil {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Invalid time given.")
-		if err != nil {
-			common.LogError(s, guildSettings.BotLog, err)
-			return
-		}
+		_, _ = s.ChannelMessageSend(m.ChannelID, "Error: Invalid time given.")
 		return
 	}
 	if perma {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Cannot use that time. Please use another.")
-		if err != nil {
-			common.LogError(s, guildSettings.BotLog, err)
-			return
-		}
+		_, _ = s.ChannelMessageSend(m.ChannelID, "Error: Cannot use that time. Please use another.")
 		return
 	}
 
-	// Saves the userID in a separate variable
-	userID = m.Author.ID
+	userID := m.Author.ID
+	isGuild := m.GuildID != ""
+	premium := false
 
-	// Saves the remindMe data to an object of type remindMe
+	// Load existing reminders for this user/guild
+	remindMeSlice := db.GetReminders(userID)
+	if remindMeSlice == nil {
+		remindMeSlice = &entities.RemindMeSlice{
+			RemindMeSlice: []*entities.RemindMe{},
+			Guild:         isGuild,
+			Premium:       premium,
+		}
+	}
+
+	// Determine ID for the new reminder
 	maxId := 1
-	if _, ok := entities.SharedInfo.GetRemindMesMap()[userID]; ok {
-		for _, remind := range entities.SharedInfo.GetRemindMesMap()[userID].GetRemindMeSlice() {
-			if remind.GetRemindID() <= maxId {
-				continue
-			}
+	for _, remind := range remindMeSlice.GetRemindMeSlice() {
+		if remind.GetRemindID() > maxId {
 			maxId = remind.GetRemindID()
 		}
 	}
-	if _, ok := entities.SharedInfo.GetRemindMesMap()[userID]; ok {
-		maxId++
-		flag = true
-	}
-	remindMeObject.SetCommandChannel(m.ChannelID)
-	remindMeObject.SetRemindID(maxId)
-	remindMeObject.SetDate(date)
-	remindMeObject.SetMessage(commandStrings[2])
+	maxId++
 
-	// Adds the above object to the remindMe map where all of the remindMes are kept and writes them to disk
-	entities.SharedInfo.Lock()
-	if !flag {
-		entities.SharedInfo.RemindMes[userID] = &dummySlice
-	}
-	entities.SharedInfo.RemindMes[userID].AppendToRemindMeSlice(&remindMeObject)
-	entities.SharedInfo.Unlock()
-
-	err = entities.RemindMeWrite(entities.SharedInfo.GetRemindMesMap())
-	if err != nil {
-		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-		return
+	// Create new reminder object
+	remindMeObject := &entities.RemindMe{
+		Message:        commandStrings[2],
+		Date:           date,
+		CommandChannel: m.ChannelID,
+		RemindID:       maxId,
 	}
 
+	db.SetReminder(userID, remindMeObject, isGuild, premium)
+
+	// Notify the user
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success! You will be reminded of the message <t:%d:R>. Make sure your DMs are open.", date.UTC().Unix()))
 	if err != nil {
 		common.LogError(s, guildSettings.BotLog, err)
-		return
 	}
 }
 
 func removeRemindMe(id int, userID string) string {
-	// Checks if the user has any reminds
-	_, ok := entities.SharedInfo.GetRemindMesMap()[userID]
-	if !ok {
-		return "Error: No saved reminds found for you to delete."
-	}
-
+	// Validate input
 	if id <= 0 {
 		return "Error: Invalid ID."
 	}
 
-	// Deletes the remind from the map and writes to disk
-	flag := false
-	for i, remind := range entities.SharedInfo.GetRemindMesMap()[userID].GetRemindMeSlice() {
-		if remind == nil {
-			continue
-		}
-
-		if remind.GetRemindID() == id {
-			entities.SharedInfo.Lock()
-			entities.SharedInfo.RemindMes[userID].RemoveFromRemindMeSlice(i)
-			entities.SharedInfo.Unlock()
-			flag = true
-
-			err := entities.RemindMeWrite(entities.SharedInfo.GetRemindMesMap())
-			if err != nil {
-				return err.Error()
-			}
-			break
-		}
+	// Fetch user's reminders from MongoDB
+	remindMeSlice := db.GetReminders(userID)
+	if remindMeSlice == nil || len(remindMeSlice.GetRemindMeSlice()) == 0 {
+		return "Error: No saved reminds found for you to delete."
 	}
 
-	if !flag {
-		return "Error: No such remind with that ID found."
-	}
+	db.RemoveReminder(userID, id)
 
-	return fmt.Sprintf("Sucesss: Deleted remind with ID `%d`", id)
+	return fmt.Sprintf("Success: Deleted remind with ID `%d`", id)
 }
 
 func removeRemindMeHandler(s *discordgo.Session, m *discordgo.Message) {
 	var (
-		userID   string
-		remindID int
-		flag     bool
-
+		userID        = m.Author.ID
+		remindID      int
 		guildSettings = entities.GuildSettings{Prefix: "."}
 	)
-
-	userID = m.Author.ID
 
 	if m.GuildID != "" {
 		guildSettings = db.GetGuildSettings(m.GuildID)
 	}
 
-	// Checks if the user has any reminds
-	_, ok := entities.SharedInfo.GetRemindMesMap()[userID]
-	if !ok {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No saved reminds found for you to delete.")
-		if err != nil {
-			common.LogError(s, guildSettings.BotLog, err)
-			return
-		}
-		return
-	}
-
 	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
 
+	// Validate command format
 	if len(commandStrings) != 2 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.GetPrefix()+"removeremind [ID]`\n\nID is from the `"+guildSettings.GetPrefix()+"reminds` command.")
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%sremoveremind [ID]`\n\nID is from the `%sreminds` command.", guildSettings.GetPrefix(), guildSettings.GetPrefix()))
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
-			return
 		}
 		return
 	}
 
+	// Validate reminder ID
 	remindID, err := strconv.Atoi(commandStrings[1])
 	if err != nil {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Please input only a number as the second parameter.")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
-			return
 		}
 		return
 	}
 
-	// Deletes the remind from the map and writes to disk
-	for i, remind := range entities.SharedInfo.GetRemindMesMap()[userID].GetRemindMeSlice() {
-		if remind == nil {
-			continue
-		}
-
-		if remind.GetRemindID() == remindID {
-			entities.SharedInfo.Lock()
-			entities.SharedInfo.RemindMes[userID].RemoveFromRemindMeSlice(i)
-			entities.SharedInfo.Unlock()
-			flag = true
-
-			err := entities.RemindMeWrite(entities.SharedInfo.GetRemindMesMap())
-			if err != nil {
-				common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-				return
-			}
-			break
-		}
-	}
-
-	// Prints success or error based on whether it deleted anything above
-	if flag {
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sucesss: Deleted remind with ID `%d`.", remindID))
+	// Fetch user's reminders from MongoDB
+	remindMeSlice := db.GetReminders(userID)
+	if remindMeSlice == nil || len(remindMeSlice.GetRemindMeSlice()) == 0 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No saved reminds found for you to delete.")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
-			return
 		}
 		return
 	}
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error: No such remind with that ID found. ID is from the `"+guildSettings.GetPrefix()+"reminds` command."))
+
+	// Remove the reminder
+	db.RemoveReminder(userID, remindID)
+
+	// Confirm removal
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Success: Deleted remind with ID `%d`.", remindID))
 	if err != nil {
 		common.LogError(s, guildSettings.BotLog, err)
 	}
@@ -278,15 +197,17 @@ func removeRemindMeHandler(s *discordgo.Session, m *discordgo.Message) {
 func viewRemindMes(userID string) []string {
 	var message string
 
-	if entities.SharedInfo.GetRemindMesMap()[userID] == nil || len(entities.SharedInfo.GetRemindMesMap()[userID].GetRemindMeSlice()) == 0 {
+	// Fetch user's reminders from MongoDB
+	remindMeSlice := db.GetReminders(userID)
+	if remindMeSlice == nil || len(remindMeSlice.GetRemindMeSlice()) == 0 {
 		return []string{"No saved reminds for you found."}
 	}
 
-	for _, remind := range entities.SharedInfo.GetRemindMesMap()[userID].GetRemindMeSlice() {
+	// Format reminders
+	for _, remind := range remindMeSlice.GetRemindMeSlice() {
 		if remind == nil {
 			continue
 		}
-
 		message += fmt.Sprintf("`%s` - <t:%d:R> - ID: %d\n", remind.GetMessage(), remind.GetDate().UTC().Unix(), remind.GetRemindID())
 	}
 
@@ -295,64 +216,61 @@ func viewRemindMes(userID string) []string {
 
 func viewRemindMesHandler(s *discordgo.Session, m *discordgo.Message) {
 	var (
-		userID    string
-		remindMes []string
-		message   string
-
-		guildSettings = entities.GuildSettings{Prefix: "."}
+		userID         = m.Author.ID
+		remindMessages []string
+		message        string
+		guildSettings  = entities.GuildSettings{Prefix: "."}
 	)
 
-	userID = m.Author.ID
-
-	// Checks if the user has any reminds
+	// Fetch guild settings if in a server
 	if m.GuildID != "" {
 		guildSettings = db.GetGuildSettings(m.GuildID)
 	}
 
-	if entities.SharedInfo.GetRemindMesMap()[userID] == nil || len(entities.SharedInfo.GetRemindMesMap()[userID].GetRemindMeSlice()) == 0 {
+	// Fetch user's reminders from MongoDB
+	remindMeSlice := db.GetReminders(userID)
+	if remindMeSlice == nil || len(remindMeSlice.GetRemindMeSlice()) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No saved reminds for you found.")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
-			return
 		}
 		return
 	}
 
+	// Validate command format
 	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
-
 	if len(commandStrings) != 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.GetPrefix()+"reminds`")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
-			return
 		}
 		return
 	}
 
-	for _, remind := range entities.SharedInfo.GetRemindMesMap()[userID].GetRemindMeSlice() {
+	// Construct reminder messages
+	for _, remind := range remindMeSlice.GetRemindMeSlice() {
 		if remind == nil {
 			continue
 		}
 
 		formattedMessage := fmt.Sprintf("`%s` - <t:%d:R> - ID: %d", remind.GetMessage(), remind.GetDate().UTC().Unix(), remind.GetRemindID())
-		remindMes = append(remindMes, formattedMessage)
+		remindMessages = append(remindMessages, formattedMessage)
 	}
 
-	// Splits the message objects into multiple messages if it's too big
-	remindMes, message = splitRemindsMessages(remindMes, message)
+	// Split long messages to fit Discord's limits
+	remindMessages, message = splitRemindsMessages(remindMessages, message)
 
-	// Limits the size it can display so it isn't abused
-	if len(remindMes) > 4 {
-		_, err := s.ChannelMessageSend(m.ChannelID, "Error: The message size of all of the reminds is too big to display."+
-			" Please wait them out or never use this command again.")
+	// Prevent excessive output
+	if len(remindMessages) > 4 {
+		_, err := s.ChannelMessageSend(m.ChannelID, "Error: Too many reminds to display. Please wait them out or manage them differently.")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
-			return
 		}
 		return
 	}
 
-	for _, remind := range remindMes {
+	// Send reminder messages
+	for _, remind := range remindMessages {
 		_, err := s.ChannelMessageSend(m.ChannelID, remind)
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
@@ -405,11 +323,13 @@ func init() {
 				},
 			})
 
+			isGuild := false
 			userID := ""
 			if i.Member == nil {
 				userID = i.User.ID
 			} else {
 				userID = i.Member.User.ID
+				isGuild = true
 			}
 
 			time := ""
@@ -422,7 +342,7 @@ func init() {
 				}
 			}
 
-			respStr := remindMeCommand(i.ChannelID, userID, time, message)
+			respStr := remindMeCommand(i.ChannelID, userID, time, message, isGuild, false)
 			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 				Content: &respStr,
 			})

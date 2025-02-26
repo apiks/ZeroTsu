@@ -236,7 +236,10 @@ func RaffleReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAd
 		return
 	}
 
-	entities.HandleNewGuild(r.GuildID)
+	err := entities.InitGuildIfNotExists(r.GuildID)
+	if err != nil {
+		return
+	}
 
 	guildRaffles := db.GetGuildRaffles(r.GuildID)
 
@@ -275,7 +278,10 @@ func RaffleReactLeaveHandler(s *discordgo.Session, r *discordgo.MessageReactionR
 		return
 	}
 
-	entities.HandleNewGuild(r.GuildID)
+	err := entities.InitGuildIfNotExists(r.GuildID)
+	if err != nil {
+		return
+	}
 
 	guildRaffles := db.GetGuildRaffles(r.GuildID)
 
@@ -475,24 +481,23 @@ func raffleWinnerCommand(raffleName, guildID string) string {
 		winnerID    string
 	)
 
-	entities.Guilds.RLock()
-	for raffleIndex, raffle := range entities.Guilds.DB[guildID].GetRaffles() {
+	raffles := db.GetGuildRaffles(guildID)
+	for _, raffle := range raffles {
 		if raffle == nil {
 			continue
 		}
 
 		if strings.ToLower(raffle.GetName()) == strings.ToLower(raffleName) {
-			participantLen := len(entities.Guilds.DB[guildID].GetRaffles()[raffleIndex].GetParticipantIDs())
-			if participantLen == 0 {
+			participantIDs := raffle.GetParticipantIDs()
+			if len(participantIDs) == 0 {
 				winnerID = "none"
 				break
 			}
-			winnerIndex = rand.Intn(participantLen)
-			winnerID = entities.Guilds.DB[guildID].GetRaffles()[raffleIndex].GetParticipantIDs()[winnerIndex]
+			winnerIndex = rand.Intn(len(participantIDs))
+			winnerID = participantIDs[winnerIndex]
 			break
 		}
 	}
-	entities.Guilds.RUnlock()
 
 	if winnerID == "" {
 		return "Error: No such raffle exists."
@@ -518,35 +523,33 @@ func raffleWinnerCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Usage: `"+guildSettings.GetPrefix()+"rafflewinner [raffle name]`")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
-			return
 		}
 		return
 	}
 
-	entities.Guilds.RLock()
-	for raffleIndex, raffle := range entities.Guilds.DB[m.GuildID].GetRaffles() {
+	// Fetch raffles from MongoDB using db function
+	raffles := db.GetGuildRaffles(m.GuildID)
+	for _, raffle := range raffles {
 		if raffle == nil {
 			continue
 		}
 
-		if raffle.GetName() == strings.ToLower(commandStrings[1]) {
-			participantLen := len(entities.Guilds.DB[m.GuildID].GetRaffles()[raffleIndex].GetParticipantIDs())
-			if participantLen == 0 {
+		if strings.ToLower(raffle.GetName()) == strings.ToLower(commandStrings[1]) {
+			participantIDs := raffle.GetParticipantIDs()
+			if len(participantIDs) == 0 {
 				winnerID = "none"
 				break
 			}
-			winnerIndex = rand.Intn(participantLen)
-			winnerID = entities.Guilds.DB[m.GuildID].GetRaffles()[raffleIndex].GetParticipantIDs()[winnerIndex]
+			winnerIndex = rand.Intn(len(participantIDs))
+			winnerID = participantIDs[winnerIndex]
 			break
 		}
 	}
-	entities.Guilds.RUnlock()
 
 	if winnerID == "" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: No such raffle exists.")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
-			return
 		}
 		return
 	}
@@ -554,7 +557,6 @@ func raffleWinnerCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: There is nobody to pick from to win in that raffle.")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
-			return
 		}
 		return
 	}
@@ -562,7 +564,6 @@ func raffleWinnerCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	_, err := s.ChannelMessageSend(m.ChannelID, "**"+commandStrings[1]+"** winner is "+fmt.Sprintf("<@%s>", winnerID)+"! Congratulations!")
 	if err != nil {
 		common.LogError(s, guildSettings.BotLog, err)
-		return
 	}
 }
 

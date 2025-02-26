@@ -2,123 +2,94 @@ package db
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/r-anime/ZeroTsu/entities"
+	"log"
+	"strings"
 )
 
-// GetGuildRaffles the guild's raffles from in-memory
+// GetGuildRaffles retrieves all raffles from MongoDB
 func GetGuildRaffles(guildID string) []*entities.Raffle {
-	entities.HandleNewGuild(guildID)
+	err := entities.InitGuildIfNotExists(guildID)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
 
-	entities.Guilds.RLock()
-	defer entities.Guilds.RUnlock()
+	raffles, err := entities.LoadRaffles(guildID)
+	if err != nil {
+		return nil
+	}
 
-	return entities.Guilds.DB[guildID].GetRaffles()
+	return raffles
 }
 
-// SetGuildRaffle sets a target guild's raffle in-memory
+// SetGuildRaffle saves or deletes a guild raffle in MongoDB
 func SetGuildRaffle(guildID string, raffle *entities.Raffle, delete ...bool) error {
-	entities.HandleNewGuild(guildID)
+	err := entities.InitGuildIfNotExists(guildID)
+	if err != nil {
+		return err
+	}
 
-	entities.Guilds.Lock()
-	defer entities.Guilds.Unlock()
+	// Fetch premium status from MongoDB
+	guildSettings, err := entities.LoadGuildSettings(guildID)
+	if err != nil {
+		log.Printf("Error fetching guild settings for guild %s: %v\n", guildID, err)
+		return fmt.Errorf("Error: Could not determine premium status.")
+	}
 
-	if len(delete) == 0 {
-		if entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetRaffles()) >= 200 {
+	// Enforce premium limit
+	existingRaffles := GetGuildRaffles(guildID)
+	limit := 50
+	if guildSettings.Premium {
+		limit = 200
+	}
+	if len(delete) == 0 && len(existingRaffles) >= limit {
+		if guildSettings.Premium {
 			return fmt.Errorf("Error: You have reached the raffle limit (200) for this premium server.")
-		} else if !entities.Guilds.DB[guildID].GetGuildSettings().GetPremium() && len(entities.Guilds.DB[guildID].GetRaffles()) >= 50 {
-			return fmt.Errorf("Error: You have reached the raffle limit (50) for this server. Please remove some or increase them to 200 by upgrading to a premium server at <https://patreon.com/animeschedule>")
 		}
+		return fmt.Errorf("Error: You have reached the raffle limit (50) for this server. Please remove some or upgrade to premium at <https://patreon.com/animeschedule>")
 	}
 
 	raffle.SetName(strings.ToLower(raffle.GetName()))
 
 	if len(delete) == 0 {
-		var exists bool
-		for _, guildRaffle := range entities.Guilds.DB[guildID].GetRaffles() {
-			if strings.ToLower(guildRaffle.GetName()) == raffle.GetName() {
-				exists = true
-				break
+		// Check if raffle already exists
+		for _, existingRaffle := range existingRaffles {
+			if strings.ToLower(existingRaffle.GetName()) == raffle.GetName() {
+				return fmt.Errorf("Error: That raffle already exists.")
 			}
 		}
 
-		if !exists {
-			entities.Guilds.DB[guildID].AppendToRaffles(raffle)
-		} else {
-			return fmt.Errorf("Error: That raffle already exists.")
+		// Save the new raffle to MongoDB
+		err := entities.SaveRaffle(guildID, raffle)
+		if err != nil {
+			log.Printf("Error saving raffle for guild %s: %v\n", guildID, err)
+			return err
 		}
 	} else {
-		err := deleteGuildRaffle(guildID, raffle)
+		// Delete the raffle from MongoDB
+		err := entities.DeleteRaffle(guildID, raffle)
 		if err != nil {
+			log.Printf("Error deleting raffle for guild %s: %v\n", guildID, err)
 			return err
 		}
 	}
 
-	entities.Guilds.DB[guildID].WriteData("raffles", entities.Guilds.DB[guildID].GetRaffles())
-
 	return nil
 }
 
-// deleteGuildRaffle safely deletes a raffle from the raffles slice
-func deleteGuildRaffle(guildID string, raffle *entities.Raffle) error {
-	var exists bool
-
-	for i, guildRaffle := range entities.Guilds.DB[guildID].GetRaffles() {
-		if guildRaffle == nil {
-			continue
-		}
-
-		if strings.ToLower(guildRaffle.GetName()) == raffle.GetName() {
-			entities.Guilds.DB[guildID].RemoveFromRaffles(i)
-			exists = true
-			break
-		}
-	}
-
-	if !exists {
-		return fmt.Errorf("Error: No such raffle exists.")
-	}
-
-	return nil
-}
-
-// SetGuildRaffleParticipant sets a target guild's raffle participant in-memory
+// SetGuildRaffleParticipant adds or removes a participant from a raffle in MongoDB
 func SetGuildRaffleParticipant(guildID, userID string, raffle *entities.Raffle, delete ...bool) {
-	entities.HandleNewGuild(guildID)
-
-	entities.Guilds.Lock()
-	defer entities.Guilds.Unlock()
-
-	raffle.SetName(strings.ToLower(raffle.GetName()))
-
-	if len(delete) == 0 {
-		raffle.AppendToParticipantIDs(userID)
-		for _, guildRaffle := range entities.Guilds.DB[guildID].GetRaffles() {
-			if guildRaffle == nil {
-				continue
-			}
-
-			if strings.ToLower(guildRaffle.GetName()) == raffle.GetName() {
-				*guildRaffle = *raffle
-				break
-			}
-		}
-	} else {
-		deleteGuildRaffleParticipant(userID, raffle)
+	err := entities.InitGuildIfNotExists(guildID)
+	if err != nil {
+		log.Println(err)
+		return
 	}
 
-	entities.Guilds.DB[guildID].WriteData("raffles", entities.Guilds.DB[guildID].GetRaffles())
+	remove := len(delete) > 0
 
-	return
-}
-
-// deleteGuildRaffleParticipant safely deletes a raffle participant from the raffles participantIds slice
-func deleteGuildRaffleParticipant(userID string, raffle *entities.Raffle) {
-	for i, participantID := range raffle.GetParticipantIDs() {
-		if participantID == userID {
-			raffle.RemoveFromParticipantIDs(i)
-			break
-		}
+	err = entities.UpdateRaffleParticipant(guildID, userID, raffle, remove)
+	if err != nil {
+		log.Printf("Error updating participant for raffle in guild %s: %v\n", guildID, err)
 	}
 }

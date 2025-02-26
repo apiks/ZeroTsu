@@ -59,26 +59,29 @@ func UpdateDailyScheduleWebhooks() {
 
 	// Store all of the valid guilds' valid webhooks in a map
 	tempWebhooksMap := make(map[string]*discordgo.Webhook)
-	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
+
+	// Fetch all anime subscriptions from MongoDB
+	animeSubsMap := db.GetAllAnimeSubs()
+
 	for guildID, subs := range animeSubsMap {
-		if subs == nil {
+		if subs == nil || len(subs) == 0 {
 			continue
 		}
-		isGuild := false
-		if len(subs) >= 1 && subs[0].GetGuild() {
-			isGuild = true
-		}
+
+		// Check if the subscription belongs to a guild
+		isGuild := subs[0].GetGuild()
 		if !isGuild {
 			continue
 		}
 
+		// Get Discord session for the guild
 		guildIDInt, err := strconv.ParseInt(guildID, 10, 64)
 		if err != nil {
 			continue
 		}
 		s := config.Mgr.SessionForGuild(guildIDInt)
 
-		// Checks if bot is in target guild
+		// Ensure bot is in the target guild
 		_, err = s.State.Guild(guildID)
 		if err != nil {
 			continue
@@ -89,39 +92,30 @@ func UpdateDailyScheduleWebhooks() {
 		if newepisodes == (entities.Cha{}) {
 			continue
 		}
+
 		perms, err := s.State.UserChannelPermissions(s.State.User.ID, newepisodes.GetID())
-		if err != nil {
-			continue
-		}
-		if perms&discordgo.PermissionManageWebhooks != discordgo.PermissionManageWebhooks {
-			continue
-		}
-		if perms&discordgo.PermissionViewChannel != discordgo.PermissionViewChannel {
-			continue
-		}
-		if perms&discordgo.PermissionSendMessages != discordgo.PermissionSendMessages {
+		if err != nil || perms&discordgo.PermissionManageWebhooks != discordgo.PermissionManageWebhooks || perms&discordgo.PermissionViewChannel != discordgo.PermissionViewChannel || perms&discordgo.PermissionSendMessages != discordgo.PermissionSendMessages {
 			continue
 		}
 
-		// Get valid webhook
+		// Get existing webhook
 		ws, err := s.ChannelWebhooks(newepisodes.GetID())
 		if err != nil {
 			continue
 		}
 		for _, w := range ws {
-			if w.User.ID != s.State.User.ID ||
-				w.ChannelID != newepisodes.GetID() {
-				continue
+			if w.User.ID == s.State.User.ID && w.ChannelID == newepisodes.GetID() {
+				tempWebhooksMap[guildID] = w
+				break
 			}
-			tempWebhooksMap[guildID] = w
-			break
 		}
 
+		// If a valid webhook exists, continue
 		if _, ok := tempWebhooksMap[guildID]; ok {
 			continue
 		}
 
-		// Create the webhook if it doesn't exist
+		// Create a new webhook if none exists
 		avatar, err := s.UserAvatarDecode(s.State.User)
 		if err != nil {
 			continue
@@ -132,6 +126,7 @@ func UpdateDailyScheduleWebhooks() {
 			continue
 		}
 		base64Img := base64.StdEncoding.EncodeToString(out.Bytes())
+
 		wh, err := s.WebhookCreate(newepisodes.GetID(), s.State.User.Username, fmt.Sprintf("data:image/png;base64,%s", base64Img))
 		if err != nil {
 			continue
@@ -139,13 +134,12 @@ func UpdateDailyScheduleWebhooks() {
 		tempWebhooksMap[guildID] = wh
 	}
 
+	// Update the global webhooks map
 	DailyScheduleWebhooksMap.Lock()
-	DailyScheduleWebhooksMap.WebhooksMap = make(map[string]*discordgo.Webhook)
-	for guid, w := range tempWebhooksMap {
-		DailyScheduleWebhooksMap.WebhooksMap[guid] = w
-	}
+	DailyScheduleWebhooksMap.WebhooksMap = tempWebhooksMap
 	DailyScheduleWebhooksMap.Unlock()
 
+	// Unblock
 	DailyScheduleWebhooksMapBlock.Lock()
 	DailyScheduleWebhooksMapBlock.Block = false
 	DailyScheduleWebhooksMapBlock.Unlock()
@@ -177,14 +171,16 @@ func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 }
 
 func CommonEvents(_ *discordgo.Session, _ *discordgo.Ready) {
-	var guildIds []string
+	guildIds, err := entities.LoadAllGuildIDs()
+	if err != nil {
+		log.Printf("Error fetching guild IDs: %v", err)
+	}
 
 	for range time.NewTicker(1 * time.Minute).C {
-		GuildIds.RLock()
-		for gID := range GuildIds.Ids {
-			guildIds = append(guildIds, gID)
+		guildIds, err = entities.LoadAllGuildIDs()
+		if err != nil {
+			log.Printf("Error fetching guild IDs: %v", err)
 		}
-		GuildIds.RUnlock()
 
 		// Handles RemindMes
 		remindMeHandler(config.Mgr.SessionForDM())
@@ -207,55 +203,67 @@ func remindMeHandler(s *discordgo.Session) {
 	remindMesFeedBlock.Block = true
 	remindMesFeedBlock.Unlock()
 
-	if entities.SharedInfo.GetRemindMesMap() == nil || len(entities.SharedInfo.GetRemindMesMap()) == 0 {
+	// Fetch only reminders that are due
+	reminders := db.GetDueReminders()
+	if reminders == nil || len(reminders) == 0 {
+		remindMesFeedBlock.Lock()
+		remindMesFeedBlock.Block = false
+		remindMesFeedBlock.Unlock()
 		return
 	}
 
 	var writeFlag bool
-	for userID, remindMeSlice := range entities.SharedInfo.GetRemindMesMap() {
-		if remindMeSlice == nil || remindMeSlice.GetRemindMeSlice() == nil || len(remindMeSlice.GetRemindMeSlice()) == 0 {
+
+	// Iterate through each user/guild with reminders
+	for userID, remindMeSlice := range reminders {
+		if remindMeSlice == nil || len(remindMeSlice.GetRemindMeSlice()) == 0 {
 			continue
 		}
 
-		// Filter in place if needed
-		i := 0
+		var newReminders []*entities.RemindMe
+
 		for _, remindMe := range remindMeSlice.GetRemindMeSlice() {
 			if remindMe == nil {
 				continue
 			}
 
-			// Checks if it's time to send message/ping the user
-			if time.Now().Sub(remindMe.GetDate()) <= 0 {
-				remindMeSlice.GetRemindMeSlice()[i] = remindMe
-				i++
-				continue
-			}
+			// Check if it's time to send the reminder
+			if time.Now().After(remindMe.GetDate()) {
+				// Send the reminder
+				dm, err := s.UserChannelCreate(userID)
+				if err != nil {
+					log.Printf("Error creating DM channel for %s: %v\n", userID, err)
+					continue
+				}
+				_, err = s.ChannelMessageSend(dm.ID, fmt.Sprintf("RemindMe: %s", remindMe.GetMessage()))
+				if err != nil {
+					log.Printf("Error sending reminder to %s: %v\n", userID, err)
+					continue
+				}
 
-			dm, err := s.UserChannelCreate(userID)
-			if err != nil {
-				break
-			}
-			_, err = s.ChannelMessageSend(dm.ID, fmt.Sprintf("RemindMe: %s", remindMe.GetMessage()))
-			if err != nil {
-				continue
-			}
+				// Remove reminder from MongoDB **right after sending**
+				db.RemoveReminder(userID, remindMe.GetRemindID())
 
-			writeFlag = true
+				writeFlag = true
+			} else {
+				// Keep future reminders
+				newReminders = append(newReminders, remindMe)
+			}
 		}
-		remindMeSlice.SetRemindMeSlice(remindMeSlice.GetRemindMeSlice()[:i])
+
+		// Update the reminders if any were removed
+		if len(newReminders) != len(remindMeSlice.GetRemindMeSlice()) {
+			remindMeSlice.SetRemindMeSlice(newReminders)
+			db.SetReminder(userID, nil, remindMeSlice.Guild, remindMeSlice.Premium)
+		}
 	}
 
+	// Unlock and return if no changes were made
 	if !writeFlag {
 		remindMesFeedBlock.Lock()
 		remindMesFeedBlock.Block = false
 		remindMesFeedBlock.Unlock()
-
 		return
-	}
-
-	err := entities.RemindMeWrite(entities.SharedInfo.GetRemindMesMap())
-	if err != nil {
-		log.Println(err)
 	}
 
 	remindMesFeedBlock.Lock()
@@ -275,7 +283,7 @@ func feedWebhookHandler(guildIds []string) {
 
 	// Remove expired checks
 	for _, guildID := range guildIds {
-		var guildFeedChecks = db.GetGuildFeedChecks(guildID)
+		var guildFeedChecks = db.GetGuildFeedChecks(guildID, -1)
 
 		// Removes a check if more than its allowed lifespan hours have passed
 		for _, feedCheck := range guildFeedChecks {
@@ -487,7 +495,7 @@ func feedWebhookHandler(guildIds []string) {
 							var skip bool
 
 							// Checks if the item has already been posted
-							guildFeedChecks := db.GetGuildFeedChecks(guid)
+							guildFeedChecks := db.GetGuildFeedChecks(guid, -1)
 							for _, feedCheck := range guildFeedChecks {
 								if feedCheck.GetGUID() == item.GUID &&
 									feedCheck.GetFeed().GetChannelID() == feed.GetChannelID() {
@@ -525,7 +533,7 @@ func feedWebhookHandler(guildIds []string) {
 								}
 
 								// Adds that the feeds have been posted
-								db.AddGuildFeedChecks(guid, newFeedChecks)
+								db.SetGuildFeedChecks(guid, newFeedChecks)
 								newFeedChecks = nil
 							}
 
@@ -550,7 +558,7 @@ func feedWebhookHandler(guildIds []string) {
 						}
 
 						// Adds that the feeds have been posted
-						db.AddGuildFeedChecks(guid, newFeedChecks)
+						db.SetGuildFeedChecks(guid, newFeedChecks)
 						newFeedChecks = nil
 					}
 					if breakFromWebhook {
@@ -565,7 +573,7 @@ func feedWebhookHandler(guildIds []string) {
 
 		err := eg.Wait()
 		if err != nil {
-			log.Println(err)
+			log.Printf("feed webhook handler: %s", err)
 		}
 	}
 
@@ -587,7 +595,7 @@ func feedHandler(guildIds []string) {
 	for _, guildID := range guildIds {
 		var (
 			guildFeeds      = db.GetGuildFeeds(guildID)
-			guildFeedChecks = db.GetGuildFeedChecks(guildID)
+			guildFeedChecks = db.GetGuildFeedChecks(guildID, -1)
 			fp              = gofeed.NewParser()
 		)
 		fp.Client = &http.Client{
@@ -676,7 +684,7 @@ func feedHandler(guildIds []string) {
 				exists = false
 
 				// Checks if the item has already been posted
-				feedChecks := db.GetGuildFeedChecks(guildID)
+				feedChecks := db.GetGuildFeedChecks(guildID, -1)
 				for _, feedCheck := range feedChecks {
 					if feedCheck.GetGUID() == item.GUID &&
 						feedCheck.GetFeed().GetChannelID() == feed.GetChannelID() {
@@ -700,7 +708,7 @@ func feedHandler(guildIds []string) {
 				}
 
 				// Adds that the feed has been posted
-				db.AddGuildFeedCheck(guildID, entities.NewFeedCheck(feed, time.Now(), item.GUID))
+				db.SetGuildFeedCheck(guildID, entities.NewFeedCheck(feed, time.Now(), item.GUID))
 
 				// Pins/unpins the feed items if necessary
 				if !feed.GetPin() {

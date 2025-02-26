@@ -2,45 +2,35 @@ package events
 
 import (
 	"fmt"
+	"github.com/bwmarrin/discordgo"
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
+	"github.com/r-anime/ZeroTsu/functionality"
 	"log"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/r-anime/ZeroTsu/common"
-	"github.com/r-anime/ZeroTsu/db"
-	"github.com/r-anime/ZeroTsu/entities"
-	"github.com/r-anime/ZeroTsu/functionality"
-	"github.com/sasha-s/go-deadlock"
-
-	"github.com/bwmarrin/discordgo"
-
 	"github.com/r-anime/ZeroTsu/config"
 )
 
 var darlingTrigger int
-var GuildIds = &GuildIdsStruct{
-	Ids: make(map[string]bool),
-}
-
-type GuildIdsStruct struct {
-	deadlock.RWMutex
-	Ids map[string]bool
-}
 
 func StatusReady(s *discordgo.Session, _ *discordgo.Ready) {
-	var guildIds []string
-
-	GuildIds.RLock()
-	for gID := range GuildIds.Ids {
-		guildIds = append(guildIds, gID)
+	guildIds, err := entities.LoadAllGuildIDs()
+	if err != nil {
+		log.Printf("Error fetching guild IDs: %v", err)
 	}
-	GuildIds.RUnlock()
 
 	for _, guildID := range guildIds {
 		// Initialize guild if missing
-		entities.HandleNewGuild(guildID)
+		err := entities.InitGuildIfNotExists(guildID)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
 
 		// Reload null guild anime subs
 		fixGuildSubsCommand(guildID)
@@ -48,7 +38,6 @@ func StatusReady(s *discordgo.Session, _ *discordgo.Ready) {
 
 	// Updates playing status
 	var randomPlayingMsg string
-	rand.Seed(time.Now().UnixNano())
 	entities.Mutex.RLock()
 	if len(config.PlayingMsg) > 1 {
 		randomPlayingMsg = config.PlayingMsg[rand.Intn(len(config.PlayingMsg))]
@@ -74,7 +63,11 @@ func VoiceRoleHandler(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 		return
 	}
 
-	entities.HandleNewGuild(v.GuildID)
+	err := entities.InitGuildIfNotExists(v.GuildID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
 	guildSettings := db.GetGuildSettings(v.GuildID)
 	if guildSettings.GetVoiceChas() == nil || len(guildSettings.GetVoiceChas()) == 0 {
@@ -139,7 +132,11 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if m.GuildID != "" {
-		entities.HandleNewGuild(m.GuildID)
+		err := entities.InitGuildIfNotExists(m.GuildID)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 		guildSettings = db.GetGuildSettings(m.GuildID)
 	}
 
@@ -316,43 +313,117 @@ func OnBotPing(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
-// GuildCreate Handles BOT joining a server
+//// GuildCreate Handles BOT joining a server
+//func GuildCreate(s *discordgo.Session, g *discordgo.GuildCreate) {
+//	isNew, _ := entities.Guilds.Load(g.Guild.ID)
+//	if isNew && s.State.User.ID == "614495694769618944" {
+//		_, _ = s.ChannelMessageSend("619899424428130315", fmt.Sprintf("A DB entry has been created for guild: %s", g.Name))
+//	}
+//
+//	entities.HandleNewGuild(g.ID)
+//	GuildIds.Lock()
+//	GuildIds.Ids[g.Guild.ID] = true
+//	GuildIds.Unlock()
+//	// log.Println(fmt.Sprintf("Joined guild %s", g.Guild.Name))
+//}
+
+// GuildCreate handles the bot joining a new server and ensures its entry exists in MongoDB
 func GuildCreate(s *discordgo.Session, g *discordgo.GuildCreate) {
-	isNew, _ := entities.Guilds.Load(g.Guild.ID)
-	if isNew && s.State.User.ID == "614495694769618944" {
+	// Check if the guild exists in MongoDB
+	exists, err := entities.DoesGuildExist(g.Guild.ID)
+	if err != nil {
+		log.Printf("Error checking existence of guild %s in MongoDB: %v\n", g.Guild.ID, err)
+		return
+	}
+
+	// If it's a new guild, log it
+	if !exists && s.State.User.ID == "614495694769618944" {
 		_, _ = s.ChannelMessageSend("619899424428130315", fmt.Sprintf("A DB entry has been created for guild: %s", g.Name))
 	}
 
-	entities.HandleNewGuild(g.ID)
-	GuildIds.Lock()
-	GuildIds.Ids[g.Guild.ID] = true
-	GuildIds.Unlock()
-	// log.Println(fmt.Sprintf("Joined guild %s", g.Guild.Name))
+	// Ensure the guild exists/is added in MongoDB
+	err = entities.InitGuildIfNotExists(g.Guild.ID)
+	if err != nil {
+		log.Printf("Error initializing guild %s in MongoDB: %v\n", g.Guild.ID, err)
+		return
+	}
 }
 
 // GuildDelete logs BOT leaving a server
 func GuildDelete(_ *discordgo.Session, g *discordgo.GuildDelete) {
-	GuildIds.Lock()
-	defer GuildIds.Unlock()
-	entities.Guilds.Lock()
-	defer entities.Guilds.Unlock()
-
-	delete(GuildIds.Ids, g.Guild.ID)
-	delete(entities.Guilds.DB, g.Guild.ID)
-
 	log.Printf("Left guild with ID: %s", g.Guild.ID)
 }
 
 // Fixes broken anime guild subs that are null
 func fixGuildSubsCommand(guildID string) {
-	animeSubsMap := entities.SharedInfo.GetAnimeSubsMapCopy()
-	for ID, subs := range animeSubsMap {
-		if subs != nil || ID != guildID {
+	// Load all anime subs from MongoDB
+	animeSubsMap := db.GetAllAnimeSubs()
+
+	// Check if the guild has a valid subscription list
+	if subs, exists := animeSubsMap[guildID]; exists && subs != nil {
+		return
+	}
+
+	// Setup missing guild subscription
+	SetupGuildSub(guildID)
+
+	// Save updated subscriptions to MongoDB using SetAnimeSubs
+	shows := db.GetAnimeSubs(guildID)
+	db.SetAnimeSubs(guildID, shows, true)
+}
+
+func SetupGuildSub(guildID string) {
+	var (
+		shows      []*entities.ShowSub
+		now        = time.Now().UTC()
+		addedShows = make(map[string]bool)
+	)
+
+	// Load anime schedule
+	entities.AnimeSchedule.RLock()
+	defer entities.AnimeSchedule.RUnlock()
+
+	// Iterate over all scheduled anime
+	for dayInt, scheduleShows := range entities.AnimeSchedule.AnimeSchedule {
+		if scheduleShows == nil {
 			continue
 		}
 
-		entities.SetupGuildSub(guildID)
-		_ = entities.AnimeSubsWrite(entities.SharedInfo.GetAnimeSubsMap())
-		break
+		for _, show := range scheduleShows {
+			if show == nil {
+				continue
+			}
+			if _, ok := addedShows[show.GetKey()]; ok {
+				continue
+			}
+
+			// Check if the show is from today and whether it has already aired
+			var hasAiredToday bool
+			if int(now.Weekday()) == dayInt {
+				// Parse the air hour and minute
+				t, err := time.Parse("3:04 PM", show.GetAirTime())
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+
+				// Form the air date for today
+				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
+
+				// Check if the show has already aired today
+				hasAiredToday = now.After(scheduleDate)
+			}
+
+			guildSub := entities.NewShowSub(show.GetName(), false, true)
+			if hasAiredToday {
+				guildSub.SetNotified(true)
+			}
+
+			shows = append(shows, guildSub)
+			addedShows[show.GetKey()] = true
+		}
 	}
+
+	// Save new guild subscriptions to MongoDB using SetAnimeSubs
+	db.SetAnimeSubs(guildID, shows, true)
 }

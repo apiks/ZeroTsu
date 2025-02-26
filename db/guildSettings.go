@@ -2,26 +2,36 @@ package db
 
 import (
 	"github.com/r-anime/ZeroTsu/entities"
+	"log"
 )
 
-// GetGuildSettings returns the guild settings from in-memory
+// GetGuildSettings retrieves guild settings from MongoDB
 func GetGuildSettings(guildID string) entities.GuildSettings {
-	entities.HandleNewGuild(guildID)
+	err := entities.InitGuildIfNotExists(guildID)
+	if err != nil {
+		log.Println(err)
+		return entities.GuildSettings{}
+	}
 
-	entities.Guilds.RLock()
-	defer entities.Guilds.RUnlock()
+	settings, err := entities.LoadGuildSettings(guildID)
+	if err != nil {
+		log.Printf("Error loading guild settings for guild %s: %v\n", guildID, err)
+		return entities.GuildSettings{}
+	}
 
-	return entities.Guilds.DB[guildID].GetGuildSettings()
+	return settings
 }
 
-// SetGuildSettings sets the guild settings from in-memory
+// SetGuildSettings saves guild settings in MongoDB
 func SetGuildSettings(guildID string, guildSettings entities.GuildSettings) {
-	entities.HandleNewGuild(guildID)
+	err := entities.InitGuildIfNotExists(guildID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
-	entities.Guilds.Lock()
-	defer entities.Guilds.Unlock()
-
-	entities.Guilds.DB[guildID].SetGuildSettings(guildSettings)
-
-	entities.Guilds.DB[guildID].WriteData("guildSettings", entities.Guilds.DB[guildID].GetGuildSettings())
+	err = entities.SaveGuildSettings(guildID, guildSettings)
+	if err != nil {
+		log.Printf("Error saving guild settings for guild %s: %v\n", guildID, err)
+	}
 }

@@ -113,7 +113,10 @@ func HandleCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 // Handles a command from a guild
 func handleGuild(s *discordgo.Session, m *discordgo.MessageCreate) {
-	entities.HandleNewGuild(m.GuildID)
+	err := entities.InitGuildIfNotExists(m.GuildID)
+	if err != nil {
+		return
+	}
 	guildSettings := db.GetGuildSettings(m.GuildID)
 
 	if len(m.Message.Content) <= len(guildSettings.GetPrefix()) || m.Message.Content[0:len(guildSettings.GetPrefix())] != guildSettings.GetPrefix() {

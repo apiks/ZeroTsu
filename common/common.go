@@ -25,7 +25,7 @@ import (
 
 // File for misc. functions, commands and variables.
 
-const UserAgent = "script:github.com/apiks/zerotsu:v3.4.2 (by /u/thechosenapiks)"
+const UserAgent = "script:github.com/apiks/zerotsu:v3.5 (by /u/thechosenapiks)"
 
 var StartTime time.Time
 
@@ -126,18 +126,28 @@ func (c *UserAgentTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 func ResolveTimeFromString(given string) (ret time.Time, perma bool, err error) {
 	ret = time.Now()
 	comp := ret
-	matcher, _ := regexp.Compile(`\d+|[wdhmWDHM]+`)
-	groups := matcher.FindAllString(given, -1)
-	if len(groups)%2 != 0 {
-		err = fmt.Errorf("Error: invalid date given.")
+
+	// Match numbers followed by letters (w, d, h, m)
+	matcher := regexp.MustCompile(`(\d+)([wdhmWDHM])`)
+	groups := matcher.FindAllStringSubmatch(given, -1)
+
+	// If no valid matches, return an error
+	if len(groups) == 0 {
+		err = fmt.Errorf("invalid time format: %s", given)
 		return
 	}
-	for i, v := range groups {
-		val, err := strconv.Atoi(v)
-		if err != nil {
+
+	for _, match := range groups {
+		if len(match) < 3 {
 			continue
 		}
-		switch strings.ToLower(groups[i+1]) {
+
+		val, convErr := strconv.Atoi(match[1])
+		if convErr != nil {
+			continue
+		}
+
+		switch strings.ToLower(match[2]) {
 		case "w":
 			ret = ret.AddDate(0, 0, val*7)
 		case "d":
@@ -146,15 +156,21 @@ func ResolveTimeFromString(given string) (ret time.Time, perma bool, err error) 
 			ret = ret.Add(time.Hour * time.Duration(val))
 		case "m":
 			ret = ret.Add(time.Minute * time.Duration(val))
+		default:
+			err = fmt.Errorf("unrecognized time unit: %s", match[2])
+			return
 		}
 	}
+
+	// If no changes were made, mark as permanent
 	if ret.Equal(comp) {
 		perma = true
 	}
+
 	return
 }
 
-// Resolves a userID from a userID, Mention or username#discrim
+// GetUserID resolves a userID from a userID, Mention or username#discrim
 func GetUserID(m *discordgo.Message, messageSlice []string) (string, error) {
 	if len(messageSlice) < 2 {
 		return "", fmt.Errorf("Error: No @user, userID or username#discrim detected.")

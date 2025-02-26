@@ -2,120 +2,63 @@ package db
 
 import (
 	"github.com/r-anime/ZeroTsu/entities"
+	"log"
 )
 
-// GetGuildFeedChecks returns the guild's feed checks from in-memory
-func GetGuildFeedChecks(guildID string) []entities.FeedCheck {
-	entities.HandleNewGuild(guildID)
-
-	entities.Guilds.RLock()
-	g := entities.Guilds.DB[guildID]
-	entities.Guilds.RUnlock()
-
-	return g.GetFeedChecks()
-}
-
-// AddGuildFeedChecks adds a target guild's feed checks in-memory
-func AddGuildFeedChecks(guildID string, feedChecks []entities.FeedCheck, delete ...bool) {
-	entities.HandleNewGuild(guildID)
-
-	entities.Guilds.Lock()
-	defer entities.Guilds.Unlock()
-
-	if len(delete) == 0 {
-		var exists bool
-		for _, feedCheck := range feedChecks {
-			for i, guildFeedCheck := range entities.Guilds.DB[guildID].GetFeedChecks() {
-				if guildFeedCheck == feedCheck {
-					entities.Guilds.DB[guildID].AssignToFeedChecks(i, feedCheck)
-					exists = true
-					break
-				}
-			}
-
-			if !exists {
-				entities.Guilds.DB[guildID].AppendToFeedChecks(feedCheck)
-			}
-		}
-	} else {
-		deleteGuildFeedChecks(guildID, feedChecks)
+// GetGuildFeedChecks retrieves all feed checks from MongoDB
+func GetGuildFeedChecks(guildID string, limit int) []entities.FeedCheck {
+	err := entities.InitGuildIfNotExists(guildID)
+	if err != nil {
+		log.Println(err)
+		return nil
 	}
 
-	entities.Guilds.DB[guildID].WriteData("rssThreadCheck", entities.Guilds.DB[guildID].GetFeedChecks())
-}
-
-// AddGuildFeedCheck adds a target guild's feed check in-memory
-func AddGuildFeedCheck(guildID string, feedCheck entities.FeedCheck, delete ...bool) {
-	entities.HandleNewGuild(guildID)
-
-	entities.Guilds.Lock()
-	defer entities.Guilds.Unlock()
-
-	if len(delete) == 0 {
-		var exists bool
-		for i, guildFeedCheck := range entities.Guilds.DB[guildID].GetFeedChecks() {
-			if guildFeedCheck == feedCheck {
-				entities.Guilds.DB[guildID].AssignToFeedChecks(i, feedCheck)
-				exists = true
-				break
-			}
-		}
-
-		if !exists {
-			entities.Guilds.DB[guildID].AppendToFeedChecks(feedCheck)
-		}
-	} else {
-		deleteGuildFeedCheck(guildID, feedCheck)
+	feedChecks, err := entities.LoadFeedChecks(guildID, limit)
+	if err != nil {
+		return nil
 	}
 
-	entities.Guilds.DB[guildID].WriteData("rssThreadCheck", entities.Guilds.DB[guildID].GetFeedChecks())
+	return feedChecks
 }
 
-// SetGuildFeedCheck sets a target guild's feed check in-memory
+// SetGuildFeedCheck saves or deletes a guild feed check in MongoDB
 func SetGuildFeedCheck(guildID string, feedCheck entities.FeedCheck, delete ...bool) {
-	entities.HandleNewGuild(guildID)
-
-	entities.Guilds.Lock()
-	defer entities.Guilds.Unlock()
+	err := entities.InitGuildIfNotExists(guildID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
 	if len(delete) == 0 {
-		var exists bool
-		for i, guildFeedCheck := range entities.Guilds.DB[guildID].GetFeedChecks() {
-			if guildFeedCheck == feedCheck {
-				entities.Guilds.DB[guildID].AssignToFeedChecks(i, feedCheck)
-				exists = true
-				break
-			}
-		}
-
-		if !exists {
-			entities.Guilds.DB[guildID].AppendToFeedChecks(feedCheck)
+		err := entities.SaveFeedCheck(guildID, feedCheck)
+		if err != nil {
+			log.Printf("Error saving feed check for guild %s: %v\n", guildID, err)
 		}
 	} else {
-		deleteGuildFeedCheck(guildID, feedCheck)
-	}
-
-	entities.Guilds.DB[guildID].WriteData("rssThreadCheck", entities.Guilds.DB[guildID].GetFeedChecks())
-}
-
-// deleteGuildFeedChecks safely deletes multiple feed checks from the feedChecks slice
-func deleteGuildFeedChecks(guildID string, feedChecks []entities.FeedCheck) {
-	for _, feedCheck := range feedChecks {
-		for i, guildFeedCheck := range entities.Guilds.DB[guildID].GetFeedChecks() {
-			if guildFeedCheck == feedCheck {
-				entities.Guilds.DB[guildID].RemoveFromFeedChecks(i)
-				break
-			}
+		err := entities.DeleteFeedCheck(guildID, feedCheck)
+		if err != nil {
+			log.Printf("Error deleting feed check for guild %s: %v\n", guildID, err)
 		}
 	}
 }
 
-// deleteGuildFeedCheck safely deletes a feed check from the feedChecks slice
-func deleteGuildFeedCheck(guildID string, feedCheck entities.FeedCheck) {
-	for i, guildFeedCheck := range entities.Guilds.DB[guildID].GetFeedChecks() {
-		if guildFeedCheck == feedCheck {
-			entities.Guilds.DB[guildID].RemoveFromFeedChecks(i)
-			break
+// SetGuildFeedChecks saves or deletes multiple feed checks in MongoDB
+func SetGuildFeedChecks(guildID string, feedChecks []entities.FeedCheck, delete ...bool) {
+	err := entities.InitGuildIfNotExists(guildID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	if len(delete) == 0 {
+		err := entities.SaveMultipleFeedChecks(guildID, feedChecks)
+		if err != nil {
+			log.Printf("Error saving feed checks for guild %s: %v\n", guildID, err)
+		}
+	} else {
+		err := entities.DeleteMultipleFeedChecks(guildID, feedChecks)
+		if err != nil {
+			log.Printf("Error deleting multiple feed checks for guild %s: %v\n", guildID, err)
 		}
 	}
 }

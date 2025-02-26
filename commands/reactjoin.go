@@ -31,7 +31,10 @@ func ReactJoinHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 		return
 	}
 
-	entities.HandleNewGuild(r.GuildID)
+	err := entities.InitGuildIfNotExists(r.GuildID)
+	if err != nil {
+		return
+	}
 
 	guildReactJoin := db.GetGuildReactJoin(r.GuildID)
 	// Checks if a react channel join is set for that specific message and emoji and continues if true
@@ -108,7 +111,10 @@ func ReactRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove
 		return
 	}
 
-	entities.HandleNewGuild(r.GuildID)
+	err := entities.InitGuildIfNotExists(r.GuildID)
+	if err != nil {
+		return
+	}
 
 	guildReactJoin := db.GetGuildReactJoin(r.GuildID)
 	// Checks if a react channel join is set for that specific message and emoji and continues if true

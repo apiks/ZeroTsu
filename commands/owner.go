@@ -2,16 +2,15 @@ package commands
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"strings"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/entities"
-	"github.com/r-anime/ZeroTsu/events"
-
-	"github.com/bwmarrin/discordgo"
 
 	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/functionality"
@@ -152,25 +151,28 @@ func removePlayingMsgCommand(s *discordgo.Session, m *discordgo.Message) {
 	entities.Mutex.Unlock()
 }
 
-// Prints in how many servers the BOT is
+// serversCommand prints in how many servers the BOT is
 func serversCommand(s *discordgo.Session, m *discordgo.Message) {
 	if m.Author.ID != config.OwnerID {
 		return
 	}
 
-	events.GuildIds.RLock()
-	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I am in %d servers.", len(events.GuildIds.Ids)))
+	// Fetch guild count from MongoDB
+	guildIds, err := entities.LoadAllGuildIDs()
 	if err != nil {
-		if m.GuildID != "" {
-			events.GuildIds.RUnlock()
-			guildSettings := db.GetGuildSettings(m.GuildID)
-			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
-			return
-		}
-		events.GuildIds.RUnlock()
+		log.Printf("Error fetching guild IDs: %v", err)
+		_, _ = s.ChannelMessageSend(m.ChannelID, "Error fetching server count.")
 		return
 	}
-	events.GuildIds.RUnlock()
+
+	// Send message with the guild count
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I am in %d servers.", len(guildIds)))
+	if err != nil {
+		if m.GuildID != "" {
+			guildSettings := db.GetGuildSettings(m.GuildID)
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		}
+	}
 }
 
 // Prints in how many servers the BOT is from the sharding manager
@@ -206,21 +208,28 @@ func messageBotLogsCommand(s *discordgo.Session, m *discordgo.Message) {
 	if m.Author.ID != config.OwnerID {
 		return
 	}
+
 	commandStrings := strings.SplitN(strings.Replace(m.Content, "  ", " ", -1), " ", 2)
+	if len(commandStrings) < 2 {
+		_, _ = s.ChannelMessageSend(m.ChannelID, "Usage: `messageBotLogs [message]`")
+		return
+	}
 
-	entities.Guilds.RLock()
-	defer entities.Guilds.RUnlock()
+	// Load only guild IDs and bot log channel IDs from MongoDB
+	guildLogs, err := entities.LoadGuildBotLogs()
+	if err != nil {
+		log.Println("Error loading bot logs from MongoDB:", err)
+		return
+	}
 
-	for guildID, guild := range entities.Guilds.DB {
-		guild.RLock()
-		if db.GetGuildSettings(guildID).GetBotLog() == (entities.Cha{}) ||
-			db.GetGuildSettings(guildID).GetBotLog().GetName() == "" ||
-			db.GetGuildSettings(guildID).GetBotLog().GetID() == "" {
+	for _, botLog := range guildLogs {
+		if botLog == "" {
 			continue
 		}
-		_, _ = s.ChannelMessageSend(db.GetGuildSettings(guildID).GetBotLog().GetID(), commandStrings[1])
-		guild.RUnlock()
-		time.Sleep(1 * time.Second)
+
+		// Send message to the bot log channel
+		_, _ = s.ChannelMessageSend(botLog, commandStrings[1])
+		time.Sleep(1 * time.Second) // Prevent rate-limiting issues
 	}
 }
 

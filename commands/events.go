@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"io/ioutil"
+	"github.com/r-anime/ZeroTsu/entities"
 	"log"
 	"strconv"
 	"time"
@@ -50,12 +50,13 @@ func dailyScheduleEvents() {
 	UpdateAnimeSchedule()
 	ResetSubscriptions()
 
-	folders, err := ioutil.ReadDir("database/guilds")
+	// Fetch all guild IDs from MongoDB
+	guildIDs, err := entities.LoadAllGuildIDs()
 	if err != nil {
+		log.Printf("Error fetching guild IDs: %v\n", err)
 		DailyScheduleEventsBlock.Lock()
 		DailyScheduleEventsBlock.Block = false
 		DailyScheduleEventsBlock.Unlock()
-		log.Panicln(err)
 		return
 	}
 
@@ -69,47 +70,43 @@ func dailyScheduleEvents() {
 		guard         = make(chan struct{}, maxGoroutines)
 	)
 
-	for _, f := range folders {
-		if !f.IsDir() {
-			continue
-		}
-		guildID := f.Name()
-
+	for _, guildID := range guildIDs {
 		guard <- struct{}{}
-		eg.Go(func() error {
-			guildIDInt, err := strconv.ParseInt(guildID, 10, 64)
-			if err != nil {
-				<-guard
-				return nil
-			}
+		eg.Go(func(guildID string) func() error {
+			return func() error {
+				guildIDInt, err := strconv.ParseInt(guildID, 10, 64)
+				if err != nil {
+					<-guard
+					return nil
+				}
 
-			// Sends daily schedule via webhook
-			events.DailyScheduleWebhooksMap.RLock()
-			if _, ok := events.DailyScheduleWebhooksMap.WebhooksMap[guildID]; !ok {
+				// Sends daily schedule via webhook
+				events.DailyScheduleWebhooksMap.RLock()
+				w, exists := events.DailyScheduleWebhooksMap.WebhooksMap[guildID]
 				events.DailyScheduleWebhooksMap.RUnlock()
+				if !exists {
+					<-guard
+					return nil
+				}
+
+				s := config.Mgr.SessionForGuild(guildIDInt)
+				guildSettings := db.GetGuildSettings(guildID)
+				content := getDaySchedule(int(time.Now().Weekday()), guildSettings.GetDonghua())
+				content += "\n**Full Week:** <https://AnimeSchedule.net>"
+
+				_, err = s.WebhookExecute(w.ID, w.Token, false, &discordgo.WebhookParams{
+					Content: content,
+				})
+				if err != nil {
+					common.LogError(s, guildSettings.BotLog, err)
+					<-guard
+					return nil
+				}
+
 				<-guard
 				return nil
 			}
-			w := events.DailyScheduleWebhooksMap.WebhooksMap[guildID]
-			events.DailyScheduleWebhooksMap.RUnlock()
-
-			s := config.Mgr.SessionForGuild(guildIDInt)
-			guildSettings := db.GetGuildSettings(guildID)
-			content := getDaySchedule(int(time.Now().Weekday()), guildSettings.GetDonghua())
-			content += "\n**Full Week:** <https://AnimeSchedule.net>"
-
-			_, err = s.WebhookExecute(w.ID, w.Token, false, &discordgo.WebhookParams{
-				Content: content,
-			})
-			if err != nil {
-				common.LogError(s, guildSettings.BotLog, err)
-				<-guard
-				return nil
-			}
-
-			<-guard
-			return nil
-		})
+		}(guildID))
 	}
 
 	err = eg.Wait()
@@ -117,25 +114,20 @@ func dailyScheduleEvents() {
 		log.Println(err)
 	}
 
-	for _, f := range folders {
-		if !f.IsDir() {
-			continue
-		}
-		guildID := f.Name()
-
+	for _, guildID := range guildIDs {
 		guildIDInt, err := strconv.ParseInt(guildID, 10, 64)
 		if err != nil {
 			continue
 		}
 
 		events.DailyScheduleWebhooksMap.RLock()
-		if _, ok := events.DailyScheduleWebhooksMap.WebhooksMap[guildID]; ok {
-			events.DailyScheduleWebhooksMap.RUnlock()
+		_, exists := events.DailyScheduleWebhooksMap.WebhooksMap[guildID]
+		events.DailyScheduleWebhooksMap.RUnlock()
+		if exists {
 			continue
 		}
-		events.DailyScheduleWebhooksMap.RUnlock()
 
-		// Wait some milliseconds so it doesn't hit the rate limit easily
+		// Wait some milliseconds to prevent hitting the rate limit easily
 		time.Sleep(time.Millisecond * 300)
 
 		// Sends daily schedule via message

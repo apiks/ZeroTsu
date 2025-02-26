@@ -1,29 +1,50 @@
 package db
 
-import "github.com/r-anime/ZeroTsu/entities"
+import (
+	"github.com/r-anime/ZeroTsu/entities"
+	"log"
+)
 
-// GetGuildAutopost returns an autopost obect from in-memory
+// GetGuildAutopost retrieves an autopost from MongoDB
 func GetGuildAutopost(guildID string, postType string) entities.Cha {
-	entities.HandleNewGuild(guildID)
-
-	entities.Guilds.RLock()
-	defer entities.Guilds.RUnlock()
-
-	if autopost, ok := entities.Guilds.DB[guildID].GetAutoposts()[postType]; ok {
-		return autopost
+	err := entities.InitGuildIfNotExists(guildID)
+	if err != nil {
+		log.Println(err)
+		return entities.Cha{}
 	}
 
-	return entities.Cha{}
+	autopost, err := entities.LoadAutopost(guildID, postType)
+	if err != nil {
+		return entities.Cha{}
+	}
+
+	return autopost
 }
 
-// SetGuildAutopost sets a target guild's autopost object in-memory
+// SetGuildAutopost saves an autopost entry in MongoDB
 func SetGuildAutopost(guildID string, postType string, autopost entities.Cha) {
-	entities.HandleNewGuild(guildID)
+	err := entities.InitGuildIfNotExists(guildID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
-	entities.Guilds.Lock()
-	defer entities.Guilds.Unlock()
+	err = entities.SaveAutopost(guildID, postType, autopost)
+	if err != nil {
+		log.Printf("Error saving autopost for guild %s: %v\n", guildID, err)
+	}
+}
 
-	entities.Guilds.DB[guildID].GetAutoposts()[postType] = autopost
+// RemoveGuildAutopost deletes an autopost entry from MongoDB
+func RemoveGuildAutopost(guildID string, postType string) {
+	err := entities.InitGuildIfNotExists(guildID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
-	entities.Guilds.DB[guildID].WriteData("autoposts", entities.Guilds.DB[guildID].GetAutoposts())
+	err = entities.DeleteAutopost(guildID, postType)
+	if err != nil {
+		log.Printf("Error deleting autopost %s for guild %s: %v\n", postType, guildID, err)
+	}
 }

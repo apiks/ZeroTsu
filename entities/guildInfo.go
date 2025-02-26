@@ -3,10 +3,8 @@ package entities
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
-
 	"github.com/sasha-s/go-deadlock"
+	"io/ioutil"
 )
 
 // GuildInfo contains all the data a guild can contain
@@ -205,7 +203,7 @@ func (g *GuildInfo) GetAutoposts() map[string]Cha {
 
 // Load loads a guild file into the guild memory
 func (g *GuildInfo) Load(file, guildID string) error {
-	fileData, err := ioutil.ReadFile(fmt.Sprintf("%s/%s/%s", DBPath, guildID, file))
+	fileData, err := ioutil.ReadFile(fmt.Sprintf("%s/%s/%s", "database/guilds", guildID, file))
 	if err != nil {
 		return err
 	}
@@ -234,20 +232,20 @@ func (g *GuildInfo) Load(file, guildID string) error {
 	return nil
 }
 
-// WriteData writes some kind of guild data to the target guild file
-func (g *GuildInfo) WriteData(fileName string, data interface{}) {
-	marshaledData, err := json.MarshalIndent(&data, "", "    ")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	if len(marshaledData) == 0 {
-		return
-	}
-
-	err = ioutil.WriteFile(fmt.Sprintf(DBPath+"/%s/%s.json", g.GetID(), fileName), marshaledData, 0644)
-	if err != nil {
-		log.Println("WriteData error:", err)
-		return
-	}
-}
+//// WriteData writes some kind of guild data to the target guild file
+//func (g *GuildInfo) WriteData(fileName string, data interface{}) {
+//	marshaledData, err := json.MarshalIndent(&data, "", "    ")
+//	if err != nil {
+//		log.Println(err)
+//		return
+//	}
+//	if len(marshaledData) == 0 {
+//		return
+//	}
+//
+//	err = ioutil.WriteFile(fmt.Sprintf(DBPath+"/%s/%s.json", g.GetID(), fileName), marshaledData, 0644)
+//	if err != nil {
+//		log.Println("WriteData error:", err)
+//		return
+//	}
+//}
