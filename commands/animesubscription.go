@@ -999,9 +999,10 @@ func ResetSubscriptions() {
 						userShow.SetNotified(true)
 					}
 
-					updatedSubs = append(updatedSubs, userShow)
 					updated = true
 				}
+
+				updatedSubs = append(updatedSubs, userShow)
 			}
 		}
 
