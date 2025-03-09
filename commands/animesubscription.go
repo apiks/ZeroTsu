@@ -609,11 +609,6 @@ func animeSubsWebhookHandler() {
 					continue
 				}
 
-				if guildShow.GetNotified() {
-					updatedSubs = append(updatedSubs, guildShow) // Preserve existing notified shows
-					continue
-				}
-
 				for _, scheduleShow := range todayShows {
 					if scheduleShow == nil || scheduleShow.GetDelayed() != "" {
 						continue
@@ -804,14 +799,8 @@ func animeSubsHandler() {
 
 		// Process subscriptions
 		var updatedSubs []*entities.ShowSub
-
 		for _, userShow := range subscriptions {
 			if userShow == nil {
-				continue
-			}
-
-			if userShow.GetNotified() {
-				updatedSubs = append(updatedSubs, userShow) // Preserve existing notified shows
 				continue
 			}
 
