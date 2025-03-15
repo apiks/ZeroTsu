@@ -62,10 +62,12 @@ func SaveReminders(id string, remindMeSlice *RemindMeSlice) error {
 	// Convert to MongoDB structure
 	data := ConvertRemindMeSlice(id, remindMeSlice)
 
-	// Save to MongoDB
 	filter := bson.M{"id": id}
 	update := bson.M{"$set": data}
-	_, err := RemindersCollection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
+
+	opts := options.Update().SetUpsert(true)
+
+	_, err := RemindersCollection.UpdateOne(ctx, filter, update, opts)
 	if err != nil {
 		log.Printf("Error saving updated reminders for %s: %v\n", id, err)
 		return err
@@ -82,7 +84,7 @@ func GetDueReminders() (map[string]*RemindMeSlice, error) {
 	now := time.Now()
 
 	// Query for reminders with at least one past-due reminder
-	filter := bson.M{"reminders.date": bson.M{"$lte": now}}
+	filter := bson.M{"reminders": bson.M{"$elemMatch": bson.M{"date": bson.M{"$lte": now}}}}
 	cursor, err := RemindersCollection.Find(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch due reminders: %v", err)
@@ -168,5 +170,26 @@ func ConvertMongoToRemindMeSlice(r RemindMeSliceMongo) *RemindMeSlice {
 		RemindMeSlice: reminders,
 		Premium:       r.Premium,
 		Guild:         r.IsGuild,
+	}
+}
+
+func EnsureRemindersIndexes() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	indexModels := []mongo.IndexModel{
+		{
+			Keys:    bson.M{"id": 1},
+			Options: options.Index().SetUnique(true),
+		},
+		{
+			Keys:    bson.M{"reminders.date": 1},
+			Options: options.Index(),
+		},
+	}
+
+	_, err := RemindersCollection.Indexes().CreateMany(ctx, indexModels)
+	if err != nil {
+		log.Fatal("Failed to create indexes for reminders:", err)
 	}
 }
