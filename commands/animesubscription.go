@@ -904,8 +904,6 @@ func AnimeSubsWebhooksMapTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 
 // ResetSubscriptions resets anime sub notifications status
 func ResetSubscriptions() {
-	var todayShows []*entities.ShowAirTime
-
 	now := time.Now()
 	location, err := time.LoadLocation("Europe/London")
 	if err != nil {
@@ -915,13 +913,13 @@ func ResetSubscriptions() {
 
 	// Fetch today's shows
 	entities.AnimeSchedule.RLock()
-	todayShows = entities.AnimeSchedule.AnimeSchedule[int(now.Weekday())]
+	todayShows := entities.AnimeSchedule.AnimeSchedule[int(now.Weekday())]
 	entities.AnimeSchedule.RUnlock()
 
 	// Fetch all anime subscriptions from the database
 	animeSubsMap := db.GetAllAnimeSubs()
 
-	for userID, subscriptions := range animeSubsMap {
+	for id, subscriptions := range animeSubsMap {
 		if len(subscriptions) == 0 {
 			continue
 		}
@@ -929,23 +927,27 @@ func ResetSubscriptions() {
 		updated := false
 		var updatedSubs []*entities.ShowSub
 
-		// Check if this is a guild (Discord server)
+		// Check if this is a guild
 		isGuild := subscriptions[0].GetGuild()
 
-		if isGuild {
-			// **Guilds are always subscribed to all shows**
-			updatedSubs = make([]*entities.ShowSub, len(todayShows))
-			for i, scheduleShow := range todayShows {
+		// Process all subscriptions
+		for _, show := range subscriptions {
+			if show == nil {
+				continue
+			}
+
+			// Check if the show airs today and needs a status update
+			for _, scheduleShow := range todayShows {
 				if scheduleShow == nil {
 					continue
 				}
 
-				// Create a new ShowSub for the guild
-				newGuildShow := &entities.ShowSub{}
-				newGuildShow.SetShow(scheduleShow.GetName())
-				newGuildShow.SetGuild(true)
+				// Match show names
+				if !strings.EqualFold(show.GetShow(), scheduleShow.GetName()) {
+					continue
+				}
 
-				// Parse the air hour and minute
+				// Parse the air time
 				t, err := time.Parse("3:04 PM", scheduleShow.GetAirTime())
 				if err != nil {
 					log.Println(err)
@@ -955,60 +957,30 @@ func ResetSubscriptions() {
 				// Form the air date for today
 				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
 
-				// Reset notification status based on the time
+				// Update notification status
+				oldStatus := show.GetNotified()
 				if now.Before(scheduleDate) {
-					newGuildShow.SetNotified(false)
+					show.SetNotified(false)
 				} else {
-					newGuildShow.SetNotified(true)
+					show.SetNotified(true)
 				}
 
-				updatedSubs[i] = newGuildShow
-			}
-			updated = true
-		} else {
-			// **Process regular user subscriptions**
-			for _, userShow := range subscriptions {
-				if userShow == nil {
-					continue
-				}
-
-				for _, scheduleShow := range todayShows {
-					if scheduleShow == nil {
-						continue
-					}
-
-					// Check if the show matches
-					if !strings.EqualFold(userShow.GetShow(), scheduleShow.GetName()) {
-						continue
-					}
-
-					// Parse the air hour and minute
-					t, err := time.Parse("3:04 PM", scheduleShow.GetAirTime())
-					if err != nil {
-						log.Println(err)
-						continue
-					}
-
-					// Form the air date for today
-					scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
-
-					// Reset notification status based on the time
-					if now.Before(scheduleDate) {
-						userShow.SetNotified(false)
-					} else {
-						userShow.SetNotified(true)
-					}
-
+				// Mark as updated if the status changed
+				if show.GetNotified() != oldStatus {
 					updated = true
 				}
 
-				updatedSubs = append(updatedSubs, userShow)
+				// No need to keep checking once we find a match
+				break
 			}
+
+			// Append the processed show to updatedSubs
+			updatedSubs = append(updatedSubs, show)
 		}
 
-		// Save the updated subscriptions to MongoDB
+		// Save the updated subscriptions to MongoDB (only if there are changes)
 		if updated {
-			db.SetAnimeSubs(userID, updatedSubs, isGuild)
+			db.SetAnimeSubs(id, updatedSubs, isGuild)
 		}
 	}
 }
