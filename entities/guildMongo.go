@@ -3,6 +3,7 @@ package entities
 import (
 	"context"
 	"fmt"
+	"go.mongodb.org/mongo-driver/mongo"
 	"log"
 	"time"
 
@@ -42,27 +43,14 @@ func LoadAllGuildIDs() ([]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	opts := options.Find().SetProjection(bson.M{"_id": 1})
-	cursor, err := GuildCollection.Find(ctx, bson.M{}, opts)
+	var guildIds []string
+	results, err := GuildCollection.Distinct(ctx, "_id", bson.M{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch guild IDs: %v", err)
 	}
-	defer cursor.Close(ctx)
 
-	var guildIds []string
-	for cursor.Next(ctx) {
-		var result struct {
-			ID string `bson:"_id"`
-		}
-		if err := cursor.Decode(&result); err != nil {
-			log.Println("Error decoding guild ID from MongoDB:", err)
-			continue
-		}
-		guildIds = append(guildIds, result.ID)
-	}
-
-	if err := cursor.Err(); err != nil {
-		return nil, fmt.Errorf("cursor error while loading guild IDs: %v", err)
+	for _, id := range results {
+		guildIds = append(guildIds, id.(string))
 	}
 
 	return guildIds, nil
@@ -73,10 +61,7 @@ func LoadGuildBotLogs() (map[string]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Fetch only `_id` (guildID) and `guild_settings.bot_log_id` (bot log channel)
-	opts := options.Find().SetProjection(bson.M{"_id": 1, "guild_settings.bot_log_id": 1})
-
-	cursor, err := GuildCollection.Find(ctx, bson.M{}, opts)
+	cursor, err := GuildCollection.Find(ctx, bson.M{}, options.Find())
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch bot logs: %v", err)
 	}
@@ -88,7 +73,7 @@ func LoadGuildBotLogs() (map[string]string, error) {
 		var result struct {
 			ID            string `bson:"_id"`
 			GuildSettings struct {
-				BotLog ChannelMongo `bson:"bot_log_id"`
+				BotLogID string `bson:"bot_log_id"`
 			} `bson:"guild_settings"`
 		}
 
@@ -97,8 +82,7 @@ func LoadGuildBotLogs() (map[string]string, error) {
 			continue
 		}
 
-		// Store guild ID -> bot log channel ID
-		guildLogs[result.ID] = result.GuildSettings.BotLog.ID
+		guildLogs[result.ID] = result.GuildSettings.BotLogID
 	}
 
 	if err := cursor.Err(); err != nil {
@@ -114,12 +98,16 @@ func DoesGuildExist(guildID string) (bool, error) {
 	defer cancel()
 
 	filter := bson.M{"_id": guildID}
-	count, err := GuildCollection.CountDocuments(ctx, filter)
+	err := GuildCollection.FindOne(ctx, filter).Err()
+
+	if err == mongo.ErrNoDocuments {
+		return false, nil
+	}
 	if err != nil {
 		return false, fmt.Errorf("failed to check guild existence: %v", err)
 	}
 
-	return count > 0, nil
+	return true, nil
 }
 
 // InitGuildIfNotExists ensures a guild exists in MongoDB and initializes it if missing
@@ -127,20 +115,10 @@ func InitGuildIfNotExists(guildID string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// Check if the guild already exists
 	filter := bson.M{"_id": guildID}
-	count, err := GuildCollection.CountDocuments(ctx, filter)
-	if err != nil {
-		return fmt.Errorf("failed to check existing guild: %v", err)
-	}
 
-	// If the guild exists, no need to initialize
-	if count > 0 {
-		return nil
-	}
-
-	// Create a new MongoDB-compatible guild entry
-	newGuild := GuildInfoMongo{
+	// Use `$setOnInsert` to only insert if the document does not exist
+	update := bson.M{"$setOnInsert": GuildInfoMongo{
 		ID: guildID,
 		GuildSettings: GuildSettingsMongo{
 			Prefix:       ".",
@@ -151,13 +129,30 @@ func InitGuildIfNotExists(guildID string) error {
 		Raffles:      []RaffleMongo{},
 		Autoposts:    []AutopostChannelMongo{},
 		ReactJoinMap: []ReactJoinMongoWrap{},
-	}
+	}}
 
-	// Insert the new guild into MongoDB
-	_, err = GuildCollection.InsertOne(ctx, newGuild)
+	opts := options.Update().SetUpsert(true)
+	_, err := GuildCollection.UpdateOne(ctx, filter, update, opts)
 	if err != nil {
 		return fmt.Errorf("failed to initialize new guild %s: %v", guildID, err)
 	}
 
 	return nil
+}
+
+func EnsureGuildsIndexes() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	indexModels := []mongo.IndexModel{
+		{
+			Keys:    bson.M{"guild_settings.bot_log_id": 1},
+			Options: options.Index(),
+		},
+	}
+
+	_, err := GuildCollection.Indexes().CreateMany(ctx, indexModels)
+	if err != nil {
+		log.Fatal("Failed to create indexes for guilds:", err)
+	}
 }

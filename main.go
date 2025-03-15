@@ -37,6 +37,8 @@ func main() {
 	entities.InitMongoDB("mongodb://localhost:27017")
 	entities.EnsureAnimeSubsIndexes()
 	entities.EnsureRemindersIndexes()
+	entities.EnsureGuildsIndexes()
+	entities.EnsureFeedsIndexes()
 
 	// Enable to migrate from JSON database to MongoDB
 	//entities.MigrateGuilds()
