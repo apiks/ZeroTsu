@@ -35,6 +35,7 @@ func main() {
 	commands.UpdateAnimeSchedule()
 
 	entities.InitMongoDB("mongodb://localhost:27017")
+	entities.EnsureIndexes()
 
 	// Enable to migrate from JSON database to MongoDB
 	//entities.MigrateGuilds()

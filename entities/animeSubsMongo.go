@@ -71,25 +71,31 @@ func SaveAnimeSubs(animeSubs map[string][]*ShowSub) error {
 
 	var operations []mongo.WriteModel
 	for id, shows := range animeSubs {
-		// Determine whether the ID belongs to a Guild or User
-		isGuild := false
-		if len(shows) > 0 {
-			isGuild = shows[0].GetGuild()
+		var sanitizedShows []*ShowSub
+		for _, s := range shows {
+			sanitizedShows = append(sanitizedShows, ConvertShowSub(s))
 		}
 
 		data := AnimeSubsMongo{
 			ID:      id,
-			IsGuild: isGuild,
-			Shows:   shows,
+			IsGuild: len(sanitizedShows) > 0 && sanitizedShows[0].GetGuild(),
+			Shows:   sanitizedShows,
 		}
 
 		filter := bson.M{"id": id}
 		update := bson.M{"$set": data}
-		operations = append(operations, mongo.NewUpdateOneModel().SetFilter(filter).SetUpdate(update).SetUpsert(true))
+
+		model := mongo.NewUpdateOneModel().
+			SetFilter(filter).
+			SetUpdate(update).
+			SetUpsert(true)
+
+		operations = append(operations, model)
 	}
 
 	if len(operations) > 0 {
-		_, err := AnimeSubsCollection.BulkWrite(ctx, operations)
+		opts := options.BulkWrite().SetOrdered(false)
+		_, err := AnimeSubsCollection.BulkWrite(ctx, operations, opts)
 		if err != nil {
 			return fmt.Errorf("failed to save anime subscriptions: %v", err)
 		}
@@ -113,16 +119,20 @@ func SetAnimeSubs(id string, subscriptions []*ShowSub, isGuild bool) error {
 		return nil
 	}
 
-	// Convert the data
-	data := AnimeSubsMongo{
-		ID:      id,
-		IsGuild: isGuild,
-		Shows:   subscriptions,
+	// Sanitize subscriptions
+	var sanitizedShows []*ShowSub
+	for _, s := range subscriptions {
+		sanitizedShows = append(sanitizedShows, ConvertShowSub(s))
 	}
 
 	// Save to MongoDB
 	filter := bson.M{"id": id}
-	update := bson.M{"$set": data}
+	update := bson.M{"$set": AnimeSubsMongo{
+		ID:      id,
+		IsGuild: isGuild,
+		Shows:   sanitizedShows,
+	}}
+
 	_, err := AnimeSubsCollection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
 	if err != nil {
 		log.Printf("Error saving updated anime subscriptions for %s: %v\n", id, err)
@@ -142,5 +152,20 @@ func ConvertShowSub(s *ShowSub) *ShowSub {
 		Show:     s.Show,
 		Notified: s.Notified,
 		Guild:    s.Guild,
+	}
+}
+
+func EnsureIndexes() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	indexModel := mongo.IndexModel{
+		Keys:    bson.M{"id": 1}, // Create index on 'id'
+		Options: options.Index().SetUnique(true),
+	}
+
+	_, err := AnimeSubsCollection.Indexes().CreateOne(ctx, indexModel)
+	if err != nil {
+		log.Fatal("Failed to create index for anime_subs:", err)
 	}
 }
