@@ -134,12 +134,12 @@ func Start() {
 	// Start tracking uptime from here
 	common.StartTime = time.Now()
 
-	//// Register Slash Commands
-	//for _, v := range commands.SlashCommands {
-	//	err := config.Mgr.ApplicationCommandCreate("", v)
-	//	if err != nil {
-	//		log.Panicf("Cannot create '%s' command: %v", v.Name, err)
-	//	}
-	//}
-	//log.Println("Slash command registration is done.")
+	// Register Slash Commands
+	for _, v := range commands.SlashCommands {
+		err := config.Mgr.ApplicationCommandCreate("", v)
+		if err != nil {
+			log.Panicf("Cannot create '%s' command: %v", v.Name, err)
+		}
+	}
+	log.Println("Slash command registration is done.")
 }

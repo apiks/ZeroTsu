@@ -35,12 +35,15 @@ func LoadAnimeSubs() (map[string][]*ShowSub, error) {
 			log.Println("Error decoding anime subscriptions from MongoDB:", err)
 			continue
 		}
-
 		animeSubsMap[animeSubData.ID] = animeSubData.Shows
 	}
 
 	if err := cursor.Err(); err != nil {
 		return nil, fmt.Errorf("cursor error while loading anime subscriptions: %v", err)
+	}
+
+	if animeSubsMap == nil {
+		return make(map[string][]*ShowSub), nil
 	}
 
 	return animeSubsMap, nil
@@ -69,21 +72,20 @@ func SaveAnimeSubs(animeSubs map[string][]*ShowSub) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var operations []mongo.WriteModel
+	operations := make([]mongo.WriteModel, 0, len(animeSubs))
 	for id, shows := range animeSubs {
-		var sanitizedShows []*ShowSub
-		for _, s := range shows {
-			sanitizedShows = append(sanitizedShows, ConvertShowSub(s))
-		}
-
-		data := AnimeSubsMongo{
-			ID:      id,
-			IsGuild: len(sanitizedShows) > 0 && sanitizedShows[0].GetGuild(),
-			Shows:   sanitizedShows,
+		sanitizedShows := make([]*ShowSub, len(shows))
+		for i, s := range shows {
+			sanitizedShows[i] = ConvertShowSub(s)
 		}
 
 		filter := bson.M{"id": id}
-		update := bson.M{"$set": data}
+		update := bson.M{
+			"$set": bson.M{
+				"is_guild": len(sanitizedShows) > 0 && sanitizedShows[0].GetGuild(),
+				"shows":    sanitizedShows,
+			},
+		}
 
 		model := mongo.NewUpdateOneModel().
 			SetFilter(filter).
@@ -111,27 +113,31 @@ func SetAnimeSubs(id string, subscriptions []*ShowSub, isGuild bool) error {
 
 	// If no subscriptions left, delete from the database
 	if len(subscriptions) == 0 {
-		_, err := AnimeSubsCollection.DeleteOne(ctx, bson.M{"id": id})
+		result, err := AnimeSubsCollection.DeleteOne(ctx, bson.M{"id": id})
 		if err != nil {
 			log.Printf("Error deleting anime subscriptions for %s: %v\n", id, err)
 			return err
+		}
+		if result.DeletedCount == 0 {
+			log.Printf("No anime subscriptions found for %s, nothing to delete.\n", id)
 		}
 		return nil
 	}
 
 	// Sanitize subscriptions
-	var sanitizedShows []*ShowSub
-	for _, s := range subscriptions {
-		sanitizedShows = append(sanitizedShows, ConvertShowSub(s))
+	sanitizedShows := make([]*ShowSub, len(subscriptions))
+	for i, s := range subscriptions {
+		sanitizedShows[i] = ConvertShowSub(s)
 	}
 
 	// Save to MongoDB
 	filter := bson.M{"id": id}
-	update := bson.M{"$set": AnimeSubsMongo{
-		ID:      id,
-		IsGuild: isGuild,
-		Shows:   sanitizedShows,
-	}}
+	update := bson.M{
+		"$set": bson.M{
+			"is_guild": isGuild,
+			"shows":    sanitizedShows,
+		},
+	}
 
 	_, err := AnimeSubsCollection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
 	if err != nil {
@@ -159,13 +165,18 @@ func EnsureAnimeSubsIndexes() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	indexModel := mongo.IndexModel{
-		Keys:    bson.M{"id": 1}, // Create index on 'id'
-		Options: options.Index().SetUnique(true),
+	indexModels := []mongo.IndexModel{
+		{
+			Keys:    bson.M{"id": 1},
+			Options: options.Index().SetUnique(true),
+		},
+		{
+			Keys: bson.M{"is_guild": 1},
+		},
 	}
 
-	_, err := AnimeSubsCollection.Indexes().CreateOne(ctx, indexModel)
+	_, err := AnimeSubsCollection.Indexes().CreateMany(ctx, indexModels)
 	if err != nil {
-		log.Fatal("Failed to create index for anime_subs:", err)
+		log.Fatal("Failed to create indexes for anime_subs:", err)
 	}
 }
