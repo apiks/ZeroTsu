@@ -3,6 +3,7 @@ package entities
 import (
 	"context"
 	"fmt"
+	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -29,8 +30,10 @@ func LoadReactJoinMap(guildID string) (map[string]*ReactJoin, error) {
 		ReactJoinMap []ReactJoinMongoWrap `bson:"react_join_map"`
 	}
 
-	opts := options.FindOne().SetProjection(bson.M{"react_join_map": 1})
-	err := GuildCollection.FindOne(ctx, bson.M{"_id": guildID}, opts).Decode(&result)
+	err := GuildCollection.FindOne(ctx, bson.M{"_id": guildID}).Decode(&result)
+	if err == mongo.ErrNoDocuments {
+		return map[string]*ReactJoin{}, nil
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to load react join map for guild %s: %v", guildID, err)
 	}
@@ -69,9 +72,12 @@ func SaveReactJoinEntry(guildID, messageID string, reactJoin *ReactJoin) error {
 	}
 
 	filter := bson.M{"_id": guildID, "react_join_map.channel_id": messageID}
-	update := bson.M{"$set": bson.M{"react_join_map.$": entry}}
+	update := bson.M{
+		"$set":         bson.M{"react_join_map.$": entry},
+		"$setOnInsert": bson.M{"_id": guildID},
+	}
 
-	result, err := GuildCollection.UpdateOne(ctx, filter, update)
+	result, err := GuildCollection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
 	if err != nil {
 		return fmt.Errorf("failed to update react join entry for guild %s: %v", guildID, err)
 	}
@@ -123,14 +129,16 @@ func DeleteReactJoinMap(guildID string) error {
 
 // ConvertReactJoinMapToSlice converts map[string]*ReactJoin → []ReactJoinMongoWrap
 func ConvertReactJoinMapToSlice(reactJoinMap map[string]*ReactJoin) []ReactJoinMongoWrap {
-	result := make([]ReactJoinMongoWrap, 0, len(reactJoinMap))
+	result := make([]ReactJoinMongoWrap, len(reactJoinMap))
+	i := 0
 	for channelID, reactJoin := range reactJoinMap {
-		result = append(result, ReactJoinMongoWrap{
+		result[i] = ReactJoinMongoWrap{
 			ChannelID: channelID,
 			ReactJoin: ReactJoinMongo{
 				RoleEmojiMap: reactJoin.RoleEmojiMap,
 			},
-		})
+		}
+		i++
 	}
 	return result
 }
@@ -144,4 +152,21 @@ func ConvertMongoToReactJoinMap(reactJoinList []ReactJoinMongoWrap) map[string]*
 		}
 	}
 	return result
+}
+
+func EnsureReactJoinIndexes() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	indexModels := []mongo.IndexModel{
+		{
+			Keys:    bson.M{"react_join_map.channel_id": 1},
+			Options: options.Index(),
+		},
+	}
+
+	_, err := GuildCollection.Indexes().CreateMany(ctx, indexModels)
+	if err != nil {
+		fmt.Println("Failed to create index for react join map:", err)
+	}
 }

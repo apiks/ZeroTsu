@@ -42,6 +42,7 @@ func main() {
 	entities.EnsureAutopostIndexes()
 	entities.EnsureGuildSettingsIndexes()
 	entities.EnsureRaffleIndexes()
+	entities.EnsureReactJoinIndexes()
 
 	// Enable to migrate from JSON database to MongoDB
 	//entities.MigrateGuilds()
