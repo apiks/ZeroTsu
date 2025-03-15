@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
@@ -69,8 +70,10 @@ func LoadAllFeeds(guildID string) ([]Feed, error) {
 		Feeds []FeedMongo `bson:"feeds"`
 	}
 
-	opts := options.FindOne().SetProjection(bson.M{"feeds": 1})
-	err := GuildCollection.FindOne(ctx, bson.M{"_id": guildID}, opts).Decode(&result)
+	err := GuildCollection.FindOne(ctx, bson.M{"_id": guildID}).Decode(&result)
+	if err == mongo.ErrNoDocuments {
+		return []Feed{}, nil
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to load feeds for guild %s: %v", guildID, err)
 	}
@@ -85,23 +88,12 @@ func SaveFeed(guildID string, feed Feed) error {
 
 	feedMongo := ConvertFeed(feed)
 
-	// Check if feed already exists
-	filter := bson.M{"_id": guildID, "feeds.subreddit": feed.Subreddit, "feeds.channel_id": feed.ChannelID, "feeds.post_type": feed.PostType}
-	update := bson.M{"$set": bson.M{"feeds.$": feedMongo}}
+	filter := bson.M{"_id": guildID}
+	update := bson.M{"$addToSet": bson.M{"feeds": feedMongo}} // Prevents duplicate feeds
 
-	result, err := GuildCollection.UpdateOne(ctx, filter, update)
+	_, err := GuildCollection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
 	if err != nil {
-		return fmt.Errorf("failed to update feed for guild %s: %v", guildID, err)
-	}
-
-	// If no existing feed was updated, insert a new one
-	if result.ModifiedCount == 0 {
-		filter = bson.M{"_id": guildID}
-		update = bson.M{"$push": bson.M{"feeds": feedMongo}}
-		_, err = GuildCollection.UpdateOne(ctx, filter, update)
-		if err != nil {
-			return fmt.Errorf("failed to insert new feed for guild %s: %v", guildID, err)
-		}
+		return fmt.Errorf("failed to save feed for guild %s: %v", guildID, err)
 	}
 
 	return nil
@@ -119,10 +111,31 @@ func DeleteFeed(guildID string, feed Feed) error {
 		"post_type":  feed.PostType,
 	}}}
 
-	_, err := GuildCollection.UpdateOne(ctx, filter, update)
+	result, err := GuildCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return fmt.Errorf("failed to delete feed for guild %s: %v", guildID, err)
 	}
 
+	if result.ModifiedCount == 0 {
+		return fmt.Errorf("feed not found in guild %s", guildID)
+	}
+
 	return nil
+}
+
+func EnsureFeedsIndexes() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	indexModels := []mongo.IndexModel{
+		{
+			Keys:    bson.M{"feeds.subreddit": 1},
+			Options: options.Index(),
+		},
+	}
+
+	_, err := GuildCollection.Indexes().CreateMany(ctx, indexModels)
+	if err != nil {
+		fmt.Println("Failed to create index for feeds:", err)
+	}
 }
