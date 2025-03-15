@@ -89,7 +89,7 @@ func SaveFeed(guildID string, feed Feed) error {
 	feedMongo := ConvertFeed(feed)
 
 	filter := bson.M{"_id": guildID}
-	update := bson.M{"$addToSet": bson.M{"feeds": feedMongo}} // Prevents duplicate feeds
+	update := bson.M{"$addToSet": bson.M{"feeds": feedMongo}}
 
 	_, err := GuildCollection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
 	if err != nil {
