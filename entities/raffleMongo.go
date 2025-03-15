@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
@@ -23,8 +24,10 @@ func LoadRaffles(guildID string) ([]*Raffle, error) {
 		Raffles []RaffleMongo `bson:"raffles"`
 	}
 
-	opts := options.FindOne().SetProjection(bson.M{"raffles": 1})
-	err := GuildCollection.FindOne(ctx, bson.M{"_id": guildID}, opts).Decode(&result)
+	err := GuildCollection.FindOne(ctx, bson.M{"_id": guildID}).Decode(&result)
+	if err == mongo.ErrNoDocuments {
+		return []*Raffle{}, nil
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to load raffles for guild %s: %v", guildID, err)
 	}
@@ -39,13 +42,15 @@ func SaveRaffle(guildID string, raffle *Raffle) error {
 
 	raffleMongo := ConvertRaffle(raffle)
 
-	// Check if raffle already exists
 	filter := bson.M{"_id": guildID, "raffles.name": raffle.Name}
-	update := bson.M{"$set": bson.M{"raffles.$": raffleMongo}}
+	update := bson.M{
+		"$set":         bson.M{"raffles.$": raffleMongo},
+		"$setOnInsert": bson.M{"_id": guildID},
+	}
 
-	result, err := GuildCollection.UpdateOne(ctx, filter, update)
+	result, err := GuildCollection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
 	if err != nil {
-		return fmt.Errorf("failed to update raffle for guild %s: %v", guildID, err)
+		return fmt.Errorf("failed to save raffle for guild %s: %v", guildID, err)
 	}
 
 	// If no existing raffle was updated, insert a new one
@@ -113,20 +118,37 @@ func ConvertRaffle(raffle *Raffle) RaffleMongo {
 
 func ConvertRaffleSlice(raffles []*Raffle) []RaffleMongo {
 	result := make([]RaffleMongo, len(raffles))
-	for i, raffle := range raffles {
-		result[i] = ConvertRaffle(raffle)
+	for i := range raffles {
+		result[i] = ConvertRaffle(raffles[i])
 	}
 	return result
 }
 
 func ConvertMongoToRaffles(raffles []RaffleMongo) []*Raffle {
 	result := make([]*Raffle, len(raffles))
-	for i, r := range raffles {
+	for i := range raffles {
 		result[i] = &Raffle{
-			Name:           r.Name,
-			ParticipantIDs: r.ParticipantIDs,
-			ReactMessageID: r.ReactMessageID,
+			Name:           raffles[i].Name,
+			ParticipantIDs: raffles[i].ParticipantIDs,
+			ReactMessageID: raffles[i].ReactMessageID,
 		}
 	}
 	return result
+}
+
+func EnsureRaffleIndexes() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	indexModels := []mongo.IndexModel{
+		{
+			Keys:    bson.M{"raffles.name": 1},
+			Options: options.Index(),
+		},
+	}
+
+	_, err := GuildCollection.Indexes().CreateMany(ctx, indexModels)
+	if err != nil {
+		fmt.Println("Failed to create index for raffles:", err)
+	}
 }
