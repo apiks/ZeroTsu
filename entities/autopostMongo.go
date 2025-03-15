@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
@@ -50,19 +51,20 @@ func LoadAutopost(guildID string, postType string) (Cha, error) {
 		Autoposts []AutopostChannelMongo `bson:"autoposts"`
 	}
 
-	opts := options.FindOne().SetProjection(bson.M{"autoposts": 1})
-	err := GuildCollection.FindOne(ctx, bson.M{"_id": guildID}, opts).Decode(&result)
+	err := GuildCollection.FindOne(ctx, bson.M{"_id": guildID}).Decode(&result)
+	if err == mongo.ErrNoDocuments {
+		return Cha{}, nil
+	}
 	if err != nil {
 		return Cha{}, fmt.Errorf("failed to load autoposts for guild %s: %v", guildID, err)
 	}
 
 	autoposts := ConvertMongoToAutoposts(result.Autoposts)
-
 	if autopost, ok := autoposts[postType]; ok {
 		return autopost, nil
 	}
 
-	return Cha{}, fmt.Errorf("autopost %s not found", postType)
+	return Cha{}, nil
 }
 
 // SaveAutopost updates a single autopost in MongoDB
@@ -77,22 +79,12 @@ func SaveAutopost(guildID string, postType string, autopost Cha) error {
 		RoleID:   autopost.RoleID,
 	}
 
-	filter := bson.M{"_id": guildID, "autoposts.post_type": postType}
-	update := bson.M{"$set": bson.M{"autoposts.$": channelMongo}}
+	filter := bson.M{"_id": guildID}
+	update := bson.M{"$addToSet": bson.M{"autoposts": channelMongo}}
 
-	result, err := GuildCollection.UpdateOne(ctx, filter, update)
+	_, err := GuildCollection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
 	if err != nil {
-		return fmt.Errorf("failed to update autopost for guild %s: %v", guildID, err)
-	}
-
-	if result.ModifiedCount == 0 {
-		// If it doesn't exist, push a new one
-		filter = bson.M{"_id": guildID}
-		update = bson.M{"$push": bson.M{"autoposts": channelMongo}}
-		_, err = GuildCollection.UpdateOne(ctx, filter, update)
-		if err != nil {
-			return fmt.Errorf("failed to insert new autopost for guild %s: %v", guildID, err)
-		}
+		return fmt.Errorf("failed to save autopost for guild %s: %v", guildID, err)
 	}
 
 	return nil
@@ -104,12 +96,33 @@ func DeleteAutopost(guildID string, postType string) error {
 	defer cancel()
 
 	filter := bson.M{"_id": guildID}
-	update := bson.M{"$pull": bson.M{"autoposts": bson.M{"post_type": postType}}} // ✅ Remove by `post_type`
+	update := bson.M{"$pull": bson.M{"autoposts": bson.M{"post_type": postType}}}
 
-	_, err := GuildCollection.UpdateOne(ctx, filter, update)
+	result, err := GuildCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return fmt.Errorf("failed to delete autopost %s for guild %s: %v", postType, guildID, err)
 	}
 
+	if result.ModifiedCount == 0 {
+		return fmt.Errorf("autopost %s not found in guild %s", postType, guildID)
+	}
+
 	return nil
+}
+
+func EnsureAutopostIndexes() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	indexModels := []mongo.IndexModel{
+		{
+			Keys:    bson.M{"autoposts.post_type": 1},
+			Options: options.Index(),
+		},
+	}
+
+	_, err := GuildCollection.Indexes().CreateMany(ctx, indexModels)
+	if err != nil {
+		fmt.Println("Failed to create index for autoposts:", err)
+	}
 }
