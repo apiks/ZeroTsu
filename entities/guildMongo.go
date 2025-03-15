@@ -3,6 +3,7 @@ package entities
 import (
 	"context"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"
 	"time"
@@ -50,7 +51,14 @@ func LoadAllGuildIDs() ([]string, error) {
 	}
 
 	for _, id := range results {
-		guildIds = append(guildIds, id.(string))
+		switch v := id.(type) {
+		case string:
+			guildIds = append(guildIds, v)
+		case primitive.ObjectID:
+			guildIds = append(guildIds, v.Hex())
+		default:
+			log.Println("Unexpected ID type:", v)
+		}
 	}
 
 	return guildIds, nil
