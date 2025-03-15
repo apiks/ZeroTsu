@@ -3,6 +3,7 @@ package entities
 import (
 	"context"
 	"fmt"
+	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -32,8 +33,10 @@ func LoadGuildSettings(guildID string) (GuildSettings, error) {
 		GuildSettings GuildSettingsMongo `bson:"guild_settings"`
 	}
 
-	opts := options.FindOne().SetProjection(bson.M{"guild_settings": 1})
-	err := GuildCollection.FindOne(ctx, bson.M{"_id": guildID}, opts).Decode(&result)
+	err := GuildCollection.FindOne(ctx, bson.M{"_id": guildID}).Decode(&result)
+	if err == mongo.ErrNoDocuments {
+		return GuildSettings{}, nil
+	}
 	if err != nil {
 		return GuildSettings{}, fmt.Errorf("failed to load guild settings for guild %s: %v", guildID, err)
 	}
@@ -46,10 +49,14 @@ func SaveGuildSettings(guildID string, settings GuildSettings) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	// ✅ Sanitize the settings before storing
 	mongoSettings := ConvertGuildSettings(settings)
 
 	filter := bson.M{"_id": guildID}
-	update := bson.M{"$set": bson.M{"guild_settings": mongoSettings}}
+	update := bson.M{
+		"$set":         bson.M{"guild_settings": mongoSettings},
+		"$setOnInsert": bson.M{"_id": guildID},
+	}
 
 	_, err := GuildCollection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
 	if err != nil {
@@ -61,32 +68,20 @@ func SaveGuildSettings(guildID string, settings GuildSettings) error {
 
 // ConvertGuildSettings removes RWMutex and prepares for MongoDB
 func ConvertGuildSettings(gs GuildSettings) GuildSettingsMongo {
-	// Convert command roles
 	commandRolesMongo := make([]RoleMongo, len(gs.CommandRoles))
-	for i, role := range gs.CommandRoles {
-		commandRolesMongo[i] = RoleMongo{
-			Name:     role.Name,
-			ID:       role.ID,
-			Position: role.Position,
-		}
+	for i := range gs.CommandRoles {
+		commandRolesMongo[i] = ConvertRoleToMongo(gs.CommandRoles[i])
 	}
 
-	// Convert voice channels
 	voiceChasMongo := make([]VoiceChannelMongo, len(gs.VoiceChas))
-	for i, vc := range gs.VoiceChas {
-		rolesMongo := make([]RoleMongo, len(vc.Roles))
-		for j, role := range vc.Roles {
-			rolesMongo[j] = RoleMongo{
-				Name:     role.Name,
-				ID:       role.ID,
-				Position: role.Position,
-			}
-		}
-
+	for i := range gs.VoiceChas {
 		voiceChasMongo[i] = VoiceChannelMongo{
-			Name:  vc.Name,
-			ID:    vc.ID,
-			Roles: rolesMongo,
+			Name:  gs.VoiceChas[i].Name,
+			ID:    gs.VoiceChas[i].ID,
+			Roles: make([]RoleMongo, len(gs.VoiceChas[i].Roles)),
+		}
+		for j := range gs.VoiceChas[i].Roles {
+			voiceChasMongo[i].Roles[j] = ConvertRoleToMongo(gs.VoiceChas[i].Roles[j])
 		}
 	}
 
@@ -106,36 +101,23 @@ func ConvertGuildSettings(gs GuildSettings) GuildSettingsMongo {
 
 // ConvertMongoToGuildSettings converts GuildSettingsMongo back to entities.GuildSettings
 func ConvertMongoToGuildSettings(gs GuildSettingsMongo) GuildSettings {
-	// Convert command roles
 	commandRoles := make([]Role, len(gs.CommandRoles))
-	for i, role := range gs.CommandRoles {
-		commandRoles[i] = Role{
-			Name:     role.Name,
-			ID:       role.ID,
-			Position: role.Position,
-		}
+	for i := range gs.CommandRoles {
+		commandRoles[i] = ConvertMongoToRole(gs.CommandRoles[i])
 	}
 
-	// Convert voice channels
 	voiceChas := make([]VoiceCha, len(gs.VoiceChas))
-	for i, vc := range gs.VoiceChas {
-		roles := make([]Role, len(vc.Roles))
-		for j, role := range vc.Roles {
-			roles[j] = Role{
-				Name:     role.Name,
-				ID:       role.ID,
-				Position: role.Position,
-			}
-		}
-
+	for i := range gs.VoiceChas {
 		voiceChas[i] = VoiceCha{
-			Name:  vc.Name,
-			ID:    vc.ID,
-			Roles: roles,
+			Name:  gs.VoiceChas[i].Name,
+			ID:    gs.VoiceChas[i].ID,
+			Roles: make([]Role, len(gs.VoiceChas[i].Roles)),
+		}
+		for j := range gs.VoiceChas[i].Roles {
+			voiceChas[i].Roles[j] = ConvertMongoToRole(gs.VoiceChas[i].Roles[j])
 		}
 	}
 
-	// Return converted GuildSettings
 	return GuildSettings{
 		Prefix:       gs.Prefix,
 		BotLog:       ConvertMongoToChannel(gs.BotLog),
@@ -183,5 +165,22 @@ func ConvertMongoToRole(role RoleMongo) Role {
 		Name:     role.Name,
 		ID:       role.ID,
 		Position: role.Position,
+	}
+}
+
+func EnsureGuildSettingsIndexes() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	indexModels := []mongo.IndexModel{
+		{
+			Keys:    bson.M{"guild_settings.prefix": 1},
+			Options: options.Index(),
+		},
+	}
+
+	_, err := GuildCollection.Indexes().CreateMany(ctx, indexModels)
+	if err != nil {
+		fmt.Println("Failed to create index for guild settings:", err)
 	}
 }
