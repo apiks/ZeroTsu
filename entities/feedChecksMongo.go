@@ -158,11 +158,19 @@ func EnsureFeedCheckIndexes() {
 
 	indexModels := []mongo.IndexModel{
 		{
-			Keys:    bson.M{"guild_id": 1, "guid": 1},
+			Keys:    bson.D{{"guild_id", 1}, {"guid", 1}},
 			Options: options.Index().SetUnique(true),
 		},
 		{
-			Keys:    bson.M{"date": -1},
+			Keys:    bson.D{{"date", -1}},
+			Options: options.Index(),
+		},
+		{
+			Keys:    bson.D{{"feed.subreddit", 1}},
+			Options: options.Index(),
+		},
+		{
+			Keys:    bson.D{{"feed.channel_id", 1}},
 			Options: options.Index(),
 		},
 	}
