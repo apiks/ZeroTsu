@@ -39,6 +39,7 @@ func main() {
 	entities.EnsureRemindersIndexes()
 	entities.EnsureGuildsIndexes()
 	entities.EnsureFeedsIndexes()
+	entities.EnsureFeedCheckIndexes()
 	entities.EnsureAutopostIndexes()
 	entities.EnsureGuildSettingsIndexes()
 	entities.EnsureRaffleIndexes()

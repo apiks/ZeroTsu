@@ -20,7 +20,7 @@ type FeedCheckMongo struct {
 
 // LoadFeedChecks retrieves recent FeedChecks for a guild (default limit: 50, no limit if limit <= 0)
 func LoadFeedChecks(guildID string, limit int) ([]FeedCheck, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	filter := bson.M{"guild_id": guildID}
@@ -47,7 +47,7 @@ func LoadFeedChecks(guildID string, limit int) ([]FeedCheck, error) {
 
 // SaveFeedCheck stores a FeedCheck in MongoDB
 func SaveFeedCheck(guildID string, feedCheck FeedCheck) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	feedCheckData := FeedCheckMongo{
@@ -70,7 +70,7 @@ func SaveFeedCheck(guildID string, feedCheck FeedCheck) error {
 
 // SaveMultipleFeedChecks stores multiple FeedChecks in MongoDB
 func SaveMultipleFeedChecks(guildID string, feedChecks []FeedCheck) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	var operations []mongo.WriteModel
@@ -88,9 +88,18 @@ func SaveMultipleFeedChecks(guildID string, feedChecks []FeedCheck) error {
 	}
 
 	if len(operations) > 0 {
-		_, err := FeedCheckCollection.BulkWrite(ctx, operations)
-		if err != nil {
-			return fmt.Errorf("failed to save multiple feed checks: %v", err)
+		const batchSize = 50
+
+		for i := 0; i < len(operations); i += batchSize {
+			end := i + batchSize
+			if end > len(operations) {
+				end = len(operations)
+			}
+
+			_, err := FeedCheckCollection.BulkWrite(ctx, operations[i:end])
+			if err != nil {
+				return fmt.Errorf("failed to save multiple feed checks: %v", err)
+			}
 		}
 	}
 
@@ -99,7 +108,7 @@ func SaveMultipleFeedChecks(guildID string, feedChecks []FeedCheck) error {
 
 // DeleteFeedCheck removes a single FeedCheck from MongoDB
 func DeleteFeedCheck(guildID string, feedCheck FeedCheck) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	filter := bson.M{"guild_id": guildID, "guid": feedCheck.GUID}
@@ -113,7 +122,7 @@ func DeleteFeedCheck(guildID string, feedCheck FeedCheck) error {
 
 // DeleteMultipleFeedChecks removes multiple FeedChecks from MongoDB
 func DeleteMultipleFeedChecks(guildID string, feedChecks []FeedCheck) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	var guids []string
@@ -141,4 +150,25 @@ func ConvertMongoToFeedChecks(feedChecks []FeedCheckMongo) []FeedCheck {
 		}
 	}
 	return result
+}
+
+func EnsureFeedCheckIndexes() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	indexModels := []mongo.IndexModel{
+		{
+			Keys:    bson.M{"guild_id": 1, "guid": 1},
+			Options: options.Index().SetUnique(true),
+		},
+		{
+			Keys:    bson.M{"date": -1},
+			Options: options.Index(),
+		},
+	}
+
+	_, err := FeedCheckCollection.Indexes().CreateMany(ctx, indexModels)
+	if err != nil {
+		fmt.Println("Failed to create index for feed checks:", err)
+	}
 }
