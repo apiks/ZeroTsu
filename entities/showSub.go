@@ -10,6 +10,12 @@ type ShowSub struct {
 	Guild    bool   `json:"Guild"`
 }
 
+type ShowSubMongo struct {
+	Show     string `json:"Show"`
+	Notified bool   `json:"Notified"`
+	Guild    bool   `json:"Guild"`
+}
+
 func NewShowSub(show string, notified bool, guild bool) *ShowSub {
 	return &ShowSub{Show: show, Notified: notified, Guild: guild}
 }

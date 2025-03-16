@@ -74,7 +74,7 @@ func SaveAnimeSubs(animeSubs map[string][]*ShowSub) error {
 
 	operations := make([]mongo.WriteModel, 0, len(animeSubs))
 	for id, shows := range animeSubs {
-		sanitizedShows := make([]*ShowSub, len(shows))
+		sanitizedShows := make([]*ShowSubMongo, len(shows))
 		for i, s := range shows {
 			sanitizedShows[i] = ConvertShowSub(s)
 		}
@@ -82,7 +82,7 @@ func SaveAnimeSubs(animeSubs map[string][]*ShowSub) error {
 		filter := bson.M{"id": id}
 		update := bson.M{
 			"$set": bson.M{
-				"is_guild": len(sanitizedShows) > 0 && sanitizedShows[0].GetGuild(),
+				"is_guild": len(sanitizedShows) > 0 && sanitizedShows[0].Guild,
 				"shows":    sanitizedShows,
 			},
 		}
@@ -113,19 +113,16 @@ func SetAnimeSubs(id string, subscriptions []*ShowSub, isGuild bool) error {
 
 	// If no subscriptions left, delete from the database
 	if len(subscriptions) == 0 {
-		result, err := AnimeSubsCollection.DeleteOne(ctx, bson.M{"id": id})
+		_, err := AnimeSubsCollection.DeleteOne(ctx, bson.M{"id": id})
 		if err != nil {
 			log.Printf("Error deleting anime subscriptions for %s: %v\n", id, err)
 			return err
-		}
-		if result.DeletedCount == 0 {
-			log.Printf("No anime subscriptions found for %s, nothing to delete.\n", id)
 		}
 		return nil
 	}
 
 	// Sanitize subscriptions
-	sanitizedShows := make([]*ShowSub, len(subscriptions))
+	sanitizedShows := make([]*ShowSubMongo, len(subscriptions))
 	for i, s := range subscriptions {
 		sanitizedShows[i] = ConvertShowSub(s)
 	}
@@ -148,13 +145,13 @@ func SetAnimeSubs(id string, subscriptions []*ShowSub, isGuild bool) error {
 	return nil
 }
 
-// ConvertShowSub creates a MongoDB-compatible version of ShowSub
-func ConvertShowSub(s *ShowSub) *ShowSub {
+// ConvertShowSub converts a ShowSub to a MongoDB compatible ShowSubMongo
+func ConvertShowSub(s *ShowSub) *ShowSubMongo {
 	if s == nil {
 		return nil
 	}
 
-	return &ShowSub{
+	return &ShowSubMongo{
 		Show:     s.Show,
 		Notified: s.Notified,
 		Guild:    s.Guild,

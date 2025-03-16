@@ -18,21 +18,18 @@ func GetAnimeSubs(id string) []*entities.ShowSub {
 
 // GetAllAnimeSubs retrieves all anime subscriptions from MongoDB
 func GetAllAnimeSubs() map[string][]*entities.ShowSub {
-	subs, err := entities.LoadAnimeSubs()
+	animeSubs, err := entities.LoadAnimeSubs()
 	if err != nil {
 		log.Println("Error loading all anime subscriptions:", err)
 		return nil
 	}
-	return subs
+
+	return animeSubs
 }
 
 // AddAnimeSub saves a new anime subscription for a user or guild in MongoDB
 func AddAnimeSub(id string, showSub *entities.ShowSub, isGuild bool) {
-	subs, err := entities.GetAnimeSubs(id)
-	if err != nil {
-		log.Println("Error fetching anime subscriptions for", id, ":", err)
-		return
-	}
+	subs := GetAnimeSubs(id)
 
 	// Avoid duplicate subscriptions
 	for _, existing := range subs {
@@ -46,13 +43,13 @@ func AddAnimeSub(id string, showSub *entities.ShowSub, isGuild bool) {
 	subs = append(subs, showSub)
 
 	// Save updated subscriptions to MongoDB
-	err = entities.SetAnimeSubs(id, subs, isGuild)
+	err := entities.SetAnimeSubs(id, subs, isGuild)
 	if err != nil {
 		log.Printf("Error saving anime subscription for %s: %v\n", id, err)
 	}
 }
 
-// SetAnimeSubs updates a user's or guild's anime subscriptions
+// SetAnimeSubs updates a user or guild's anime subscriptions
 func SetAnimeSubs(id string, subscriptions []*entities.ShowSub, isGuild bool) {
 	err := entities.SetAnimeSubs(id, subscriptions, isGuild)
 	if err != nil {
@@ -62,11 +59,7 @@ func SetAnimeSubs(id string, subscriptions []*entities.ShowSub, isGuild bool) {
 
 // RemoveAnimeSub deletes a specific anime subscription for a user or guild in MongoDB
 func RemoveAnimeSub(id string, showName string) {
-	subs, err := entities.GetAnimeSubs(id)
-	if err != nil {
-		log.Println("Error fetching anime subscriptions for", id, ":", err)
-		return
-	}
+	subs := GetAnimeSubs(id)
 
 	// Filter out the target subscription
 	var newSubs []*entities.ShowSub
@@ -77,7 +70,7 @@ func RemoveAnimeSub(id string, showName string) {
 	}
 
 	// Save updated subscriptions or delete the entry if empty
-	err = entities.SetAnimeSubs(id, newSubs, len(newSubs) > 0 && newSubs[0].GetGuild())
+	err := entities.SetAnimeSubs(id, newSubs, len(newSubs) > 0 && newSubs[0].GetGuild())
 	if err != nil {
 		log.Printf("Error updating anime subscriptions after deletion for %s: %v\n", id, err)
 	}

@@ -553,7 +553,7 @@ func animeSubsWebhookHandler() {
 	// Fetch anime subscriptions from MongoDB
 	animeSubsMap := db.GetAllAnimeSubs()
 
-	for guildID, subscriptions := range animeSubsMap {
+	for id, subscriptions := range animeSubsMap {
 		if subscriptions == nil || len(subscriptions) == 0 {
 			continue
 		}
@@ -563,7 +563,7 @@ func animeSubsWebhookHandler() {
 			continue
 		}
 
-		guid := guildID
+		guid := id
 		subs := subscriptions
 
 		guard <- struct{}{}
@@ -602,6 +602,7 @@ func animeSubsWebhookHandler() {
 			}
 			newEpisodesThreadWebhooksMap.RUnlock()
 
+			updated := false
 			subsMap := make(map[string]*entities.ShowSub)
 			for _, sub := range subs {
 				if sub == nil {
@@ -628,34 +629,38 @@ func animeSubsWebhookHandler() {
 						continue
 					}
 
-					// Form the air date for today
-					scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
+					// Form the air date and time for today
+					airDatetime := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
 
-					if now.After(scheduleDate) {
-						if !sub.GetNotified() {
-							var pingableRoleStr string
-							if pingableRoleID != "" {
-								pingableRoleStr = fmt.Sprintf("<@&%s>", pingableRoleID)
-							}
-							params := &discordgo.WebhookParams{
-								Content: pingableRoleStr,
-								Embeds:  []*discordgo.MessageEmbed{embeds.SubscriptionEmbed(scheduleShow)},
-							}
-
-							if threadID != "" {
-								_, err = s.WebhookThreadExecute(w.ID, w.Token, false, threadID, params)
-							} else {
-								_, err = s.WebhookExecute(w.ID, w.Token, false, params)
-							}
-
-							if err != nil {
-								log.Println("Failed webhookExecute in animeSubsWebhookHandler: ", err)
-								break
-							}
-
-							sub.SetNotified(true)
-						}
+					if now.Before(airDatetime) {
+						continue
 					}
+					if sub.GetNotified() {
+						continue
+					}
+
+					var pingableRoleStr string
+					if pingableRoleID != "" {
+						pingableRoleStr = fmt.Sprintf("<@&%s>", pingableRoleID)
+					}
+					params := &discordgo.WebhookParams{
+						Content: pingableRoleStr,
+						Embeds:  []*discordgo.MessageEmbed{embeds.SubscriptionEmbed(scheduleShow)},
+					}
+
+					if threadID != "" {
+						_, err = s.WebhookThreadExecute(w.ID, w.Token, false, threadID, params)
+					} else {
+						_, err = s.WebhookExecute(w.ID, w.Token, false, params)
+					}
+
+					if err != nil {
+						log.Println("Failed webhookExecute in animeSubsWebhookHandler: ", err)
+						break
+					}
+
+					sub.SetNotified(true)
+					updated = true
 				}
 			}
 
@@ -664,7 +669,7 @@ func animeSubsWebhookHandler() {
 				updatedSubs = append(updatedSubs, sub)
 			}
 
-			if len(updatedSubs) > 0 {
+			if len(updatedSubs) > 0 && updated {
 				db.SetAnimeSubs(guid, updatedSubs, true)
 			}
 
@@ -722,7 +727,7 @@ func animeSubsHandler() {
 	// Fetch all anime subscriptions from the database
 	animeSubsMap := db.GetAllAnimeSubs()
 
-	for userID, subscriptions := range animeSubsMap {
+	for id, subscriptions := range animeSubsMap {
 		if len(subscriptions) == 0 {
 			continue
 		}
@@ -738,14 +743,14 @@ func animeSubsHandler() {
 		}
 
 		if isGuild {
-			guildIDInt, err := strconv.ParseInt(userID, 10, 64)
+			guildIDInt, err := strconv.ParseInt(id, 10, 64)
 			if err != nil {
 				continue
 			}
 			session = config.Mgr.SessionForGuild(guildIDInt)
 
 			// Check if bot is in target guild
-			_, err = session.State.Guild(userID)
+			_, err = session.State.Guild(id)
 			if err != nil {
 				continue
 			}
@@ -754,7 +759,7 @@ func animeSubsHandler() {
 		}
 
 		if isGuild {
-			newepisodes := db.GetGuildAutopost(userID, "newepisodes")
+			newepisodes := db.GetGuildAutopost(id, "newepisodes")
 			if newepisodes == (entities.Cha{}) {
 				continue
 			}
@@ -785,9 +790,10 @@ func animeSubsHandler() {
 				continue
 			}
 
-			guildSettings = db.GetGuildSettings(userID)
+			guildSettings = db.GetGuildSettings(id)
 		}
 
+		updated := false
 		var updatedSubs []*entities.ShowSub
 		subsMap := make(map[string]*entities.ShowSub)
 		for _, sub := range subscriptions {
@@ -818,38 +824,43 @@ func animeSubsHandler() {
 					continue
 				}
 
-				// Form the air date for Today
-				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
+				// Form the air date and time for today
+				airDatetime := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
 
 				// If it's time, notify & mark as notified
-				if now.After(scheduleDate) {
-					if !sub.GetNotified() {
-						time.Sleep(time.Millisecond * 150)
+				if now.Before(airDatetime) {
+					continue
+				}
+				if sub.GetNotified() {
+					continue
+				}
 
-						if isGuild {
-							newepisodes := db.GetGuildAutopost(userID, "newepisodes")
-							if newepisodes == (entities.Cha{}) {
-								continue
-							}
-							err = embeds.Subscription(session, scheduleShow, newepisodes.GetID(), newepisodes.GetRoleID())
-						} else {
-							dm, err := session.UserChannelCreate(userID)
-							if err != nil {
-								continue
-							}
-							err = embeds.Subscription(session, scheduleShow, dm.ID, "")
-						}
+				time.Sleep(time.Millisecond * 150)
 
-						if err == nil {
-							sub.SetNotified(true)
-						}
+				err = nil
+				if isGuild {
+					newepisodes := db.GetGuildAutopost(id, "newepisodes")
+					if newepisodes == (entities.Cha{}) {
+						continue
 					}
+					err = embeds.Subscription(session, scheduleShow, newepisodes.GetID(), newepisodes.GetRoleID())
+				} else {
+					dm, err := session.UserChannelCreate(id)
+					if err != nil {
+						continue
+					}
+					err = embeds.Subscription(session, scheduleShow, dm.ID, "")
+				}
+
+				if err == nil {
+					sub.SetNotified(true)
+					updated = true
 				}
 			}
 		}
 
-		if len(updatedSubs) > 0 {
-			db.SetAnimeSubs(userID, updatedSubs, isGuild)
+		if len(updatedSubs) > 0 && updated {
+			db.SetAnimeSubs(id, updatedSubs, isGuild)
 		}
 	}
 
@@ -928,12 +939,12 @@ func ResetSubscriptions() {
 					continue
 				}
 
-				// Form the air date for today
-				scheduleDate := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
+				// Form the air date and time for today
+				airDatetime := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
 
 				// Update notification status
 				oldStatus := show.GetNotified()
-				if now.Before(scheduleDate) {
+				if now.Before(airDatetime) {
 					show.SetNotified(false)
 				} else {
 					show.SetNotified(true)
@@ -943,9 +954,6 @@ func ResetSubscriptions() {
 				if show.GetNotified() != oldStatus {
 					updated = true
 				}
-
-				// No need to keep checking once we find a match
-				break
 			}
 
 			// Append the processed show to updatedSubs
