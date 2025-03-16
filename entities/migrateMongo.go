@@ -178,7 +178,7 @@ func MigrateAnimeSubs() {
 	// Iterate through the anime subscriptions map
 	for id, shows := range animeSubsMap {
 		// Remove mutex from ShowSub before inserting
-		cleanedShows := make([]*ShowSub, 0, len(shows))
+		cleanedShows := make([]*ShowSubMongo, 0, len(shows))
 		for _, show := range shows {
 			if show != nil {
 				cleanedShows = append(cleanedShows, ConvertShowSub(show))
@@ -188,7 +188,7 @@ func MigrateAnimeSubs() {
 		// Determine if it's a guild subscription
 		isGuild := false
 		if len(cleanedShows) > 0 {
-			isGuild = cleanedShows[0].GetGuild()
+			isGuild = cleanedShows[0].Guild
 		}
 
 		// Convert to MongoDB struct

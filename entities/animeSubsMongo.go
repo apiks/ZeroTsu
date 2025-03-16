@@ -10,11 +10,17 @@ import (
 	"time"
 )
 
-// AnimeSubsMongo represents how AnimeSubs are stored in MongoDB
-type AnimeSubsMongo struct {
+type AnimeSubs struct {
 	ID      string     `bson:"id"`
 	IsGuild bool       `bson:"is_guild"`
 	Shows   []*ShowSub `bson:"shows"`
+}
+
+// AnimeSubsMongo represents how AnimeSubs are stored in MongoDB
+type AnimeSubsMongo struct {
+	ID      string          `bson:"id"`
+	IsGuild bool            `bson:"is_guild"`
+	Shows   []*ShowSubMongo `bson:"shows"`
 }
 
 // LoadAnimeSubs retrieves all anime subscriptions from MongoDB
@@ -30,7 +36,7 @@ func LoadAnimeSubs() (map[string][]*ShowSub, error) {
 
 	animeSubsMap := make(map[string][]*ShowSub)
 	for cursor.Next(ctx) {
-		var animeSubData AnimeSubsMongo
+		var animeSubData AnimeSubs
 		if err := cursor.Decode(&animeSubData); err != nil {
 			log.Println("Error decoding anime subscriptions from MongoDB:", err)
 			continue
@@ -54,7 +60,7 @@ func GetAnimeSubs(id string) ([]*ShowSub, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var animeSubs AnimeSubsMongo
+	var animeSubs AnimeSubs
 	err := AnimeSubsCollection.FindOne(ctx, bson.M{"id": id}).Decode(&animeSubs)
 	if err == mongo.ErrNoDocuments {
 		return []*ShowSub{}, nil
