@@ -811,7 +811,7 @@ func animeSubsHandler() {
 
 			showName := strings.ToLower(scheduleShow.GetName())
 
-			// If user is already subscribed, check if we need to mark it as notified
+			// If user or guild is already subscribed, check if we need to mark it as notified
 			if sub, exists := subsMap[showName]; exists {
 				if isGuild && !guildSettings.GetDonghua() && scheduleShow.GetDonghua() {
 					continue
@@ -887,7 +887,7 @@ func AnimeSubsWebhooksMapTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 	}
 }
 
-// ResetSubscriptions resets anime sub notifications status
+// ResetSubscriptions resets anime sub notifications status and guild subs
 func ResetSubscriptions() {
 	now := time.Now()
 	location, err := time.LoadLocation("Europe/London")
@@ -914,6 +914,30 @@ func ResetSubscriptions() {
 
 		// Check if this is a guild
 		isGuild := subscriptions[0].GetGuild()
+
+		// If it's a guild make it subscribed to all of today's anime that it's missing
+		if isGuild {
+			subsMap := make(map[string]*entities.ShowSub)
+			for _, sub := range subscriptions {
+				if sub == nil {
+					continue
+				}
+				subsMap[strings.ToLower(sub.GetShow())] = sub
+			}
+			for _, todayShow := range todayShows {
+				if todayShow == nil {
+					continue
+				}
+				if _, exists := subsMap[strings.ToLower(todayShow.GetName())]; exists {
+					continue
+				}
+				subscriptions = append(subscriptions, &entities.ShowSub{
+					Show:     todayShow.GetName(),
+					Notified: false,
+					Guild:    true,
+				})
+			}
+		}
 
 		// Process all subscriptions
 		for _, show := range subscriptions {

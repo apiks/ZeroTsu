@@ -80,9 +80,17 @@ func SaveAutopost(guildID string, postType string, autopost Cha) error {
 	}
 
 	filter := bson.M{"_id": guildID}
-	update := bson.M{"$addToSet": bson.M{"autoposts": channelMongo}}
 
-	_, err := GuildCollection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
+	// Remove existing post_type if it exists
+	removeExisting := bson.M{"$pull": bson.M{"autoposts": bson.M{"post_type": postType}}}
+	_, err := GuildCollection.UpdateOne(ctx, filter, removeExisting)
+	if err != nil {
+		return fmt.Errorf("failed to remove existing autopost: %v", err)
+	}
+
+	// Add the new autopost
+	update := bson.M{"$push": bson.M{"autoposts": channelMongo}}
+	_, err = GuildCollection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
 	if err != nil {
 		return fmt.Errorf("failed to save autopost for guild %s: %v", guildID, err)
 	}
