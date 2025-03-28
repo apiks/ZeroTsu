@@ -14,7 +14,7 @@ require (
 	golang.org/x/sync v0.12.0
 )
 
-require github.com/petermattis/goid v0.0.0-20250303134427-723919f7f203 // indirect
+require github.com/petermattis/goid v0.0.0-20250319124200-ccd6737f222a // indirect
 
 require (
 	github.com/PuerkitoBio/goquery v1.10.2 // indirect
@@ -33,7 +33,7 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
-	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/oauth2 v0.28.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect

@@ -71,25 +71,14 @@ func SaveReactJoinEntry(guildID, messageID string, reactJoin *ReactJoin) error {
 		},
 	}
 
-	filter := bson.M{"_id": guildID, "react_join_map.channel_id": messageID}
-	update := bson.M{
-		"$set":         bson.M{"react_join_map.$": entry},
-		"$setOnInsert": bson.M{"_id": guildID},
-	}
+	filter := bson.M{"_id": guildID}
+	pull := bson.M{"$pull": bson.M{"react_join_map": bson.M{"channel_id": messageID}}}
+	_, _ = GuildCollection.UpdateOne(ctx, filter, pull)
 
-	result, err := GuildCollection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
+	update := bson.M{"$push": bson.M{"react_join_map": entry}}
+	_, err := GuildCollection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
 	if err != nil {
-		return fmt.Errorf("failed to update react join entry for guild %s: %v", guildID, err)
-	}
-
-	// If no existing entry was updated, insert a new one
-	if result.ModifiedCount == 0 {
-		filter = bson.M{"_id": guildID}
-		update = bson.M{"$push": bson.M{"react_join_map": entry}}
-		_, err = GuildCollection.UpdateOne(ctx, filter, update)
-		if err != nil {
-			return fmt.Errorf("failed to insert new react join entry for guild %s: %v", guildID, err)
-		}
+		return fmt.Errorf("failed to save react join entry for guild %s: %v", guildID, err)
 	}
 
 	return nil

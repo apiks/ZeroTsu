@@ -605,7 +605,7 @@ func removeReactJoinCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 
 func viewReactJoinsCommand(guildID string) []string {
 	var (
-		message           string
+		messages          []string
 		guildReactJoinMap = db.GetGuildReactJoin(guildID)
 	)
 
@@ -613,33 +613,35 @@ func viewReactJoinsCommand(guildID string) []string {
 		return []string{"Error: There are no set react joins."}
 	}
 
-	// Iterates through all of the set channel joins and assigns them to a string
+	// Iterate through all react join entries
 	for messageID, value := range guildReactJoinMap {
 		if value == nil {
 			continue
 		}
 
-		// Formats message
-		message = "——————\n`MessageID: " + (messageID + "`\n")
+		var message string
+		message = "——————\n`MessageID: " + messageID + "`\n"
+
 		for i := 0; i < len(value.GetRoleEmojiMap()); i++ {
 			for role, emoji := range value.GetRoleEmojiMap()[i] {
-				message = message + "`" + role + "` — "
+				message += "`" + role + "` — "
 				for j := 0; j < len(emoji); j++ {
 					if j != len(emoji)-1 {
-						message = message + emoji[j] + ", "
+						message += emoji[j] + ", "
 					} else {
-						message = message + emoji[j] + "\n"
+						message += emoji[j] + "\n"
 					}
 				}
 			}
 		}
+
+		messages = append(messages, message)
 	}
 
-	return common.SplitLongMessage(message)
+	return common.SplitLongMessage(strings.Join(messages, "\n"))
 }
 
 func viewReactJoinsCommandHandler(s *discordgo.Session, m *discordgo.Message) {
-	var line string
 	guildSettings := db.GetGuildSettings(m.GuildID)
 	guildReactJoinMap := db.GetGuildReactJoin(m.GuildID)
 
@@ -658,16 +660,16 @@ func viewReactJoinsCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 			continue
 		}
 
-		// Formats message
-		line = "——————\n`MessageID: " + (messageID + "`\n")
+		line := "——————\n`MessageID: " + messageID + "`\n"
+
 		for i := 0; i < len(value.GetRoleEmojiMap()); i++ {
 			for role, emoji := range value.GetRoleEmojiMap()[i] {
-				line = line + "`" + role + "` — "
+				line += "`" + role + "` — "
 				for j := 0; j < len(emoji); j++ {
 					if j != len(emoji)-1 {
-						line = line + emoji[j] + ", "
+						line += emoji[j] + ", "
 					} else {
-						line = line + emoji[j] + "\n"
+						line += emoji[j] + "\n"
 					}
 				}
 			}
