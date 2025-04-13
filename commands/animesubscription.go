@@ -278,6 +278,37 @@ func unsubscribeCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	}
 }
 
+func clearAnimeSubsCommand(userID string) string {
+	db.SetAnimeSubs(userID, []*entities.ShowSub{}, false)
+	return "Success! All your anime subscriptions have been cleared."
+}
+
+func clearAnimeSubsCommandHandler(s *discordgo.Session, m *discordgo.Message) {
+	var (
+		guildSettings = entities.GuildSettings{Prefix: "."}
+	)
+
+	if m.GuildID != "" {
+		guildSettings = db.GetGuildSettings(m.GuildID)
+	}
+
+	commandStrings := strings.Split(strings.Replace(m.Content, "  ", " ", -1), " ")
+	if len(commandStrings) != 1 {
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Usage: `%sclearsubs`", guildSettings.GetPrefix()))
+		if err != nil {
+			common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+		}
+		return
+	}
+
+	db.SetAnimeSubs(m.Author.ID, []*entities.ShowSub{}, false)
+
+	_, err := s.ChannelMessageSend(m.ChannelID, "Success! All your anime subscriptions have been cleared.")
+	if err != nil {
+		common.CommandErrorHandler(s, m, guildSettings.BotLog, err)
+	}
+}
+
 // viewSubscriptions prints out all the anime the user is subscribed to
 func viewSubscriptions(authorID string) []string {
 	var message string
@@ -1085,6 +1116,34 @@ func init() {
 			}
 
 			respStr := unsubscribeCommand(anime, userID)
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &respStr,
+			})
+		},
+	})
+	Add(&Command{
+		Execute: clearAnimeSubsCommandHandler,
+		Name:    "clearsubs",
+		Aliases: []string{"clearanimesubs", "subsclear", "unsuball"},
+		Desc:    "Clear all your anime episode notifications.",
+		Module:  "normal",
+		DMAble:  true,
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			userID := ""
+			if i.Member == nil {
+				userID = i.User.ID
+			} else {
+				userID = i.Member.User.ID
+			}
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Please wait...",
+				},
+			})
+
+			respStr := clearAnimeSubsCommand(userID)
 			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 				Content: &respStr,
 			})

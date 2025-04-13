@@ -135,7 +135,7 @@ func Start() {
 	// Start tracking uptime from here
 	common.StartTime = time.Now()
 
-	// Register Slash Commands
+	//// Register Slash Commands
 	for _, v := range commands.SlashCommands {
 		err := config.Mgr.ApplicationCommandCreate("", v)
 		if err != nil {
