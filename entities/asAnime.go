@@ -13,7 +13,7 @@ type ASAnime struct {
 	Route             string    `json:"route"`
 	EpisodeDate       time.Time `json:"episodeDate"`
 	EpisodeNumber     int       `json:"episodeNumber"`
-	Episodes          int       `json:"episodes`
+	Episodes          int       `json:"episodes"`
 	DelayedFrom       time.Time `json:"delayedFrom"`
 	DelayedUntil      time.Time `json:"delayedUntil"`
 	AirType           string    `json:"airType"`

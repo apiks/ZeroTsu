@@ -1022,6 +1022,72 @@ func ResetSubscriptions() {
 	}
 }
 
+func AutoRemoveFinishedAnimeSubsTimer(_ *discordgo.Session, _ *discordgo.Ready) {
+	RemoveFinishedAnimeUserSubs()
+	for range time.NewTicker(30 * time.Minute).C {
+		RemoveFinishedAnimeUserSubs()
+	}
+}
+
+func RemoveFinishedAnimeUserSubs() {
+	animeSubsMap := db.GetAllAnimeSubs()
+	if animeSubsMap == nil {
+		return
+	}
+
+	entities.AnimeSchedule.RLock()
+	defer entities.AnimeSchedule.RUnlock()
+
+	scheduleByTitle := make(map[string][]*entities.ShowAirTime)
+	for _, shows := range entities.AnimeSchedule.AnimeSchedule {
+		for _, show := range shows {
+			if show == nil {
+				continue
+			}
+			airType := strings.ToLower(show.GetAirType())
+			if airType != "sub" && airType != "raw" {
+				continue
+			}
+			key := strings.ToLower(show.GetName())
+			scheduleByTitle[key] = append(scheduleByTitle[key], show)
+		}
+	}
+
+	for userID, subs := range animeSubsMap {
+		if len(subs) == 0 || subs[0].GetGuild() {
+			continue
+		}
+
+		var newSubs []*entities.ShowSub
+		for _, sub := range subs {
+			showName := strings.ToLower(sub.GetShow())
+			scheduleVariants := scheduleByTitle[showName]
+
+			if len(scheduleVariants) == 0 {
+				newSubs = append(newSubs, sub)
+				continue
+			}
+
+			allFinished := true
+			for _, variant := range scheduleVariants {
+				ep := strings.ToLower(variant.GetEpisode())
+				if !strings.HasSuffix(ep, "f") && !strings.Contains(ep, "final") {
+					allFinished = false
+					break
+				}
+			}
+
+			if !allFinished {
+				newSubs = append(newSubs, sub)
+			}
+		}
+
+		if len(newSubs) < len(subs) {
+			db.SetAnimeSubs(userID, newSubs, false)
+		}
+	}
+}
+
 func init() {
 	Add(&Command{
 		Execute: subscribeCommandHandler,

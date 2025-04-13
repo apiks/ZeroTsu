@@ -7,6 +7,7 @@ type ShowAirTime struct {
 
 	Name     string
 	AirTime  string
+	AirType  string
 	Episode  string
 	Delayed  string
 	Key      string
@@ -15,8 +16,8 @@ type ShowAirTime struct {
 	Donghua  bool
 }
 
-func NewShowAirTime(name, airTime, episode, delayed, key, imageUrl string, subbed, donghua bool) *ShowAirTime {
-	return &ShowAirTime{Name: name, AirTime: airTime, Episode: episode, Delayed: delayed, Key: key, ImageUrl: imageUrl, Subbed: subbed, Donghua: donghua}
+func NewShowAirTime(name, airTime, airType, episode, delayed, key, imageUrl string, subbed, donghua bool) *ShowAirTime {
+	return &ShowAirTime{Name: name, AirTime: airTime, AirType: airType, Episode: episode, Delayed: delayed, Key: key, ImageUrl: imageUrl, Subbed: subbed, Donghua: donghua}
 }
 
 func (s *ShowAirTime) SetName(name string) {
@@ -47,6 +48,21 @@ func (s *ShowAirTime) GetAirTime() string {
 		return ""
 	}
 	return s.AirTime
+}
+
+func (s *ShowAirTime) SetAirType(airType string) {
+	s.Lock()
+	s.AirType = airType
+	s.Unlock()
+}
+
+func (s *ShowAirTime) GetAirType() string {
+	s.RLock()
+	defer s.RUnlock()
+	if s == nil {
+		return ""
+	}
+	return s.AirType
 }
 
 func (s *ShowAirTime) SetEpisode(episode string) {

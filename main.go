@@ -126,6 +126,7 @@ func Start() {
 	config.Mgr.AddHandler(commands.AnimeSubsTimer)
 	config.Mgr.AddHandler(commands.AnimeSubsWebhookTimer)
 	config.Mgr.AddHandler(commands.AnimeSubsWebhooksMapTimer)
+	config.Mgr.AddHandler(commands.AutoRemoveFinishedAnimeSubsTimer)
 
 	err = config.Mgr.Start()
 	if err != nil {

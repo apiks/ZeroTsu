@@ -276,6 +276,7 @@ func UpdateAnimeSchedule() {
 		entities.AnimeSchedule.AnimeSchedule[int(anime.EpisodeDate.Weekday())] = append(entities.AnimeSchedule.AnimeSchedule[int(anime.EpisodeDate.Weekday())], entities.NewShowAirTime(
 			anime.GetTitle(),
 			anime.GetEpisodeDate().Format("03:04 PM"),
+			anime.GetAirType(),
 			episodeStr,
 			delayedText,
 			anime.GetRoute(),
