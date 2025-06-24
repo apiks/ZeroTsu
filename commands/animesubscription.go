@@ -1059,6 +1059,8 @@ func RemoveFinishedAnimeUserSubs() {
 		}
 
 		var newSubs []*entities.ShowSub
+		updated := false
+
 		for _, sub := range subs {
 			showName := strings.ToLower(sub.GetShow())
 			scheduleVariants := scheduleByTitle[showName]
@@ -1077,12 +1079,15 @@ func RemoveFinishedAnimeUserSubs() {
 				}
 			}
 
-			if !allFinished {
+			// Only remove if the anime is finished and the user has been notified
+			if allFinished && sub.GetNotified() {
+				updated = true
+			} else {
 				newSubs = append(newSubs, sub)
 			}
 		}
 
-		if len(newSubs) < len(subs) {
+		if updated {
 			db.SetAnimeSubs(userID, newSubs, false)
 		}
 	}
