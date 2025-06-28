@@ -5,16 +5,16 @@ go 1.23.0
 toolchain go1.23.5
 
 require (
-	github.com/bwmarrin/discordgo v0.28.1
+	github.com/bwmarrin/discordgo v0.29.0
 	github.com/mmcdole/gofeed v1.3.0
 	github.com/sasha-s/go-deadlock v0.3.5
 	github.com/servusdei2018/shards v1.2.6
 	github.com/vartanbeno/go-reddit v1.0.0
-	go.mongodb.org/mongo-driver v1.17.3
-	golang.org/x/sync v0.13.0
+	go.mongodb.org/mongo-driver v1.17.4
+	golang.org/x/sync v0.15.0
 )
 
-require github.com/petermattis/goid v0.0.0-20250319124200-ccd6737f222a // indirect
+require github.com/petermattis/goid v0.0.0-20250508124226-395b08cebbdb // indirect
 
 require (
 	github.com/PuerkitoBio/goquery v1.10.3 // indirect
@@ -32,9 +32,9 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
-	golang.org/x/crypto v0.37.0 // indirect
-	golang.org/x/net v0.39.0 // indirect
-	golang.org/x/oauth2 v0.29.0 // indirect
-	golang.org/x/sys v0.32.0 // indirect
-	golang.org/x/text v0.24.0 // indirect
+	golang.org/x/crypto v0.39.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
+	golang.org/x/oauth2 v0.30.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
 )
