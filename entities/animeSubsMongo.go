@@ -3,11 +3,12 @@ package entities
 import (
 	"context"
 	"fmt"
+	"log"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
-	"time"
 )
 
 type AnimeSubs struct {
@@ -25,39 +26,172 @@ type AnimeSubsMongo struct {
 
 // LoadAnimeSubs retrieves all anime subscriptions from MongoDB
 func LoadAnimeSubs() (map[string][]*ShowSub, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
-	cursor, err := AnimeSubsCollection.Find(ctx, bson.M{})
+	// Use projection to only fetch necessary fields and process in batches
+	opts := GetOptimizedFindOptions().SetProjection(bson.M{
+		"id":       1,
+		"is_guild": 1,
+		"shows":    1,
+		"_id":      0, // Exclude _id field
+	})
+
+	cursor, err := AnimeSubsCollection.Find(ctx, bson.M{}, opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch anime subscriptions: %v", err)
 	}
 	defer cursor.Close(ctx)
 
 	animeSubsMap := make(map[string][]*ShowSub)
+
+	// Process in batches to reduce memory usage
+	batchSize := 50
+	batch := make([]AnimeSubs, 0, batchSize)
+
 	for cursor.Next(ctx) {
 		var animeSubData AnimeSubs
 		if err := cursor.Decode(&animeSubData); err != nil {
 			log.Println("Error decoding anime subscriptions from MongoDB:", err)
 			continue
 		}
-		animeSubsMap[animeSubData.ID] = animeSubData.Shows
+
+		batch = append(batch, animeSubData)
+
+		// Process batch when it reaches the size limit
+		if len(batch) >= batchSize {
+			for _, data := range batch {
+				animeSubsMap[data.ID] = data.Shows
+			}
+			batch = batch[:0] // Reset slice but keep capacity
+		}
+	}
+
+	// Process remaining items
+	for _, data := range batch {
+		animeSubsMap[data.ID] = data.Shows
 	}
 
 	if err := cursor.Err(); err != nil {
 		return nil, fmt.Errorf("cursor error while loading anime subscriptions: %v", err)
 	}
 
-	if animeSubsMap == nil {
-		return make(map[string][]*ShowSub), nil
+	return animeSubsMap, nil
+}
+
+// LoadGuildAnimeSubs retrieves only guild anime subscriptions from MongoDB
+func LoadGuildAnimeSubs() (map[string][]*ShowSub, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	// Only fetch guild subscriptions with projection
+	filter := bson.M{"is_guild": true}
+	opts := GetOptimizedFindOptions().SetProjection(bson.M{
+		"id":       1,
+		"is_guild": 1,
+		"shows":    1,
+		"_id":      0,
+	})
+
+	cursor, err := AnimeSubsCollection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch guild anime subscriptions: %v", err)
+	}
+	defer cursor.Close(ctx)
+
+	guildSubsMap := make(map[string][]*ShowSub)
+
+	// Process in batches
+	batchSize := 50
+	batch := make([]AnimeSubs, 0, batchSize)
+
+	for cursor.Next(ctx) {
+		var animeSubData AnimeSubs
+		if err := cursor.Decode(&animeSubData); err != nil {
+			log.Println("Error decoding guild anime subscriptions from MongoDB:", err)
+			continue
+		}
+
+		batch = append(batch, animeSubData)
+
+		if len(batch) >= batchSize {
+			for _, data := range batch {
+				guildSubsMap[data.ID] = data.Shows
+			}
+			batch = batch[:0]
+		}
 	}
 
-	return animeSubsMap, nil
+	// Process remaining items
+	for _, data := range batch {
+		guildSubsMap[data.ID] = data.Shows
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, fmt.Errorf("cursor error while loading guild anime subscriptions: %v", err)
+	}
+
+	return guildSubsMap, nil
+}
+
+// LoadUserAnimeSubs retrieves only user anime subscriptions from MongoDB
+func LoadUserAnimeSubs() (map[string][]*ShowSub, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	// Only fetch user subscriptions with projection
+	filter := bson.M{"is_guild": false}
+	opts := GetOptimizedFindOptions().SetProjection(bson.M{
+		"id":       1,
+		"is_guild": 1,
+		"shows":    1,
+		"_id":      0,
+	})
+
+	cursor, err := AnimeSubsCollection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user anime subscriptions: %v", err)
+	}
+	defer cursor.Close(ctx)
+
+	userSubsMap := make(map[string][]*ShowSub)
+
+	// Process in batches
+	batchSize := 50
+	batch := make([]AnimeSubs, 0, batchSize)
+
+	for cursor.Next(ctx) {
+		var animeSubData AnimeSubs
+		if err := cursor.Decode(&animeSubData); err != nil {
+			log.Println("Error decoding user anime subscriptions from MongoDB:", err)
+			continue
+		}
+
+		batch = append(batch, animeSubData)
+
+		if len(batch) >= batchSize {
+			for _, data := range batch {
+				userSubsMap[data.ID] = data.Shows
+			}
+			batch = batch[:0]
+		}
+	}
+
+	// Process remaining items
+	for _, data := range batch {
+		userSubsMap[data.ID] = data.Shows
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, fmt.Errorf("cursor error while loading user anime subscriptions: %v", err)
+	}
+
+	return userSubsMap, nil
 }
 
 // GetAnimeSubs retrieves a specific user's or guild's anime subscriptions from MongoDB
 func GetAnimeSubs(id string) ([]*ShowSub, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	var animeSubs AnimeSubs
@@ -66,55 +200,113 @@ func GetAnimeSubs(id string) ([]*ShowSub, error) {
 		return []*ShowSub{}, nil
 	}
 	if err != nil {
-		log.Printf("Error fetching anime subscriptions for %s: %v\n", id, err)
-		return nil, err
+		return nil, fmt.Errorf("error fetching anime subscriptions for %s: %v", id, err)
 	}
 
 	return animeSubs.Shows, nil
 }
 
-// SaveAnimeSubs stores all anime subscriptions in MongoDB
-func SaveAnimeSubs(animeSubs map[string][]*ShowSub) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+// BulkGetAnimeSubs retrieves multiple users' or guilds' anime subscriptions in one query
+func BulkGetAnimeSubs(ids []string) (map[string][]*ShowSub, error) {
+	if len(ids) == 0 {
+		return make(map[string][]*ShowSub), nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
 	defer cancel()
 
-	operations := make([]mongo.WriteModel, 0, len(animeSubs))
-	for id, shows := range animeSubs {
-		sanitizedShows := make([]*ShowSubMongo, len(shows))
-		for i, s := range shows {
-			sanitizedShows[i] = ConvertShowSub(s)
+	filter := bson.M{"id": bson.M{"$in": ids}}
+	opts := GetOptimizedFindOptions().SetProjection(bson.M{
+		"id":       1,
+		"is_guild": 1,
+		"shows":    1,
+		"_id":      0,
+	})
+
+	cursor, err := AnimeSubsCollection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch bulk anime subscriptions: %v", err)
+	}
+	defer cursor.Close(ctx)
+
+	subsMap := make(map[string][]*ShowSub)
+
+	// Process in batches to reduce memory usage
+	batchSize := 25
+	batch := make([]AnimeSubs, 0, batchSize)
+
+	for cursor.Next(ctx) {
+		var animeSubData AnimeSubs
+		if err := cursor.Decode(&animeSubData); err != nil {
+			log.Println("Error decoding bulk anime subscriptions from MongoDB:", err)
+			continue
 		}
 
-		filter := bson.M{"id": id}
-		update := bson.M{
-			"$set": bson.M{
-				"is_guild": len(sanitizedShows) > 0 && sanitizedShows[0].Guild,
-				"shows":    sanitizedShows,
-			},
+		batch = append(batch, animeSubData)
+
+		// Process batch when it reaches the size limit
+		if len(batch) >= batchSize {
+			for _, data := range batch {
+				subsMap[data.ID] = data.Shows
+			}
+			batch = batch[:0] // Reset slice but keep capacity
 		}
-
-		model := mongo.NewUpdateOneModel().
-			SetFilter(filter).
-			SetUpdate(update).
-			SetUpsert(true)
-
-		operations = append(operations, model)
 	}
 
-	if len(operations) > 0 {
-		opts := options.BulkWrite().SetOrdered(false)
-		_, err := AnimeSubsCollection.BulkWrite(ctx, operations, opts)
-		if err != nil {
-			return fmt.Errorf("failed to save anime subscriptions: %v", err)
-		}
+	// Process remaining items
+	for _, data := range batch {
+		subsMap[data.ID] = data.Shows
 	}
 
-	return nil
+	if err := cursor.Err(); err != nil {
+		return nil, fmt.Errorf("cursor error while loading bulk anime subscriptions: %v", err)
+	}
+
+	return subsMap, nil
+}
+
+// CountAnimeSubs returns the total count of anime subscriptions
+func CountAnimeSubs() (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	count, err := AnimeSubsCollection.CountDocuments(ctx, bson.M{})
+	if err != nil {
+		return 0, fmt.Errorf("failed to count anime subscriptions: %v", err)
+	}
+
+	return count, nil
+}
+
+// CountGuildAnimeSubs returns the count of guild anime subscriptions
+func CountGuildAnimeSubs() (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	count, err := AnimeSubsCollection.CountDocuments(ctx, bson.M{"is_guild": true})
+	if err != nil {
+		return 0, fmt.Errorf("failed to count guild anime subscriptions: %v", err)
+	}
+
+	return count, nil
+}
+
+// CountUserAnimeSubs returns the count of user anime subscriptions
+func CountUserAnimeSubs() (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	count, err := AnimeSubsCollection.CountDocuments(ctx, bson.M{"is_guild": false})
+	if err != nil {
+		return 0, fmt.Errorf("failed to count user anime subscriptions: %v", err)
+	}
+
+	return count, nil
 }
 
 // SetAnimeSubs updates a specific user's or guild's anime subscriptions in MongoDB
 func SetAnimeSubs(id string, subscriptions []*ShowSub, isGuild bool) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	// If no subscriptions left, delete from the database

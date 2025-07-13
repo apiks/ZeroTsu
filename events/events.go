@@ -2,16 +2,17 @@ package events
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/r-anime/ZeroTsu/common"
-	"github.com/r-anime/ZeroTsu/db"
-	"github.com/r-anime/ZeroTsu/entities"
-	"github.com/r-anime/ZeroTsu/functionality"
 	"log"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/r-anime/ZeroTsu/common"
+	"github.com/r-anime/ZeroTsu/db"
+	"github.com/r-anime/ZeroTsu/entities"
+	"github.com/r-anime/ZeroTsu/functionality"
 
 	"github.com/r-anime/ZeroTsu/config"
 )
@@ -356,8 +357,8 @@ func GuildDelete(_ *discordgo.Session, g *discordgo.GuildDelete) {
 
 // Fixes broken anime guild subs that are null
 func fixGuildSubsCommand(guildID string) {
-	// Load all anime subs from MongoDB
-	animeSubsMap := db.GetAllAnimeSubs()
+	// Load only guild anime subs from MongoDB
+	animeSubsMap := db.GetGuildAnimeSubs()
 
 	// Check if the guild has a valid subscription list
 	if subs, exists := animeSubsMap[guildID]; exists && subs != nil {

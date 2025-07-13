@@ -1,8 +1,9 @@
 package db
 
 import (
-	"github.com/r-anime/ZeroTsu/entities"
 	"log"
+
+	"github.com/r-anime/ZeroTsu/entities"
 )
 
 // GetGuildFeedChecks retrieves all feed checks from MongoDB
@@ -15,6 +16,7 @@ func GetGuildFeedChecks(guildID string, limit int) []entities.FeedCheck {
 
 	feedChecks, err := entities.LoadFeedChecks(guildID, limit)
 	if err != nil {
+		log.Printf("Error loading feed checks for guild %s: %v", guildID, err)
 		return nil
 	}
 

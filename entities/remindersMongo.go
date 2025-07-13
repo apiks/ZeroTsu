@@ -3,11 +3,12 @@ package entities
 import (
 	"context"
 	"fmt"
+	"log"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
-	"time"
 )
 
 // RemindMeMongo represents how a RemindMe is stored in MongoDB
@@ -76,7 +77,7 @@ func SaveReminders(id string, remindMeSlice *RemindMeSlice) error {
 	return nil
 }
 
-// GetDueReminders retrieves reminders that are due for sending
+// GetDueReminders retrieves reminders that are due for sending (optimized for memory)
 func GetDueReminders() (map[string]*RemindMeSlice, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -85,13 +86,20 @@ func GetDueReminders() (map[string]*RemindMeSlice, error) {
 
 	// Query for reminders with at least one past-due reminder
 	filter := bson.M{"reminders": bson.M{"$elemMatch": bson.M{"date": bson.M{"$lte": now}}}}
-	cursor, err := RemindersCollection.Find(ctx, filter)
+	opts := GetOptimizedFindOptions()
+
+	cursor, err := RemindersCollection.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch due reminders: %v", err)
 	}
 	defer cursor.Close(ctx)
 
 	remindersMap := make(map[string]*RemindMeSlice)
+
+	// Process in batches to reduce memory usage
+	batchSize := 25
+	batch := make([]RemindMeSliceMongo, 0, batchSize)
+
 	for cursor.Next(ctx) {
 		var reminderData RemindMeSliceMongo
 		if err := cursor.Decode(&reminderData); err != nil {
@@ -99,7 +107,20 @@ func GetDueReminders() (map[string]*RemindMeSlice, error) {
 			continue
 		}
 
-		remindersMap[reminderData.ID] = ConvertMongoToRemindMeSlice(reminderData)
+		batch = append(batch, reminderData)
+
+		// Process batch when it reaches the size limit
+		if len(batch) >= batchSize {
+			for _, data := range batch {
+				remindersMap[data.ID] = ConvertMongoToRemindMeSlice(data)
+			}
+			batch = batch[:0] // Reset slice but keep capacity
+		}
+	}
+
+	// Process remaining items
+	for _, data := range batch {
+		remindersMap[data.ID] = ConvertMongoToRemindMeSlice(data)
 	}
 
 	if err := cursor.Err(); err != nil {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/r-anime/ZeroTsu/cache"
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/entities"
@@ -141,7 +142,7 @@ func setNewEpisodesCommand(targetChannel *discordgo.Channel, enabled bool, role 
 
 	// Update anime subscriptions in MongoDB only if enabled
 	if enabled {
-		animeSubs := db.GetAllAnimeSubs()
+		animeSubs := cache.AnimeSubs.Get()
 		if subs, exists := animeSubs[guildID]; exists {
 			db.SetAnimeSubs(guildID, subs, true)
 		}
@@ -224,7 +225,7 @@ func setNewEpisodesCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 	db.SetGuildAutopost(m.GuildID, "newepisodes", newEpisodes)
 
 	// Update anime subscriptions only if enabled
-	animeSubs := db.GetAllAnimeSubs()
+	animeSubs := cache.AnimeSubs.Get()
 	if subs, exists := animeSubs[m.GuildID]; exists {
 		db.SetAnimeSubs(m.GuildID, subs, true)
 	}

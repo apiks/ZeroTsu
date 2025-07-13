@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/r-anime/ZeroTsu/cache"
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/config"
 	"github.com/r-anime/ZeroTsu/db"
@@ -64,7 +65,7 @@ Loop:
 				continue
 			}
 
-			if strings.ToLower(show.GetName()) == strings.ToLower(title) {
+			if strings.EqualFold(show.GetName(), title) {
 				showExists = true
 
 				// Check if user is already subscribed
@@ -216,7 +217,7 @@ func unsubscribeCommand(title, authorID string) string {
 	// Try to remove the subscription
 	var isDeleted bool
 	for _, show := range userSubs {
-		if strings.ToLower(show.GetShow()) == strings.ToLower(title) {
+		if strings.EqualFold(show.GetShow(), title) {
 			db.RemoveAnimeSub(authorID, title)
 			isDeleted = true
 			break
@@ -315,7 +316,7 @@ func viewSubscriptions(authorID string) []string {
 
 	// Fetch user's anime subscriptions from MongoDB
 	subscribedShows := db.GetAnimeSubs(authorID)
-	if subscribedShows == nil || len(subscribedShows) == 0 {
+	if len(subscribedShows) == 0 {
 		return []string{"Error: You have no active anime subscriptions."}
 	}
 
@@ -356,7 +357,7 @@ func viewSubscriptionsHandler(s *discordgo.Session, m *discordgo.Message) {
 
 	// Fetch user's anime subscriptions from MongoDB
 	subscribedShows := db.GetAnimeSubs(m.Author.ID)
-	if subscribedShows == nil || len(subscribedShows) == 0 {
+	if len(subscribedShows) == 0 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Error: You have no active show subscriptions.")
 		if err != nil {
 			common.LogError(s, guildSettings.BotLog, err)
@@ -400,17 +401,11 @@ func WebhooksMapHandler() {
 	tempWebhooksMap := make(map[string]*discordgo.Webhook)
 	tempThreadWebhooksMap := make(map[string]string)
 
-	// Fetch anime subscriptions from MongoDB
-	animeSubsMap := db.GetAllAnimeSubs()
+	// Fetch only guild anime subscriptions from cache
+	animeSubsMap := cache.AnimeSubs.GetGuild()
 
 	for guildID, subs := range animeSubsMap {
-		if subs == nil || len(subs) == 0 {
-			continue
-		}
-
-		// Determine if the subscription is for a guild
-		isGuild := subs[0].GetGuild()
-		if !isGuild {
+		if len(subs) == 0 {
 			continue
 		}
 
@@ -581,16 +576,11 @@ func animeSubsWebhookHandler() {
 		guard         = make(chan struct{}, maxGoroutines)
 	)
 
-	// Fetch anime subscriptions from MongoDB
-	animeSubsMap := db.GetAllAnimeSubs()
+	// Fetch only guild anime subscriptions from cache
+	animeSubsMap := cache.AnimeSubs.GetGuild()
 
 	for id, subscriptions := range animeSubsMap {
-		if subscriptions == nil || len(subscriptions) == 0 {
-			continue
-		}
-
-		// Ensure this is a guild subscription
-		if !subscriptions[0].GetGuild() {
+		if len(subscriptions) == 0 {
 			continue
 		}
 
@@ -646,9 +636,9 @@ func animeSubsWebhookHandler() {
 					continue
 				}
 
-				showName := strings.ToLower(scheduleShow.GetName())
-
-				if sub, exists := subsMap[showName]; exists {
+				showName := scheduleShow.GetName()
+				showNameLower := strings.ToLower(showName)
+				if sub, exists := subsMap[showNameLower]; exists {
 					if !guildSettings.GetDonghua() && scheduleShow.GetDonghua() {
 						continue
 					}
@@ -755,8 +745,8 @@ func animeSubsHandler() {
 	todayShows = append(todayShows, entities.AnimeSchedule.AnimeSchedule[int(now.Weekday())]...)
 	entities.AnimeSchedule.RUnlock()
 
-	// Fetch all anime subscriptions from the database
-	animeSubsMap := db.GetAllAnimeSubs()
+	// Fetch all anime subscriptions from cache
+	animeSubsMap := cache.AnimeSubs.Get()
 
 	for id, subscriptions := range animeSubsMap {
 		if len(subscriptions) == 0 {
@@ -932,8 +922,8 @@ func ResetSubscriptions() {
 	todayShows := entities.AnimeSchedule.AnimeSchedule[int(now.Weekday())]
 	entities.AnimeSchedule.RUnlock()
 
-	// Fetch all anime subscriptions from the database
-	animeSubsMap := db.GetAllAnimeSubs()
+	// Fetch all anime subscriptions from cache
+	animeSubsMap := cache.AnimeSubs.Get()
 
 	for id, subscriptions := range animeSubsMap {
 		if len(subscriptions) == 0 {
@@ -1030,7 +1020,7 @@ func AutoRemoveFinishedAnimeSubsTimer(_ *discordgo.Session, _ *discordgo.Ready) 
 }
 
 func RemoveFinishedAnimeUserSubs() {
-	animeSubsMap := db.GetAllAnimeSubs()
+	animeSubsMap := cache.AnimeSubs.Get()
 	if animeSubsMap == nil {
 		return
 	}

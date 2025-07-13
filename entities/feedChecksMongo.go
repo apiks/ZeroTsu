@@ -3,8 +3,11 @@ package entities
 import (
 	"context"
 	"fmt"
-	"go.mongodb.org/mongo-driver/mongo"
 	"time"
+
+	"go.mongodb.org/mongo-driver/mongo"
+
+	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -18,18 +21,19 @@ type FeedCheckMongo struct {
 	Date    time.Time `bson:"date"`
 }
 
-// LoadFeedChecks retrieves recent FeedChecks for a guild (default limit: 50, no limit if limit <= 0)
+// LoadFeedChecks retrieves recent FeedChecks for a guild (optimized for memory)
 func LoadFeedChecks(guildID string, limit int) ([]FeedCheck, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	filter := bson.M{"guild_id": guildID}
-	opts := options.Find().SetSort(bson.M{"date": -1})
+	opts := GetOptimizedFindOptions().SetSort(bson.M{"date": -1})
 
-	// Apply limit only if it's greater than 0
-	if limit > 0 {
-		opts.SetLimit(int64(limit))
+	// Apply limit only if it's greater than 0, default to 50 for memory efficiency
+	if limit <= 0 {
+		limit = 50
 	}
+	opts.SetLimit(int64(limit))
 
 	cursor, err := FeedCheckCollection.Find(ctx, filter, opts)
 	if err != nil {
@@ -37,12 +41,29 @@ func LoadFeedChecks(guildID string, limit int) ([]FeedCheck, error) {
 	}
 	defer cursor.Close(ctx)
 
-	var feedChecksMongo []FeedCheckMongo
-	if err := cursor.All(ctx, &feedChecksMongo); err != nil {
-		return nil, fmt.Errorf("error decoding feed checks: %v", err)
+	var feedChecks []FeedCheck
+
+	// Process one at a time to reduce memory usage
+	for cursor.Next(ctx) {
+		var feedCheckMongo FeedCheckMongo
+		if err := cursor.Decode(&feedCheckMongo); err != nil {
+			log.Println("Error decoding feed check from MongoDB:", err)
+			continue
+		}
+
+		feedCheck := FeedCheck{
+			Feed: ConvertMongoToFeed(feedCheckMongo.Feed),
+			Date: feedCheckMongo.Date,
+			GUID: feedCheckMongo.GUID,
+		}
+		feedChecks = append(feedChecks, feedCheck)
 	}
 
-	return ConvertMongoToFeedChecks(feedChecksMongo), nil
+	if err := cursor.Err(); err != nil {
+		return nil, fmt.Errorf("cursor error while loading feed checks: %v", err)
+	}
+
+	return feedChecks, nil
 }
 
 // SaveFeedCheck stores a FeedCheck in MongoDB
