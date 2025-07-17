@@ -23,7 +23,7 @@ type FeedCheckMongo struct {
 
 // LoadFeedChecks retrieves recent FeedChecks for a guild (optimized for memory)
 func LoadFeedChecks(guildID string, limit int) ([]FeedCheck, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := GetContextWithTimeout(45 * time.Second)
 	defer cancel()
 
 	filter := bson.M{"guild_id": guildID}
@@ -35,9 +35,24 @@ func LoadFeedChecks(guildID string, limit int) ([]FeedCheck, error) {
 	}
 	opts.SetLimit(int64(limit))
 
-	cursor, err := FeedCheckCollection.Find(ctx, filter, opts)
+	// Add retry logic for failed operations
+	var cursor *mongo.Cursor
+	var err error
+
+	for retries := 0; retries < 3; retries++ {
+		cursor, err = FeedCheckCollection.Find(ctx, filter, opts)
+		if err == nil {
+			break
+		}
+
+		if retries < 2 {
+			log.Printf("MongoDB query failed, retrying (%d/3): %v", retries+1, err)
+			time.Sleep(time.Duration(retries+1) * time.Second)
+		}
+	}
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to load feed checks: %v", err)
+		return nil, fmt.Errorf("failed to load feed checks after retries: %v", err)
 	}
 	defer cursor.Close(ctx)
 

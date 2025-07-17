@@ -53,7 +53,7 @@ type feedProcessor struct {
 	session    *discordgo.Session
 	webhook    *discordgo.Webhook
 	feeds      []entities.Feed
-	feedChecks map[string]bool // O(1) lookup for processed items
+	feedChecks map[string]bool
 }
 
 func newFeedProcessor(guildID string, session *discordgo.Session, webhook *discordgo.Webhook, feeds []entities.Feed) *feedProcessor {
@@ -62,7 +62,7 @@ func newFeedProcessor(guildID string, session *discordgo.Session, webhook *disco
 		session:    session,
 		webhook:    webhook,
 		feeds:      feeds,
-		feedChecks: make(map[string]bool, len(feeds)*10), // Pre-allocate for expected items
+		feedChecks: make(map[string]bool, len(feeds)*10),
 	}
 }
 
@@ -139,9 +139,16 @@ func (fp *feedProcessor) processFeeds(parsedFeeds map[string]*gofeed.Feed) error
 
 func (fp *feedProcessor) loadFeedChecks() {
 	feedChecks := db.GetGuildFeedChecks(fp.guildID, -1)
-	for _, check := range feedChecks {
-		key := fmt.Sprintf("%s_%s", check.GetGUID(), check.GetFeed().GetChannelID())
-		fp.feedChecks[key] = true
+
+	if len(feedChecks) > 0 {
+		if fp.feedChecks == nil {
+			fp.feedChecks = make(map[string]bool, len(feedChecks))
+		}
+
+		for _, check := range feedChecks {
+			key := fmt.Sprintf("%s_%s", check.GetGUID(), check.GetFeed().GetChannelID())
+			fp.feedChecks[key] = true
+		}
 	}
 }
 
@@ -189,8 +196,12 @@ func FeedWebhookHandler(guildIds []string) {
 	cleanupCounter++
 	if cleanupCounter%10 == 0 {
 		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("Panic in cleanup goroutine: %v", r)
+				}
+			}()
 			cleanupExpiredFeedChecks(guildIds)
-			runtime.GC()
 		}()
 	}
 }
@@ -202,8 +213,12 @@ func cleanupExpiredFeedChecks(guildIds []string) {
 	for i := 0; i < len(guildIds); i += batchSize {
 		end := min(i+batchSize, len(guildIds))
 		batch := guildIds[i:end]
+
 		for _, guildID := range batch {
 			guildFeedChecks := db.GetGuildFeedChecks(guildID, -1)
+			if len(guildFeedChecks) == 0 {
+				continue
+			}
 
 			for _, feedCheck := range guildFeedChecks {
 				dateRemoval := feedCheck.GetDate().Add(feedCheckLifespanHours)
@@ -213,6 +228,10 @@ func cleanupExpiredFeedChecks(guildIds []string) {
 				}
 			}
 		}
+	}
+
+	if expiredCount > 0 {
+		log.Printf("Cleaned up %d expired feed checks", expiredCount)
 	}
 }
 
@@ -284,12 +303,17 @@ func getOrCreateWebhook(s *discordgo.Session, channelID string) *discordgo.Webho
 	if err != nil {
 		return nil
 	}
+
 	out := new(bytes.Buffer)
+	defer out.Reset()
+
 	err = png.Encode(out, avatar)
 	if err != nil {
 		return nil
 	}
+
 	base64Img := base64.StdEncoding.EncodeToString(out.Bytes())
+	out.Reset()
 
 	w, err := s.WebhookCreate(channelID, s.State.User.Username, fmt.Sprintf("data:image/png;base64,%s", base64Img))
 	if err != nil {
@@ -312,26 +336,43 @@ func processFeedsConcurrently(feedsMap map[string][]entities.Feed, webhooksMap m
 	parseFeedsWithRateLimit(feedParseMap, parsedFeedsMap)
 
 	maxWorkers := runtime.NumCPU()
-	if maxWorkers > 8 {
-		maxWorkers = 8
+	if maxWorkers > 4 {
+		maxWorkers = 4
+	}
+	if maxWorkers < 2 {
+		maxWorkers = 2
 	}
 
 	semaphore := make(chan struct{}, maxWorkers)
 	var wg sync.WaitGroup
 
-	for _, guildID := range guildIds {
-		wg.Add(1)
-		semaphore <- struct{}{}
+	const batchSize = 5
+	for i := 0; i < len(guildIds); i += batchSize {
+		end := i + batchSize
+		if end > len(guildIds) {
+			end = len(guildIds)
+		}
 
-		go func(guid string) {
-			defer wg.Done()
-			defer func() { <-semaphore }()
+		batch := guildIds[i:end]
+		for _, guildID := range batch {
+			wg.Add(1)
+			semaphore <- struct{}{}
 
-			processGuildFeeds(guid, feedsMap, webhooksMap, parsedFeedsMap)
-		}(guildID)
+			go func(guid string) {
+				defer func() {
+					if r := recover(); r != nil {
+						log.Printf("Panic in feed processing goroutine for guild %s: %v", guid, r)
+					}
+					wg.Done()
+					<-semaphore
+				}()
+
+				processGuildFeeds(guid, feedsMap, webhooksMap, parsedFeedsMap)
+			}(guildID)
+		}
+
+		wg.Wait()
 	}
-
-	wg.Wait()
 }
 
 func parseFeedsWithRateLimit(feedParseMap map[string]bool, parsedFeedsMap map[string]*gofeed.Feed) {
@@ -344,15 +385,22 @@ func parseFeedsWithRateLimit(feedParseMap map[string]bool, parsedFeedsMap map[st
 		semaphore <- struct{}{}
 
 		go func(key string) {
-			defer wg.Done()
-			defer func() { <-semaphore }()
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("Panic in feed parsing goroutine for key %s: %v", key, r)
+				}
+				wg.Done()
+				<-semaphore
+			}()
 
 			time.Sleep(time.Second * 2)
-			key = strings.TrimSuffix(key, "/")
-			key = strings.TrimPrefix(key, "https://www.reddit.com/r/")
-			key = strings.TrimPrefix(key, "/")
 
-			feedParser, statusCode, err := common.GetRedditRSSFeed(fmt.Sprintf("https://www.reddit.com/r/%s/.rss", key), 1)
+			feedKey := key
+			feedKey = strings.TrimSuffix(feedKey, "/")
+			feedKey = strings.TrimPrefix(feedKey, "https://www.reddit.com/r/")
+			feedKey = strings.TrimPrefix(feedKey, "/")
+
+			feedParser, statusCode, err := common.GetRedditRSSFeed(fmt.Sprintf("https://www.reddit.com/r/%s/.rss", feedKey), 1)
 			if err != nil {
 				if statusCode == 429 {
 					log.Println("HIT REDDIT RATE LIMIT feedWebhookHandler!")
@@ -361,7 +409,7 @@ func parseFeedsWithRateLimit(feedParseMap map[string]bool, parsedFeedsMap map[st
 				return
 			}
 
-			parsedFeedsMap[key] = feedParser
+			parsedFeedsMap[feedKey] = feedParser
 		}(k)
 	}
 

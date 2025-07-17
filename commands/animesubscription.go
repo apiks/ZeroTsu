@@ -20,6 +20,8 @@ import (
 	"github.com/sasha-s/go-deadlock"
 	"golang.org/x/sync/errgroup"
 
+	"sync"
+
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -483,11 +485,15 @@ func WebhooksMapHandler() {
 			continue
 		}
 		out := new(bytes.Buffer)
+		defer out.Reset()
+
 		err = png.Encode(out, avatar)
 		if err != nil {
 			continue
 		}
 		base64Img := base64.StdEncoding.EncodeToString(out.Bytes())
+		out.Reset()
+
 		wh, err := s.WebhookCreate(channelID, s.State.User.Username, fmt.Sprintf("data:image/png;base64,%s", base64Img))
 		if err != nil {
 			continue
@@ -790,7 +796,7 @@ func animeSubsHandler() {
 			if err != nil {
 				continue
 			}
-			if perms&discordgo.PermissionManageWebhooks == discordgo.PermissionManageWebhooks ||
+			if perms&discordgo.PermissionManageWebhooks != discordgo.PermissionManageWebhooks ||
 				perms&discordgo.PermissionViewChannel != discordgo.PermissionViewChannel ||
 				perms&discordgo.PermissionSendMessages != discordgo.PermissionSendMessages ||
 				perms&discordgo.PermissionEmbedLinks != discordgo.PermissionEmbedLinks {
@@ -866,8 +872,8 @@ func animeSubsHandler() {
 					}
 					err = embeds.Subscription(session, scheduleShow, newepisodes.GetID(), newepisodes.GetRoleID())
 				} else {
-					dm, err := session.UserChannelCreate(id)
-					if err != nil {
+					dm, dmErr := session.UserChannelCreate(id)
+					if dmErr != nil {
 						continue
 					}
 					err = embeds.Subscription(session, scheduleShow, dm.ID, "")
@@ -891,20 +897,68 @@ func animeSubsHandler() {
 }
 
 func AnimeSubsTimer(_ *discordgo.Session, _ *discordgo.Ready) {
+	var processingMutex sync.Mutex
+	var isProcessing bool
+
 	for range time.NewTicker(1 * time.Minute).C {
+		processingMutex.Lock()
+		if isProcessing {
+			log.Println("Previous AnimeSubsTimer execution still running, skipping this cycle")
+			processingMutex.Unlock()
+			continue
+		}
+		isProcessing = true
+		processingMutex.Unlock()
+
 		animeSubsHandler()
+
+		processingMutex.Lock()
+		isProcessing = false
+		processingMutex.Unlock()
 	}
 }
 
 func AnimeSubsWebhookTimer(_ *discordgo.Session, _ *discordgo.Ready) {
+	var processingMutex sync.Mutex
+	var isProcessing bool
+
 	for range time.NewTicker(1 * time.Minute).C {
+		processingMutex.Lock()
+		if isProcessing {
+			log.Println("Previous AnimeSubsWebhookTimer execution still running, skipping this cycle")
+			processingMutex.Unlock()
+			continue
+		}
+		isProcessing = true
+		processingMutex.Unlock()
+
 		animeSubsWebhookHandler()
+
+		processingMutex.Lock()
+		isProcessing = false
+		processingMutex.Unlock()
 	}
 }
 
 func AnimeSubsWebhooksMapTimer(_ *discordgo.Session, _ *discordgo.Ready) {
+	var processingMutex sync.Mutex
+	var isProcessing bool
+
 	for range time.NewTicker(15 * time.Minute).C {
+		processingMutex.Lock()
+		if isProcessing {
+			log.Println("Previous AnimeSubsWebhooksMapTimer execution still running, skipping this cycle")
+			processingMutex.Unlock()
+			continue
+		}
+		isProcessing = true
+		processingMutex.Unlock()
+
 		WebhooksMapHandler()
+
+		processingMutex.Lock()
+		isProcessing = false
+		processingMutex.Unlock()
 	}
 }
 
@@ -1014,8 +1068,25 @@ func ResetSubscriptions() {
 
 func AutoRemoveFinishedAnimeSubsTimer(_ *discordgo.Session, _ *discordgo.Ready) {
 	RemoveFinishedAnimeUserSubs()
+
+	var processingMutex sync.Mutex
+	var isProcessing bool
+
 	for range time.NewTicker(30 * time.Minute).C {
+		processingMutex.Lock()
+		if isProcessing {
+			log.Println("Previous AutoRemoveFinishedAnimeSubsTimer execution still running, skipping this cycle")
+			processingMutex.Unlock()
+			continue
+		}
+		isProcessing = true
+		processingMutex.Unlock()
+
 		RemoveFinishedAnimeUserSubs()
+
+		processingMutex.Lock()
+		isProcessing = false
+		processingMutex.Unlock()
 	}
 }
 

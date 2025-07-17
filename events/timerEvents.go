@@ -7,8 +7,8 @@ import (
 	"image/png"
 	"log"
 	"math/rand"
-	"runtime"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/r-anime/ZeroTsu/cache"
@@ -111,12 +111,17 @@ func UpdateDailyScheduleWebhooks() {
 		if err != nil {
 			continue
 		}
+
 		out := new(bytes.Buffer)
+		defer out.Reset()
+
 		err = png.Encode(out, avatar)
 		if err != nil {
 			continue
 		}
+
 		base64Img := base64.StdEncoding.EncodeToString(out.Bytes())
+		out.Reset()
 
 		wh, err := s.WebhookCreate(newepisodes.GetID(), s.State.User.Username, fmt.Sprintf("data:image/png;base64,%s", base64Img))
 		if err != nil {
@@ -134,7 +139,19 @@ func UpdateDailyScheduleWebhooks() {
 func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 	var randomPlayingMsg string
 
+	var processingMutex sync.Mutex
+	var isProcessing bool
+
 	for range time.NewTicker(30 * time.Minute).C {
+		processingMutex.Lock()
+		if isProcessing {
+			log.Println("Previous WriteEvents execution still running, skipping this cycle")
+			processingMutex.Unlock()
+			continue
+		}
+		isProcessing = true
+		processingMutex.Unlock()
+
 		// Updates playing status
 		entities.Mutex.RLock()
 		if len(config.PlayingMsg) > 1 {
@@ -147,11 +164,44 @@ func WriteEvents(s *discordgo.Session, _ *discordgo.Ready) {
 
 		// Sends server count to bot list sites if it's the public ZeroTsu
 		functionality.SendServers(strconv.Itoa(config.Mgr.GuildCount()), s)
+
+		processingMutex.Lock()
+		isProcessing = false
+		processingMutex.Unlock()
 	}
 }
 
 func CommonEvents(_ *discordgo.Session, _ *discordgo.Ready) {
+	mongoHealthCheckCounter := 0
+
+	var processingMutex sync.Mutex
+	var isProcessing bool
+
 	for range time.NewTicker(1 * time.Minute).C {
+		processingMutex.Lock()
+		if isProcessing {
+			log.Println("Previous ticker execution still running, skipping this cycle")
+			processingMutex.Unlock()
+			continue
+		}
+		isProcessing = true
+		processingMutex.Unlock()
+
+		// Check MongoDB health every 10 minutes
+		mongoHealthCheckCounter++
+		if mongoHealthCheckCounter >= 10 {
+			if err := entities.CheckMongoDBHealth(); err != nil {
+				log.Printf("MongoDB health check failed: %v", err)
+				// Attempt to reconnect
+				if reconnectErr := entities.ReconnectMongoDB("mongodb://localhost:27017"); reconnectErr != nil {
+					log.Printf("Failed to reconnect to MongoDB: %v", reconnectErr)
+				}
+			}
+			// Log MongoDB stats every 10 minutes
+			entities.LogMongoDBStats()
+			mongoHealthCheckCounter = 0
+		}
+
 		guildIds, err := entities.LoadAllGuildIDs()
 		if err != nil {
 			log.Printf("Error fetching guild IDs: %v", err)
@@ -164,8 +214,9 @@ func CommonEvents(_ *discordgo.Session, _ *discordgo.Ready) {
 		FeedWebhookHandler(guildIds)
 		FeedHandler(guildIds)
 
-		// Force garbage collection after processing
-		runtime.GC()
+		processingMutex.Lock()
+		isProcessing = false
+		processingMutex.Unlock()
 	}
 }
 
@@ -191,7 +242,6 @@ func remindMeHandler(s *discordgo.Session) {
 		return
 	}
 
-	// Process reminders in batches to reduce memory pressure
 	const batchSize = 50
 	userIDs := make([]string, 0, len(reminders))
 	for userID := range reminders {
@@ -247,8 +297,5 @@ func remindMeHandler(s *discordgo.Session) {
 				db.SetReminder(userID, nil, remindMeSlice.Guild, remindMeSlice.Premium)
 			}
 		}
-
-		// Force GC after each batch
-		runtime.GC()
 	}
 }
