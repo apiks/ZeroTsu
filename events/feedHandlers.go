@@ -168,6 +168,8 @@ func (fp *feedProcessor) validateFeedItem(feed entities.Feed, item *gofeed.Item)
 }
 
 func (fp *feedProcessor) sendEmbeds(embeds []*discordgo.MessageEmbed) error {
+	time.Sleep(300 * time.Millisecond)
+
 	_, err := fp.session.WebhookExecute(fp.webhook.ID, fp.webhook.Token, false, &discordgo.WebhookParams{
 		Embeds: embeds,
 	})
@@ -268,6 +270,8 @@ func collectFeedsAndWebhooks(guildIds []string, feedsMap map[string][]entities.F
 		s := config.Mgr.SessionForGuild(guildIDInt)
 
 		for _, feed := range guildFeeds {
+			time.Sleep(150 * time.Millisecond)
+
 			perms, err := s.State.UserChannelPermissions(s.State.User.ID, feed.GetChannelID())
 			if err != nil || perms&discordgo.PermissionManageWebhooks != discordgo.PermissionManageWebhooks || perms&discordgo.PermissionViewChannel != discordgo.PermissionViewChannel || perms&discordgo.PermissionSendMessages != discordgo.PermissionSendMessages {
 				continue
@@ -315,6 +319,8 @@ func getOrCreateWebhook(s *discordgo.Session, channelID string) *discordgo.Webho
 	base64Img := base64.StdEncoding.EncodeToString(out.Bytes())
 	out.Reset()
 
+	time.Sleep(300 * time.Millisecond)
+
 	w, err := s.WebhookCreate(channelID, s.State.User.Username, fmt.Sprintf("data:image/png;base64,%s", base64Img))
 	if err != nil {
 		return nil
@@ -335,23 +341,14 @@ func processFeedsConcurrently(feedsMap map[string][]entities.Feed, webhooksMap m
 
 	parseFeedsWithRateLimit(feedParseMap, parsedFeedsMap)
 
-	maxWorkers := runtime.NumCPU()
-	if maxWorkers > 4 {
-		maxWorkers = 4
-	}
-	if maxWorkers < 2 {
-		maxWorkers = 2
-	}
+	maxWorkers := min(max(runtime.NumCPU(), 2), 4)
 
 	semaphore := make(chan struct{}, maxWorkers)
 	var wg sync.WaitGroup
 
-	const batchSize = 5
+	const batchSize = 3
 	for i := 0; i < len(guildIds); i += batchSize {
-		end := i + batchSize
-		if end > len(guildIds) {
-			end = len(guildIds)
-		}
+		end := min(i+batchSize, len(guildIds))
 
 		batch := guildIds[i:end]
 		for _, guildID := range batch {
@@ -461,7 +458,7 @@ func FeedHandler(guildIds []string) {
 		redditFeedBlock.Unlock()
 	}()
 
-	const batchSize = 5
+	const batchSize = 3
 	for i := 0; i < len(guildIds); i += batchSize {
 		end := min(i+batchSize, len(guildIds))
 		batch := guildIds[i:end]
@@ -491,6 +488,8 @@ func processGuildFeedsWithoutWebhooks(guildIds []string) {
 		s := config.Mgr.SessionForGuild(guildIDInt)
 
 		for _, feed := range guildFeeds {
+			time.Sleep(150 * time.Millisecond)
+
 			perms, err := s.State.UserChannelPermissions(s.State.User.ID, feed.GetChannelID())
 			if err != nil || perms&discordgo.PermissionManageWebhooks == discordgo.PermissionManageWebhooks || perms&discordgo.PermissionViewChannel != discordgo.PermissionViewChannel || perms&discordgo.PermissionSendMessages != discordgo.PermissionSendMessages {
 				continue
@@ -522,7 +521,7 @@ func processFeedItems(s *discordgo.Session, feed entities.Feed, feedParser *gofe
 			continue
 		}
 
-		time.Sleep(time.Millisecond * 250)
+		time.Sleep(300 * time.Millisecond)
 
 		message, err := embeds.Feed(s, &feed, item)
 		if err != nil {
@@ -565,6 +564,8 @@ func handleFeedPinning(s *discordgo.Session, feed entities.Feed, message *discor
 		return
 	}
 
+	time.Sleep(300 * time.Millisecond)
+
 	// Unpin old pins from this subreddit
 	for _, pin := range pins {
 		if pin.Author.ID != s.State.User.ID || len(pin.Embeds) == 0 || pin.Embeds[0].Author == nil {
@@ -573,6 +574,7 @@ func handleFeedPinning(s *discordgo.Session, feed entities.Feed, message *discor
 
 		if strings.HasPrefix(strings.ToLower(pin.Embeds[0].Author.URL), fmt.Sprintf("https://www.reddit.com/r/%s/comments/", feed.GetSubreddit())) {
 			_ = s.ChannelMessageUnpin(pin.ChannelID, pin.ID)
+			time.Sleep(300 * time.Millisecond)
 		}
 	}
 
