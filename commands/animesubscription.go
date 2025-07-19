@@ -42,6 +42,7 @@ var (
 	newEpisodeswebhooksMapBlock events.Block
 	animeSubFeedWebhookBlock    events.Block
 	animeSubFeedBlock           events.Block
+	animeSubGlobalBlock         events.Block
 )
 
 // subscribeCommand subscribes to notifications for anime episode releases SUBBED
@@ -523,6 +524,20 @@ func WebhooksMapHandler() {
 func animeSubsWebhookHandler() {
 	var todayShows []*entities.ShowAirTime
 
+	animeSubGlobalBlock.Lock()
+	if animeSubGlobalBlock.Block {
+		animeSubGlobalBlock.Unlock()
+		return
+	}
+	animeSubGlobalBlock.Block = true
+	animeSubGlobalBlock.Unlock()
+
+	defer func() {
+		animeSubGlobalBlock.Lock()
+		animeSubGlobalBlock.Block = false
+		animeSubGlobalBlock.Unlock()
+	}()
+
 	animeSubFeedWebhookBlock.Lock()
 	if animeSubFeedWebhookBlock.Block {
 		animeSubFeedWebhookBlock.Unlock()
@@ -631,6 +646,7 @@ func animeSubsWebhookHandler() {
 
 			updated := false
 			subsMap := make(map[string]*entities.ShowSub)
+			processedShows := make(map[string]bool)
 			for _, sub := range subs {
 				if sub == nil {
 					continue
@@ -644,6 +660,11 @@ func animeSubsWebhookHandler() {
 
 				showName := scheduleShow.GetName()
 				showNameLower := strings.ToLower(showName)
+
+				if processedShows[showNameLower] {
+					continue
+				}
+
 				if sub, exists := subsMap[showNameLower]; exists {
 					if !guildSettings.GetDonghua() && scheduleShow.GetDonghua() {
 						continue
@@ -688,6 +709,8 @@ func animeSubsWebhookHandler() {
 
 					sub.SetNotified(true)
 					updated = true
+
+					processedShows[showNameLower] = true
 				}
 			}
 
@@ -717,6 +740,20 @@ func animeSubsWebhookHandler() {
 // animeSubsHandler handles sending notifications to users or guilds when it's time
 func animeSubsHandler() {
 	var todayShows []*entities.ShowAirTime
+
+	animeSubGlobalBlock.Lock()
+	if animeSubGlobalBlock.Block {
+		animeSubGlobalBlock.Unlock()
+		return
+	}
+	animeSubGlobalBlock.Block = true
+	animeSubGlobalBlock.Unlock()
+
+	defer func() {
+		animeSubGlobalBlock.Lock()
+		animeSubGlobalBlock.Block = false
+		animeSubGlobalBlock.Unlock()
+	}()
 
 	animeSubFeedBlock.Lock()
 	if animeSubFeedBlock.Block {
