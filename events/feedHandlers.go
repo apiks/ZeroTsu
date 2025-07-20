@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"image/png"
 	"log"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -32,19 +31,6 @@ var (
 	redditFeedBlock        Block
 	redditFeedWebhookBlock Block
 	cleanupCounter         int
-
-	// Object pools for memory reuse
-	embedPool = sync.Pool{
-		New: func() any {
-			return &[]*discordgo.MessageEmbed{}
-		},
-	}
-
-	feedCheckPool = sync.Pool{
-		New: func() any {
-			return &[]entities.FeedCheck{}
-		},
-	}
 )
 
 // feedProcessor handles feed processing for a single guild with memory optimization
@@ -67,20 +53,8 @@ func newFeedProcessor(guildID string, session *discordgo.Session, webhook *disco
 }
 
 func (fp *feedProcessor) processFeeds(parsedFeeds map[string]*gofeed.Feed) error {
-	// Get reusable slices from pools
-	embedsSlicePtr := embedPool.Get().(*[]*discordgo.MessageEmbed)
-	embedsSlice := *embedsSlicePtr
-	defer func() {
-		*embedsSlicePtr = embedsSlice[:0]
-		embedPool.Put(embedsSlicePtr)
-	}()
-
-	newFeedChecksPtr := feedCheckPool.Get().(*[]entities.FeedCheck)
-	newFeedChecks := *newFeedChecksPtr
-	defer func() {
-		*newFeedChecksPtr = newFeedChecks[:0]
-		feedCheckPool.Put(newFeedChecksPtr)
-	}()
+	embedsSlice := make([]*discordgo.MessageEmbed, 0, maxEmbedBatchSize)
+	newFeedChecks := make([]entities.FeedCheck, 0, maxEmbedBatchSize)
 
 	fp.loadFeedChecks()
 
@@ -341,34 +315,8 @@ func processFeedsConcurrently(feedsMap map[string][]entities.Feed, webhooksMap m
 
 	parseFeedsWithRateLimit(feedParseMap, parsedFeedsMap)
 
-	maxWorkers := min(max(runtime.NumCPU(), 2), 4)
-
-	semaphore := make(chan struct{}, maxWorkers)
-	var wg sync.WaitGroup
-
-	const batchSize = 3
-	for i := 0; i < len(guildIds); i += batchSize {
-		end := min(i+batchSize, len(guildIds))
-
-		batch := guildIds[i:end]
-		for _, guildID := range batch {
-			wg.Add(1)
-			semaphore <- struct{}{}
-
-			go func(guid string) {
-				defer func() {
-					if r := recover(); r != nil {
-						log.Printf("Panic in feed processing goroutine for guild %s: %v", guid, r)
-					}
-					wg.Done()
-					<-semaphore
-				}()
-
-				processGuildFeeds(guid, feedsMap, webhooksMap, parsedFeedsMap)
-			}(guildID)
-		}
-
-		wg.Wait()
+	for _, guildID := range guildIds {
+		processGuildFeeds(guildID, feedsMap, webhooksMap, parsedFeedsMap)
 	}
 }
 
@@ -458,55 +406,50 @@ func FeedHandler(guildIds []string) {
 		redditFeedBlock.Unlock()
 	}()
 
-	const batchSize = 3
-	for i := 0; i < len(guildIds); i += batchSize {
-		end := min(i+batchSize, len(guildIds))
-		batch := guildIds[i:end]
-		processGuildFeedsWithoutWebhooks(batch)
+	for _, guildID := range guildIds {
+		processGuildFeedsWithoutWebhooks(guildID)
 	}
 }
 
-func processGuildFeedsWithoutWebhooks(guildIds []string) {
-	for _, guildID := range guildIds {
-		guildFeeds := db.GetGuildFeeds(guildID)
-		if len(guildFeeds) == 0 {
+func processGuildFeedsWithoutWebhooks(guildID string) {
+	guildFeeds := db.GetGuildFeeds(guildID)
+	if len(guildFeeds) == 0 {
+		return
+	}
+
+	guildFeedChecks := db.GetGuildFeedChecks(guildID, -1)
+
+	feedCheckMap := make(map[string]bool, len(guildFeedChecks))
+	for _, check := range guildFeedChecks {
+		key := fmt.Sprintf("%s_%s", check.GetGUID(), check.GetFeed().GetChannelID())
+		feedCheckMap[key] = true
+	}
+
+	guildIDInt, err := strconv.ParseInt(guildID, 10, 64)
+	if err != nil {
+		return
+	}
+	s := config.Mgr.SessionForGuild(guildIDInt)
+
+	for _, feed := range guildFeeds {
+		time.Sleep(150 * time.Millisecond)
+
+		perms, err := s.State.UserChannelPermissions(s.State.User.ID, feed.GetChannelID())
+		if err != nil || perms&discordgo.PermissionManageWebhooks == discordgo.PermissionManageWebhooks || perms&discordgo.PermissionViewChannel != discordgo.PermissionViewChannel || perms&discordgo.PermissionSendMessages != discordgo.PermissionSendMessages {
 			continue
 		}
 
-		guildFeedChecks := db.GetGuildFeedChecks(guildID, -1)
-
-		feedCheckMap := make(map[string]bool, len(guildFeedChecks))
-		for _, check := range guildFeedChecks {
-			key := fmt.Sprintf("%s_%s", check.GetGUID(), check.GetFeed().GetChannelID())
-			feedCheckMap[key] = true
-		}
-
-		guildIDInt, err := strconv.ParseInt(guildID, 10, 64)
+		time.Sleep(4 * time.Second)
+		feedParser, statusCode, err := common.GetRedditRSSFeed(fmt.Sprintf("https://www.reddit.com/r/%s/%s/.rss", feed.GetSubreddit(), feed.GetPostType()), 1)
 		if err != nil {
+			if statusCode == 429 {
+				log.Println("HIT REDDIT RATE LIMIT feedHandler!")
+				time.Sleep(10 * time.Minute)
+			}
 			continue
 		}
-		s := config.Mgr.SessionForGuild(guildIDInt)
 
-		for _, feed := range guildFeeds {
-			time.Sleep(150 * time.Millisecond)
-
-			perms, err := s.State.UserChannelPermissions(s.State.User.ID, feed.GetChannelID())
-			if err != nil || perms&discordgo.PermissionManageWebhooks == discordgo.PermissionManageWebhooks || perms&discordgo.PermissionViewChannel != discordgo.PermissionViewChannel || perms&discordgo.PermissionSendMessages != discordgo.PermissionSendMessages {
-				continue
-			}
-
-			time.Sleep(4 * time.Second)
-			feedParser, statusCode, err := common.GetRedditRSSFeed(fmt.Sprintf("https://www.reddit.com/r/%s/%s/.rss", feed.GetSubreddit(), feed.GetPostType()), 1)
-			if err != nil {
-				if statusCode == 429 {
-					log.Println("HIT REDDIT RATE LIMIT feedHandler!")
-					time.Sleep(10 * time.Minute)
-				}
-				continue
-			}
-
-			processFeedItems(s, feed, feedParser, feedCheckMap, guildID)
-		}
+		processFeedItems(s, feed, feedParser, feedCheckMap, guildID)
 	}
 }
 
