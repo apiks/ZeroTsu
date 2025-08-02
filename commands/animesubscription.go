@@ -1191,6 +1191,113 @@ func RemoveFinishedAnimeUserSubs() {
 	}
 }
 
+// SetupGuildWebhook sets up webhook for a specific guild's new-episodes channel
+func SetupGuildWebhook(guildID string) {
+	guildIDInt, err := strconv.ParseInt(guildID, 10, 64)
+	if err != nil {
+		return
+	}
+	s := config.Mgr.SessionForGuild(guildIDInt)
+
+	// Check if the bot is in the target guild
+	_, err = s.State.Guild(guildID)
+	if err != nil {
+		return
+	}
+
+	// Check if bot has required permissions for the new episodes channel
+	isThread := false
+	newEpisodes := db.GetGuildAutopost(guildID, "newepisodes")
+	if newEpisodes == (entities.Cha{}) {
+		return
+	}
+	perms, err := s.State.UserChannelPermissions(s.State.User.ID, newEpisodes.GetID())
+	if err != nil {
+		return
+	}
+	if perms&discordgo.PermissionManageWebhooks != discordgo.PermissionManageWebhooks ||
+		perms&discordgo.PermissionViewChannel != discordgo.PermissionViewChannel ||
+		perms&discordgo.PermissionSendMessages != discordgo.PermissionSendMessages {
+		return
+	}
+
+	// Handle threads
+	newEpisodesChannel, err := s.State.Channel(newEpisodes.GetID())
+	if err != nil {
+		newEpisodesChannel, err = s.Channel(newEpisodes.GetID())
+		if err == nil && newEpisodesChannel.IsThread() {
+			isThread = true
+		}
+	} else if newEpisodesChannel.IsThread() {
+		isThread = true
+	}
+
+	if isThread && perms&discordgo.PermissionSendMessagesInThreads != discordgo.PermissionSendMessagesInThreads {
+		return
+	}
+
+	channelID := newEpisodes.GetID()
+	if isThread {
+		channelID = newEpisodesChannel.ParentID
+	}
+
+	// Get valid webhook
+	ws, err := s.ChannelWebhooks(channelID)
+	if err != nil {
+		return
+	}
+
+	// Check if webhook already exists
+	for _, w := range ws {
+		if w.User.ID == s.State.User.ID && w.ChannelID == channelID {
+			// Update webhook maps
+			newEpisodesWebhooksMap.Lock()
+			newEpisodesWebhooksMap.webhooksMap[guildID] = w
+			newEpisodesWebhooksMap.Unlock()
+
+			if isThread {
+				newEpisodesThreadWebhooksMap.Lock()
+				newEpisodesThreadWebhooksMap.webhooksMap[guildID] = newEpisodes.GetID()
+				newEpisodesThreadWebhooksMap.Unlock()
+			}
+			return
+		}
+	}
+
+	// Create the webhook if it doesn't exist
+	avatar, err := s.UserAvatarDecode(s.State.User)
+	if err != nil {
+		return
+	}
+	out := new(bytes.Buffer)
+	defer out.Reset()
+
+	err = png.Encode(out, avatar)
+	if err != nil {
+		return
+	}
+	base64Img := base64.StdEncoding.EncodeToString(out.Bytes())
+	out.Reset()
+
+	time.Sleep(300 * time.Millisecond)
+
+	wh, err := s.WebhookCreate(channelID, s.State.User.Username, fmt.Sprintf("data:image/png;base64,%s", base64Img))
+	if err != nil {
+		return
+	}
+
+	// Update webhook maps
+	newEpisodesWebhooksMap.Lock()
+	newEpisodesWebhooksMap.webhooksMap[guildID] = wh
+	newEpisodesWebhooksMap.Unlock()
+
+	if isThread {
+		newEpisodesThreadWebhooksMap.Lock()
+		newEpisodesThreadWebhooksMap.webhooksMap[guildID] = newEpisodes.GetID()
+		newEpisodesThreadWebhooksMap.Unlock()
+	}
+}
+
 func init() {
 	Add(&Command{
 		Execute: subscribeCommandHandler,

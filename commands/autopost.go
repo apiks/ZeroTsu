@@ -8,6 +8,7 @@ import (
 	"github.com/r-anime/ZeroTsu/common"
 	"github.com/r-anime/ZeroTsu/db"
 	"github.com/r-anime/ZeroTsu/entities"
+	"github.com/r-anime/ZeroTsu/events"
 
 	"github.com/bwmarrin/discordgo"
 
@@ -143,9 +144,12 @@ func setNewEpisodesCommand(targetChannel *discordgo.Channel, enabled bool, role 
 	// Update anime subscriptions in MongoDB only if enabled
 	if enabled {
 		animeSubs := cache.AnimeSubs.Get()
-		if subs, exists := animeSubs[guildID]; exists {
+		if subs, exists := animeSubs[guildID]; exists && len(subs) > 0 {
 			db.SetAnimeSubs(guildID, subs, true)
+		} else {
+			events.SetupGuildSub(guildID)
 		}
+		SetupGuildWebhook(guildID)
 	}
 
 	// Return success message
@@ -226,9 +230,12 @@ func setNewEpisodesCommandHandler(s *discordgo.Session, m *discordgo.Message) {
 
 	// Update anime subscriptions only if enabled
 	animeSubs := cache.AnimeSubs.Get()
-	if subs, exists := animeSubs[m.GuildID]; exists {
+	if subs, exists := animeSubs[m.GuildID]; exists && len(subs) > 0 {
 		db.SetAnimeSubs(m.GuildID, subs, true)
+	} else {
+		events.SetupGuildSub(m.GuildID)
 	}
+	SetupGuildWebhook(m.GuildID)
 
 	// Confirmation message
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(

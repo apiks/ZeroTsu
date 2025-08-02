@@ -14,7 +14,7 @@ require (
 	golang.org/x/sync v0.16.0
 )
 
-require github.com/petermattis/goid v0.0.0-20250508124226-395b08cebbdb // indirect
+require github.com/petermattis/goid v0.0.0-20250721140440-ea1c0173183e // indirect
 
 require (
 	github.com/PuerkitoBio/goquery v1.10.3 // indirect
