@@ -1,8 +1,6 @@
 module github.com/r-anime/ZeroTsu
 
-go 1.23.0
-
-toolchain go1.23.5
+go 1.25.0
 
 require (
 	github.com/bwmarrin/discordgo v0.29.0
