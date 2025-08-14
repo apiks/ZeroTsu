@@ -123,14 +123,3 @@ func ReconnectMongoDB(uri string) error {
 	// Test the new connection
 	return CheckMongoDBHealth()
 }
-
-// LogMongoDBStats logs MongoDB connection pool statistics
-func LogMongoDBStats() {
-	if MongoClient == nil {
-		return
-	}
-
-	// Get connection pool statistics
-	stats := MongoClient.NumberSessionsInProgress()
-	log.Printf("MongoDB connection pool stats - Active sessions: %d", stats)
-}

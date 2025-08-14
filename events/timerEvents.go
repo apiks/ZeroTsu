@@ -197,8 +197,6 @@ func CommonEvents(_ *discordgo.Session, _ *discordgo.Ready) {
 					log.Printf("Failed to reconnect to MongoDB: %v", reconnectErr)
 				}
 			}
-			// Log MongoDB stats every 10 minutes
-			entities.LogMongoDBStats()
 			mongoHealthCheckCounter = 0
 		}
 
