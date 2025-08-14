@@ -81,23 +81,28 @@ func LoadAnimeSubs() (map[string][]*ShowSub, error) {
 
 // LoadGuildAnimeSubs retrieves only guild anime subscriptions from MongoDB
 func LoadGuildAnimeSubs() (map[string][]*ShowSub, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
+	// Use a short timeout for the initial find, and a longer one for iteration
+	findCtx, findCancel := GetContextWithTimeout(30 * time.Second)
+	defer findCancel()
+
+	iterCtx, iterCancel := GetContextWithTimeout(2 * time.Minute)
+	defer iterCancel()
 
 	// Only fetch guild subscriptions with projection
 	filter := bson.M{"is_guild": true}
-	opts := GetOptimizedFindOptions().SetProjection(bson.M{
-		"id":       1,
-		"is_guild": 1,
-		"shows":    1,
-		"_id":      0,
-	})
+	opts := GetOptimizedFindOptions().
+		SetProjection(bson.M{
+			"id":       1,
+			"is_guild": 1,
+			"shows":    1,
+			"_id":      0,
+		})
 
-	cursor, err := AnimeSubsCollection.Find(ctx, filter, opts)
+	cursor, err := AnimeSubsCollection.Find(findCtx, filter, opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch guild anime subscriptions: %v", err)
 	}
-	defer cursor.Close(ctx)
+	defer cursor.Close(iterCtx)
 
 	guildSubsMap := make(map[string][]*ShowSub)
 
@@ -105,7 +110,7 @@ func LoadGuildAnimeSubs() (map[string][]*ShowSub, error) {
 	batchSize := 50
 	batch := make([]AnimeSubs, 0, batchSize)
 
-	for cursor.Next(ctx) {
+	for cursor.Next(iterCtx) {
 		var animeSubData AnimeSubs
 		if err := cursor.Decode(&animeSubData); err != nil {
 			log.Println("Error decoding guild anime subscriptions from MongoDB:", err)
