@@ -1083,7 +1083,12 @@ func ResetSubscriptions() {
 				if now.Before(airDatetime) {
 					show.SetNotified(false)
 				} else {
-					show.SetNotified(true)
+					// Don't automatically mark as notified - let the notification system handle this
+					// This prevents premature marking of episodes as notified before users are actually notified
+					if !oldStatus {
+						// Only reset to false if it was previously true (for next day reset)
+						show.SetNotified(false)
+					}
 				}
 
 				// Mark as updated if the status changed
@@ -1177,9 +1182,40 @@ func RemoveFinishedAnimeUserSubs() {
 				}
 			}
 
-			// Only remove if the anime is finished and the user has been notified
+			// Only remove if the anime is finished, the user has been notified,
+			// and it's been at least 3 hours since the final episode aired.
+			// This prevents premature removal of shows that just finished.
 			if allFinished && sub.GetNotified() {
-				updated = true
+				// Check if any variant has a final episode that aired recently
+				shouldRemove := true
+				for _, variant := range scheduleVariants {
+					ep := strings.ToLower(variant.GetEpisode())
+					if strings.HasSuffix(ep, "f") || strings.Contains(ep, "final") {
+						// Parse air time to check if it's been at least 3 hours
+						t, err := time.Parse("3:04 PM", variant.GetAirTime())
+						if err == nil {
+							// Calculate air datetime for today
+							now := time.Now()
+							location, err := time.LoadLocation("Europe/London")
+							if err == nil {
+								now = now.In(location)
+								airDatetime := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, time.UTC)
+
+								// If the final episode aired less than 3 hours ago, don't remove yet
+								if now.Sub(airDatetime) < 3*time.Hour {
+									shouldRemove = false
+									break
+								}
+							}
+						}
+					}
+				}
+
+				if shouldRemove {
+					updated = true
+				} else {
+					newSubs = append(newSubs, sub)
+				}
 			} else {
 				newSubs = append(newSubs, sub)
 			}
