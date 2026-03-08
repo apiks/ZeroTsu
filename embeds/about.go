@@ -20,7 +20,7 @@ func CreateAboutEmbed(botUser *discordgo.User) *discordgo.MessageEmbed {
 	embed := &discordgo.MessageEmbed{
 		URL:         "https://discordbots.org/bot/614495694769618944",
 		Title:       botUser.Username,
-		Description: "Written in **Go** by _apiks_. For questions or help please jon the [support server](https://discord.gg/BDT8Twv).",
+		Description: "Written in **Go** by _apiks_. For questions or help please join the [support server](https://discord.gg/BDT8Twv).",
 		Color:       lightPinkColor,
 		Thumbnail:   &discordgo.MessageEmbedThumbnail{URL: botUser.AvatarURL("256")},
 		Fields: []*discordgo.MessageEmbedField{{
